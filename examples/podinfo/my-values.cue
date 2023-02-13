@@ -11,15 +11,15 @@ values: {
 	}
 	hpa: {
 		enabled:     true
-		minReplicas: 2
+		minReplicas: 1
 		maxReplicas: 10
 	}
 	ingress: {
-		enabled:   true
+		enabled:   false
 		className: "nginx"
 		host:      "podinfo.example.com"
 		tls:       true
 		annotations: "cert-manager.io/cluster-issuer": "letsencrypt"
 	}
-	serviceMonitor: enabled: true
+	serviceMonitor: enabled: false
 }

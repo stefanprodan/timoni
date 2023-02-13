@@ -1,0 +1,46 @@
+name: e2e
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  kubernetes:
+    runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Restore Go cache
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.x
+      - name: Setup Kubernetes
+        uses: helm/kind-action@v1.5.0
+        with:
+          version: v0.17.0
+          cluster_name: kind
+      - name: Build
+        run: make build
+      - name: Test install
+        run: |
+          ./bin/timoni install podinfo ./examples/podinfo/module/ -f ./examples/podinfo/my-values.cue
+      - name: Test uninstall
+        run: |
+          ./bin/timoni uninstall podinfo

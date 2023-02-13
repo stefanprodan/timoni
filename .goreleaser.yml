@@ -1,0 +1,74 @@
+project_name: timoni
+changelog:
+  use: github-native
+builds:
+  - <<: &build_defaults
+      binary: timoni
+      main: ./cmd/timoni
+      ldflags:
+        - -s -w -X main.VERSION={{ .Version }}
+      env:
+        - CGO_ENABLED=0
+    id: linux
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+  - <<: *build_defaults
+    id: darwin
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+  - <<: *build_defaults
+    id: windows
+    goos:
+      - windows
+    goarch:
+      - amd64
+archives:
+  - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    id: nix
+    builds: [darwin, linux]
+    format: tar.gz
+    files:
+      - LICENSE
+  - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    id: windows
+    builds: [windows]
+    format: zip
+    files:
+      - LICENSE
+source:
+  enabled: true
+  name_template: '{{ .ProjectName }}_{{ .Version }}_source_code'
+sboms:
+  - id: source
+    artifacts: source
+    documents:
+      - "{{ .ProjectName }}_{{ .Version }}_sbom.spdx.json"
+brews:
+  - name: timoni
+    tap:
+      owner: stefanprodan
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    folder: Formula
+    homepage: "https://github.com/stefanprodan/timoni"
+    description: "Timoni CLI"
+    dependencies:
+      - name: diffutils
+        type: optional
+    install: |
+      bin.install "timoni"
+      bash_output = Utils.safe_popen_read(bin/"timoni", "completion", "bash")
+      (bash_completion/"timoni").write bash_output
+      zsh_output = Utils.safe_popen_read(bin/"timoni", "completion", "zsh")
+      (zsh_completion/"timoni").write zsh_output
+      fish_output = Utils.safe_popen_read(bin/"timoni", "completion", "fish")
+      (fish_completion/"timoni.fish").write fish_output
+    test: |
+      system "#{bin}/timoni --version"
