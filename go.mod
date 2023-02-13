@@ -7,9 +7,14 @@ require (
 	github.com/fluxcd/pkg/runtime v0.28.0
 	github.com/fluxcd/pkg/ssa v0.23.0
 	github.com/spf13/cobra v1.6.1
+	k8s.io/api v0.26.1
+	k8s.io/apiextensions-apiserver v0.26.0
 	k8s.io/apimachinery v0.26.1
 	k8s.io/cli-runtime v0.26.1
 	k8s.io/client-go v0.26.1
+	sigs.k8s.io/cli-utils v0.34.0
+	sigs.k8s.io/controller-runtime v0.14.1
+	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
@@ -70,17 +75,13 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.26.1 // indirect
 	k8s.io/component-base v0.26.1 // indirect
 	k8s.io/klog/v2 v2.90.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20221110221610-a28e98eb7c70 // indirect
 	k8s.io/kubectl v0.25.4 // indirect
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448 // indirect
-	sigs.k8s.io/cli-utils v0.34.0 // indirect
-	sigs.k8s.io/controller-runtime v0.14.1 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
-	sigs.k8s.io/yaml v1.3.0 // indirect
 )
