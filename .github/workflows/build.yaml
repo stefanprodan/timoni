@@ -26,8 +26,14 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.20.x
+      - name: Setup CUE
+        uses: cue-lang/setup-cue@main
+        with:
+          version: latest
       - name: Run build
         run: make all
+      - name: Run linter
+        run: make test-lint
       - name: Check if working tree is dirty
         run: |
           if [[ $(git diff --stat) != '' ]]; then

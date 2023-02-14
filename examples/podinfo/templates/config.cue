@@ -33,7 +33,7 @@ import (
 	ingress: {
 		enabled: *false | bool
 		tls:     *false | bool
-		host:    string
+		host:    *"podinfo.local" | string
 		annotations?: {[ string]: string}
 		className?: string
 	}

@@ -26,8 +26,8 @@ install:
 	go install ./cmd/timoni
 
 TESTMOD=podinfo ./examples/podinfo
-TESTVAL_HA=-f ./examples/values/podinfo-ha-values.cue
-TESTVAL_ING=-f ./examples/values/podinfo-ingress-values.cue
+TESTVAL_HA=-f ./examples/podinfo-values/ha-values.cue
+TESTVAL_ING=-f ./examples/podinfo-values/ingress-values.cue
 test-template:
 	./bin/timoni template $(TESTMOD) $(TESTVAL_HA)
 
@@ -42,6 +42,9 @@ test-upgrade:
 
 test-uninstall:
 	./bin/timoni uninstall $(TESTMOD)
+
+test-lint:
+	./bin/timoni lint ./examples/podinfo
 
 .PHONY: help
 help:  ## Display this help menu

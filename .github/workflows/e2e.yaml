@@ -41,7 +41,7 @@ jobs:
           make build
       - name: Run tests
         run: |
-          make test-templates
+          make test-template
           make test-install
           make test-diff
           make test-upgrade

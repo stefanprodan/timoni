@@ -14,9 +14,5 @@ values: {
 
 	autoscaling: enabled: false
 	monitoring: enabled:  false
-
-	ingress: {
-		enabled: false
-		host:    "podinfo.local"
-	}
+	ingress: enabled:     false
 }
