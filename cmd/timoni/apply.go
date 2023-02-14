@@ -102,7 +102,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	cuectx := cuecontext.New()
-	builder := NewBuilder(cuectx, modulePath, applyArgs.pkg)
+	builder := NewBuilder(cuectx, applyArgs.name, *kubeconfigArgs.Namespace, modulePath, applyArgs.pkg)
 
 	if len(applyArgs.valuesFiles) > 0 {
 		err = builder.MergeValuesFile(applyArgs.valuesFiles)

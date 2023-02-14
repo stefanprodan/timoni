@@ -4,11 +4,6 @@
 package main
 
 values: {
-	metadata: {
-		name:      "podinfo"
-		namespace: "default"
-	}
-
 	image: tag: "6.3.3"
 
 	autoscaling: enabled: false

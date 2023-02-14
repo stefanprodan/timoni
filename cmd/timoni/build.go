@@ -91,7 +91,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	builder := NewBuilder(ctx, modulePath, buildArgs.pkg)
+	builder := NewBuilder(ctx, buildArgs.name, *kubeconfigArgs.Namespace, modulePath, buildArgs.pkg)
 
 	if len(buildArgs.valuesFiles) > 0 {
 		err = builder.MergeValuesFile(buildArgs.valuesFiles)

@@ -7,8 +7,8 @@ import (
 
 #Config: {
 	metadata: metav1.#ObjectMeta
-	metadata: name:      string
-	metadata: namespace: string
+	metadata: name:      *"podinfo" | string
+	metadata: namespace: *"default" | string
 	selectorLabels: *{"app.kubernetes.io/name": metadata.name} | {[ string]: string}
 	metadata: labels: *selectorLabels | {[ string]: string}
 	metadata: labels: "app.kubernetes.io/version": image.tag

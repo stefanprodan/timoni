@@ -1,9 +1,4 @@
 values: {
-	metadata: {
-		name:      "podinfo"
-		namespace: "default"
-	}
-
 	ingress: {
 		enabled:   true
 		className: "nginx"

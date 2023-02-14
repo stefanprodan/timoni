@@ -25,9 +25,8 @@ import (
 )
 
 var inspectValuesCmd = &cobra.Command{
-	Use:     "values [MODULE]",
-	Aliases: []string{"template"},
-	Short:   "Extract the default values from a module.",
+	Use:   "values [MODULE]",
+	Short: "Extract the default values from a module.",
 	Example: `  # Print the default values of a local module
   timoni inspect values ./path/to/module
 `,
@@ -72,7 +71,7 @@ func runInspectValuesCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	builder := NewBuilder(ctx, modulePath, inspectValuesArgs.pkg)
+	builder := NewBuilder(ctx, "name", "namespace", modulePath, inspectValuesArgs.pkg)
 	v, err := builder.GetDefaultValues()
 	if err != nil {
 		return err

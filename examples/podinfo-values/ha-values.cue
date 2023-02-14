@@ -1,9 +1,4 @@
 values: {
-	metadata: {
-		name:      "podinfo"
-		namespace: "default"
-	}
-
 	resources: requests: {
 		cpu:    "100m"
 		memory: "128Mi"

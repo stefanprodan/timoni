@@ -46,10 +46,12 @@ type Builder struct {
 	moduleRoot string
 	pkgName    string
 	pkgPath    string
+	name       string
+	namespace  string
 }
 
 // NewBuilder creates a Builder for the given module and package.
-func NewBuilder(ctx *cue.Context, moduleRoot, pkgName string) *Builder {
+func NewBuilder(ctx *cue.Context, name, namespace, moduleRoot, pkgName string) *Builder {
 	if ctx == nil {
 		ctx = cuecontext.New()
 	}
@@ -58,6 +60,8 @@ func NewBuilder(ctx *cue.Context, moduleRoot, pkgName string) *Builder {
 		moduleRoot: moduleRoot,
 		pkgName:    pkgName,
 		pkgPath:    moduleRoot,
+		name:       name,
+		namespace:  namespace,
 	}
 	if pkgName != defaultPackage {
 		b.pkgPath = filepath.Join(moduleRoot, pkgName)
@@ -115,8 +119,11 @@ func (b *Builder) Build() (cue.Value, error) {
 		Package:    b.pkgName,
 		Dir:        b.pkgPath,
 		DataFiles:  true,
-		Tags:       []string{},
-		TagVars:    map[string]load.TagVar{},
+		Tags: []string{
+			"name=" + b.name,
+			"namespace=" + b.namespace,
+		},
+		TagVars: map[string]load.TagVar{},
 	}
 
 	ix := load.Instances([]string{}, cfg)
