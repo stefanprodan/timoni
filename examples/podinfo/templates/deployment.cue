@@ -53,6 +53,9 @@ import (
 						}
 					},
 				]
+				if _config.podSecurityContext != _|_ {
+					securityContext: _config.podSecurityContext
+				}
 				if _config.affinity != _|_ {
 					affinity: _config.affinity
 				}

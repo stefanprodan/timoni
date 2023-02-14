@@ -43,9 +43,10 @@ import (
 		interval: *"15s" | string
 	}
 
-	resources?:       corev1.#ResourceRequirements
-	securityContext?: corev1.#SecurityContext
-	affinity?:        corev1.#Affinity
+	resources?:          corev1.#ResourceRequirements
+	podSecurityContext?: corev1.#PodSecurityContext
+	securityContext?:    corev1.#SecurityContext
+	affinity?:           corev1.#Affinity
 	tolerations?: [ ...corev1.#Toleration]
 }
 

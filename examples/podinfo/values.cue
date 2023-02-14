@@ -1,4 +1,4 @@
-// The values.cue is required by Tiomni and should contains the default values.
+// The values.cue file is required by Timoni and should contain the user-facing defualt values.
 // Note that this file must have no imports and all values must be concrete.
 
 package main

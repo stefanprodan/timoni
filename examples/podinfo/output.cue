@@ -1,4 +1,4 @@
-// The output.cue file is required by Tiomni and should export
+// The output.cue file is required by Timoni and should export
 // a stream of Kubernetes objects under the output field.
 
 package main
@@ -13,5 +13,5 @@ instance: templates.#Instance & {
 	config: values
 }
 
-// Set the output with the generted Kubernetes objects.
+// Fill the output with the generated Kubernetes objects.
 output: [ for obj in instance.objects {obj}]
