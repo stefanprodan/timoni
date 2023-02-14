@@ -4,19 +4,11 @@ import (
 	netv1 "k8s.io/api/networking/v1"
 )
 
-#ingressConfig: {
-	enabled: *false | bool
-	annotations?: {[ string]: string}
-	className?: string
-	tls:        *false | bool
-	host:       *"podinfo.example" | string
-}
-
 #Ingress: netv1.#Ingress & {
 	_config:    #Config
 	apiVersion: "networking.k8s.io/v1"
 	kind:       "Ingress"
-	metadata:   _config.meta
+	metadata:   _config.metadata
 	if _config.ingress.annotations != _|_ {
 		metadata: annotations: _config.ingress.annotations
 	}
@@ -28,7 +20,7 @@ import (
 					pathType: "Prefix"
 					path:     "/"
 					backend: service: {
-						name: _config.meta.name
+						name: _config.metadata.name
 						port: name: "http"
 					}
 				}]
@@ -37,7 +29,7 @@ import (
 		if _config.ingress.tls {
 			tls: [{
 				hosts: [_config.ingress.host]
-				secretName: "\(_config.meta.name)-cert"
+				secretName: "\(_config.metadata.name)-cert"
 			}]
 		}
 		if _config.ingress.className != _|_ {

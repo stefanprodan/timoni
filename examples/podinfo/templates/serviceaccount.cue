@@ -8,5 +8,5 @@ import (
 	_config:    #Config
 	apiVersion: "v1"
 	kind:       "ServiceAccount"
-	metadata:   _config.meta
+	metadata:   _config.metadata
 }
