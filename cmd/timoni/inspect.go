@@ -22,7 +22,7 @@ import (
 
 var inspectCmd = &cobra.Command{
 	Use:   "inspect",
-	Short: "This command consists of multiple subcommands to display information about modules.",
+	Short: "Display information about modules",
 }
 
 func init() {

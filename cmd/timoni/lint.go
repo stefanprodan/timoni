@@ -20,15 +20,19 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/spf13/cobra"
 	"io"
 	"os"
 	"os/exec"
+
+	"github.com/spf13/cobra"
 )
 
 var lintCmd = &cobra.Command{
 	Use:   "lint [PATH]",
-	Short: "Run cue fmt and cue vet on the local module. The cue CLI must be in PATH.",
+	Short: "Format and validate a local module ",
+	Long: `The list command formats the module's files with 'cue fmt' and
+validates the cue definitions with 'cue vet -c'.
+This command requires that the cue CLI binary is present in PATH.`,
 	Example: `  # lint a local module
   timoni lint ./path/to/module
 `,

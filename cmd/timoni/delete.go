@@ -30,11 +30,11 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:     "delete [NAME]",
 	Aliases: []string{"uninstall"},
-	Short:   "Uninstall a module.",
-	Example: `  # uninstall the app module from the default namespace
+	Short:   "Uninstall a module from the cluster",
+	Example: `  # Uninstall the app module from the default namespace
   timoni -n default delete app
 
-  # do a dry-run uninstall and print the changes
+  # Do a dry-run uninstall and print the changes
   timoni delete --dry-run app
 `,
 	RunE: rundeleteCmd,

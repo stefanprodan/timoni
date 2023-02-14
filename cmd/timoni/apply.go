@@ -18,32 +18,33 @@ package main
 
 import (
 	"context"
-	"cuelang.org/go/cue/cuecontext"
 	"fmt"
-	"github.com/fluxcd/pkg/ssa"
-	"github.com/spf13/cobra"
-	"github.com/stefanprodan/timoni/pkg/inventory"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sigs.k8s.io/yaml"
 	"sort"
 	"strings"
+
+	"cuelang.org/go/cue/cuecontext"
+	"github.com/fluxcd/pkg/ssa"
+	"github.com/spf13/cobra"
+	"github.com/stefanprodan/timoni/pkg/inventory"
+	"sigs.k8s.io/yaml"
 )
 
 var applyCmd = &cobra.Command{
-	Use:     "apply [NAME] [MODULE]",
+	Use:     "apply [NAME] [URL]",
 	Aliases: []string{"install", "upgrade"},
-	Short:   "Install or upgrade a module.",
-	Example: `  # install a local module with its default values and create the namespace if it doesn't exists
-  timoni apply app ./path/to/module --namespace apps
+	Short:   "Install or upgrade a module on the cluster",
+	Example: `  # Install a module and create the namespace if it doesn't exists
+  timoni apply -n apps app oci://docker.io/org/module --version 1.0.0
 
-  # do a dry-run apply and print the diff
+  # Do a dry-run apply and print the diff
   timoni apply -n apps --dry-run --diff app ./path/to/module \
   --values ./values-1.cue 
 
-  # apply a module with custom values by merging them in the specified order
-  timoni apply -n apps -n apps app ./path/to/module \
+  # Apply a module with custom values by merging them in the specified order
+  timoni apply -n apps app ./path/to/module \
   --values ./values-1.cue \
   --values ./values-2.cue
 `,
@@ -53,25 +54,32 @@ var applyCmd = &cobra.Command{
 type applyFlags struct {
 	name        string
 	module      string
+	version     string
 	pkg         string
 	valuesFiles []string
 	dryrun      bool
 	diff        bool
 	wait        bool
+	creds       string
 }
 
 var applyArgs applyFlags
 
 func init() {
+	applyCmd.Flags().StringVarP(&applyArgs.version, "version", "v", "",
+		"version of the module.")
 	applyCmd.Flags().StringVarP(&applyArgs.pkg, "package", "p", "main",
 		"The name of the package containing the instance values and resources.")
-	applyCmd.Flags().StringSliceVarP(&applyArgs.valuesFiles, "values", "f", nil, "local path to values.cue files")
+	applyCmd.Flags().StringSliceVarP(&applyArgs.valuesFiles, "values", "f", nil,
+		"local path to values.cue files")
 	applyCmd.Flags().BoolVar(&applyArgs.dryrun, "dry-run", false,
 		"performs a server-side apply dry run")
 	applyCmd.Flags().BoolVar(&applyArgs.diff, "diff", false,
 		"performs a server-side apply dry run and prints the diff")
 	applyCmd.Flags().BoolVar(&applyArgs.wait, "wait", true,
 		"wait for the applied Kubernetes objects to become ready")
+	applyCmd.Flags().StringVar(&applyArgs.creds, "creds", "",
+		"credentials for the container registry in the format <username>[:<password>]")
 	rootCmd.AddCommand(applyCmd)
 }
 
@@ -83,10 +91,6 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	applyArgs.name = args[0]
 	applyArgs.module = args[1]
 
-	if _, err := os.Stat(applyArgs.module); err != nil {
-		return fmt.Errorf("package not found at path %s", applyArgs.module)
-	}
-
 	logger.Println("building", applyArgs.module)
 
 	tmpDir, err := os.MkdirTemp("", "timoni")
@@ -95,8 +99,11 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	modulePath := filepath.Join(tmpDir, "module")
-	err = copyModule(applyArgs.module, modulePath)
+	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	fetcher := NewFetcher(ctxPull, applyArgs.module, applyArgs.version, tmpDir, applyArgs.creds)
+	modulePath, err := fetcher.Fetch()
 	if err != nil {
 		return err
 	}

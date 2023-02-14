@@ -17,10 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -30,9 +30,9 @@ import (
 )
 
 var buildCmd = &cobra.Command{
-	Use:     "build [NAME] [MODULE]",
+	Use:     "build [NAME] [URL]",
 	Aliases: []string{"template"},
-	Short:   "Build the module locally and print the resulting Kubernetes resources.",
+	Short:   "Build a module and print the resulting Kubernetes resources",
 	Example: `  # Build a local module with the default values
   timoni build app ./path/to/module --output yaml
 
@@ -47,19 +47,27 @@ var buildCmd = &cobra.Command{
 type buildFlags struct {
 	name        string
 	module      string
+	version     string
 	pkg         string
 	valuesFiles []string
 	output      string
+	creds       string
 }
 
 var buildArgs buildFlags
 
 func init() {
+	buildCmd.Flags().StringVarP(&buildArgs.version, "version", "v", "",
+		"version of the module.")
 	buildCmd.Flags().StringVarP(&buildArgs.pkg, "package", "p", "main",
 		"The name of the package containing the instance values and resources.")
-	buildCmd.Flags().StringSliceVarP(&buildArgs.valuesFiles, "values", "f", nil, "local path to values.cue files")
+	buildCmd.Flags().StringSliceVarP(&buildArgs.valuesFiles, "values", "f", nil,
+		"local path to values.cue files")
 	buildCmd.Flags().StringVarP(&buildArgs.output, "output", "o", "yaml",
 		"the format in which the Kubernetes resources should be printed, can be 'json' or 'yaml'")
+	buildCmd.Flags().StringVar(&buildArgs.creds, "creds", "",
+		"credentials for the container registry in the format <username>[:<password>]")
+
 	rootCmd.AddCommand(buildCmd)
 }
 
@@ -73,20 +81,17 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 
 	ctx := cuecontext.New()
 
-	if _, err := os.Stat(buildArgs.module); err != nil {
-		return fmt.Errorf("module not found at path %s", buildArgs.module)
-	}
-
-	logger.Println("building", buildArgs.module)
-
 	tmpDir, err := os.MkdirTemp("", "timoni")
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(tmpDir)
 
-	modulePath := filepath.Join(tmpDir, "module")
-	err = copyModule(buildArgs.module, modulePath)
+	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	fetcher := NewFetcher(ctxPull, buildArgs.module, buildArgs.version, tmpDir, buildArgs.creds)
+	modulePath, err := fetcher.Fetch()
 	if err != nil {
 		return err
 	}

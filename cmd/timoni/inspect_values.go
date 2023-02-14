@@ -17,32 +17,41 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"cuelang.org/go/cue/cuecontext"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
-	"path/filepath"
 )
 
 var inspectValuesCmd = &cobra.Command{
-	Use:   "values [MODULE]",
-	Short: "Extract the default values from a module.",
+	Use:   "values [URL]",
+	Short: "Extract the default values from a module",
 	Example: `  # Print the default values of a local module
   timoni inspect values ./path/to/module
+
+  # Print the default values of a remote module
+  timoni inspect values oci://docker.io/org/module --version 1.0.0
 `,
 	RunE: runInspectValuesCmd,
 }
 
 type inspectValuesFlags struct {
-	module string
-	pkg    string
+	module  string
+	version string
+	pkg     string
+	creds   string
 }
 
 var inspectValuesArgs inspectValuesFlags
 
 func init() {
+	inspectValuesCmd.Flags().StringVarP(&inspectValuesArgs.version, "version", "v", "",
+		"version of the module.")
 	inspectValuesCmd.Flags().StringVarP(&inspectValuesArgs.pkg, "package", "p", "main",
 		"The name of the package containing the instance values and resources.")
+	inspectValuesCmd.Flags().StringVar(&inspectValuesArgs.creds, "creds", "",
+		"credentials for the container registry in the format <username>[:<password>]")
 	inspectCmd.AddCommand(inspectValuesCmd)
 }
 
@@ -55,18 +64,17 @@ func runInspectValuesCmd(cmd *cobra.Command, args []string) error {
 
 	ctx := cuecontext.New()
 
-	if _, err := os.Stat(inspectValuesArgs.module); err != nil {
-		return fmt.Errorf("module not found at path %s", inspectValuesArgs.module)
-	}
-
 	tmpDir, err := os.MkdirTemp("", "timoni")
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(tmpDir)
 
-	modulePath := filepath.Join(tmpDir, "module")
-	err = copyModule(inspectValuesArgs.module, modulePath)
+	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	fetcher := NewFetcher(ctxPull, inspectValuesArgs.module, inspectValuesArgs.version, tmpDir, inspectValuesArgs.creds)
+	modulePath, err := fetcher.Fetch()
 	if err != nil {
 		return err
 	}
