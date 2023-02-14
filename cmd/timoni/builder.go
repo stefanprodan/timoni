@@ -34,10 +34,10 @@ import (
 )
 
 const (
-	defaultPackage       = "main"
-	defaultValuesName    = "values"
-	defaultValuesFile    = "values.cue"
-	defaultResourcesName = "resources"
+	defaultPackage    = "main"
+	defaultValuesName = "values"
+	defaultValuesFile = "values.cue"
+	defaultOutputExp  = "output"
 )
 
 // Builder complies CUE definitions to Kubernetes objects.
@@ -100,10 +100,10 @@ func (b *Builder) MergeValuesFile(overlays []string) error {
 	//logger.Println(string(vFinalData))
 	//logger.Println(cueGen)
 
+	// overwrite the values.cue file with the merged values (concrete)
 	if err := os.MkdirAll(b.moduleRoot, os.ModePerm); err != nil {
 		return err
 	}
-
 	return os.WriteFile(defaultFile, []byte(cueGen), 0644)
 }
 
@@ -137,9 +137,9 @@ func (b *Builder) Build() (cue.Value, error) {
 	return v, nil
 }
 
-// SelectResources coverts the CUE value to Kubernetes unstructured objects
-func (b *Builder) SelectResources(value cue.Value) ([]*unstructured.Unstructured, error) {
-	expr := value.LookupPath(cue.ParsePath(defaultResourcesName))
+// GetObjects coverts the CUE value to Kubernetes unstructured objects
+func (b *Builder) GetObjects(value cue.Value) ([]*unstructured.Unstructured, error) {
+	expr := value.LookupPath(cue.ParsePath(defaultOutputExp))
 	if expr.Err() != nil {
 		return nil, fmt.Errorf("lookup resouces failed, error: %w", expr.Err())
 	}

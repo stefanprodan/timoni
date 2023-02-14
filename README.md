@@ -8,7 +8,9 @@ without having to write a single line of YAML. Authoring Kubernetes configs can 
 a more pleasant experience with CUE than mingling Go templates with YAML.
 
 > **Warning**
-> Note that Timoni is in the experimental phase, you need be familiar with CUE in order to author modules.
+> 
+> Note that Timoni is in the experimental phase, the API may change in incompatible ways
+> and you need be familiar with CUE in order to author modules.
 
 ## Timoni vs Helm
 
@@ -24,4 +26,4 @@ User differences:
 
 - Timoni modules, the equivalent of Helm charts, can only be pushed and pulled to/from a container registry which supports custom OCI media types.
 - Instead of supplying values in YAML format, Timoni expects users to supply values as CUE definitions.
-- Instead of Helm's client-side apply, Timoni uses Kubernetes server-side apply and [Flux](https://fluxcd.io)'s drift detection.
+- Instead of Helm's client-side apply, Timoni uses Kubernetes server-side apply, [Flux](https://fluxcd.io)'s drift detection and health checking.

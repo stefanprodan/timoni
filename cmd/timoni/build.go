@@ -105,14 +105,14 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to build instance, error: %w", err)
 	}
 
-	kubeRes, err := builder.SelectResources(buildResult)
+	objects, err := builder.GetObjects(buildResult)
 	if err != nil {
 		return fmt.Errorf("failed to extract resouces, error: %w", err)
 	}
 	switch buildArgs.output {
 	case "yaml":
 		var sb strings.Builder
-		for _, obj := range kubeRes {
+		for _, obj := range objects {
 			data, err := yaml.Marshal(obj)
 			if err != nil {
 				return fmt.Errorf("failed to convert resouces, error: %w", err)
@@ -129,7 +129,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		}{
 			ApiVersion: "v1",
 			Kind:       "List",
-			Items:      kubeRes,
+			Items:      objects,
 		}
 
 		b, err := json.MarshalIndent(list, "", "    ")

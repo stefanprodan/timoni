@@ -37,10 +37,12 @@ jobs:
           version: v0.17.0
           cluster_name: kind
       - name: Build
-        run: make build
-      - name: Test install
         run: |
-          ./bin/timoni install podinfo ./examples/podinfo/module/ -f ./examples/podinfo/my-values.cue
-      - name: Test uninstall
+          make build
+      - name: Run tests
         run: |
-          ./bin/timoni uninstall podinfo
+          make test-templates
+          make test-install
+          make test-diff
+          make test-upgrade
+          make test-uninstall

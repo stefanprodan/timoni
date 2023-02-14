@@ -12,18 +12,6 @@ build:
 test: tidy fmt vet
 	go test ./... -coverprofile cover.out
 
-run: build
-	./bin/timoni build podinfo ./examples/podinfo/module/ -p main -f ./examples/podinfo/my-values.cue -o json | kubectl apply -f- --dry-run=server
-
-dryrun: build
-	./bin/timoni apply podinfo ./examples/podinfo/module/ -f ./examples/podinfo/my-values.cue --dry-run
-
-diff: build
-	./bin/timoni apply --dry-run --diff podinfo ./examples/podinfo/module/ -f ./examples/podinfo/my-values.cue
-
-apply: build
-	./bin/timoni apply podinfo ./examples/podinfo/module/ -f ./examples/podinfo/my-values.cue
-
 tidy:
 	rm -f go.sum; go mod tidy -compat=1.19
 
@@ -33,13 +21,27 @@ fmt:
 vet:
 	go vet ./...
 
-cuevet:
-	cue fmt ./...
-	cd ./examples/podinfo/module/ && cue vet --all-errors --concrete ./...
-
 .PHONY: install
 install:
 	go install ./cmd/timoni
+
+TESTMOD=podinfo ./examples/podinfo
+TESTVAL_HA=-f ./examples/values/podinfo-ha-values.cue
+TESTVAL_ING=-f ./examples/values/podinfo-ingress-values.cue
+test-template:
+	./bin/timoni template $(TESTMOD) $(TESTVAL_HA)
+
+test-install:
+	./bin/timoni install $(TESTMOD) $(TESTVAL_HA)
+
+test-diff:
+	./bin/timoni upgrade --dry-run --diff $(TESTMOD) $(TESTVAL_ING)
+
+test-upgrade:
+	./bin/timoni upgrade $(TESTMOD) $(TESTVAL_HA) $(TESTVAL_ING)
+
+test-uninstall:
+	./bin/timoni uninstall $(TESTMOD)
 
 .PHONY: help
 help:  ## Display this help menu

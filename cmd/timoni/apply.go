@@ -35,15 +35,15 @@ var applyCmd = &cobra.Command{
 	Use:     "apply [NAME] [MODULE]",
 	Aliases: []string{"install", "upgrade"},
 	Short:   "Install or upgrade a module.",
-	Example: `  # install or upgrade a local module with its default values
-  timoni apply app ./path/to/module
+	Example: `  # install a local module with its default values and create the namespace if it doesn't exists
+  timoni apply app ./path/to/module --namespace apps
 
   # do a dry-run apply and print the diff
-  timoni apply --dry-run --diff app ./path/to/module \
+  timoni apply -n apps --dry-run --diff app ./path/to/module \
   --values ./values-1.cue 
 
   # apply a module with custom values by merging them in the specified order
-  timoni apply app ./path/to/module \
+  timoni apply -n apps -n apps app ./path/to/module \
   --values ./values-1.cue \
   --values ./values-2.cue
 `,
@@ -83,8 +83,6 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	applyArgs.name = args[0]
 	applyArgs.module = args[1]
 
-	ctx := cuecontext.New()
-
 	if _, err := os.Stat(applyArgs.module); err != nil {
 		return fmt.Errorf("package not found at path %s", applyArgs.module)
 	}
@@ -103,7 +101,8 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	builder := NewBuilder(ctx, modulePath, applyArgs.pkg)
+	cuectx := cuecontext.New()
+	builder := NewBuilder(cuectx, modulePath, applyArgs.pkg)
 
 	if len(applyArgs.valuesFiles) > 0 {
 		err = builder.MergeValuesFile(applyArgs.valuesFiles)
@@ -117,7 +116,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to build instance, error: %w", err)
 	}
 
-	objects, err := builder.SelectResources(buildResult)
+	objects, err := builder.GetObjects(buildResult)
 	if err != nil {
 		return fmt.Errorf("failed to extract resouces, error: %w", err)
 	}
@@ -134,14 +133,14 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	sm.SetOwnerLabels(objects, applyArgs.name, *kubeconfigArgs.Namespace)
 
-	ctxKube, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
 	if applyArgs.dryrun {
 		diffOpts := ssa.DefaultDiffOptions()
 		sort.Sort(ssa.SortableUnstructureds(objects))
 		for _, r := range objects {
-			change, liveObject, mergedObject, err := sm.Diff(ctxKube, r, diffOpts)
+			change, liveObject, mergedObject, err := sm.Diff(ctx, r, diffOpts)
 			if err != nil {
 				logger.Println(err)
 				continue
@@ -180,7 +179,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("creating inventory failed, error: %w", err)
 	}
 
-	cs, err := sm.ApplyAllStaged(ctxKube, objects, ssa.DefaultApplyOptions())
+	cs, err := sm.ApplyAllStaged(ctx, objects, ssa.DefaultApplyOptions())
 	if err != nil {
 		return err
 	}
@@ -188,18 +187,18 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		logger.Println(change.String())
 	}
 
-	staleObjects, err := invStorage.GetInventoryStaleObjects(ctxKube, newInventory)
+	staleObjects, err := invStorage.GetInventoryStaleObjects(ctx, newInventory)
 	if err != nil {
 		return fmt.Errorf("inventory query failed, error: %w", err)
 	}
 
-	err = invStorage.ApplyInventory(ctxKube, newInventory, true)
+	err = invStorage.ApplyInventory(ctx, newInventory, true)
 	if err != nil {
 		return fmt.Errorf("inventory apply failed, error: %w", err)
 	}
 
 	if len(staleObjects) > 0 {
-		changeSet, err := sm.DeleteAll(ctxKube, staleObjects, ssa.DefaultDeleteOptions())
+		changeSet, err := sm.DeleteAll(ctx, staleObjects, ssa.DefaultDeleteOptions())
 		if err != nil {
 			return fmt.Errorf("prune failed, error: %w", err)
 		}
