@@ -1,6 +1,5 @@
 // The values.cue is required by Tiomni and should contains the default values.
-// Note that this file will be overriten by Tiomni during build time,
-// so only concreate values are allowed.
+// Note that this file must have no imports and all values must be concrete.
 
 package main
 

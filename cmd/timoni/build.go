@@ -74,7 +74,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	ctx := cuecontext.New()
 
 	if _, err := os.Stat(buildArgs.module); err != nil {
-		return fmt.Errorf("package not found at path %s", buildArgs.module)
+		return fmt.Errorf("module not found at path %s", buildArgs.module)
 	}
 
 	logger.Println("building", buildArgs.module)
@@ -107,7 +107,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 
 	objects, err := builder.GetObjects(buildResult)
 	if err != nil {
-		return fmt.Errorf("failed to extract resouces, error: %w", err)
+		return fmt.Errorf("failed to extract Kubernetes objects, error: %w", err)
 	}
 	switch buildArgs.output {
 	case "yaml":
