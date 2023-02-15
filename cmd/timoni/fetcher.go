@@ -49,9 +49,6 @@ func NewFetcher(ctx context.Context, src, version, dst, creds string) *Fetcher {
 
 func (f *Fetcher) Fetch() (string, error) {
 	modulePath := filepath.Join(f.dst, "module")
-	if _, err := semver.StrictNewVersion(f.version); err != nil {
-		return modulePath, fmt.Errorf("version is not in semver format, error: %w", err)
-	}
 
 	if strings.HasPrefix(f.src, "oci://") {
 		if err := os.MkdirAll(modulePath, os.ModePerm); err != nil {
@@ -67,6 +64,10 @@ func (f *Fetcher) Fetch() (string, error) {
 }
 
 func (f *Fetcher) fetchOCI(dir string) error {
+	if _, err := semver.StrictNewVersion(f.version); err != nil {
+		return fmt.Errorf("version is not in semver format, error: %w", err)
+	}
+
 	ociClient := oci.NewLocalClient()
 
 	if f.creds != "" {
