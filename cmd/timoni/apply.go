@@ -128,12 +128,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to extract resouces, error: %w", err)
 	}
 
-	so := ssa.Owner{
-		Field: "timoni",
-		Group: "timoni.mod",
-	}
-
-	sm, err := newManager(so)
+	sm, err := newManager(owner)
 	if err != nil {
 		return err
 	}
@@ -179,9 +174,14 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	invStorage := &inventory.Storage{Manager: sm, Owner: so}
+	invStorage := &inventory.Storage{Manager: sm, Owner: owner}
 	newInventory := inventory.NewInventory(applyArgs.name, *kubeconfigArgs.Namespace)
-	newInventory.SetSource(applyArgs.module, applyArgs.module, []string{})
+	version := applyArgs.version
+	if version == "" {
+		version = "0.0.0-devel.0"
+	}
+
+	newInventory.SetSource(applyArgs.module, applyArgs.version, []string{})
 	if err := newInventory.AddObjects(objects); err != nil {
 		return fmt.Errorf("creating inventory failed, error: %w", err)
 	}

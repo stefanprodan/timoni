@@ -62,7 +62,7 @@ var pushArgs pushFlags
 func init() {
 	pushCmd.Flags().StringVar(&pushArgs.source, "source", "",
 		"the source address, e.g. the Git URL")
-	pushCmd.Flags().StringVar(&pushArgs.version, "version", "",
+	pushCmd.Flags().StringVarP(&pushArgs.version, "version", "v", "",
 		"the version in semver format e.g. '1.0.0'")
 	pushCmd.Flags().StringVar(&pushArgs.creds, "creds", "",
 		"credentials for the container registry in the format <username>[:<password>]")

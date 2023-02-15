@@ -30,7 +30,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
+var owner = ssa.Owner{
+	Field: "timoni",
+	Group: "modules.timoni.sh",
+}
+
 func newManager(owner ssa.Owner) (*ssa.ResourceManager, error) {
+
 	kubeClient, err := newKubeClient(kubeconfigArgs)
 	if err != nil {
 		return nil, fmt.Errorf("client init failed: %w", err)

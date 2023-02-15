@@ -63,12 +63,7 @@ func rundeleteCmd(cmd *cobra.Command, args []string) error {
 
 	deleteArgs.name = args[0]
 
-	so := ssa.Owner{
-		Field: "timoni",
-		Group: "timoni.mod",
-	}
-
-	sm, err := newManager(so)
+	sm, err := newManager(owner)
 	if err != nil {
 		return err
 	}
@@ -76,7 +71,7 @@ func rundeleteCmd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	invStorage := &inventory.Storage{Manager: sm, Owner: so}
+	invStorage := &inventory.Storage{Manager: sm, Owner: owner}
 	inv := inventory.NewInventory(deleteArgs.name, *kubeconfigArgs.Namespace)
 	if err := invStorage.GetInventory(ctx, inv); err != nil {
 		return err
