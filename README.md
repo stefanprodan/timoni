@@ -1,29 +1,111 @@
 # timoni
 
-Timoni is a package manager for Kubernetes powered by [CUE](https://github.com/cue-lang/cue)
-and inspired by [Helm](https://github.com/helm/helm).
+[![e2e](https://github.com/stefanprodan/timoni/workflows/e2e/badge.svg)](https://github.com/stefanprodan/timoni/actions)
+[![license](https://img.shields.io/github/license/stefanprodan/timoni.svg)](https://github.com/stefanprodan/timoni/blob/main/LICENSE)
+[![release](https://img.shields.io/github/release/stefanprodan/timoni/all.svg)](https://github.com/stefanprodan/timoni/releases)
 
-Timoni is for people that want to build and distribute applications to Kubernetes
-without having to write a single line of YAML. Authoring Kubernetes configs can be
-a more pleasant experience with CUE than mingling Go templates with YAML.
+[Timoni](https://github.com/stefanprodan/timoni) is a package manager for Kubernetes,
+powered by [CUE](https://cuelang.org/)
+and inspired by [Helm](https://helm.sh/).
+
+The Timoni project strives to improve the UX of authoring Kubernetes configs.
+Instead of mingling Go templates with YAML like Helm,
+or layering YAML on top of each-other like Kustomize,
+Timoni relies on cuelang's type safety, code generation and data validation features
+to offer a better experience of creating, packaging and delivering apps to Kubernetes.
 
 > **Warning**
-> 
-> Note that Timoni is in the experimental phase, the API may change in incompatible ways
-> and you need be familiar with CUE in order to author modules.
+>
+> Note that Timoni in under active development and is still in its infancy.
+> Its APIs and interfaces may change in a backwards incompatilbe manner.
 
-## Timoni vs Helm
+## Concepts
 
-Timoni is akin to Helm's user experience but not to the authoring experience.
+### Timoni Modules
 
-Authoring differences:
+A Timoni module contains a set of CUE definitions and constraints organised
+into a [CUE module](https://cuelang.org/docs/concepts/packages/)
+with an opinionated structure.
+A module accepts a set of values supplied by the user as a .cue file,
+and outputs a set of Kubernetes objects that Timoni deploys on Kubernetes.
 
-- Instead of charts, Timoni works with CUE modules which are distributed as OCI artifacts.
-- Instead of Go templating of Kubernetes YAML, Timoni works with CUE templates and CUE types generated from Kubernetes API Go types.
-- Instead of relying on 3rd-party tool to validate custom resources, Timoni uses the CUE types generated from Kubernetes CRDs.
+Module structure:
+```sh
+├── cue.mod
+│   ├── gen # Kubernetes types
+│   └── module.cue
+├── templates # Kubernetes definitions
+│   ├── config.cue
+│   ├── deployment.cue
+│   └── service.cue
+├── timoni.cue # Timoni entry point
+└── values.cue # Default values
+```
 
-User differences:
+Commands for working with local modules:
 
-- Timoni modules, the equivalent of Helm charts, can only be pushed and pulled to/from a container registry which supports custom OCI media types.
-- Instead of supplying values in YAML format, Timoni expects users to supply values as CUE definitions.
-- Instead of Helm's client-side apply, Timoni uses Kubernetes server-side apply, [Flux](https://fluxcd.io)'s drift detection and health checking.
+- `timoni lint <path/to/module>`
+- `timoni build <name> <path/to/module> -n <namespace>`
+- `timoni apply <name> <path/to/module> -f <path/to/values.cue> --dry-run --diff`
+
+### OCI Artifacts
+
+Timoni modules are distributed as OCI artifacts and can be stored in container registries
+which support custom OCI media types.
+Modules are versioned using strict [semantic versioning](https://semver.org/),
+the version of a module is used as the OCI artifact tag.
+
+Commands for working with remote modules:
+
+- `timoni push <path/to/module> oci://<module-url> -v <semver>`
+- `timoni pull oci://<module-url> -v <semver> -o <path/to/module>`
+
+Timoni produces artifacts compatible with Docker Hub, GitHub Container Registry,
+Azure Container Registry, Amazon Elastic Container Registry, Google Artifact Registry,
+self-hosted Docker Registry and others.
+
+### Timoni instances
+
+A Timoni instance represent the unit of deploy on Kubernetes. A module instance
+can be installed, upgraded and uninstalled from a cluster.
+
+When deploying an application, users can supply their own `values.cue`
+that gets merged with the defaults included in the module:
+
+```cue
+values: {
+	ingress: {
+		enabled:   true
+		className: "nginx"
+		host:      "app.example.com"
+	}
+	autoscaling: enabled: true
+	monitoring: enabled:  true
+}
+```
+
+Commands for working with module instances:
+
+- `timoni install <name> oci://<module-url> -v <semver> -n <namespace>`
+- `timoni upgrade <name> oci://<module-url> -v <semver> -f <path/to/values.cue>`
+- `timoni uninstall <name> -n <namespace>`
+- `timoni list -n <namespace>`
+
+The `install` and `upgrade` commands are aliases of `timoni apply`.
+To apply the Kubernetes resources belonging to a module instance,
+Timoni uses Kubernetes server-side apply and
+[Flux](https://fluxcd.io)'s drift detection.
+The apply command validates all resources with a dry-run apply,
+and reconciles only the ones with changes to the cluster state.
+
+Timoni's garbage collector keeps track of the applied resources
+and prunes the Kubernetes objects that were previously applied
+but are missing from the current revision.
+
+After an install or upgrade operation, Timoni waits for the
+applied resources to be fully reconciled by checking the ready status
+of deployments, services, ingresses, and Kubernetes custom resources.
+
+## Contributing
+
+Timoni is [Apache 2.0 licensed](LICENSE) and accepts contributions via GitHub pull requests.

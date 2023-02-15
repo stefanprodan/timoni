@@ -34,7 +34,7 @@ Module structure:
 ├── templates # Kubernetes definitions
 │   ├── config.cue
 │   ├── deployment.cue
-│   ├── service.cue
+│   └── service.cue
 ├── timoni.cue # Timoni entry point
 └── values.cue # Default values
 ```
