@@ -1,4 +1,4 @@
-module podinfo.mod
+module timoni.sh/podinfo
 
 go 1.19
 

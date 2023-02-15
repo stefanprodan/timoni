@@ -36,7 +36,7 @@ const (
 	defaultPackage    = "main"
 	defaultValuesName = "values"
 	defaultValuesFile = "values.cue"
-	defaultOutputExp  = "output"
+	defaultOutputExp  = "timoni.objects"
 )
 
 // Builder compiles CUE definitions to Kubernetes objects.
@@ -147,7 +147,7 @@ func (b *Builder) Build() (cue.Value, error) {
 func (b *Builder) GetObjects(value cue.Value) ([]*unstructured.Unstructured, error) {
 	expr := value.LookupPath(cue.ParsePath(defaultOutputExp))
 	if expr.Err() != nil {
-		return nil, fmt.Errorf("lookup resouces failed, error: %w", expr.Err())
+		return nil, fmt.Errorf("lookup %s failed, error: %w", defaultOutputExp, expr.Err())
 	}
 
 	switch expr.Kind() {
@@ -158,16 +158,16 @@ func (b *Builder) GetObjects(value cue.Value) ([]*unstructured.Unstructured, err
 		//}
 		items, err := expr.List()
 		if err != nil {
-			return nil, fmt.Errorf("listing resouces failed, error: %w", err)
+			return nil, fmt.Errorf("listing objects failed, error: %w", err)
 		}
 
 		data, err := yaml.EncodeStream(items)
 		if err != nil {
-			return nil, fmt.Errorf("encoding resouces to YAML failed, error: %w", err)
+			return nil, fmt.Errorf("encoding objects to YAML failed, error: %w", err)
 		}
 		return ssa.ReadObjects(bytes.NewReader(data))
 	default:
-		return nil, fmt.Errorf("resouces are not of type cue.ListKind, got %v", value.Kind())
+		return nil, fmt.Errorf("objects are not of type cue.ListKind, got %v", value.Kind())
 	}
 }
 

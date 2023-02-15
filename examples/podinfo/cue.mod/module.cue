@@ -1,1 +1,1 @@
-module: "podinfo.mod"
+module: "timoni.sh/podinfo"
