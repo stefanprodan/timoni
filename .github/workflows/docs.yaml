@@ -1,0 +1,36 @@
+name: docs
+
+on:
+  push:
+    branches: [ 'docs*', 'main' ]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Restore Go cache
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.x
+      - name: Generate cmd docs
+        run: make docs
+      - name: Run mkdocs
+        uses: mhausenblas/mkdocs-deploy-gh-pages@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_DOMAIN: timoni.sh
+          CONFIG_FILE: mkdocs.yml

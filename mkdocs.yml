@@ -1,0 +1,56 @@
+site_name: timoni
+site_description: |
+  Timoni is a package manager for Kubernetes powered by CUE lang.
+site_author: Stefan Prodan
+site_url: https://timoni.sh
+repo_name: stefanprodan/timoni
+repo_url: https://github.com/stefanprodan/timoni
+edit_uri: ""
+
+theme:
+  name: material
+  logo: images/gopher.png
+  favicon: images/gopher.png
+  language: en
+  custom_dir: docs/theme/
+  palette:
+    primary: deep purple
+    accent: indigo
+  features:
+    - navigation.sections
+
+docs_dir: docs
+
+plugins:
+  - search
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - meta
+  - codehilite
+  - pymdownx.tilde
+  - pymdownx.progressbar
+  - pymdownx.tasklist
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Introduction: index.md
+  - Command Reference:
+      - Modules:
+          - Build: cmd/timoni_build.md
+          - Apply: cmd/timoni_apply.md
+          - Delete: cmd/timoni_delete.md
+          - List: cmd/timoni_list.md
+      - Artifacts:
+          - Push: cmd/timoni_push.md
+          - Pull: cmd/timoni_pull.md
+          - Inspect: cmd/timoni_inspect.md
+          - Inspect Values: cmd/timoni_inspect_values.md
+      - Completion:
+          - Bash: cmd/timoni_completion_bash.md
+          - Fish: cmd/timoni_completion_fish.md
+          - Powershell: cmd/timoni_completion_powershell.md
+          - ZSH: cmd/timoni_completion_zsh.md
