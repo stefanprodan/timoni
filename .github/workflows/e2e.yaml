@@ -45,4 +45,6 @@ jobs:
           make test-install
           make test-diff
           make test-upgrade
+          make test-list
+          make test-inspect
           make test-uninstall

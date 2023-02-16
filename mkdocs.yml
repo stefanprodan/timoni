@@ -41,13 +41,14 @@ nav:
   - Command Reference:
       - Modules:
           - Build: cmd/timoni_build.md
+          - Push: cmd/timoni_push.md
+          - Pull: cmd/timoni_pull.md
+          - Lint: cmd/timoni_lint.md
+      - Instances:
           - Apply: cmd/timoni_apply.md
           - Delete: cmd/timoni_delete.md
           - List: cmd/timoni_list.md
-      - Artifacts:
-          - Push: cmd/timoni_push.md
-          - Pull: cmd/timoni_pull.md
-          - Inspect: cmd/timoni_inspect.md
+          - Inspect Resources: cmd/timoni_inspect_resources.md
           - Inspect Values: cmd/timoni_inspect_values.md
       - Completion:
           - Bash: cmd/timoni_completion_bash.md
