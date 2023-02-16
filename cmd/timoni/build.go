@@ -30,7 +30,7 @@ import (
 )
 
 var buildCmd = &cobra.Command{
-	Use:     "build [NAME] [URL]",
+	Use:     "build [INSTANCE NAME] [MODULE URL]",
 	Aliases: []string{"template"},
 	Short:   "Build a module and print the resulting Kubernetes resources",
 	Example: `  # Build a local module with the default values

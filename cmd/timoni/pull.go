@@ -26,7 +26,7 @@ import (
 )
 
 var pullCmd = &cobra.Command{
-	Use:   "pull [URL]",
+	Use:   "pull [MODULE URL]",
 	Short: "Pull a module from a container registry",
 	Long: `The pull command downloads the module from a container registry and
 extract its contents the specified directory.`,

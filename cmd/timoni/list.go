@@ -18,23 +18,23 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 
-	"github.com/stefanprodan/timoni/pkg/inventory"
+	"github.com/stefanprodan/timoni/pkg/runtime"
 )
 
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "Prints a table of module instances",
-	Example: ` # List the module instances installed in a namespace
+	Use:     "list",
+	Aliases: []string{"ls"},
+	Short:   "Prints a table of instances",
+	Example: ` # List all the instances in a namespace
   timoni list --namespace default
 
-  # List the module instances in all namespaces
-  timoni list -A
+  # List all instances on a cluster
+  timoni ls -A
 `,
 	RunE: runListCmd,
 }
@@ -53,12 +53,12 @@ func init() {
 }
 
 func runListCmd(cmd *cobra.Command, args []string) error {
-	sm, err := newManager(owner)
+	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
 	}
 
-	invStorage := &inventory.Storage{Manager: sm, Owner: owner}
+	iStorage := runtime.NewStorageManager(sm)
 
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
@@ -67,26 +67,38 @@ func runListCmd(cmd *cobra.Command, args []string) error {
 	if listArgs.allNamespaces {
 		ns = ""
 	}
-	inventories, err := invStorage.ListInventories(ctx, ns)
+
+	instances, err := iStorage.List(ctx, ns)
 	if err != nil {
 		return err
 	}
 
 	var rows [][]string
-	for _, inv := range inventories {
+	for _, inv := range instances {
 		row := []string{}
 		if listArgs.allNamespaces {
-			row = []string{inv.Name, inv.Namespace, fmt.Sprintf("%v", len(inv.Resources)), inv.Source, inv.Revision, inv.LastAppliedAt}
+			row = []string{
+				inv.Name,
+				inv.Namespace,
+				inv.Module.Repository,
+				inv.Module.Version,
+				inv.LastTransitionTime,
+			}
 		} else {
-			row = []string{inv.Name, fmt.Sprintf("%v", len(inv.Resources)), inv.Source, inv.Revision, inv.LastAppliedAt}
+			row = []string{
+				inv.Name,
+				inv.Module.Repository,
+				inv.Module.Version,
+				inv.LastTransitionTime,
+			}
 		}
 		rows = append(rows, row)
 	}
 
 	if listArgs.allNamespaces {
-		printTable(rootCmd.OutOrStdout(), []string{"name", "namespace", "entries", "source", "version", "last applied"}, rows)
+		printTable(rootCmd.OutOrStdout(), []string{"name", "namespace", "module", "version", "last applied"}, rows)
 	} else {
-		printTable(rootCmd.OutOrStdout(), []string{"name", "entries", "source", "version", "last applied"}, rows)
+		printTable(rootCmd.OutOrStdout(), []string{"name", "module", "version", "last applied"}, rows)
 	}
 
 	return nil

@@ -9,7 +9,7 @@ import (
 
 command: build: {
 	task: print: cli.Print & {
-		text: yaml.MarshalStream(output)
+		text: yaml.MarshalStream(timoni.objects)
 	}
 }
 
@@ -17,7 +17,7 @@ command: ls: {
 	task: print: cli.Print & {
 		text: tabwriter.Write([
 			"RESOURCE \tAPI VERSION",
-			for r in output {
+			for r in timoni.objects {
 				if r.metadata.namespace == _|_ {
 					"\(r.kind)/\(r.metadata.name) \t\(r.apiVersion)"
 				}

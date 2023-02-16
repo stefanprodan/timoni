@@ -24,11 +24,12 @@ import (
 
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
-	"github.com/stefanprodan/timoni/pkg/inventory"
+
+	"github.com/stefanprodan/timoni/pkg/runtime"
 )
 
 var deleteCmd = &cobra.Command{
-	Use:     "delete [NAME]",
+	Use:     "delete [INSTANCE NAME]",
 	Aliases: []string{"uninstall"},
 	Short:   "Uninstall a module from the cluster",
 	Example: `  # Uninstall the app module from the default namespace
@@ -37,7 +38,7 @@ var deleteCmd = &cobra.Command{
   # Do a dry-run uninstall and print the changes
   timoni delete --dry-run app
 `,
-	RunE: rundeleteCmd,
+	RunE: runDeleteCmd,
 }
 
 type deleteFlags struct {
@@ -56,14 +57,14 @@ func init() {
 	rootCmd.AddCommand(deleteCmd)
 }
 
-func rundeleteCmd(cmd *cobra.Command, args []string) error {
+func runDeleteCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("name is required")
 	}
 
 	deleteArgs.name = args[0]
 
-	sm, err := newManager(owner)
+	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
 	}
@@ -71,13 +72,14 @@ func rundeleteCmd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	invStorage := &inventory.Storage{Manager: sm, Owner: owner}
-	inv := inventory.NewInventory(deleteArgs.name, *kubeconfigArgs.Namespace)
-	if err := invStorage.GetInventory(ctx, inv); err != nil {
+	iStorage := runtime.NewStorageManager(sm)
+	inst, err := iStorage.Get(ctx, deleteArgs.name, *kubeconfigArgs.Namespace)
+	if err != nil {
 		return err
 	}
 
-	objects, err := inv.ListObjects()
+	iManager := runtime.InstanceManager{Instance: *inst}
+	objects, err := iManager.ListObjects()
 	if err != nil {
 		return err
 	}
@@ -109,7 +111,7 @@ func rundeleteCmd(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	if err := invStorage.DeleteInventory(ctx, inv); err != nil {
+	if err := iStorage.Delete(ctx, inst.Name, inst.Namespace); err != nil {
 		return err
 	}
 

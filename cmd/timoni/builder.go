@@ -172,24 +172,35 @@ func (b *Builder) GetObjects(value cue.Value) ([]*unstructured.Unstructured, err
 }
 
 // GetDefaultValues extracts the default values from the module.
-func (b *Builder) GetDefaultValues() (cue.Value, error) {
+func (b *Builder) GetDefaultValues() (string, error) {
 	filePath := filepath.Join(b.pkgPath, defaultValuesFile)
 	var value cue.Value
 	vData, err := os.ReadFile(filePath)
 	if err != nil {
-		return value, err
+		return "", err
 	}
 
 	value = b.ctx.CompileBytes(vData)
 	if value.Err() != nil {
-		return value, value.Err()
+		return "", value.Err()
 	}
 
 	expr := value.LookupPath(cue.ParsePath(defaultValuesName))
 	if expr.Err() != nil {
-		return value, fmt.Errorf("lookup values failed, error: %w", expr.Err())
+		return "", fmt.Errorf("lookup values failed, error: %w", expr.Err())
 	}
-	return expr.Eval(), nil
+
+	return fmt.Sprintf("%v", expr.Eval()), nil
+}
+
+// GetValues extracts the values from the build result.
+func (b *Builder) GetValues(value cue.Value) (string, error) {
+	expr := value.LookupPath(cue.ParsePath(defaultValuesName))
+	if expr.Err() != nil {
+		return "", fmt.Errorf("lookup %s failed, error: %w", defaultValuesName, expr.Err())
+	}
+
+	return fmt.Sprintf("%v", expr.Eval()), nil
 }
 
 func (b *Builder) valuesFromFile(filePath string) (map[string]interface{}, error) {

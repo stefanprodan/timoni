@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package inventory contains utilities for keeping a record of Kubernetes objects applied on a cluster.
-package inventory
+// Package runtime manages the reflection of Timoni's instances on Kubernetes clusters.
+package runtime

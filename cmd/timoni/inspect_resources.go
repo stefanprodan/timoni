@@ -20,37 +20,35 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
 	"github.com/stefanprodan/timoni/pkg/runtime"
 )
 
-var inspectValuesCmd = &cobra.Command{
-	Use:   "values [INSTANCE NAME]",
-	Short: "Print the values of an instance",
-	Example: `  # Print the values
-  timoni inspect values app
-
-  # Export the values of an instance to a CUE file
-  timoni -n default inspect values app > values.cue
+var inspectResourcesCmd = &cobra.Command{
+	Use:   "resources [INSTANCE NAME]",
+	Short: "Print the Kubernetes resources managed by an instance",
+	Example: `  # Print the managed resources
+  timoni -n default inspect resources app
 `,
-	RunE: runInspectValuesCmd,
+	RunE: runInspectResourcesCmd,
 }
 
-type inspectValuesFlags struct {
+type inspectResourcesFlags struct {
 	name string
 }
 
-var inspectValuesArgs inspectValuesFlags
+var inspectResourcesArgs inspectResourcesFlags
 
 func init() {
-	inspectCmd.AddCommand(inspectValuesCmd)
+	inspectCmd.AddCommand(inspectResourcesCmd)
 }
 
-func runInspectValuesCmd(cmd *cobra.Command, args []string) error {
+func runInspectResourcesCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("instance name is required")
 	}
-	inspectValuesArgs.name = args[0]
+	inspectResourcesArgs.name = args[0]
 
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
@@ -61,11 +59,21 @@ func runInspectValuesCmd(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	iStorage := runtime.NewStorageManager(sm)
-	inst, err := iStorage.Get(ctx, inspectValuesArgs.name, *kubeconfigArgs.Namespace)
+	inst, err := iStorage.Get(ctx, inspectResourcesArgs.name, *kubeconfigArgs.Namespace)
 	if err != nil {
 		return err
 	}
 
-	cmd.OutOrStdout().Write([]byte("values: " + inst.Values + "\n"))
+	iManager := runtime.InstanceManager{Instance: *inst}
+
+	metas, err := iManager.ListMeta()
+	if err != nil {
+		return err
+	}
+
+	for _, meta := range metas {
+		cmd.OutOrStdout().Write([]byte(fmt.Sprintf("%s\n", ssa.FmtObjMetadata(meta))))
+	}
+
 	return nil
 }

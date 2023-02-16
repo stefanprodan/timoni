@@ -28,22 +28,24 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
-	"github.com/stefanprodan/timoni/pkg/inventory"
 	"sigs.k8s.io/yaml"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/pkg/runtime"
 )
 
 var applyCmd = &cobra.Command{
-	Use:     "apply [NAME] [URL]",
+	Use:     "apply [INSTANCE NAME] [MODULE URL]",
 	Aliases: []string{"install", "upgrade"},
-	Short:   "Install or upgrade a module on the cluster",
-	Example: `  # Install a module and create the namespace if it doesn't exists
+	Short:   "Install or upgrade a module instance on the cluster",
+	Example: `  # Install a module instance and create the namespace if it doesn't exists
   timoni apply -n apps app oci://docker.io/org/module --version 1.0.0
 
   # Do a dry-run apply and print the diff
   timoni apply -n apps --dry-run --diff app ./path/to/module \
   --values ./values-1.cue 
 
-  # Apply a module with custom values by merging them in the specified order
+  # Apply a module instance with custom values by merging them in the specified order
   timoni apply -n apps app ./path/to/module \
   --values ./values-1.cue \
   --values ./values-2.cue
@@ -123,12 +125,17 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to build instance, error: %w", err)
 	}
 
-	objects, err := builder.GetObjects(buildResult)
+	finalValues, err := builder.GetValues(buildResult)
 	if err != nil {
-		return fmt.Errorf("failed to extract resouces, error: %w", err)
+		return fmt.Errorf("failed to extract values, error: %w", err)
 	}
 
-	sm, err := newManager(owner)
+	objects, err := builder.GetObjects(buildResult)
+	if err != nil {
+		return fmt.Errorf("failed to extract objects, error: %w", err)
+	}
+
+	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
 	}
@@ -174,15 +181,15 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	invStorage := &inventory.Storage{Manager: sm, Owner: owner}
-	newInventory := inventory.NewInventory(applyArgs.name, *kubeconfigArgs.Namespace)
-	version := applyArgs.version
-	if version == "" {
-		version = "0.0.0-devel.0"
-	}
+	iStorage := runtime.NewStorageManager(sm)
+	iManager := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, apiv1.ModuleReference{
+		Name:       applyArgs.name,
+		Repository: applyArgs.module,
+		Version:    applyArgs.version,
+		Digest:     applyArgs.version,
+	})
 
-	newInventory.SetSource(applyArgs.module, applyArgs.version, []string{})
-	if err := newInventory.AddObjects(objects); err != nil {
+	if err := iManager.AddObjects(objects); err != nil {
 		return fmt.Errorf("creating inventory failed, error: %w", err)
 	}
 
@@ -194,12 +201,12 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		logger.Println(change.String())
 	}
 
-	staleObjects, err := invStorage.GetInventoryStaleObjects(ctx, newInventory)
+	staleObjects, err := iStorage.GetStaleObjects(ctx, &iManager.Instance)
 	if err != nil {
 		return fmt.Errorf("inventory query failed, error: %w", err)
 	}
 
-	err = invStorage.ApplyInventory(ctx, newInventory, true)
+	err = iStorage.Apply(ctx, &iManager.Instance, true)
 	if err != nil {
 		return fmt.Errorf("inventory apply failed, error: %w", err)
 	}
