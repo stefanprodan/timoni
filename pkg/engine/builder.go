@@ -189,6 +189,33 @@ func (b *Builder) GetDefaultValues() (string, error) {
 	return fmt.Sprintf("%v", expr.Eval()), nil
 }
 
+// GetModuleName returns the module name as defined in 'cue.mod/module.cue'.
+func (b *Builder) GetModuleName() (string, error) {
+	filePath := filepath.Join(b.moduleRoot, "cue.mod", "module.cue")
+	var value cue.Value
+	vData, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
+
+	value = b.ctx.CompileBytes(vData)
+	if value.Err() != nil {
+		return "", value.Err()
+	}
+
+	expr := value.LookupPath(cue.ParsePath("module"))
+	if expr.Err() != nil {
+		return "", fmt.Errorf("lookup module name failed, error: %w", expr.Err())
+	}
+
+	mod, err := expr.String()
+	if expr.Err() != nil {
+		return "", fmt.Errorf("lookup module name failed, error: %w", expr.Err())
+	}
+
+	return mod, nil
+}
+
 // GetValues extracts the values from the build result.
 func (b *Builder) GetValues(value cue.Value) (string, error) {
 	expr := value.LookupPath(cue.ParsePath(defaultValuesName))

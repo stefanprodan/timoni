@@ -19,6 +19,7 @@ package engine
 import (
 	"context"
 	"fmt"
+
 	"io"
 	"os"
 	"path/filepath"
@@ -26,6 +27,9 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	oci "github.com/fluxcd/pkg/oci/client"
+	gcr "github.com/google/go-containerregistry/pkg/name"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 // Fetcher downloads a module and extracts it locally.
@@ -48,45 +52,69 @@ func NewFetcher(ctx context.Context, src, version, dst, creds string) *Fetcher {
 	}
 }
 
+func (f *Fetcher) GetModuleRoot() string {
+	return filepath.Join(f.dst, "module")
+}
+
 // Fetch downloads a remote module locally into tmp.
-func (f *Fetcher) Fetch() (string, error) {
-	modulePath := filepath.Join(f.dst, "module")
+func (f *Fetcher) Fetch() (*apiv1.ModuleReference, error) {
+	modulePath := f.GetModuleRoot()
 
 	if strings.HasPrefix(f.src, "oci://") {
 		if err := os.MkdirAll(modulePath, os.ModePerm); err != nil {
-			return modulePath, err
+			return nil, err
 		}
-		return modulePath, f.fetchOCI(modulePath)
+		return f.fetchOCI(modulePath)
 	}
 
 	if fs, err := os.Stat(f.src); err != nil || !fs.IsDir() {
-		return modulePath, fmt.Errorf("module not found at path %s", f.src)
+		return nil, fmt.Errorf("module not found at path %s", f.src)
 	}
-	return modulePath, copyModule(f.src, modulePath)
+
+	mr := apiv1.ModuleReference{
+		Repository: f.src,
+		Version:    "devel",
+		Digest:     "unknown",
+	}
+
+	return &mr, copyModule(f.src, modulePath)
 }
 
-func (f *Fetcher) fetchOCI(dir string) error {
+func (f *Fetcher) fetchOCI(dir string) (*apiv1.ModuleReference, error) {
 	if _, err := semver.StrictNewVersion(f.version); err != nil {
-		return fmt.Errorf("version is not in semver format, error: %w", err)
+		return nil, fmt.Errorf("version is not in semver format, error: %w", err)
 	}
 
 	ociClient := oci.NewLocalClient()
 
 	if f.creds != "" {
 		if err := ociClient.LoginWithCredentials(f.creds); err != nil {
-			return fmt.Errorf("could not login with credentials: %w", err)
+			return nil, fmt.Errorf("could not login with credentials: %w", err)
 		}
 	}
 
 	url, err := oci.ParseArtifactURL(f.src + ":" + f.version)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if _, err := ociClient.Pull(f.ctx, url, dir); err != nil {
-		return err
+	meta, err := ociClient.Pull(f.ctx, url, dir)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+
+	digest, err := gcr.NewDigest(meta.Digest)
+	if err != nil {
+		return nil, err
+	}
+
+	mr := apiv1.ModuleReference{
+		Repository: f.src,
+		Version:    f.version,
+		Digest:     digest.DigestStr(),
+	}
+
+	return &mr, nil
 }
 
 func copyModuleFile(src, dst string) (err error) {

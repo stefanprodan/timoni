@@ -23,7 +23,7 @@ import (
 	"os"
 
 	oci "github.com/fluxcd/pkg/oci/client"
-	reg "github.com/google/go-containerregistry/pkg/name"
+	gcr "github.com/google/go-containerregistry/pkg/name"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -61,7 +61,7 @@ var pushArgs pushFlags
 
 func init() {
 	pushCmd.Flags().StringVar(&pushArgs.source, "source", "",
-		"the source address, e.g. the Git URL")
+		"the VCS address, e.g. the Git URL")
 	pushCmd.Flags().StringVarP(&pushArgs.version, "version", "v", "",
 		"the version in semver format e.g. '1.0.0'")
 	pushCmd.Flags().StringVar(&pushArgs.creds, "creds", "",
@@ -110,12 +110,12 @@ func pushCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("pushing artifact failed: %w", err)
 	}
 
-	digest, err := reg.NewDigest(digestURL)
+	digest, err := gcr.NewDigest(digestURL)
 	if err != nil {
 		return fmt.Errorf("artifact digest parsing failed: %w", err)
 	}
 
-	tag, err := reg.NewTag(url)
+	tag, err := gcr.NewTag(url)
 	if err != nil {
 		return fmt.Errorf("artifact tag parsing failed: %w", err)
 	}
@@ -139,15 +139,15 @@ func pushCmdRun(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("artifact digest JSON conversion failed: %w", err)
 		}
 		marshalled = append(marshalled, "\n"...)
-		rootCmd.Print(string(marshalled))
+		cmd.OutOrStdout().Write(marshalled)
 	case "yaml":
 		marshalled, err := yaml.Marshal(&info)
 		if err != nil {
 			return fmt.Errorf("artifact digest YAML conversion failed: %w", err)
 		}
-		rootCmd.Print(string(marshalled))
+		cmd.OutOrStdout().Write(marshalled)
 	default:
-		rootCmd.Print(digestURL)
+		cmd.OutOrStdout().Write([]byte(digestURL + "\n"))
 	}
 
 	return nil

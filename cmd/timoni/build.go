@@ -93,12 +93,23 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	fetcher := engine.NewFetcher(ctxPull, buildArgs.module, buildArgs.version, tmpDir, buildArgs.creds)
-	modulePath, err := fetcher.Fetch()
+	mod, err := fetcher.Fetch()
 	if err != nil {
 		return err
 	}
 
-	builder := engine.NewBuilder(ctx, buildArgs.name, *kubeconfigArgs.Namespace, modulePath, buildArgs.pkg)
+	builder := engine.NewBuilder(
+		ctx,
+		buildArgs.name,
+		*kubeconfigArgs.Namespace,
+		fetcher.GetModuleRoot(),
+		buildArgs.pkg,
+	)
+
+	mod.Name, err = builder.GetModuleName()
+	if err != nil {
+		return err
+	}
 
 	if len(buildArgs.valuesFiles) > 0 {
 		err = builder.MergeValuesFile(buildArgs.valuesFiles)

@@ -30,7 +30,6 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/pkg/engine"
 	"github.com/stefanprodan/timoni/pkg/runtime"
 )
@@ -106,13 +105,24 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	fetcher := engine.NewFetcher(ctxPull, applyArgs.module, applyArgs.version, tmpDir, applyArgs.creds)
-	modulePath, err := fetcher.Fetch()
+	mod, err := fetcher.Fetch()
 	if err != nil {
 		return err
 	}
 
 	cuectx := cuecontext.New()
-	builder := engine.NewBuilder(cuectx, applyArgs.name, *kubeconfigArgs.Namespace, modulePath, applyArgs.pkg)
+	builder := engine.NewBuilder(
+		cuectx,
+		applyArgs.name,
+		*kubeconfigArgs.Namespace,
+		fetcher.GetModuleRoot(),
+		applyArgs.pkg,
+	)
+
+	mod.Name, err = builder.GetModuleName()
+	if err != nil {
+		return err
+	}
 
 	if len(applyArgs.valuesFiles) > 0 {
 		err = builder.MergeValuesFile(applyArgs.valuesFiles)
@@ -183,12 +193,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	iStorage := runtime.NewStorageManager(sm)
-	iManager := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, apiv1.ModuleReference{
-		Name:       applyArgs.name,
-		Repository: applyArgs.module,
-		Version:    applyArgs.version,
-		Digest:     applyArgs.version,
-	})
+	iManager := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, *mod)
 
 	if err := iManager.AddObjects(objects); err != nil {
 		return fmt.Errorf("creating inventory failed, error: %w", err)
