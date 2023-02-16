@@ -27,6 +27,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
+
+	"github.com/stefanprodan/timoni/pkg/engine"
 )
 
 var buildCmd = &cobra.Command{
@@ -90,13 +92,13 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	fetcher := NewFetcher(ctxPull, buildArgs.module, buildArgs.version, tmpDir, buildArgs.creds)
+	fetcher := engine.NewFetcher(ctxPull, buildArgs.module, buildArgs.version, tmpDir, buildArgs.creds)
 	modulePath, err := fetcher.Fetch()
 	if err != nil {
 		return err
 	}
 
-	builder := NewBuilder(ctx, buildArgs.name, *kubeconfigArgs.Namespace, modulePath, buildArgs.pkg)
+	builder := engine.NewBuilder(ctx, buildArgs.name, *kubeconfigArgs.Namespace, modulePath, buildArgs.pkg)
 
 	if len(buildArgs.valuesFiles) > 0 {
 		err = builder.MergeValuesFile(buildArgs.valuesFiles)

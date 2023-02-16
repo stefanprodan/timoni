@@ -14,17 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package engine
 
 import (
 	"context"
 	"fmt"
-	"github.com/Masterminds/semver/v3"
-	oci "github.com/fluxcd/pkg/oci/client"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Masterminds/semver/v3"
+	oci "github.com/fluxcd/pkg/oci/client"
 )
 
 // Fetcher downloads a module and extracts it locally.
@@ -47,6 +48,7 @@ func NewFetcher(ctx context.Context, src, version, dst, creds string) *Fetcher {
 	}
 }
 
+// Fetch downloads a remote module locally into tmp.
 func (f *Fetcher) Fetch() (string, error) {
 	modulePath := filepath.Join(f.dst, "module")
 
@@ -58,7 +60,7 @@ func (f *Fetcher) Fetch() (string, error) {
 	}
 
 	if fs, err := os.Stat(f.src); err != nil || !fs.IsDir() {
-		return modulePath, fmt.Errorf("module not found at path %s", pullArgs.output)
+		return modulePath, fmt.Errorf("module not found at path %s", f.src)
 	}
 	return modulePath, copyModule(f.src, modulePath)
 }

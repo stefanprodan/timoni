@@ -28,8 +28,8 @@ import (
 )
 
 var lintCmd = &cobra.Command{
-	Use:   "lint [PATH]",
-	Short: "Format and validate a local module ",
+	Use:   "lint [MODULE PATH]",
+	Short: "Format and validate a local module",
 	Long: `The list command formats the module's files with 'cue fmt' and
 validates the cue definitions with 'cue vet -c'.
 This command requires that the cue CLI binary is present in PATH.`,

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package engine
 
 import (
 	"bytes"
@@ -143,7 +143,7 @@ func (b *Builder) Build() (cue.Value, error) {
 	return v, nil
 }
 
-// GetObjects coverts the CUE value to Kubernetes unstructured objects
+// GetObjects coverts the CUE value to Kubernetes unstructured objects.
 func (b *Builder) GetObjects(value cue.Value) ([]*unstructured.Unstructured, error) {
 	expr := value.LookupPath(cue.ParsePath(defaultOutputExp))
 	if expr.Err() != nil {
@@ -152,10 +152,6 @@ func (b *Builder) GetObjects(value cue.Value) ([]*unstructured.Unstructured, err
 
 	switch expr.Kind() {
 	case cue.ListKind:
-		//data, err := expr.MarshalJSON()
-		//if err != nil {
-		//	return nil, err
-		//}
 		items, err := expr.List()
 		if err != nil {
 			return nil, fmt.Errorf("listing objects failed, error: %w", err)
@@ -187,7 +183,7 @@ func (b *Builder) GetDefaultValues() (string, error) {
 
 	expr := value.LookupPath(cue.ParsePath(defaultValuesName))
 	if expr.Err() != nil {
-		return "", fmt.Errorf("lookup values failed, error: %w", expr.Err())
+		return "", fmt.Errorf("lookup %s failed, error: %w", defaultValuesName, expr.Err())
 	}
 
 	return fmt.Sprintf("%v", expr.Eval()), nil

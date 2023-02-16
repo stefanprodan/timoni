@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/pkg/engine"
 	"github.com/stefanprodan/timoni/pkg/runtime"
 )
 
@@ -104,14 +105,14 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	fetcher := NewFetcher(ctxPull, applyArgs.module, applyArgs.version, tmpDir, applyArgs.creds)
+	fetcher := engine.NewFetcher(ctxPull, applyArgs.module, applyArgs.version, tmpDir, applyArgs.creds)
 	modulePath, err := fetcher.Fetch()
 	if err != nil {
 		return err
 	}
 
 	cuectx := cuecontext.New()
-	builder := NewBuilder(cuectx, applyArgs.name, *kubeconfigArgs.Namespace, modulePath, applyArgs.pkg)
+	builder := engine.NewBuilder(cuectx, applyArgs.name, *kubeconfigArgs.Namespace, modulePath, applyArgs.pkg)
 
 	if len(applyArgs.valuesFiles) > 0 {
 		err = builder.MergeValuesFile(applyArgs.valuesFiles)
