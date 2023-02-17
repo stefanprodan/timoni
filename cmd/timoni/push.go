@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
 	oci "github.com/fluxcd/pkg/oci/client"
 	gcr "github.com/google/go-containerregistry/pkg/name"
@@ -29,7 +31,7 @@ import (
 )
 
 var pushCmd = &cobra.Command{
-	Use:   "push [PATH] [MODULE URL]",
+	Use:   "push [MODULE PATH] [MODULE URL]",
 	Short: "Push a module to a container registry",
 	Long: `The push command packages the module as an OCI artifact and pushes it to the
 container registry using the version as the image tag.`,
@@ -61,7 +63,7 @@ var pushArgs pushFlags
 
 func init() {
 	pushCmd.Flags().StringVar(&pushArgs.source, "source", "",
-		"The VCS address, e.g. the Git URL")
+		"The VCS address of the module. When left empty, the Git CLI is used to get the remote origin URL.")
 	pushCmd.Flags().StringVarP(&pushArgs.version, "version", "v", "",
 		"The version of the module in strict semver format e.g. '1.0.0'")
 	pushCmd.Flags().StringVar(&pushArgs.creds, "creds", "",
@@ -88,16 +90,23 @@ func pushCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module not found at path %s", pushArgs.module)
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	if pushArgs.source == "" {
+		gitCmd := exec.CommandContext(ctx, "git", "config", "--get", "remote.origin.url")
+		gitCmd.Dir = pushArgs.module
+		if repo, err := gitCmd.Output(); err == nil && len(repo) > 1 {
+			pushArgs.source = strings.TrimSuffix(string(repo), "\n")
+		}
+	}
+
+	ociClient := oci.NewClient(nil)
 	path := pushArgs.module
 	meta := oci.Metadata{
 		Source:   pushArgs.source,
 		Revision: pushArgs.version,
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
-
-	ociClient := oci.NewLocalClient()
 
 	if pushArgs.creds != "" {
 		if err := ociClient.LoginWithCredentials(pushArgs.creds); err != nil {

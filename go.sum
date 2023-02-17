@@ -179,8 +179,8 @@ github.com/felixge/httpsnoop v1.0.3/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSw
 github.com/flowstack/go-jsonschema v0.1.1/go.mod h1:yL7fNggx1o8rm9RlgXv7hTBWxdBM0rVwpMwimd3F3N0=
 github.com/fluxcd/go-git/v5 v5.0.0-20221219190809-2e5c9d01cfc4 h1:Gm5sGGk+/Wq6RhX4xpCZ2IqjDp5XkjlhENaAuAlpdKc=
 github.com/fluxcd/go-git/v5 v5.0.0-20221219190809-2e5c9d01cfc4/go.mod h1:raWgfUV7lDQVXp4QXUaeNNJkRVKz97UQuF+0kdY7Vmo=
-github.com/fluxcd/pkg/oci v0.19.1 h1:18wiQDhp7OIx3+adezYX5nFTUb19tBe1r2E98ADBvwM=
-github.com/fluxcd/pkg/oci v0.19.1/go.mod h1:R0uT66o2ZSiwGSrXBpakVhheG4Y+Xz68A6QoMFh7JU4=
+github.com/fluxcd/pkg/oci v0.19.2-0.20230217220120-2ebfeb6d4c95 h1:EvyTi5sAuTz1MlnnluWLog+l+iJtfzxgp4DkukawltU=
+github.com/fluxcd/pkg/oci v0.19.2-0.20230217220120-2ebfeb6d4c95/go.mod h1:R0uT66o2ZSiwGSrXBpakVhheG4Y+Xz68A6QoMFh7JU4=
 github.com/fluxcd/pkg/runtime v0.29.0 h1:/BDitj/y5shWqczECCiZFsEm9FH7do4VBgMHBiRiol0=
 github.com/fluxcd/pkg/runtime v0.29.0/go.mod h1:NrBONYHO5Piuzm6Y7QTS3cJRlgkgsDPn2EKB6gJ4BQw=
 github.com/fluxcd/pkg/sourceignore v0.3.1 h1:Whub3VgltuCqzddTEZUdfq63VV/7bfOUOdigbLs5gHI=

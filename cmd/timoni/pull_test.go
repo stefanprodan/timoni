@@ -27,23 +27,24 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func Test_Push_Pull(t *testing.T) {
-	modPath := "testdata/cs"
-
+func Test_Pull(t *testing.T) {
 	g := NewWithT(t)
+	modPath := "testdata/cs"
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
 	modVer := "1.0.0"
-	output, err := executeCommand(fmt.Sprintf(
+
+	// Package the module as an OCI artifact and push it to registry
+	_, err := executeCommand(fmt.Sprintf(
 		"push %s oci://%s -v %s",
 		modPath,
 		modURL,
 		modVer,
 	))
 	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(output).To(ContainSubstring(modURL))
 
+	// Pull the OCI artifact from registry and extract the module to tmp
 	tmpDir := t.TempDir()
-	output, err = executeCommand(fmt.Sprintf(
+	_, err = executeCommand(fmt.Sprintf(
 		"pull oci://%s -v %s -o %s",
 		modURL,
 		modVer,
@@ -51,7 +52,7 @@ func Test_Push_Pull(t *testing.T) {
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 
-	// walk the original module and check that all files exist in the pulled module
+	// Walk the original module and check that all files exist in the pulled module
 	fsErr := filepath.Walk(modPath, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
 			tmpPath := filepath.Join(tmpDir, strings.TrimPrefix(path, modPath))

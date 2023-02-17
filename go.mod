@@ -6,7 +6,7 @@ require (
 	cuelang.org/go v0.4.3
 	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/distribution/distribution/v3 v3.0.0-20230214150026-36d8c594d7aa
-	github.com/fluxcd/pkg/oci v0.19.1
+	github.com/fluxcd/pkg/oci v0.19.2-0.20230217220120-2ebfeb6d4c95
 	github.com/fluxcd/pkg/runtime v0.29.0
 	github.com/fluxcd/pkg/ssa v0.23.1
 	github.com/google/go-containerregistry v0.13.0

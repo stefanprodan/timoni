@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"github.com/fluxcd/pkg/oci"
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"os"
 	"time"
 
@@ -60,6 +62,10 @@ func init() {
 
 	rootCmd.DisableAutoGenTag = true
 	rootCmd.SetOut(os.Stdout)
+
+	oci.UserAgent = apiv1.UserAgent
+	oci.ConfigMediaType = apiv1.ConfigMediaType
+	oci.ContentMediaType = apiv1.ContentMediaType
 }
 
 func main() {
