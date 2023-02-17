@@ -61,13 +61,13 @@ var pushArgs pushFlags
 
 func init() {
 	pushCmd.Flags().StringVar(&pushArgs.source, "source", "",
-		"the VCS address, e.g. the Git URL")
+		"The VCS address, e.g. the Git URL")
 	pushCmd.Flags().StringVarP(&pushArgs.version, "version", "v", "",
-		"the version in semver format e.g. '1.0.0'")
+		"The version of the module in strict semver format e.g. '1.0.0'")
 	pushCmd.Flags().StringVar(&pushArgs.creds, "creds", "",
-		"credentials for the container registry in the format <username>[:<password>]")
+		"The credentials for the container registry in the format <username>[:<password>]")
 	pushCmd.Flags().StringVarP(&pushArgs.output, "output", "o", "",
-		"the format in which the artifact digest should be printed, can be 'json' or 'yaml'")
+		"The format in which the artifact digest should be printed, can be 'json' or 'yaml'")
 
 	rootCmd.AddCommand(pushCmd)
 }

@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/pkg/engine"
 )
 
@@ -60,15 +61,15 @@ var buildArgs buildFlags
 
 func init() {
 	buildCmd.Flags().StringVarP(&buildArgs.version, "version", "v", "",
-		"version of the module.")
+		"The version of the module.")
 	buildCmd.Flags().StringVarP(&buildArgs.pkg, "package", "p", "main",
-		"The name of the package containing the instance values and resources.")
+		"The name of the package containing the instance values and Kubernetes objects.")
 	buildCmd.Flags().StringSliceVarP(&buildArgs.valuesFiles, "values", "f", nil,
-		"local path to values.cue files")
+		"The local path to values.cue files")
 	buildCmd.Flags().StringVarP(&buildArgs.output, "output", "o", "yaml",
-		"the format in which the Kubernetes resources should be printed, can be 'json' or 'yaml'")
+		"The format in which the Kubernetes objects should be printed, can be 'json' or 'yaml'")
 	buildCmd.Flags().StringVar(&buildArgs.creds, "creds", "",
-		"credentials for the container registry in the format <username>[:<password>]")
+		"The credentials for the container registry in the format <username>[:<password>]")
 
 	rootCmd.AddCommand(buildCmd)
 }
@@ -83,7 +84,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 
 	ctx := cuecontext.New()
 
-	tmpDir, err := os.MkdirTemp("", "timoni")
+	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
 		return err
 	}
@@ -120,12 +121,12 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return fmt.Errorf("failed to build instance, error: %w", err)
+		return fmt.Errorf("build failed, error: %w", err)
 	}
 
 	objects, err := builder.GetObjects(buildResult)
 	if err != nil {
-		return fmt.Errorf("failed to extract Kubernetes objects, error: %w", err)
+		return fmt.Errorf("extracting Kubernetes objects failed, error: %w", err)
 	}
 	switch buildArgs.output {
 	case "yaml":
@@ -133,7 +134,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		for _, obj := range objects {
 			data, err := yaml.Marshal(obj)
 			if err != nil {
-				return fmt.Errorf("failed to convert resouces, error: %w", err)
+				return fmt.Errorf("converting objects failed, error: %w", err)
 			}
 			sb.Write(data)
 			sb.WriteString("---\n")
@@ -152,7 +153,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 
 		b, err := json.MarshalIndent(list, "", "    ")
 		if err != nil {
-			return fmt.Errorf("failed to convert resouces, error: %w", err)
+			return fmt.Errorf("converting objects failed, error: %w", err)
 		}
 		_, err = cmd.OutOrStdout().Write(b)
 	default:

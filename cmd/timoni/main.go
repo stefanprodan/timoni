@@ -27,10 +27,8 @@ import (
 
 var VERSION = "0.0.0-dev.0"
 
-const PROJECT = "timoni"
-
 var rootCmd = &cobra.Command{
-	Use:           PROJECT,
+	Use:           "timoni",
 	Version:       VERSION,
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -58,7 +56,7 @@ func init() {
 
 	defaultNamespace := "default"
 	kubeconfigArgs.Namespace = &defaultNamespace
-	rootCmd.PersistentFlags().StringVarP(kubeconfigArgs.Namespace, "namespace", "n", *kubeconfigArgs.Namespace, "The inventory namespace.")
+	rootCmd.PersistentFlags().StringVarP(kubeconfigArgs.Namespace, "namespace", "n", *kubeconfigArgs.Namespace, "The instance namespace.")
 
 	rootCmd.DisableAutoGenTag = true
 	rootCmd.SetOut(os.Stdout)

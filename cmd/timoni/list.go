@@ -47,7 +47,7 @@ var listArgs listFlags
 
 func init() {
 	listCmd.Flags().BoolVarP(&listArgs.allNamespaces, "all-namespaces", "A", false,
-		"list the requested object(s) across all namespaces.")
+		"List the requested object(s) across all namespaces.")
 
 	rootCmd.AddCommand(listCmd)
 }

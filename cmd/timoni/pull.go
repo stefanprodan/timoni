@@ -48,11 +48,11 @@ var pullArgs pullFlags
 
 func init() {
 	pullCmd.Flags().StringVarP(&pullArgs.version, "version", "v", "",
-		"version of the module.")
+		"The version of the module in strict semver format e.g. '1.0.0'")
 	pullCmd.Flags().StringVarP(&pullArgs.output, "output", "o", "",
-		"path where the module content should be extracted.")
+		"The directory path where the module content should be extracted")
 	pullCmd.Flags().StringVar(&pullArgs.creds, "creds", "",
-		"credentials for the container registry in the format <username>[:<password>]")
+		"The credentials for the container registry in the format <username>[:<password>]")
 	rootCmd.AddCommand(pullCmd)
 }
 

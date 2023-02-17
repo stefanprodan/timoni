@@ -55,8 +55,8 @@ func runLintCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	lintArgs.module = args[0]
-	if _, err := os.Stat(lintArgs.module); err != nil {
-		return fmt.Errorf("package not found at path %s", lintArgs.module)
+	if fs, err := os.Stat(lintArgs.module); err != nil || !fs.IsDir() {
+		return fmt.Errorf("module not found at path %s", lintArgs.module)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)

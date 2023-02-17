@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/pkg/engine"
 	"github.com/stefanprodan/timoni/pkg/runtime"
 )
@@ -69,19 +70,19 @@ var applyArgs applyFlags
 
 func init() {
 	applyCmd.Flags().StringVarP(&applyArgs.version, "version", "v", "",
-		"version of the module.")
+		"The version of the module.")
 	applyCmd.Flags().StringVarP(&applyArgs.pkg, "package", "p", "main",
-		"The name of the package containing the instance values and resources.")
+		"The name of the package containing the instance values and Kubernetes objects")
 	applyCmd.Flags().StringSliceVarP(&applyArgs.valuesFiles, "values", "f", nil,
-		"local path to values.cue files")
+		"The local path to values.cue files")
 	applyCmd.Flags().BoolVar(&applyArgs.dryrun, "dry-run", false,
-		"performs a server-side apply dry run")
+		"Perform a server-side apply dry run")
 	applyCmd.Flags().BoolVar(&applyArgs.diff, "diff", false,
-		"performs a server-side apply dry run and prints the diff")
+		"Perform a server-side apply dry run and prints the diff")
 	applyCmd.Flags().BoolVar(&applyArgs.wait, "wait", true,
-		"wait for the applied Kubernetes objects to become ready")
+		"Wait for the applied Kubernetes objects to become ready")
 	applyCmd.Flags().StringVar(&applyArgs.creds, "creds", "",
-		"credentials for the container registry in the format <username>[:<password>]")
+		"The credentials for the container registry in the format <username>[:<password>]")
 	rootCmd.AddCommand(applyCmd)
 }
 
@@ -95,7 +96,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	logger.Println("building", applyArgs.module)
 
-	tmpDir, err := os.MkdirTemp("", "timoni")
+	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
 		return err
 	}
@@ -156,7 +157,14 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	if applyArgs.dryrun {
+	iExists := false
+	iName := fmt.Sprintf("%s/%s", applyArgs.name, *kubeconfigArgs.Namespace)
+	iStorage := runtime.NewStorageManager(sm)
+	if _, err := iStorage.Get(ctx, applyArgs.name, *kubeconfigArgs.Namespace); err == nil {
+		iExists = true
+	}
+
+	if applyArgs.dryrun || applyArgs.diff {
 		diffOpts := ssa.DefaultDiffOptions()
 		sort.Sort(ssa.SortableUnstructureds(objects))
 		for _, r := range objects {
@@ -192,11 +200,19 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	iStorage := runtime.NewStorageManager(sm)
 	iManager := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, *mod)
 
 	if err := iManager.AddObjects(objects); err != nil {
-		return fmt.Errorf("creating inventory failed, error: %w", err)
+		return fmt.Errorf("adding objects to instance failed, error: %w", err)
+	}
+
+	if !iExists {
+		logger.Println("installing", iName)
+		if err := iStorage.Apply(ctx, &iManager.Instance, true); err != nil {
+			return fmt.Errorf("instance init failed, error: %w", err)
+		}
+	} else {
+		logger.Println("upgrading", iName)
 	}
 
 	cs, err := sm.ApplyAllStaged(ctx, objects, ssa.DefaultApplyOptions())
@@ -209,18 +225,17 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	staleObjects, err := iStorage.GetStaleObjects(ctx, &iManager.Instance)
 	if err != nil {
-		return fmt.Errorf("inventory query failed, error: %w", err)
+		return fmt.Errorf("getting stale objects failed, error: %w", err)
 	}
 
-	err = iStorage.Apply(ctx, &iManager.Instance, true)
-	if err != nil {
-		return fmt.Errorf("inventory apply failed, error: %w", err)
+	if err := iStorage.Apply(ctx, &iManager.Instance, true); err != nil {
+		return fmt.Errorf("storing instance failed, error: %w", err)
 	}
 
 	if len(staleObjects) > 0 {
 		changeSet, err := sm.DeleteAll(ctx, staleObjects, ssa.DefaultDeleteOptions())
 		if err != nil {
-			return fmt.Errorf("prune failed, error: %w", err)
+			return fmt.Errorf("prunning objects failed, error: %w", err)
 		}
 		for _, change := range changeSet.Entries {
 			logger.Println(change.String())
@@ -242,7 +257,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		logger.Println("all resources are ready")
+		logger.Println("instance resources are ready")
 	}
 
 	return nil

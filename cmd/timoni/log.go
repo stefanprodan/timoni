@@ -25,6 +25,10 @@ type stderrLogger struct {
 	stderr io.Writer
 }
 
-func (l stderrLogger) Println(a ...interface{}) {
+func (l stderrLogger) Println(a ...any) {
 	fmt.Fprintln(l.stderr, a...)
+}
+
+func (l stderrLogger) Printf(format string, a ...any) {
+	fmt.Fprintln(l.stderr, fmt.Sprintf(format, a...))
 }
