@@ -1,0 +1,3 @@
+values: {
+	server: enabled: false
+}

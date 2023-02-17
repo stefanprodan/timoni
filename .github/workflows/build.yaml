@@ -30,8 +30,10 @@ jobs:
         uses: cue-lang/setup-cue@main
         with:
           version: latest
+      - name: Run tests
+        run: make test
       - name: Run build
-        run: make all
+        run: make build
       - name: Run linter
         run: make test-lint
       - name: Check if working tree is dirty
