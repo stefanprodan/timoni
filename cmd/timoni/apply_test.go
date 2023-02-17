@@ -125,4 +125,26 @@ func TestApply(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	})
+
+	t.Run("uninstalls instance", func(t *testing.T) {
+		g := NewWithT(t)
+		output, err := executeCommand(fmt.Sprintf(
+			"delete -n %s %s --wait",
+			namespace,
+			name,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		serverCM := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-server", name),
+				Namespace: namespace,
+			},
+		}
+
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(serverCM), serverCM)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+	})
 }
