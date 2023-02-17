@@ -5,7 +5,7 @@ package templates
 	apiVersion: "v1"
 	kind:       "ConfigMap"
 	metadata: {
-		name:      "\(_config.metadata.name)-client"
+		name:      "\(_config.metadata.name)-server"
 		namespace: _config.metadata.namespace
 		labels:    _config.metadata.labels
 		if _config.metadata.annotations != _|_ {

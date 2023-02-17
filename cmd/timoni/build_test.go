@@ -1,3 +1,19 @@
+/*
+Copyright 2023 Stefan Prodan
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
@@ -23,10 +39,10 @@ func TestBuild(t *testing.T) {
 			name,
 			modPath,
 		))
-		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 
 		objects, err := ssa.ReadObjects(strings.NewReader(output))
-		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 
 		g.Expect(output).To(ContainSubstring("tcp://example.internal"))
 
@@ -47,12 +63,12 @@ func TestBuild(t *testing.T) {
 			name,
 			modPath,
 		))
-		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 
 		g.Expect(output).To(ContainSubstring("\"kind\": \"List\""))
 
 		objects, err := ssa.ReadObjects(strings.NewReader(output))
-		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(len(objects)).To(BeEquivalentTo(2))
 	})
 
@@ -67,12 +83,12 @@ func TestBuild(t *testing.T) {
 			modPath,
 			modPath+"-values/example.com.cue",
 		))
-		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 
 		g.Expect(output).To(ContainSubstring("tcp://example.com"))
 
 		objects, err := ssa.ReadObjects(strings.NewReader(output))
-		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 
 		g.Expect(len(objects)).To(BeEquivalentTo(2))
 		for _, o := range objects {
@@ -93,17 +109,17 @@ func TestBuild(t *testing.T) {
 			modPath+"-values/example.io.cue",
 			modPath+"-values/client-only.cue",
 		))
-		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 
 		objects, err := ssa.ReadObjects(strings.NewReader(output))
-		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 
 		g.Expect(len(objects)).To(BeEquivalentTo(1))
 		g.Expect(objects[0].GetName()).To(BeEquivalentTo(name + "-client"))
 		g.Expect(objects[0].GetAnnotations()).To(HaveKeyWithValue("scope", "external"))
 
 		val, _, err := unstructured.NestedString(objects[0].Object, "data", "server")
-		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(val).To(BeEquivalentTo("tcp://example.io:9090"))
 	})
 

@@ -10,36 +10,48 @@ BIN_DIR := $(REPOSITORY_ROOT)/bin
 # API gen tool
 CONTROLLER_GEN_VERSION ?= v0.11.1
 
+# Kubernetes env test
+ENVTEST_ARCH?=amd64
+ENVTEST_KUBERNETES_VERSION?=1.26
+
 all: test build
 
-build:
+build: ## Build the CLI binary.
 	CGO_ENABLED=0 go build -o ./bin/timoni ./cmd/timoni
 
 .PHONY: test
-test: tidy generate fmt vet
-	go test ./... -coverprofile cover.out
+test: tidy generate fmt vet install-envtest ## Run the Go tests.
+	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./... -coverprofile cover.out
 
-tidy:
+tidy: ## Tidy Go modules.
 	rm -f go.sum; go mod tidy -compat=1.19
 
-fmt:
+fmt: ## Format Go code.
 	go fmt ./...
 
-vet:
+vet: ## Vet Go code.
 	go vet ./...
 
 .PHONY: install
-install:
+install: ## Build and install the CLI binary.
 	go install ./cmd/timoni
 
-
-generate: controller-gen  ## Generate API code
+generate: controller-gen ## Generate API code.
 	cd api; $(CONTROLLER_GEN) object:headerFile="license.go.txt" paths="./..."
 
-CONTROLLER_GEN = $(BIN_DIR)/controller-gen
+CONTROLLER_GEN=$(BIN_DIR)/controller-gen
 .PHONY: controller-gen
-controller-gen: ## Download controller-gen locally if necessary.
+controller-gen:
 	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION))
+
+KUBEBUILDER_ASSETS?="$(shell $(ENVTEST) --arch=$(ENVTEST_ARCH) use -i $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(BIN_DIR) -p path)"
+install-envtest: setup-envtest ## Install controller-runtime envtest.
+	$(ENVTEST) use $(ENVTEST_KUBERNETES_VERSION) --arch=$(ENVTEST_ARCH) --bin-dir=$(BIN_DIR)
+
+ENVTEST=$(BIN_DIR)/setup-envtest
+.PHONY: envtest
+setup-envtest:
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 
 TESTMOD=podinfo ./examples/podinfo
 TESTINST=podinfo

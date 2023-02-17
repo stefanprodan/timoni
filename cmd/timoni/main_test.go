@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -18,7 +19,10 @@ import (
 	"github.com/mattn/go-shellwords"
 	"github.com/phayes/freeport"
 	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
 func init() {
@@ -26,7 +30,8 @@ func init() {
 }
 
 var (
-	dockerReg string
+	envTestClient  client.Client
+	dockerRegistry string
 )
 
 func TestMain(m *testing.M) {
@@ -36,7 +41,44 @@ func TestMain(m *testing.M) {
 		panic(fmt.Sprintf("failed to start docker registry: %s", err))
 	}
 
+	testEnv := &envtest.Environment{}
+	if _, err := testEnv.Start(); err != nil {
+		panic(err)
+	}
+
+	user, err := testEnv.ControlPlane.AddUser(envtest.User{
+		Name:   "envtest-admin",
+		Groups: []string{"system:masters"},
+	}, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	kubeConfig, err := user.KubeConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	tmpDir, err := os.MkdirTemp("", "timoni")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	tmpFilename := filepath.Join(tmpDir, rnd("kubeconfig", 5))
+	if err := os.WriteFile(tmpFilename, kubeConfig, 0644); err != nil {
+		panic(err)
+	}
+
+	envTestClient, err = client.New(testEnv.Config, client.Options{Scheme: scheme.Scheme})
+	if err != nil {
+		panic(fmt.Sprintf("failed to create k8s client: %v", err))
+	}
+
+	kubeconfigArgs.KubeConfig = &tmpFilename
+
 	code := m.Run()
+	testEnv.Stop()
 	os.Exit(code)
 }
 
@@ -96,7 +138,7 @@ func setupRegistryServer(ctx context.Context) error {
 		return fmt.Errorf("failed to get free port: %s", err)
 	}
 
-	dockerReg = fmt.Sprintf("localhost:%d", port)
+	dockerRegistry = fmt.Sprintf("localhost:%d", port)
 	config.HTTP.Addr = fmt.Sprintf("127.0.0.1:%d", port)
 	config.HTTP.DrainTimeout = time.Duration(10) * time.Second
 	config.Storage = map[string]configuration.Parameters{"inmemory": map[string]interface{}{}}
