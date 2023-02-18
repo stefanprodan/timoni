@@ -7,13 +7,13 @@ import (
 type Package string
 
 func (f *Package) String() string {
+	if f == nil || string(*f) == "" {
+		return f.Default()
+	}
 	return string(*f)
 }
 
 func (f *Package) Set(str string) error {
-	if str == "" {
-		str = f.Default()
-	}
 	*f = Package(str)
 	return nil
 }
