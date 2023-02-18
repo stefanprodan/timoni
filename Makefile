@@ -16,8 +16,9 @@ ENVTEST_KUBERNETES_VERSION?=1.26
 
 all: test build
 
+DEV_VERSION?=0.0.0-$(shell git rev-parse --short HEAD).$(shell date +%s)
 build: ## Build the CLI binary.
-	CGO_ENABLED=0 go build -o ./bin/timoni ./cmd/timoni
+	CGO_ENABLED=0 go build -ldflags="-s -w -X main.VERSION=$(DEV_VERSION)" -o ./bin/timoni ./cmd/timoni
 
 .PHONY: test
 test: tidy generate fmt vet install-envtest ## Run the Go tests.

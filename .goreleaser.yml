@@ -57,9 +57,11 @@ brews:
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     folder: Formula
-    homepage: "https://github.com/stefanprodan/timoni"
+    homepage: "https://timoni.sh"
     description: "Timoni CLI"
     dependencies:
+      - name: cue
+        type: optional
       - name: diffutils
         type: optional
     install: |
@@ -71,4 +73,4 @@ brews:
       fish_output = Utils.safe_popen_read(bin/"timoni", "completion", "fish")
       (fish_completion/"timoni.fish").write fish_output
     test: |
-      system "#{bin}/timoni --version"
+      system "#{bin}/timoni version"
