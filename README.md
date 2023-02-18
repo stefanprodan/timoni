@@ -2,6 +2,7 @@
 
 [![release](https://img.shields.io/github/release/stefanprodan/timoni/all.svg)](https://github.com/stefanprodan/timoni/releases)
 [![build](https://github.com/stefanprodan/timoni/workflows/build/badge.svg)](https://github.com/stefanprodan/timoni/actions)
+[![e2e](https://github.com/stefanprodan/timoni/workflows/e2e/badge.svg)](https://github.com/stefanprodan/timoni/actions)
 [![license](https://img.shields.io/github/license/stefanprodan/timoni.svg)](https://github.com/stefanprodan/timoni/blob/main/LICENSE)
 
 [Timoni](https://timoni.sh) is a package manager for Kubernetes,
@@ -32,6 +33,10 @@ brew install stefanprodan/tap/timoni
 
 For other installation methods,
 see [timoni.sh/install](https://timoni.sh/install/).
+
+## Get started
+
+To get started with Timoni please visit the documentation website at [timoni.sh](https://timoni.sh/).
 
 ## Concepts
 
