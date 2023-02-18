@@ -35,7 +35,7 @@ jobs:
       - name: Run build
         run: make build
       - name: Run linter
-        run: make test-lint
+        run: make lint-samples
       - name: Check if working tree is dirty
         run: |
           if [[ $(git diff --stat) != '' ]]; then

@@ -14,6 +14,6 @@ package templates
 	}
 	data: {
 		hostname: "\(_config.domain)"
-		port: "9090"
+		port:     "9090"
 	}
 }

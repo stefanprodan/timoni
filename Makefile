@@ -33,12 +33,21 @@ fmt: ## Format Go code.
 vet: ## Vet Go code.
 	go vet ./...
 
+lint-samples: build
+	./bin/timoni lint ./examples/podinfo
+	cue fmt ./examples/podinfo-values/
+	./bin/timoni lint ./cmd/timoni/testdata/cs
+	cue fmt ./cmd/timoni/testdata/cs-values/
+
 .PHONY: install
 install: ## Build and install the CLI binary.
 	go install ./cmd/timoni
 
 generate: controller-gen ## Generate API code.
 	cd api; $(CONTROLLER_GEN) object:headerFile="license.go.txt" paths="./..."
+
+docs: build
+	./bin/timoni docgen
 
 CONTROLLER_GEN=$(BIN_DIR)/controller-gen
 .PHONY: controller-gen
@@ -53,40 +62,6 @@ ENVTEST=$(BIN_DIR)/setup-envtest
 .PHONY: envtest
 setup-envtest:
 	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
-
-TESTMOD=podinfo ./examples/podinfo
-TESTINST=podinfo
-TESTVAL_HA=-f ./examples/podinfo-values/ha-values.cue
-TESTVAL_ING=-f ./examples/podinfo-values/ingress-values.cue
-test-template:
-	./bin/timoni template $(TESTMOD) $(TESTVAL_HA)
-
-test-install:
-	./bin/timoni install $(TESTMOD) $(TESTVAL_HA)
-
-test-diff:
-	./bin/timoni upgrade --dry-run --diff $(TESTMOD) $(TESTVAL_ING)
-
-test-upgrade:
-	./bin/timoni upgrade $(TESTMOD) $(TESTVAL_HA) $(TESTVAL_ING)
-
-test-list:
-	./bin/timoni list $(TESTINST)
-
-test-inspect:
-	./bin/timoni inspect values $(TESTINST)
-	./bin/timoni inspect resources $(TESTINST)
-
-test-uninstall:
-	./bin/timoni uninstall $(TESTMOD)
-
-test-lint:
-	./bin/timoni lint ./examples/podinfo
-
-lint: test-lint
-
-docs: build
-	./bin/timoni docgen
 
 # go-install-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))

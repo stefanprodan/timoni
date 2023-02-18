@@ -36,15 +36,46 @@ jobs:
         with:
           version: v0.17.0
           cluster_name: kind
-      - name: Build
+      - name: Install
+        run: make install
+      - name: Push
         run: |
-          make build
-      - name: Run tests
+          timoni push ./examples/podinfo oci://localhost:5000/podinfo \
+            --version 1.0.0
+      - name: Template
         run: |
-          make test-template
-          make test-install
-          make test-diff
-          make test-upgrade
-          make test-list
-          make test-inspect
-          make test-uninstall
+          timoni template podinfo oci://localhost:5000/podinfo \
+            --values ./examples/podinfo-values/psp-values.cue \
+            --version 1.0.0
+      - name: Install
+        run: |
+          timoni install podinfo oci://localhost:5000/podinfo \
+            -v 1.0.0 \
+            -n test \
+            --wait
+      - name: Upgrade (enable HPA)
+        run: |
+          timoni upgrade podinfo oci://localhost:5000/podinfo \
+            -f ./examples/podinfo-values/ha-values.cue \
+            -v 1.0.0 \
+            -n test \
+            --wait
+      - name: Upgrade (disable HPA, enable ingress)
+        run: |
+          timoni apply podinfo oci://localhost:5000/podinfo \
+            -f ./examples/podinfo-values/psp-values.cue \
+            -f ./examples/podinfo-values/ingress-values.cue \
+            -v 1.0.0 \
+            -n test \
+            --wait
+      - name: List
+        run: |
+          timoni list -A
+      - name: Inspect
+        run: |
+          timoni inspect resources podinfo -n test
+          timoni inspect module podinfo -n test
+          timoni inspect values podinfo -n test
+      - name: Uninstall
+        run: |
+          timoni uninstall podinfo -n test --wait
