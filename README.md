@@ -1,10 +1,10 @@
 # timoni
 
-[![e2e](https://github.com/stefanprodan/timoni/workflows/e2e/badge.svg)](https://github.com/stefanprodan/timoni/actions)
-[![license](https://img.shields.io/github/license/stefanprodan/timoni.svg)](https://github.com/stefanprodan/timoni/blob/main/LICENSE)
 [![release](https://img.shields.io/github/release/stefanprodan/timoni/all.svg)](https://github.com/stefanprodan/timoni/releases)
+[![build](https://github.com/stefanprodan/timoni/workflows/build/badge.svg)](https://github.com/stefanprodan/timoni/actions)
+[![license](https://img.shields.io/github/license/stefanprodan/timoni.svg)](https://github.com/stefanprodan/timoni/blob/main/LICENSE)
 
-[Timoni](https://github.com/stefanprodan/timoni) is a package manager for Kubernetes,
+[Timoni](https://timoni.sh) is a package manager for Kubernetes,
 powered by [CUE](https://cuelang.org/)
 and inspired by [Helm](https://helm.sh/).
 
@@ -17,7 +17,7 @@ to offer a better experience of creating, packaging and delivering apps to Kuber
 > **Warning**
 >
 > Note that Timoni in under active development and is still in its infancy.
-> Its APIs and interfaces may change in a backwards incompatilbe manner.
+> Its APIs and interfaces may change in a backwards incompatible manner.
 
 ## Concepts
 
@@ -109,3 +109,4 @@ of deployments, services, ingresses, and Kubernetes custom resources.
 ## Contributing
 
 Timoni is [Apache 2.0 licensed](LICENSE) and accepts contributions via GitHub pull requests.
+Please see the [contributing guide](CONTRIBUTING.md) for more information.

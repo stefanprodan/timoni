@@ -13,8 +13,7 @@ to offer a better experience of creating, packaging and delivering apps to Kuber
 !!! warning "Development phase"
 
     Timoni in under active development and is still in its infancy.
-    Its APIs and interfaces may change in a backwards incompatilbe manner.
-    The primary audience of this software is technology enthusiasts who are familar with CUE and Kubernetes.
+    Its APIs and interfaces may change in a backwards incompatible manner.
 
 ## Concepts
 
@@ -23,7 +22,7 @@ to offer a better experience of creating, packaging and delivering apps to Kuber
 A Timoni module contains a set of CUE definitions and constraints organised
 into a [CUE module](https://cuelang.org/docs/concepts/packages/)
 with an opinionated structure.
-A module accepts a set of values supplied by the user as a .cue file,
+A module accepts a set of values supplied by the user as a `.cue` file,
 and outputs a set of Kubernetes objects that Timoni deploys on Kubernetes.
 
 Module structure:
