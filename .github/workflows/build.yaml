@@ -32,13 +32,11 @@ jobs:
           version: latest
       - name: Run tests
         run: make test
-      - name: Run build
-        run: make build
       - name: Run linter
         run: make lint-samples
       - name: Check if working tree is dirty
         run: |
           if [[ $(git diff --stat) != '' ]]; then
-            echo 'run "make test" and commit changes'
+            echo 'run "make test lint-samples" and commit changes'
             exit 1
           fi
