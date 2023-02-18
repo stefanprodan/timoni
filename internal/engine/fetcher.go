@@ -85,7 +85,7 @@ func (f *Fetcher) fetchOCI(dir string) (*apiv1.ModuleReference, error) {
 		return nil, fmt.Errorf("version is not in semver format, error: %w", err)
 	}
 
-	ociClient := oci.NewLocalClient()
+	ociClient := oci.NewClient(nil)
 
 	if f.creds != "" {
 		if err := ociClient.LoginWithCredentials(f.creds); err != nil {

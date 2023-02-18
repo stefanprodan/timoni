@@ -32,6 +32,7 @@ import (
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/flags"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
@@ -57,32 +58,29 @@ var applyCmd = &cobra.Command{
 type applyFlags struct {
 	name        string
 	module      string
-	version     string
-	pkg         string
+	version     flags.Version
+	pkg         flags.Package
 	valuesFiles []string
 	dryrun      bool
 	diff        bool
 	wait        bool
-	creds       string
+	creds       flags.Credentials
 }
 
 var applyArgs applyFlags
 
 func init() {
-	applyCmd.Flags().StringVarP(&applyArgs.version, "version", "v", "",
-		"The version of the module.")
-	applyCmd.Flags().StringVarP(&applyArgs.pkg, "package", "p", "main",
-		"The name of the package containing the instance values and Kubernetes objects")
+	applyCmd.Flags().VarP(&applyArgs.version, applyArgs.version.Type(), applyArgs.version.Shorthand(), applyArgs.version.Description())
+	applyCmd.Flags().VarP(&applyArgs.pkg, applyArgs.pkg.Type(), applyArgs.pkg.Shorthand(), applyArgs.pkg.Description())
 	applyCmd.Flags().StringSliceVarP(&applyArgs.valuesFiles, "values", "f", nil,
-		"The local path to values.cue files")
+		"The local path to values.cue files.")
 	applyCmd.Flags().BoolVar(&applyArgs.dryrun, "dry-run", false,
-		"Perform a server-side apply dry run")
+		"Perform a server-side apply dry run.")
 	applyCmd.Flags().BoolVar(&applyArgs.diff, "diff", false,
-		"Perform a server-side apply dry run and prints the diff")
+		"Perform a server-side apply dry run and prints the diff.")
 	applyCmd.Flags().BoolVar(&applyArgs.wait, "wait", true,
-		"Wait for the applied Kubernetes objects to become ready")
-	applyCmd.Flags().StringVar(&applyArgs.creds, "creds", "",
-		"The credentials for the container registry in the format <username>[:<password>]")
+		"Wait for the applied Kubernetes objects to become ready.")
+	applyCmd.Flags().Var(&applyArgs.creds, applyArgs.creds.Type(), applyArgs.creds.Description())
 	rootCmd.AddCommand(applyCmd)
 }
 
@@ -105,7 +103,13 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	fetcher := engine.NewFetcher(ctxPull, applyArgs.module, applyArgs.version, tmpDir, applyArgs.creds)
+	fetcher := engine.NewFetcher(
+		ctxPull,
+		applyArgs.module,
+		applyArgs.version.String(),
+		tmpDir,
+		applyArgs.creds.String(),
+	)
 	mod, err := fetcher.Fetch()
 	if err != nil {
 		return err
@@ -117,7 +121,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		applyArgs.name,
 		*kubeconfigArgs.Namespace,
 		fetcher.GetModuleRoot(),
-		applyArgs.pkg,
+		applyArgs.pkg.String(),
 	)
 
 	mod.Name, err = builder.GetModuleName()

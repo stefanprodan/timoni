@@ -28,6 +28,8 @@ import (
 	gcr "github.com/google/go-containerregistry/pkg/name"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
+
+	"github.com/stefanprodan/timoni/internal/flags"
 )
 
 var pushCmd = &cobra.Command{
@@ -53,8 +55,8 @@ container registry using the version as the image tag.`,
 type pushFlags struct {
 	module      string
 	source      string
-	version     string
-	creds       string
+	version     flags.Version
+	creds       flags.Credentials
 	ignorePaths []string
 	output      string
 }
@@ -62,14 +64,12 @@ type pushFlags struct {
 var pushArgs pushFlags
 
 func init() {
+	pushCmd.Flags().VarP(&pushArgs.version, pushArgs.version.Type(), pushArgs.version.Shorthand(), pushArgs.version.Description())
 	pushCmd.Flags().StringVar(&pushArgs.source, "source", "",
 		"The VCS address of the module. When left empty, the Git CLI is used to get the remote origin URL.")
-	pushCmd.Flags().StringVarP(&pushArgs.version, "version", "v", "",
-		"The version of the module in strict semver format e.g. '1.0.0'")
-	pushCmd.Flags().StringVar(&pushArgs.creds, "creds", "",
-		"The credentials for the container registry in the format <username>[:<password>]")
+	pushCmd.Flags().Var(&pushArgs.creds, pushArgs.creds.Type(), pushArgs.creds.Description())
 	pushCmd.Flags().StringVarP(&pushArgs.output, "output", "o", "",
-		"The format in which the artifact digest should be printed, can be 'json' or 'yaml'")
+		"The format in which the artifact digest should be printed, can be 'yaml' or 'json'.")
 
 	rootCmd.AddCommand(pushCmd)
 }
@@ -80,8 +80,9 @@ func pushCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	pushArgs.module = args[0]
 	ociURL := args[1]
+	version := pushArgs.version.String()
 
-	url, err := oci.ParseArtifactURL(ociURL + ":" + pushArgs.version)
+	url, err := oci.ParseArtifactURL(ociURL + ":" + version)
 	if err != nil {
 		return err
 	}
@@ -105,11 +106,11 @@ func pushCmdRun(cmd *cobra.Command, args []string) error {
 	path := pushArgs.module
 	meta := oci.Metadata{
 		Source:   pushArgs.source,
-		Revision: pushArgs.version,
+		Revision: version,
 	}
 
 	if pushArgs.creds != "" {
-		if err := ociClient.LoginWithCredentials(pushArgs.creds); err != nil {
+		if err := ociClient.LoginWithCredentials(pushArgs.creds.String()); err != nil {
 			return fmt.Errorf("could not login with credentials: %w", err)
 		}
 	}

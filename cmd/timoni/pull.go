@@ -23,11 +23,13 @@ import (
 
 	oci "github.com/fluxcd/pkg/oci/client"
 	"github.com/spf13/cobra"
+
+	"github.com/stefanprodan/timoni/internal/flags"
 )
 
 var pullCmd = &cobra.Command{
 	Use:   "pull [MODULE URL]",
-	Short: "Pull a module from a container registry",
+	Short: "Pull a module version from a container registry",
 	Long: `The pull command downloads the module from a container registry and
 extract its contents the specified directory.`,
 	Example: `  # Pull a module version from GitHub Container Registry
@@ -39,20 +41,19 @@ extract its contents the specified directory.`,
 }
 
 type pullFlags struct {
-	version string
+	version flags.Version
 	output  string
-	creds   string
+	creds   flags.Credentials
 }
 
 var pullArgs pullFlags
 
 func init() {
-	pullCmd.Flags().StringVarP(&pullArgs.version, "version", "v", "",
-		"The version of the module in strict semver format e.g. '1.0.0'")
+	pullCmd.Flags().VarP(&pullArgs.version, pullArgs.version.Type(), pullArgs.version.Shorthand(), pullArgs.version.Description())
 	pullCmd.Flags().StringVarP(&pullArgs.output, "output", "o", "",
-		"The directory path where the module content should be extracted")
-	pullCmd.Flags().StringVar(&pullArgs.creds, "creds", "",
-		"The credentials for the container registry in the format <username>[:<password>]")
+		"The directory path where the module content should be extracted.")
+	pullCmd.Flags().Var(&pullArgs.creds, pullArgs.creds.Type(), pullArgs.creds.Description())
+
 	rootCmd.AddCommand(pullCmd)
 }
 
@@ -61,6 +62,11 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module URL is required")
 	}
 	ociURL := args[0]
+	version := pullArgs.version.String()
+
+	if version == "" {
+		return fmt.Errorf("module version is required")
+	}
 
 	if pullArgs.output == "" {
 		return fmt.Errorf("invalid output path %s", pullArgs.output)
@@ -70,7 +76,7 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid output path %s", pullArgs.output)
 	}
 
-	url, err := oci.ParseArtifactURL(ociURL + ":" + pullArgs.version)
+	url, err := oci.ParseArtifactURL(ociURL + ":" + pullArgs.version.String())
 	if err != nil {
 		return err
 	}
@@ -78,10 +84,10 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	ociClient := oci.NewLocalClient()
+	ociClient := oci.NewClient(nil)
 
 	if pullArgs.creds != "" {
-		if err := ociClient.LoginWithCredentials(pullArgs.creds); err != nil {
+		if err := ociClient.LoginWithCredentials(pullArgs.creds.String()); err != nil {
 			return fmt.Errorf("could not login with credentials: %w", err)
 		}
 	}

@@ -30,6 +30,7 @@ import (
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/flags"
 )
 
 var buildCmd = &cobra.Command{
@@ -50,26 +51,23 @@ var buildCmd = &cobra.Command{
 type buildFlags struct {
 	name        string
 	module      string
-	version     string
-	pkg         string
+	version     flags.Version
+	pkg         flags.Package
 	valuesFiles []string
 	output      string
-	creds       string
+	creds       flags.Credentials
 }
 
 var buildArgs buildFlags
 
 func init() {
-	buildCmd.Flags().StringVarP(&buildArgs.version, "version", "v", "",
-		"The version of the module.")
-	buildCmd.Flags().StringVarP(&buildArgs.pkg, "package", "p", "main",
-		"The name of the package containing the instance values and Kubernetes objects.")
+	buildCmd.Flags().VarP(&buildArgs.version, buildArgs.version.Type(), buildArgs.version.Shorthand(), buildArgs.version.Description())
+	buildCmd.Flags().VarP(&buildArgs.pkg, buildArgs.pkg.Type(), buildArgs.pkg.Shorthand(), buildArgs.pkg.Description())
 	buildCmd.Flags().StringSliceVarP(&buildArgs.valuesFiles, "values", "f", nil,
-		"The local path to values.cue files")
+		"The local path to values.cue files.")
 	buildCmd.Flags().StringVarP(&buildArgs.output, "output", "o", "yaml",
-		"The format in which the Kubernetes objects should be printed, can be 'json' or 'yaml'")
-	buildCmd.Flags().StringVar(&buildArgs.creds, "creds", "",
-		"The credentials for the container registry in the format <username>[:<password>]")
+		"The format in which the Kubernetes objects should be printed, can be 'yaml' or 'yaml'.")
+	buildCmd.Flags().Var(&buildArgs.creds, buildArgs.creds.Type(), buildArgs.creds.Description())
 
 	rootCmd.AddCommand(buildCmd)
 }
@@ -93,7 +91,13 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	fetcher := engine.NewFetcher(ctxPull, buildArgs.module, buildArgs.version, tmpDir, buildArgs.creds)
+	fetcher := engine.NewFetcher(
+		ctxPull,
+		buildArgs.module,
+		buildArgs.version.String(),
+		tmpDir,
+		buildArgs.creds.String(),
+	)
 	mod, err := fetcher.Fetch()
 	if err != nil {
 		return err
@@ -104,7 +108,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		buildArgs.name,
 		*kubeconfigArgs.Namespace,
 		fetcher.GetModuleRoot(),
-		buildArgs.pkg,
+		buildArgs.pkg.String(),
 	)
 
 	mod.Name, err = builder.GetModuleName()

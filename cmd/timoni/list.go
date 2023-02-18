@@ -29,8 +29,8 @@ import (
 var listCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
-	Short:   "Prints a table of instances",
-	Example: ` # List all the instances in a namespace
+	Short:   "Prints a table of instances and their module version",
+	Example: ` # List all instances in a namespace
   timoni list --namespace default
 
   # List all instances on a cluster

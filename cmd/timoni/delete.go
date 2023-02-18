@@ -51,9 +51,9 @@ var deleteArgs deleteFlags
 
 func init() {
 	deleteCmd.Flags().BoolVar(&deleteArgs.dryrun, "dry-run", false,
-		"Perform a server-side delete dry run")
+		"Perform a server-side delete dry run.")
 	deleteCmd.Flags().BoolVar(&deleteArgs.wait, "wait", true,
-		"Wait for the deleted Kubernetes objects to be finalized")
+		"Wait for the deleted Kubernetes objects to be finalized.")
 	rootCmd.AddCommand(deleteCmd)
 }
 
