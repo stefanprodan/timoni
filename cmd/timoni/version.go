@@ -27,7 +27,7 @@ import (
 
 var versionCmd = &cobra.Command{
 	Use:     "version",
-	Short:   "Print the client and API version information.",
+	Short:   "Print the client and API version information",
 	Example: "timoni version -o yaml",
 	RunE:    runVersionCmd,
 }

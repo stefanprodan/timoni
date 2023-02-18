@@ -21,9 +21,8 @@ import (
 )
 
 var inspectCmd = &cobra.Command{
-	Use:     "inspect",
-	Aliases: []string{"show"},
-	Short:   "This command consists of multiple subcommands to display information about an instance",
+	Use:   "inspect",
+	Short: "Display information about installed instances",
 }
 
 func init() {

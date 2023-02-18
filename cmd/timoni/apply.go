@@ -39,7 +39,7 @@ import (
 var applyCmd = &cobra.Command{
 	Use:     "apply [INSTANCE NAME] [MODULE URL]",
 	Aliases: []string{"install", "upgrade"},
-	Short:   "Install or upgrade a module instance on the cluster",
+	Short:   "Install or upgrade a module instance",
 	Example: `  # Install a module instance and create the namespace if it doesn't exists
   timoni apply -n apps app oci://docker.io/org/module --version 1.0.0
 
@@ -64,6 +64,7 @@ type applyFlags struct {
 	dryrun      bool
 	diff        bool
 	wait        bool
+	force       bool
 	creds       flags.Credentials
 }
 
@@ -74,6 +75,8 @@ func init() {
 	applyCmd.Flags().VarP(&applyArgs.pkg, applyArgs.pkg.Type(), applyArgs.pkg.Shorthand(), applyArgs.pkg.Description())
 	applyCmd.Flags().StringSliceVarP(&applyArgs.valuesFiles, "values", "f", nil,
 		"The local path to values.cue files.")
+	applyCmd.Flags().BoolVar(&applyArgs.force, "force", false,
+		"Recreate immutable Kubernetes resources.")
 	applyCmd.Flags().BoolVar(&applyArgs.dryrun, "dry-run", false,
 		"Perform a server-side apply dry run.")
 	applyCmd.Flags().BoolVar(&applyArgs.diff, "diff", false,
@@ -219,7 +222,9 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		logger.Println("upgrading", iName)
 	}
 
-	cs, err := sm.ApplyAllStaged(ctx, objects, ssa.DefaultApplyOptions())
+	applyOpts := ssa.DefaultApplyOptions()
+	applyOpts.Force = applyArgs.force
+	cs, err := sm.ApplyAllStaged(ctx, objects, applyOpts)
 	if err != nil {
 		return err
 	}
