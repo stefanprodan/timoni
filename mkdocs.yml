@@ -38,6 +38,7 @@ markdown_extensions:
 
 nav:
   - Introduction: index.md
+  - Install: install.md
   - Command Reference:
       - Modules:
           - Build: cmd/timoni_build.md
@@ -48,8 +49,9 @@ nav:
           - Apply: cmd/timoni_apply.md
           - Delete: cmd/timoni_delete.md
           - List: cmd/timoni_list.md
-          - Inspect Resources: cmd/timoni_inspect_resources.md
+          - Inspect Module: cmd/timoni_inspect_module.md
           - Inspect Values: cmd/timoni_inspect_values.md
+          - Inspect Resources: cmd/timoni_inspect_resources.md
       - Completion:
           - Bash: cmd/timoni_completion_bash.md
           - Fish: cmd/timoni_completion_fish.md

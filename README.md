@@ -19,6 +19,20 @@ to offer a better experience of creating, packaging and delivering apps to Kuber
 > Note that Timoni in under active development and is still in its infancy.
 > Its APIs and interfaces may change in a backwards incompatible manner.
 
+## Install
+
+Timoni is available as a binary executable for all major platforms,
+the binaries can be downloaded from GitHub [releases](https://github.com/stefanprodan/kustomizer/releases).
+
+Install the latest release on macOS or Linux with Homebrew:
+
+```bash
+brew install stefanprodan/tap/timoni
+```
+
+For other installation methods,
+see [timoni.sh/install](https://timoni.sh/install/).
+
 ## Concepts
 
 ### Timoni Modules

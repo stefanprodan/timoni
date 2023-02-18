@@ -27,7 +27,7 @@ var completionFishCmd = &cobra.Command{
 	Short: "Generates fish completion scripts",
 	Example: `To configure your fish shell to load completions for each session write this script to your completions dir:
 
-kustomizer completion fish > ~/.config/fish/completions/timoni.fish
+timoni completion fish > ~/.config/fish/completions/timoni.fish
 
 See http://fishshell.com/docs/current/index.html#completion-own for more details`,
 	Run: func(cmd *cobra.Command, args []string) {
