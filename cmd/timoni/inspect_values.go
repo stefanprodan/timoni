@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/stefanprodan/timoni/pkg/runtime"
+	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
 var inspectValuesCmd = &cobra.Command{

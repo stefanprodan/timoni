@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/stefanprodan/timoni/pkg/runtime"
+	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
 var inspectModuleCmd = &cobra.Command{

@@ -22,7 +22,7 @@ import (
 
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
-	"github.com/stefanprodan/timoni/pkg/runtime"
+	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
 var inspectResourcesCmd = &cobra.Command{

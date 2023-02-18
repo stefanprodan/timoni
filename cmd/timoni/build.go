@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
-	"github.com/stefanprodan/timoni/pkg/engine"
+	"github.com/stefanprodan/timoni/internal/engine"
 )
 
 var buildCmd = &cobra.Command{
