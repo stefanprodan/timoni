@@ -5,14 +5,14 @@ go 1.19
 require (
 	cuelang.org/go v0.4.3
 	github.com/Masterminds/semver/v3 v3.2.0
-	github.com/distribution/distribution/v3 v3.0.0-20230214150026-36d8c594d7aa
+	github.com/distribution/distribution/v3 v3.0.0-20230217222803-a4d64adabcb9
 	github.com/fluxcd/pkg/oci v0.19.2-0.20230217220120-2ebfeb6d4c95
 	github.com/fluxcd/pkg/runtime v0.29.0
 	github.com/fluxcd/pkg/ssa v0.23.1
 	github.com/google/go-containerregistry v0.13.0
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/onsi/gomega v1.27.0
+	github.com/onsi/gomega v1.27.1
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
@@ -142,7 +142,7 @@ require (
 	github.com/yvasiyarov/newrelic_platform_go v0.0.0-20140908184405-b21fdbd4370f // indirect
 	go.starlark.net v0.0.0-20221028183056-acb66ad56dd2 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.2.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
