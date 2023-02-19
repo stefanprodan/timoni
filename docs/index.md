@@ -91,16 +91,24 @@ The `install` and `upgrade` commands are aliases of `timoni apply`.
 To apply the Kubernetes resources belonging to a module instance,
 Timoni uses Kubernetes server-side apply and
 [Flux](https://fluxcd.io)'s drift detection.
+
 The apply command validates all resources with a dry-run apply,
 and reconciles only the ones with changes to the cluster state.
+
+To recreate immutable resources such as Kubernetes Jobs,
+these resources can be annotated with `action.timoni.sh/force: "enabled"`.
 
 Timoni's garbage collector keeps track of the applied resources
 and prunes the Kubernetes objects that were previously applied
 but are missing from the current revision.
 
-After an install or upgrade operation, Timoni waits for the
+To prevent Timoni's garbage collector from deleting certain
+resources such as Kubernetes Persistent Volumes,
+these resources can be annotated with `action.timoni.sh/prune: "disabled"`.
+
+After an installation or upgrade, Timoni waits for the
 applied resources to be fully reconciled by checking the ready status
-of deployments, services, ingresses, and Kubernetes custom resources.
+of deployments, jobs, services, ingresses, and Kubernetes custom resources.
 
 ## License
 

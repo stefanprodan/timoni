@@ -1,4 +1,4 @@
-# Get Started
+# Quickstart Guide
 
 This guide shows you the basics of Timoni.
 You'll deploy a demo application on Kubernetes using a Timoni module

@@ -97,13 +97,16 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 
 	logger.Println(fmt.Sprintf("deleting %v resource(s)...", len(objects)))
 	hasErrors := false
+	cs := ssa.NewChangeSet()
 	for _, object := range objects {
-		change, err := sm.Delete(ctx, object, ssa.DefaultDeleteOptions())
+		deleteOpts := runtime.DeleteOptions(deleteArgs.name, *kubeconfigArgs.Namespace)
+		change, err := sm.Delete(ctx, object, deleteOpts)
 		if err != nil {
 			logger.Println(`✗`, err)
 			hasErrors = true
 			continue
 		}
+		cs.Add(*change)
 		logger.Println(change.String())
 	}
 
@@ -115,11 +118,12 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if deleteArgs.wait {
+	deletedObjects := runtime.SelectObjectsFromSet(cs, ssa.DeletedAction)
+	if deleteArgs.wait && len(deletedObjects) > 0 {
 		waitOpts := ssa.DefaultWaitOptions()
 		waitOpts.Timeout = rootArgs.timeout
-		logger.Println("waiting for resources to be terminated...")
-		err = sm.WaitForTermination(objects, waitOpts)
+		logger.Printf("waiting for %v resource(s) to be finalized...", len(deletedObjects))
+		err = sm.WaitForTermination(deletedObjects, waitOpts)
 		if err != nil {
 			return err
 		}
