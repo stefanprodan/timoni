@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue/cuecontext"
+	"github.com/fluxcd/pkg/oci"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -44,13 +45,19 @@ var applyCmd = &cobra.Command{
   timoni apply -n apps app oci://docker.io/org/module --version 1.0.0
 
   # Do a dry-run apply and print the diff
-  timoni apply -n apps --dry-run --diff app ./path/to/module \
-  --values ./values-1.cue 
+  timoni apply -n apps app oci://docker.io/org/module -v 1.0.0 \
+  --values ./values-1.cue \
+  --dry-run --diff
 
   # Apply a module instance with custom values by merging them in the specified order
-  timoni apply -n apps app ./path/to/module \
+  timoni apply -n apps app oci://docker.io/org/module -v 1.0.0 \
   --values ./values-1.cue \
   --values ./values-2.cue
+
+  # Apply a local module and recreate immutable Kubernetes resources such as Jobs
+  timoni apply -n apps app ./path/to/module \
+  --values ./values-1.cue \
+  --force
 `,
 	RunE: runApplyCmd,
 }
@@ -95,7 +102,11 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	applyArgs.name = args[0]
 	applyArgs.module = args[1]
 
-	logger.Println("building", applyArgs.module)
+	if strings.HasPrefix(applyArgs.module, oci.OCIRepositoryPrefix) {
+		logger.Printf("pulling %s:%s", applyArgs.module, applyArgs.version.String())
+	} else {
+		logger.Println("building", applyArgs.module)
+	}
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
@@ -215,8 +226,18 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	if !iExists {
 		logger.Println("installing", iName)
+
+		nsExists, err := iStorage.NamespaceExists(ctx, *kubeconfigArgs.Namespace)
+		if err != nil {
+			return fmt.Errorf("instance init failed, error: %w", err)
+		}
+
 		if err := iStorage.Apply(ctx, &iManager.Instance, true); err != nil {
 			return fmt.Errorf("instance init failed, error: %w", err)
+		}
+
+		if !nsExists {
+			logger.Printf("Namespace/%s created", *kubeconfigArgs.Namespace)
 		}
 	} else {
 		logger.Println("upgrading", iName)
@@ -266,7 +287,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		logger.Println("instance resources are ready")
+		logger.Println("all resources are ready")
 	}
 
 	return nil
