@@ -60,7 +60,7 @@ Timoni produces artifacts compatible with Docker Hub, GitHub Container Registry,
 Azure Container Registry, Amazon Elastic Container Registry, Google Artifact Registry,
 self-hosted Docker Registry and others.
 
-### Timoni instances
+### Timoni Instances
 
 A Timoni instance represent the unit of deploy on Kubernetes. A module instance
 can be installed, upgraded and uninstalled from a cluster.
