@@ -1,9 +1,5 @@
 package flags
 
-import (
-	"fmt"
-)
-
 type Package string
 
 func (f *Package) String() string {
@@ -31,5 +27,5 @@ func (f *Package) Shorthand() string {
 }
 
 func (f *Package) Description() string {
-	return fmt.Sprintf("The name of the module's package used for building the templates. (default \"%s\")", f.Default())
+	return "The name of the module's package used for building the templates."
 }

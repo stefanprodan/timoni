@@ -159,6 +159,29 @@ func (s *StorageManager) GetStaleObjects(ctx context.Context, i *apiv1.Instance)
 	return objects, nil
 }
 
+// NamespaceExists returns false if the namespace is not found.
+func (s *StorageManager) NamespaceExists(ctx context.Context, name string) (bool, error) {
+	ns := &corev1.Namespace{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Namespace",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+
+	if err := s.resManager.Client().Get(ctx, client.ObjectKeyFromObject(ns), ns); err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+
+	return true, nil
+}
+
 // getOwnerLabels returns a label selector matching the storage owner.
 func (s *StorageManager) getOwnerLabels() client.MatchingLabels {
 	return client.MatchingLabels{
