@@ -24,11 +24,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/oci"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -243,8 +245,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		logger.Println("upgrading", iName)
 	}
 
-	applyOpts := ssa.DefaultApplyOptions()
-	applyOpts.Force = applyArgs.force
+	applyOpts := runtime.ApplyOptions(applyArgs.force, time.Minute)
 	cs, err := sm.ApplyAllStaged(ctx, objects, applyOpts)
 	if err != nil {
 		return err
@@ -262,11 +263,14 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("storing instance failed, error: %w", err)
 	}
 
+	var deletedObjects []*unstructured.Unstructured
 	if len(staleObjects) > 0 {
-		changeSet, err := sm.DeleteAll(ctx, staleObjects, ssa.DefaultDeleteOptions())
+		deleteOpts := runtime.DeleteOptions(applyArgs.name, *kubeconfigArgs.Namespace)
+		changeSet, err := sm.DeleteAll(ctx, staleObjects, deleteOpts)
 		if err != nil {
 			return fmt.Errorf("prunning objects failed, error: %w", err)
 		}
+		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
 		for _, change := range changeSet.Entries {
 			logger.Println(change.String())
 		}
@@ -279,9 +283,9 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		if len(staleObjects) > 0 {
-			logger.Println(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(staleObjects)))
-			err = sm.WaitForTermination(staleObjects, ssa.DefaultWaitOptions())
+		if len(deletedObjects) > 0 {
+			logger.Printf("waiting for %v resource(s) to be finalized...", len(deletedObjects))
+			err = sm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
 			if err != nil {
 				return fmt.Errorf("wating for termination failed, error: %w", err)
 			}

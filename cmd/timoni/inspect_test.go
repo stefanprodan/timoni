@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func Test_Inspect(t *testing.T) {
+func TestInspect(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/cs"
 	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-mod", 5))

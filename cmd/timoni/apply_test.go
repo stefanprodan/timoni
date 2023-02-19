@@ -148,3 +148,57 @@ func TestApply(t *testing.T) {
 		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	})
 }
+
+func TestApply_Actions(t *testing.T) {
+	modPath := "testdata/cs"
+	name := rnd("my-instance", 5)
+	namespace := rnd("my-namespace", 5)
+
+	t.Run("sets prune and force annotation", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := executeCommand(fmt.Sprintf(
+			"apply -n %s %s %s -f %s -f %s -p main --wait",
+			namespace,
+			name,
+			modPath,
+			modPath+"-values/skip-prune.cue",
+			modPath+"-values/force-apply.cue",
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		clientCM := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-client", name),
+				Namespace: namespace,
+			},
+		}
+
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(clientCM.GetAnnotations()).To(HaveKeyWithValue(apiv1.PruneAction, apiv1.DisabledValue))
+		g.Expect(clientCM.GetAnnotations()).To(HaveKeyWithValue(apiv1.ForceAction, apiv1.EnabledValue))
+	})
+
+	t.Run("skips pruning resources removed from instance", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := executeCommand(fmt.Sprintf(
+			"apply -n %s %s %s -f %s -f %s -p main --wait",
+			namespace,
+			name,
+			modPath,
+			modPath+"-values/skip-prune.cue",
+			modPath+"-values/server-only.cue",
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		clientCM := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-client", name),
+				Namespace: namespace,
+			},
+		}
+
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
+		g.Expect(err).ToNot(HaveOccurred())
+	})
+}

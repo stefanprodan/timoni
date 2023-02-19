@@ -1,7 +1,8 @@
-# Install
+# Installation Guide
 
 Timoni is available as a binary executable for Linux, macOS and Windows.
-The binaries can be downloaded from GitHub [releases](https://github.com/stefanprodan/timoni/releases).
+The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://github.com/stefanprodan/timoni/releases).
+Each release comes with a Software Bill of Materials (SBOM) in SPDX format.
 
 === "Install with brew"
 

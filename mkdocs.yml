@@ -38,8 +38,8 @@ markdown_extensions:
 
 nav:
   - Introduction: index.md
-  - Install: install.md
-  - Get started: quickstart.md
+  - Installation: install.md
+  - Quickstart: quickstart.md
   - Command Reference:
       - Modules:
           - Build: cmd/timoni_build.md

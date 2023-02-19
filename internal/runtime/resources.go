@@ -18,7 +18,11 @@ package runtime
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"strings"
+	"time"
 
 	"github.com/fluxcd/pkg/ssa"
 	corev1 "k8s.io/api/core/v1"
@@ -61,6 +65,50 @@ func NewResourceManager(rcg genericclioptions.RESTClientGetter) (*ssa.ResourceMa
 	kubePoller := polling.NewStatusPoller(kubeClient, restMapper, polling.Options{})
 
 	return ssa.NewResourceManager(kubeClient, kubePoller, ownerRef), nil
+}
+
+// SelectObjectsFromSet returns a list of Kubernetes objects from the given changeset filtered by action.
+func SelectObjectsFromSet(set *ssa.ChangeSet, action ssa.Action) []*unstructured.Unstructured {
+	var objects []*unstructured.Unstructured
+	for _, entry := range set.Entries {
+		if entry.Action == string(action) {
+			u := &unstructured.Unstructured{}
+			u.SetGroupVersionKind(schema.GroupVersionKind{
+				Group:   entry.ObjMetadata.GroupKind.Group,
+				Kind:    entry.ObjMetadata.GroupKind.Kind,
+				Version: entry.GroupVersion,
+			})
+			u.SetName(entry.ObjMetadata.Name)
+			u.SetNamespace(entry.ObjMetadata.Namespace)
+			objects = append(objects, u)
+		}
+	}
+	return objects
+}
+
+// ApplyOptions returns the default options for server-side apply operations.
+func ApplyOptions(force bool, wait time.Duration) ssa.ApplyOptions {
+	return ssa.ApplyOptions{
+		Force: force,
+		ForceSelector: map[string]string{
+			apiv1.ForceAction: apiv1.EnabledValue,
+		},
+		WaitTimeout: wait,
+	}
+}
+
+// DeleteOptions returns the default options for delete operations.
+func DeleteOptions(name, namespace string) ssa.DeleteOptions {
+	return ssa.DeleteOptions{
+		PropagationPolicy: metav1.DeletePropagationBackground,
+		Inclusions: map[string]string{
+			ownerRef.Group + "/name":      name,
+			ownerRef.Group + "/namespace": namespace,
+		},
+		Exclusions: map[string]string{
+			apiv1.PruneAction: apiv1.DisabledValue,
+		},
+	}
 }
 
 func defaultScheme() *apiruntime.Scheme {
