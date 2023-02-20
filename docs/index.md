@@ -22,7 +22,7 @@ to offer a better experience of creating, packaging and delivering apps to Kuber
 A Timoni module contains a set of CUE definitions and constraints organised
 into a [CUE module](https://cuelang.org/docs/concepts/packages/)
 with an opinionated structure.
-A module accepts a set of values supplied by the user as a `.cue` file,
+A module accepts a set of values supplied by the user as `values.cue` files,
 and outputs a set of Kubernetes objects that Timoni deploys on Kubernetes.
 
 Module structure:
@@ -37,6 +37,13 @@ Module structure:
 ├── timoni.cue # Timoni entry point
 └── values.cue # Default values
 ```
+
+!!! tip "Module example"
+
+    An example module can be found in Timoni's repository at
+    [examples/podinfo](https://github.com/stefanprodan/timoni/tree/main/examples/podinfo).
+    The example module is published to GitHub Container Registry and is publicly available at
+    [ghcr.io/stefanprodan/modules/podinfo](https://github.com/stefanprodan/podinfo/pkgs/container/modules%2Fpodinfo).
 
 Commands for working with local modules:
 
@@ -62,10 +69,11 @@ self-hosted Docker Registry and others.
 
 ### Timoni Instances
 
-A Timoni instance represent the unit of deploy on Kubernetes. A module instance
-can be installed, upgraded and uninstalled from a cluster.
+A Timoni instance represent a module instantiation on a Kubernetes cluster.
+A module can be installed multiple times on a cluster by giving its instances
+unique names per namespace.
 
-When deploying an application, users can supply their own `values.cue`
+When instantiating a module, users can supply their own `values.cue`
 that gets merged with the defaults included in the module:
 
 ```cue
