@@ -1,0 +1,51 @@
+name: Setup Timoni
+description: A GitHub Action for running Timoni commands
+author: Stefan Prodan
+branding:
+  color: blue
+  icon: command
+inputs:
+  version:
+    description: "Timoni version e.g. 0.0.2 (defaults to latest stable release)"
+    default: "latest"
+    required: true
+  arch:
+    description: "Arch can be amd64 or arm64"
+    required: true
+    default: "amd64"
+  token:
+    description: "GitHub Token used to query the GitHub API for the latest version"
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: "Download the binary to the runner's cache dir"
+      shell: bash
+      run: |
+        ARCH=${{ inputs.arch }}
+        VERSION=${{ inputs.version }}
+        TOKEN=${{ inputs.token }}
+
+        # Find the latest version
+        if [ "${VERSION}" == "latest" ]; then
+          VERSION_SLUG=$(curl -sL -H "Authorization: token ${TOKEN}" https://api.github.com/repos/stefanprodan/timoni/releases/latest  | grep tag_name)
+          VERSION=$(echo "${VERSION_SLUG}" | sed -E 's/.*"([^"]+)".*/\1/' | cut -c 2-)
+        fi
+
+        TIMONI_URL="https://github.com/stefanprodan/timoni/releases/download/v${VERSION}/timoni_${VERSION}_linux_${ARCH}.tar.gz"
+        TIMONI_DIR="$RUNNER_TOOL_CACHE/timoni/$VERSION/$ARCH/timoni/bin"
+        
+        # If the requested version is not cached, download the binary and add it to the PATH
+        if [[ ! -x "${TIMONI_DIR}/timoni" ]]; then
+          curl -sLf "${TIMONI_URL}" --output /tmp/timoni.tar.gz
+          mkdir -p /tmp/timoni
+          tar -C /tmp/timoni/ -zxvf /tmp/timoni.tar.gz
+          mkdir -p "${TIMONI_DIR}"
+          cp /tmp/timoni/timoni "${TIMONI_DIR}/"
+          echo "${TIMONI_DIR}" >> "$GITHUB_PATH"
+          rm -rf /tmp/timoni/ /tmp/timoni.tar.gz
+        fi
+    - name: "Print the version"
+      shell: bash
+      run: |
+        timoni version
