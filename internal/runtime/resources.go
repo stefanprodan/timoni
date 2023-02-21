@@ -71,7 +71,7 @@ func NewResourceManager(rcg genericclioptions.RESTClientGetter) (*ssa.ResourceMa
 func SelectObjectsFromSet(set *ssa.ChangeSet, action ssa.Action) []*unstructured.Unstructured {
 	var objects []*unstructured.Unstructured
 	for _, entry := range set.Entries {
-		if entry.Action == string(action) {
+		if entry.Action == action {
 			u := &unstructured.Unstructured{}
 			u.SetGroupVersionKind(schema.GroupVersionKind{
 				Group:   entry.ObjMetadata.GroupKind.Group,
