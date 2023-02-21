@@ -64,8 +64,8 @@ func init() {
 	rootCmd.SetOut(os.Stdout)
 
 	oci.UserAgent = apiv1.UserAgent
-	oci.ConfigMediaType = apiv1.ConfigMediaType
-	oci.ContentMediaType = apiv1.ContentMediaType
+	oci.CanonicalConfigMediaType = apiv1.ConfigMediaType
+	oci.CanonicalContentMediaType = apiv1.ContentMediaType
 }
 
 func main() {

@@ -196,7 +196,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 			logger.Println(change.String(), "(server dry run)")
 
-			if applyArgs.diff && change.Action == string(ssa.ConfiguredAction) {
+			if applyArgs.diff && change.Action == ssa.ConfiguredAction {
 				liveYAML, _ := yaml.Marshal(liveObject)
 				liveFile := filepath.Join(tmpDir, "live.yaml")
 				if err := os.WriteFile(liveFile, liveYAML, 0644); err != nil {

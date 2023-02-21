@@ -5,10 +5,10 @@ go 1.19
 require (
 	cuelang.org/go v0.4.3
 	github.com/Masterminds/semver/v3 v3.2.0
-	github.com/distribution/distribution/v3 v3.0.0-20230217222803-a4d64adabcb9
-	github.com/fluxcd/pkg/oci v0.19.2-0.20230217220120-2ebfeb6d4c95
+	github.com/distribution/distribution/v3 v3.0.0-20230220140006-a38eb86fa65d
+	github.com/fluxcd/pkg/oci v0.20.0
 	github.com/fluxcd/pkg/runtime v0.29.0
-	github.com/fluxcd/pkg/ssa v0.23.1
+	github.com/fluxcd/pkg/ssa v0.24.0
 	github.com/google/go-containerregistry v0.13.0
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/olekukonko/tablewriter v0.0.5
@@ -74,9 +74,9 @@ require (
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fluxcd/go-git/v5 v5.0.0-20221219190809-2e5c9d01cfc4 // indirect
-	github.com/fluxcd/pkg/sourceignore v0.3.1 // indirect
+	github.com/fluxcd/pkg/sourceignore v0.3.2 // indirect
 	github.com/fluxcd/pkg/tar v0.2.0 // indirect
-	github.com/fluxcd/pkg/version v0.2.0 // indirect
+	github.com/fluxcd/pkg/version v0.2.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
