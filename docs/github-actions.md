@@ -22,7 +22,7 @@ steps:
 
 ## Examples
 
-### Push workflow
+### Push to GitHub Container Registry
 
 Example workflow for linting, testing and pushing a module to GitHub Container Registry:
 
@@ -58,6 +58,51 @@ jobs:
         run: |
           timoni push ./modules/my-module \
             oci://ghcr.io/${{ github.repository_owner }}/modules/my-module \
-          	--version ${ {github.ref_name }} \
-            --creds ${{ github.actor }}:${ {secrets.GITHUB_TOKEN }}
+          	--version ${{ github.ref_name }} \
+            --creds ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
 ```
+
+### Push to Docker Hub
+
+Example workflow for using `docker login` to authenticate to Docker Hub:
+
+```yaml
+name: Release module
+on:
+  push:
+    tag: ['*'] # semver format
+
+permissions:
+  contents: read # needed for checkout
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Timoni
+        uses: stefanprodan/timoni/actions/setup@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push
+        run: |
+          timoni push ./modules/my-module \
+            oci://docker.io/my-org/my-module \
+            --version ${{ github.ref_name }}
+      - name: Pull
+        run: |
+          mkdir -p /tmp/my-module
+          timoni pull oci://docker.io/my-org/my-module \
+            --version ${{ github.ref_name }} \
+            --output /tmp/my-module
+```
+
+Note that [docker/login-action](https://github.com/docker/login-action)
+can be used to authenticate to any private registry including ACR, ECR, GCR.
