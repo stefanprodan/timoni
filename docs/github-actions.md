@@ -50,13 +50,13 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Lint
         run: |
-          timoni lint ./modules/my-module
-      - name: Test build
+          timoni mod lint ./modules/my-module
+      - name: Test instance build
         run: |
           timoni build -n testing test ./modules/my-module
       - name: Push
         run: |
-          timoni push ./modules/my-module \
+          timoni mod push ./modules/my-module \
             oci://ghcr.io/${{ github.repository_owner }}/modules/my-module \
           	--version ${{ github.ref_name }} \
             --creds ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
@@ -93,13 +93,13 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Push
         run: |
-          timoni push ./modules/my-module \
+          timoni mod push ./modules/my-module \
             oci://docker.io/my-org/my-module \
             --version ${{ github.ref_name }}
       - name: Pull
         run: |
           mkdir -p /tmp/my-module
-          timoni pull oci://docker.io/my-org/my-module \
+          timoni mod pull oci://docker.io/my-org/my-module \
             --version ${{ github.ref_name }} \
             --output /tmp/my-module
 ```

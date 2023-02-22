@@ -47,7 +47,10 @@ waiting for 3 resource(s) to become ready...
 all resources are ready
 ```
 
+## List and inspect instances
+
 You can list all instances in a cluster with `timoni ls -A`.
+
 To get more information on an instance, you can use the `timoni inspect` sub-commands:
 
 ```console
@@ -60,7 +63,7 @@ version: 6.3.3
 
 To learn more about the available commands, use `timoni inspect --help`.
 
-## Configure an module instance
+## Configure a module instance
 
 To customise an instance, you can supply the configuration values using `values.cue` files.
 
@@ -81,7 +84,7 @@ Apply the config to the podinfo module to perform an upgrade:
 
 ```shell
 timoni -n test apply podinfo \
-  oci://ghcr.io/stefanprodan/modules/podinfo -v 6.3.3 \
+  oci://ghcr.io/stefanprodan/modules/podinfo -v 6.3.4 \
   --values qos-values.cue
 ```
 

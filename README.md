@@ -54,7 +54,8 @@ A module example can be found at [examples/podinfo](examples/podinfo).
 
 Commands for working with local modules:
 
-- `timoni lint <path/to/module>`
+- `timoni mod init <module-name>`
+- `timoni mod lint <path/to/module>`
 - `timoni build <name> <path/to/module> -n <namespace>`
 - `timoni apply <name> <path/to/module> -f <path/to/values.cue> --dry-run --diff`
 
@@ -62,8 +63,8 @@ Timoni modules are distributed as OCI artifacts and can be stored in container r
 
 Commands for working with remote modules:
 
-- `timoni push <path/to/module> oci://<module-url> -v <semver>`
-- `timoni pull oci://<module-url> -v <semver> -o <path/to/module>`
+- `timoni mod push <path/to/module> oci://<module-url> -v <semver>`
+- `timoni mod pull oci://<module-url> -v <semver> -o <path/to/module>`
 
 To learn more about modules, please read the [docs](https://timoni.sh/#timoni-modules).
 
@@ -90,9 +91,8 @@ values: {
 
 Commands for working with instances:
 
-- `timoni install <name> oci://<module-url> -v <semver> -n <namespace>`
-- `timoni upgrade <name> oci://<module-url> -v <semver> -f <path/to/values.cue>`
-- `timoni uninstall <name> -n <namespace>`
+- `timoni apply <name> oci://<module-url> -v <semver> -f <path/to/values.cue>`
+- `timoni delete <name> -n <namespace>`
 - `timoni list -n <namespace>`
 - `timoni inspect [module|values|resources] <name>`
 

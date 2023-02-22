@@ -36,7 +36,7 @@ func Test_Push(t *testing.T) {
 
 	// Push the module to registry
 	output, err := executeCommand(fmt.Sprintf(
-		"push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s",
 		modPath,
 		modURL,
 		modVer,
