@@ -33,7 +33,7 @@ var pullCmd = &cobra.Command{
 	Long: `The pull command downloads the module from a container registry and
 extract its contents the specified directory.`,
 	Example: `  # Pull a module version from GitHub Container Registry
-  timoni pull oci://ghcr.io/org/manifests/app --version 1.0.0 \
+  timoni mod pull oci://ghcr.io/org/manifests/app --version 1.0.0 \
 	--output ./path/to/module \
 	--creds timoni:$GITHUB_TOKEN
 `,
@@ -54,7 +54,7 @@ func init() {
 		"The directory path where the module content should be extracted.")
 	pullCmd.Flags().Var(&pullArgs.creds, pullArgs.creds.Type(), pullArgs.creds.Description())
 
-	rootCmd.AddCommand(pullCmd)
+	modCmd.AddCommand(pullCmd)
 }
 
 func pullCmdRun(cmd *cobra.Command, args []string) error {

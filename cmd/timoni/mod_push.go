@@ -39,12 +39,12 @@ var pushCmd = &cobra.Command{
 container registry using the version as the image tag.`,
 	Example: `  # Push a module to Docker Hub using the credentials from '~/.docker/config.json'
   echo $DOCKER_PAT | docker login --username timoni --password-stdin
-  timoni push ./path/to/module oci://docker.io/org/app \
+  timoni mod push ./path/to/module oci://docker.io/org/app \
 	--source="$(git config --get remote.origin.url)" \
 	--version=1.0.0
 
   # Push a module to GitHub Container Registry using a GitHub token
-  timoni push ./path/to/module oci://ghcr.io/org/modules/app \
+  timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
 	--source="$(git config --get remote.origin.url)" \
 	--version=1.0.0 \
 	--creds timoni:$GITHUB_TOKEN
@@ -71,7 +71,7 @@ func init() {
 	pushCmd.Flags().StringVarP(&pushArgs.output, "output", "o", "",
 		"The format in which the artifact digest should be printed, can be 'yaml' or 'json'.")
 
-	rootCmd.AddCommand(pushCmd)
+	modCmd.AddCommand(pushCmd)
 }
 
 func pushCmdRun(cmd *cobra.Command, args []string) error {

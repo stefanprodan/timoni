@@ -35,7 +35,7 @@ func Test_Pull(t *testing.T) {
 
 	// Package the module as an OCI artifact and push it to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s",
 		modPath,
 		modURL,
 		modVer,
@@ -45,7 +45,7 @@ func Test_Pull(t *testing.T) {
 	// Pull the OCI artifact from registry and extract the module to tmp
 	tmpDir := t.TempDir()
 	_, err = executeCommand(fmt.Sprintf(
-		"pull oci://%s -v %s -o %s",
+		"mod pull oci://%s -v %s -o %s",
 		modURL,
 		modVer,
 		tmpDir,

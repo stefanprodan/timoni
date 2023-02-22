@@ -33,7 +33,7 @@ func TestInspect(t *testing.T) {
 
 	// Package the module as an OCI artifact and push it to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"push %s %s -v %s",
+		"mod push %s %s -v %s",
 		modPath,
 		modURL,
 		modVer,

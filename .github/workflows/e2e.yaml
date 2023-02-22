@@ -41,7 +41,7 @@ jobs:
         run: make install
       - name: Push
         run: |
-          timoni push ./examples/podinfo oci://localhost:5000/podinfo \
+          timoni mod push ./examples/podinfo oci://localhost:5000/podinfo \
             --version 1.0.0
       - name: Template
         run: |

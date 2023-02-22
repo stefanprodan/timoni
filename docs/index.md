@@ -47,7 +47,8 @@ Module structure:
 
 Commands for working with local modules:
 
-- `timoni lint <path/to/module>`
+- `timoni mod init <module-name>`
+- `timoni mod lint <path/to/module>`
 - `timoni build <name> <path/to/module> -n <namespace>`
 - `timoni apply <name> <path/to/module> -f <path/to/values.cue> --dry-run --diff`
 
@@ -60,8 +61,8 @@ the version of a module is used as the OCI artifact tag.
 
 Commands for working with remote modules:
 
-- `timoni push <path/to/module> oci://<module-url> -v <semver>`
-- `timoni pull oci://<module-url> -v <semver> -o <path/to/module>`
+- `timoni mod push <path/to/module> oci://<module-url> -v <semver>`
+- `timoni mod pull oci://<module-url> -v <semver> -o <path/to/module>`
 
 Timoni produces artifacts compatible with Docker Hub, GitHub Container Registry,
 Azure Container Registry, Amazon Elastic Container Registry, Google Artifact Registry,
@@ -94,6 +95,7 @@ Commands for working with module instances:
 - `timoni upgrade <name> oci://<module-url> -v <semver> -f <path/to/values.cue>`
 - `timoni uninstall <name> -n <namespace>`
 - `timoni list -n <namespace>`
+- `timoni inspect [module|values|resources] <name>`
 
 The `install` and `upgrade` commands are aliases of `timoni apply`.
 To apply the Kubernetes resources belonging to a module instance,
