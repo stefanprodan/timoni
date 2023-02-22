@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var lintCmd = &cobra.Command{
+var lintModCmd = &cobra.Command{
 	Use:   "lint [MODULE PATH]",
 	Short: "Format and validate a local module",
 	Long: `The lint command formats the module's files with 'cue fmt' and
@@ -36,39 +36,39 @@ This command requires that the cue CLI binary is present in PATH.`,
 	Example: `  # lint a local module
   timoni mod lint ./path/to/module
 `,
-	RunE: runLintCmd,
+	RunE: runLintModCmd,
 }
 
-type lintFlags struct {
-	module string
+type lintModFlags struct {
+	path string
 }
 
-var lintArgs lintFlags
+var lintModArgs lintModFlags
 
 func init() {
-	modCmd.AddCommand(lintCmd)
+	modCmd.AddCommand(lintModCmd)
 }
 
-func runLintCmd(cmd *cobra.Command, args []string) error {
+func runLintModCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("module path is required")
 	}
 
-	lintArgs.module = args[0]
-	if fs, err := os.Stat(lintArgs.module); err != nil || !fs.IsDir() {
-		return fmt.Errorf("module not found at path %s", lintArgs.module)
+	lintModArgs.path = args[0]
+	if fs, err := os.Stat(lintModArgs.path); err != nil || !fs.IsDir() {
+		return fmt.Errorf("module not found at path %s", lintModArgs.path)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	logger.Println("formatting", lintArgs.module)
-	if err := execCUE(ctx, lintArgs.module, "fmt", "./..."); err != nil {
+	logger.Println("formatting", lintModArgs.path)
+	if err := execCUE(ctx, lintModArgs.path, "fmt", "./..."); err != nil {
 		return err
 	}
 
-	logger.Println("vetting", lintArgs.module)
-	if err := execCUE(ctx, lintArgs.module, "vet", "-c", "./..."); err != nil {
+	logger.Println("vetting", lintModArgs.path)
+	if err := execCUE(ctx, lintModArgs.path, "vet", "-c", "./..."); err != nil {
 		return err
 	}
 

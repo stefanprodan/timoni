@@ -22,7 +22,7 @@ import (
 
 var modCmd = &cobra.Command{
 	Use:   "mod",
-	Short: "Contains sub-commands for managing modules",
+	Short: "Commands for managing modules",
 }
 
 func init() {

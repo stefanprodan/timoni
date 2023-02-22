@@ -31,7 +31,7 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:     "delete [INSTANCE NAME]",
 	Aliases: []string{"uninstall"},
-	Short:   "Uninstall a module from the cluster",
+	Short:   "Uninstall a module instance from the cluster",
 	Example: `  # Uninstall the app module from the default namespace
   timoni -n default delete app
 

@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func Test_Push(t *testing.T) {
+func Test_PushMod(t *testing.T) {
 	modPath := "testdata/cs"
 
 	g := NewWithT(t)

@@ -22,7 +22,7 @@ import (
 
 var inspectCmd = &cobra.Command{
 	Use:   "inspect",
-	Short: "Display information about installed instances",
+	Short: "Commands for getting information about installed instances",
 }
 
 func init() {

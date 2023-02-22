@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func Test_Pull(t *testing.T) {
+func Test_PullMod(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/cs"
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
