@@ -27,7 +27,7 @@ import (
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
-var pullCmd = &cobra.Command{
+var pullModCmd = &cobra.Command{
 	Use:   "pull [MODULE URL]",
 	Short: "Pull a module version from a container registry",
 	Long: `The pull command downloads the module from a container registry and
@@ -40,21 +40,21 @@ extract its contents the specified directory.`,
 	RunE: pullCmdRun,
 }
 
-type pullFlags struct {
+type pullModFlags struct {
 	version flags.Version
 	output  string
 	creds   flags.Credentials
 }
 
-var pullArgs pullFlags
+var pullModArgs pullModFlags
 
 func init() {
-	pullCmd.Flags().VarP(&pullArgs.version, pullArgs.version.Type(), pullArgs.version.Shorthand(), pullArgs.version.Description())
-	pullCmd.Flags().StringVarP(&pullArgs.output, "output", "o", "",
+	pullModCmd.Flags().VarP(&pullModArgs.version, pullModArgs.version.Type(), pullModArgs.version.Shorthand(), pullModArgs.version.Description())
+	pullModCmd.Flags().StringVarP(&pullModArgs.output, "output", "o", "",
 		"The directory path where the module content should be extracted.")
-	pullCmd.Flags().Var(&pullArgs.creds, pullArgs.creds.Type(), pullArgs.creds.Description())
+	pullModCmd.Flags().Var(&pullModArgs.creds, pullModArgs.creds.Type(), pullModArgs.creds.Description())
 
-	modCmd.AddCommand(pullCmd)
+	modCmd.AddCommand(pullModCmd)
 }
 
 func pullCmdRun(cmd *cobra.Command, args []string) error {
@@ -62,21 +62,21 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module URL is required")
 	}
 	ociURL := args[0]
-	version := pullArgs.version.String()
+	version := pullModArgs.version.String()
 
 	if version == "" {
 		return fmt.Errorf("module version is required")
 	}
 
-	if pullArgs.output == "" {
-		return fmt.Errorf("invalid output path %s", pullArgs.output)
+	if pullModArgs.output == "" {
+		return fmt.Errorf("invalid output path %s", pullModArgs.output)
 	}
 
-	if fs, err := os.Stat(pullArgs.output); err != nil || !fs.IsDir() {
-		return fmt.Errorf("invalid output path %s", pullArgs.output)
+	if fs, err := os.Stat(pullModArgs.output); err != nil || !fs.IsDir() {
+		return fmt.Errorf("invalid output path %s", pullModArgs.output)
 	}
 
-	url, err := oci.ParseArtifactURL(ociURL + ":" + pullArgs.version.String())
+	url, err := oci.ParseArtifactURL(ociURL + ":" + pullModArgs.version.String())
 	if err != nil {
 		return err
 	}
@@ -86,17 +86,17 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 
 	ociClient := oci.NewClient(nil)
 
-	if pullArgs.creds != "" {
-		if err := ociClient.LoginWithCredentials(pullArgs.creds.String()); err != nil {
+	if pullModArgs.creds != "" {
+		if err := ociClient.LoginWithCredentials(pullModArgs.creds.String()); err != nil {
 			return fmt.Errorf("could not login with credentials: %w", err)
 		}
 	}
 
-	if _, err := ociClient.Pull(ctx, url, pullArgs.output); err != nil {
+	if _, err := ociClient.Pull(ctx, url, pullModArgs.output); err != nil {
 		return err
 	}
 
-	logger.Println("module extracted to", pullArgs.output)
+	logger.Println("module extracted to", pullModArgs.output)
 
 	return nil
 }

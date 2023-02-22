@@ -110,10 +110,10 @@ func resetCmdArgs() {
 	inspectModuleArgs = inspectModuleFlags{}
 	inspectResourcesArgs = inspectResourcesFlags{}
 	inspectValuesArgs = inspectValuesFlags{}
-	lintArgs = lintFlags{}
+	lintModArgs = lintModFlags{}
 	listArgs = listFlags{}
-	pullArgs = pullFlags{}
-	pushArgs = pushFlags{}
+	pullModArgs = pullModFlags{}
+	pushModArgs = pushModFlags{}
 }
 
 func rnd(prefix string, n int) string {

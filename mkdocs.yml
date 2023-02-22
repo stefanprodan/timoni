@@ -45,8 +45,8 @@ nav:
       - Modules:
           - Init: cmd/timoni_mod_init.md
           - Lint: cmd/timoni_mod_lint.md
-          - Push: cmd/timoni_push.md
-          - Pull: cmd/timoni_pull.md
+          - Push: cmd/timoni_mod_push.md
+          - Pull: cmd/timoni_mod_pull.md
       - Instances:
           - Apply: cmd/timoni_apply.md
           - Build: cmd/timoni_build.md

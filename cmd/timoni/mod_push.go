@@ -32,7 +32,7 @@ import (
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
-var pushCmd = &cobra.Command{
+var pushModCmd = &cobra.Command{
 	Use:   "push [MODULE PATH] [MODULE URL]",
 	Short: "Push a module to a container registry",
 	Long: `The push command packages the module as an OCI artifact and pushes it to the
@@ -49,10 +49,10 @@ container registry using the version as the image tag.`,
 	--version=1.0.0 \
 	--creds timoni:$GITHUB_TOKEN
 `,
-	RunE: pushCmdRun,
+	RunE: pushModCmdRun,
 }
 
-type pushFlags struct {
+type pushModFlags struct {
 	module      string
 	source      string
 	version     flags.Version
@@ -61,61 +61,61 @@ type pushFlags struct {
 	output      string
 }
 
-var pushArgs pushFlags
+var pushModArgs pushModFlags
 
 func init() {
-	pushCmd.Flags().VarP(&pushArgs.version, pushArgs.version.Type(), pushArgs.version.Shorthand(), pushArgs.version.Description())
-	pushCmd.Flags().StringVar(&pushArgs.source, "source", "",
+	pushModCmd.Flags().VarP(&pushModArgs.version, pushModArgs.version.Type(), pushModArgs.version.Shorthand(), pushModArgs.version.Description())
+	pushModCmd.Flags().StringVar(&pushModArgs.source, "source", "",
 		"The VCS address of the module. When left empty, the Git CLI is used to get the remote origin URL.")
-	pushCmd.Flags().Var(&pushArgs.creds, pushArgs.creds.Type(), pushArgs.creds.Description())
-	pushCmd.Flags().StringVarP(&pushArgs.output, "output", "o", "",
+	pushModCmd.Flags().Var(&pushModArgs.creds, pushModArgs.creds.Type(), pushModArgs.creds.Description())
+	pushModCmd.Flags().StringVarP(&pushModArgs.output, "output", "o", "",
 		"The format in which the artifact digest should be printed, can be 'yaml' or 'json'.")
 
-	modCmd.AddCommand(pushCmd)
+	modCmd.AddCommand(pushModCmd)
 }
 
-func pushCmdRun(cmd *cobra.Command, args []string) error {
+func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("module and URL are required")
 	}
-	pushArgs.module = args[0]
+	pushModArgs.module = args[0]
 	ociURL := args[1]
-	version := pushArgs.version.String()
+	version := pushModArgs.version.String()
 
 	url, err := oci.ParseArtifactURL(ociURL + ":" + version)
 	if err != nil {
 		return err
 	}
 
-	if fs, err := os.Stat(pushArgs.module); err != nil || !fs.IsDir() {
-		return fmt.Errorf("module not found at path %s", pushArgs.module)
+	if fs, err := os.Stat(pushModArgs.module); err != nil || !fs.IsDir() {
+		return fmt.Errorf("module not found at path %s", pushModArgs.module)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	if pushArgs.source == "" {
+	if pushModArgs.source == "" {
 		gitCmd := exec.CommandContext(ctx, "git", "config", "--get", "remote.origin.url")
-		gitCmd.Dir = pushArgs.module
+		gitCmd.Dir = pushModArgs.module
 		if repo, err := gitCmd.Output(); err == nil && len(repo) > 1 {
-			pushArgs.source = strings.TrimSuffix(string(repo), "\n")
+			pushModArgs.source = strings.TrimSuffix(string(repo), "\n")
 		}
 	}
 
 	ociClient := oci.NewClient(nil)
-	path := pushArgs.module
+	path := pushModArgs.module
 	meta := oci.Metadata{
-		Source:   pushArgs.source,
+		Source:   pushModArgs.source,
 		Revision: version,
 	}
 
-	if pushArgs.creds != "" {
-		if err := ociClient.LoginWithCredentials(pushArgs.creds.String()); err != nil {
+	if pushModArgs.creds != "" {
+		if err := ociClient.LoginWithCredentials(pushModArgs.creds.String()); err != nil {
 			return fmt.Errorf("could not login with credentials: %w", err)
 		}
 	}
 
-	digestURL, err := ociClient.Push(ctx, url, path, meta, pushArgs.ignorePaths)
+	digestURL, err := ociClient.Push(ctx, url, path, meta, pushModArgs.ignorePaths)
 	if err != nil {
 		return fmt.Errorf("pushing artifact failed: %w", err)
 	}
@@ -142,7 +142,7 @@ func pushCmdRun(cmd *cobra.Command, args []string) error {
 		Digest:     digest.DigestStr(),
 	}
 
-	switch pushArgs.output {
+	switch pushModArgs.output {
 	case "json":
 		marshalled, err := json.MarshalIndent(&info, "", "  ")
 		if err != nil {

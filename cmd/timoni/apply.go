@@ -43,6 +43,25 @@ var applyCmd = &cobra.Command{
 	Use:     "apply [INSTANCE NAME] [MODULE URL]",
 	Aliases: []string{"install", "upgrade"},
 	Short:   "Install or upgrade a module instance",
+	Long: `The apply command installs or upgrades a module instance on the Kubernetes cluster.
+
+The apply command performs the following steps:
+
+- Pulls the module version from the specified container registry.
+- If the registry is private, uses the credentials found in '~/.docker/config.json'.
+- If the registry credentials are specified with '--creds', these take priority over the docker ones.
+- Creates the specified '--namespace' if it doesn't exists.
+- Merges all the values supplied with '--values' on top of the default values found in the module.
+- Builds the module by passing the instance name, namespace and values.
+- Labels the resulting Kubernetes resources with the instance name and namespace.
+- Applies the Kubernetes resources on the cluster.
+- Creates or updates the instance inventory with the last applied resources IDs.
+- Recreates the resources annotated with 'action.timoni.sh/force: "enabled"' if they contain changes to immutable fields.
+- Deletes the resources which were previously applied but are missing from the current instance.
+- Skips the resources annotated with 'action.timoni.sh/prune: "disabled"' from deletion.
+- Waits for the applied resources to become ready.
+- Waits for the deleted resources to be finalised.
+`,
 	Example: `  # Install a module instance and create the namespace if it doesn't exists
   timoni apply -n apps app oci://docker.io/org/module -v 1.0.0
 
