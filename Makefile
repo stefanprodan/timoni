@@ -34,10 +34,14 @@ vet: ## Vet Go code.
 	go vet ./...
 
 lint-samples: build
-	./bin/timoni lint ./examples/podinfo
+	./bin/timoni mod lint ./examples/podinfo
 	cue fmt ./examples/podinfo-values/
-	./bin/timoni lint ./cmd/timoni/testdata/cs
+	./bin/timoni mod lint ./cmd/timoni/testdata/cs
 	cue fmt ./cmd/timoni/testdata/cs-values/
+
+push-podinfo: build
+	$pv=$(shell cat ./examples/podinfo/values.cue | awk '/tag:/ {print $$2}' | tr -d '"')
+	./bin/timoni push ./examples/podinfo oci://ghcr.io/stefanprodan/modules/podinfo --version $$pv --source https://github.com/stefanprodan/podinfo
 
 .PHONY: install
 install: ## Build and install the CLI binary.

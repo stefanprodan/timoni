@@ -43,12 +43,13 @@ nav:
   - GitHub Actions: github-actions.md
   - Command Reference:
       - Modules:
-          - Build: cmd/timoni_build.md
+          - Init: cmd/timoni_mod_init.md
+          - Lint: cmd/timoni_mod_lint.md
           - Push: cmd/timoni_push.md
           - Pull: cmd/timoni_pull.md
-          - Lint: cmd/timoni_lint.md
       - Instances:
           - Apply: cmd/timoni_apply.md
+          - Build: cmd/timoni_build.md
           - Delete: cmd/timoni_delete.md
           - List: cmd/timoni_list.md
           - Inspect Module: cmd/timoni_inspect_module.md

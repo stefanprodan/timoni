@@ -30,11 +30,11 @@ import (
 var lintCmd = &cobra.Command{
 	Use:   "lint [MODULE PATH]",
 	Short: "Format and validate a local module",
-	Long: `The list command formats the module's files with 'cue fmt' and
+	Long: `The lint command formats the module's files with 'cue fmt' and
 validates the cue definitions with 'cue vet -c'.
 This command requires that the cue CLI binary is present in PATH.`,
 	Example: `  # lint a local module
-  timoni lint ./path/to/module
+  timoni mod lint ./path/to/module
 `,
 	RunE: runLintCmd,
 }
@@ -46,7 +46,7 @@ type lintFlags struct {
 var lintArgs lintFlags
 
 func init() {
-	rootCmd.AddCommand(lintCmd)
+	modCmd.AddCommand(lintCmd)
 }
 
 func runLintCmd(cmd *cobra.Command, args []string) error {
