@@ -18,6 +18,9 @@ import (
 		template: {
 			metadata: {
 				labels: _config.selectorLabels
+				if _config.podAnnotations != _|_ {
+					annotations: _config.podAnnotations
+				}
 			}
 			spec: corev1.#PodSpec & {
 				serviceAccountName: _config.metadata.name
@@ -61,6 +64,9 @@ import (
 				}
 				if _config.tolerations != _|_ {
 					tolerations: _config.tolerations
+				}
+				if _config.imagePullSecrets != _|_ {
+					imagePullSecrets: _config.imagePullSecrets
 				}
 			}
 		}

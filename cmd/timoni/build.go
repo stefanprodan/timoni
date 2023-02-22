@@ -36,11 +36,11 @@ import (
 var buildCmd = &cobra.Command{
 	Use:     "build [INSTANCE NAME] [MODULE URL]",
 	Aliases: []string{"template"},
-	Short:   "Build a module and print the resulting Kubernetes resources",
-	Example: `  # Build a local module with the default values
+	Short:   "Build an instance from a module and print the resulting Kubernetes resources",
+	Example: `  # Build an instance from a local module
   timoni build app ./path/to/module --output yaml
 
-  # Build a module with custom values by merging them in the specified order. 
+  # Build an instance with custom values by merging them in the specified order
   timoni build app ./path/to/module \
   --values ./values-1.cue \
   --values ./values-2.cue

@@ -2,7 +2,8 @@ name: docs
 
 on:
   push:
-    branches: [ 'docs*', 'main' ]
+    branches: [ 'docs*' ]
+    tags: [ 'v*' ]
 
 permissions:
   contents: read

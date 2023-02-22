@@ -44,20 +44,20 @@ var applyCmd = &cobra.Command{
 	Aliases: []string{"install", "upgrade"},
 	Short:   "Install or upgrade a module instance",
 	Example: `  # Install a module instance and create the namespace if it doesn't exists
-  timoni apply -n apps app oci://docker.io/org/module --version 1.0.0
+  timoni apply -n apps app oci://docker.io/org/module -v 1.0.0
 
-  # Do a dry-run apply and print the diff
+  # Do a dry-run upgrade and print the diff
   timoni apply -n apps app oci://docker.io/org/module -v 1.0.0 \
   --values ./values-1.cue \
   --dry-run --diff
 
-  # Apply a module instance with custom values by merging them in the specified order
+  # Install or upgrade an instance with custom values by merging them in the specified order
   timoni apply -n apps app oci://docker.io/org/module -v 1.0.0 \
   --values ./values-1.cue \
   --values ./values-2.cue
 
-  # Apply a local module and recreate immutable Kubernetes resources such as Jobs
-  timoni apply -n apps app ./path/to/module \
+  # Upgrade an instance and recreate immutable Kubernetes resources such as Jobs
+  timoni apply -n apps app oci://docker.io/org/module -v 2.0.0 \
   --values ./values-1.cue \
   --force
 `,

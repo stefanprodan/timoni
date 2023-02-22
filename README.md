@@ -18,7 +18,7 @@ to offer a better experience of creating, packaging and delivering apps to Kuber
 > **Warning**
 >
 > Note that Timoni in under active development and is still in its infancy.
-> Its APIs and interfaces may change in a backwards incompatible manner.
+> Its APIs and command-line interface may change in a backwards incompatible manner.
 
 ## Get started
 

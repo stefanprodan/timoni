@@ -4,7 +4,10 @@
 package main
 
 values: {
-	image: tag: "6.3.3"
+	image: {
+		repository: "ghcr.io/stefanprodan/podinfo"
+		tag:        "6.3.4"
+	}
 
 	autoscaling: enabled: false
 	monitoring: enabled:  false
