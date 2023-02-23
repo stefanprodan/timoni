@@ -95,7 +95,8 @@ Commands for working with module instances:
 - `timoni upgrade <name> oci://<module-url> -v <semver> -f <path/to/values.cue>`
 - `timoni uninstall <name> -n <namespace>`
 - `timoni list -n <namespace>`
-- `timoni inspect [module|values|resources] <name>`
+- `timoni inspect [module|values|resources] <name> -n <namespace>`
+- `timoni status <name> -n <namespace>`
 
 The `install` and `upgrade` commands are aliases of `timoni apply`.
 To apply the Kubernetes resources belonging to a module instance,

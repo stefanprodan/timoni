@@ -94,7 +94,8 @@ Commands for working with instances:
 - `timoni apply <name> oci://<module-url> -v <semver> -f <path/to/values.cue>`
 - `timoni delete <name> -n <namespace>`
 - `timoni list -n <namespace>`
-- `timoni inspect [module|values|resources] <name>`
+- `timoni inspect [module|values|resources] <name> -n <namespace>`
+- `timoni status <name> -n <namespace>`
 
 To learn more about instances, please read the [docs](https://timoni.sh/#timoni-instances).
 
