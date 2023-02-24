@@ -18,7 +18,6 @@ package engine
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,7 +26,6 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
 	"cuelang.org/go/encoding/yaml"
-	"github.com/fluxcd/pkg/runtime/transform"
 	"github.com/fluxcd/pkg/ssa"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -39,8 +37,8 @@ const (
 	defaultOutputExp  = "timoni.objects"
 )
 
-// Builder compiles CUE definitions to Kubernetes objects.
-type Builder struct {
+// ModuleBuilder compiles CUE definitions to Kubernetes objects.
+type ModuleBuilder struct {
 	ctx        *cue.Context
 	moduleRoot string
 	pkgName    string
@@ -49,12 +47,12 @@ type Builder struct {
 	namespace  string
 }
 
-// NewBuilder creates a Builder for the given module and package.
-func NewBuilder(ctx *cue.Context, name, namespace, moduleRoot, pkgName string) *Builder {
+// NewModuleBuilder creates a ModuleBuilder for the given module and package.
+func NewModuleBuilder(ctx *cue.Context, name, namespace, moduleRoot, pkgName string) *ModuleBuilder {
 	if ctx == nil {
 		ctx = cuecontext.New()
 	}
-	b := &Builder{
+	b := &ModuleBuilder{
 		ctx:        ctx,
 		moduleRoot: moduleRoot,
 		pkgName:    pkgName,
@@ -68,42 +66,19 @@ func NewBuilder(ctx *cue.Context, name, namespace, moduleRoot, pkgName string) *
 	return b
 }
 
-// MergeValuesFile merges the given values overlays into values.cue.
-func (b *Builder) MergeValuesFile(overlays []string) error {
-	vFinalMap := make(map[string]interface{})
+// MergeValuesFile merges the given values overlays into the module's root values.cue.
+func (b *ModuleBuilder) MergeValuesFile(overlays []string) error {
+	vb := NewValuesBuilder(b.ctx)
 	defaultFile := filepath.Join(b.pkgPath, defaultValuesFile)
 
-	vDefaultMap, err := b.valuesFromFile(defaultFile)
+	finalVal, err := vb.MergeValues(overlays, defaultFile)
 	if err != nil {
-		return fmt.Errorf("invalid values in %s, error: %w", defaultFile, err)
-	}
-	vFinalMap = transform.MergeMaps(vFinalMap, vDefaultMap)
-
-	for _, overlay := range overlays {
-		vOverlayMap, err := b.valuesFromFile(overlay)
-		if err != nil {
-			return fmt.Errorf("invalid values in %s, error: %w", overlay, err)
-		}
-
-		vFinalMap = transform.MergeMaps(vFinalMap, vOverlayMap)
+		return err
 	}
 
-	vFinalData, err := json.Marshal(vFinalMap)
-	if err != nil {
-		return fmt.Errorf("mergeing values failed, error: %w", err)
-	}
+	cueGen := fmt.Sprintf("package %s\n%s: %v", b.pkgName, defaultValuesName, finalVal)
 
-	vFinal := b.ctx.CompileString(string(vFinalData))
-	if vFinal.Err() != nil {
-		return fmt.Errorf("compiling final alues failed, error: %w", vFinal.Err())
-	}
-
-	cueGen := fmt.Sprintf("package %s\n%s: %v", b.pkgName, defaultValuesName, vFinal)
-
-	//logger.Println(string(vFinalData))
-	//logger.Println(cueGen)
-
-	// overwrite the values.cue file with the merged values (concrete)
+	// overwrite the values.cue file with the merged values
 	if err := os.MkdirAll(b.moduleRoot, os.ModePerm); err != nil {
 		return err
 	}
@@ -111,7 +86,7 @@ func (b *Builder) MergeValuesFile(overlays []string) error {
 }
 
 // Build builds a CUE instances for the specified package and returns the CUE value.
-func (b *Builder) Build() (cue.Value, error) {
+func (b *ModuleBuilder) Build() (cue.Value, error) {
 	var value cue.Value
 	cfg := &load.Config{
 		ModuleRoot: b.moduleRoot,
@@ -144,7 +119,7 @@ func (b *Builder) Build() (cue.Value, error) {
 }
 
 // GetObjects coverts the CUE value to Kubernetes unstructured objects.
-func (b *Builder) GetObjects(value cue.Value) ([]*unstructured.Unstructured, error) {
+func (b *ModuleBuilder) GetObjects(value cue.Value) ([]*unstructured.Unstructured, error) {
 	expr := value.LookupPath(cue.ParsePath(defaultOutputExp))
 	if expr.Err() != nil {
 		return nil, fmt.Errorf("lookup %s failed, error: %w", defaultOutputExp, expr.Err())
@@ -168,7 +143,7 @@ func (b *Builder) GetObjects(value cue.Value) ([]*unstructured.Unstructured, err
 }
 
 // GetDefaultValues extracts the default values from the module.
-func (b *Builder) GetDefaultValues() (string, error) {
+func (b *ModuleBuilder) GetDefaultValues() (string, error) {
 	filePath := filepath.Join(b.pkgPath, defaultValuesFile)
 	var value cue.Value
 	vData, err := os.ReadFile(filePath)
@@ -190,7 +165,7 @@ func (b *Builder) GetDefaultValues() (string, error) {
 }
 
 // GetModuleName returns the module name as defined in 'cue.mod/module.cue'.
-func (b *Builder) GetModuleName() (string, error) {
+func (b *ModuleBuilder) GetModuleName() (string, error) {
 	filePath := filepath.Join(b.moduleRoot, "cue.mod", "module.cue")
 	var value cue.Value
 	vData, err := os.ReadFile(filePath)
@@ -217,41 +192,11 @@ func (b *Builder) GetModuleName() (string, error) {
 }
 
 // GetValues extracts the values from the build result.
-func (b *Builder) GetValues(value cue.Value) (string, error) {
+func (b *ModuleBuilder) GetValues(value cue.Value) (string, error) {
 	expr := value.LookupPath(cue.ParsePath(defaultValuesName))
 	if expr.Err() != nil {
 		return "", fmt.Errorf("lookup %s failed, error: %w", defaultValuesName, expr.Err())
 	}
 
 	return fmt.Sprintf("%v", expr.Eval()), nil
-}
-
-func (b *Builder) valuesFromFile(filePath string) (map[string]interface{}, error) {
-	vData, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	vObj := b.ctx.CompileBytes(vData)
-	if vObj.Err() != nil {
-		return nil, vObj.Err()
-	}
-
-	vValue := vObj.LookupPath(cue.ParsePath(defaultValuesName))
-	if vValue.Err() != nil {
-		return nil, vObj.Err()
-	}
-
-	vJSON, err := vValue.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	vMap := make(map[string]interface{})
-	err = json.Unmarshal(vJSON, &vMap)
-	if err != nil {
-		return nil, err
-	}
-
-	return vMap, nil
 }

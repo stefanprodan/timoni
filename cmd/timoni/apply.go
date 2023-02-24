@@ -151,7 +151,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	cuectx := cuecontext.New()
-	builder := engine.NewBuilder(
+	builder := engine.NewModuleBuilder(
 		cuectx,
 		applyArgs.name,
 		*kubeconfigArgs.Namespace,

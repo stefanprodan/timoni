@@ -7,7 +7,6 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/distribution/distribution/v3 v3.0.0-20230220140006-a38eb86fa65d
 	github.com/fluxcd/pkg/oci v0.20.0
-	github.com/fluxcd/pkg/runtime v0.29.0
 	github.com/fluxcd/pkg/ssa v0.24.0
 	github.com/google/go-containerregistry v0.13.0
 	github.com/mattn/go-shellwords v1.0.12
@@ -135,12 +134,15 @@ require (
 	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/vbatts/tar-split v0.11.2 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
 	github.com/yvasiyarov/go-metrics v0.0.0-20140926110328-57bccd1ccd43 // indirect
 	github.com/yvasiyarov/gorelic v0.0.0-20141212073537-a9bba5b9ab50 // indirect
 	github.com/yvasiyarov/newrelic_platform_go v0.0.0-20140908184405-b21fdbd4370f // indirect
 	go.starlark.net v0.0.0-20221028183056-acb66ad56dd2 // indirect
+	go.uber.org/atomic v1.10.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.2.0 // indirect

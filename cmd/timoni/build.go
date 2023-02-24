@@ -103,7 +103,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	builder := engine.NewBuilder(
+	builder := engine.NewModuleBuilder(
 		ctx,
 		buildArgs.name,
 		*kubeconfigArgs.Namespace,
