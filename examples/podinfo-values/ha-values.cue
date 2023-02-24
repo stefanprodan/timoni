@@ -1,15 +1,22 @@
 values: {
-	resources: requests: {
-		cpu:    "100m"
-		memory: "128Mi"
+	_mcpu: 100
+	_mem:  128
+	resources: {
+		requests: {
+			cpu:    "\(_mcpu)m"
+			memory: "\(_mem)Mi"
+		}
+		limits: {
+			cpu:    "\(_mcpu*2)m"
+			memory: "\(_mem*2)Mi"
+		}
 	}
-	resources: limits: resources.requests
 
 	autoscaling: {
 		enabled:     true
 		minReplicas: 2
 		maxReplicas: 10
 		cpu:         90
-		memory:      "100Mi"
+		memory:      "\(_mem*2-10)Mi"
 	}
 }

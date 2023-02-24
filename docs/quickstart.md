@@ -63,6 +63,12 @@ version: 6.3.3
 
 To learn more about the available commands, use `timoni inspect --help`.
 
+To see the status of the Kubernetes resources managed by an instance:
+
+```shell
+timoni -n test status podinfo 
+```
+
 ## Configure a module instance
 
 To customise an instance, you can supply the configuration values using `values.cue` files.
@@ -93,9 +99,30 @@ be made on the cluster with `timoni apply --dry-run --diff`.
 
 To learn more about all the available apply options, use `timoni apply --help`.
 
+In the values files you can use arithmetic operations,
+string interpolation and everything else that CUE std lib supports.
+For example, to set the resources limits to 2x requests:
+
+```cue
+values: {
+	_mcpu: 500
+	_mem:  256
+	resources: {
+		requests: {
+			cpu:    "\(_mcpu)m"
+			memory: "\(_mem)Mi"
+		}
+		limits: {
+			cpu:    "\(_mcpu*2)m"
+			memory: "\(_mem*2)Mi"
+		}
+	}
+}
+```
+
 ## Uninstall a module instance
 
-To uninstall an instance and delete all the managed Kubernetes resource:
+To uninstall an instance and delete all the managed Kubernetes resources:
 
 ```shell
 timoni -n test delete podinfo --wait
