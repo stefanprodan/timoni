@@ -20,17 +20,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Restore Go cache
-        uses: actions/cache@v1
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
           go-version: 1.20.x
+          cache: true
+          cache-dependency-path: |
+            **/go.sum
+            **/go.mod
       - name: Setup Kubernetes
         uses: helm/kind-action@v1.5.0
         with:
@@ -42,7 +39,8 @@ jobs:
       - name: Push
         run: |
           timoni mod push ./examples/podinfo oci://localhost:5000/podinfo \
-            --version 1.0.0
+            --version 1.0.0 \
+            --latest
       - name: Template
         run: |
           timoni template podinfo oci://localhost:5000/podinfo \
@@ -51,23 +49,20 @@ jobs:
       - name: Install
         run: |
           timoni install podinfo oci://localhost:5000/podinfo \
-            -v 1.0.0 \
-            -n test \
+            --namespace test \
             --wait
       - name: Upgrade (enable HPA)
         run: |
           timoni upgrade podinfo oci://localhost:5000/podinfo \
             -f ./examples/podinfo-values/ha-values.cue \
-            -v 1.0.0 \
-            -n test \
+            --namespace test \
             --wait
       - name: Upgrade (disable HPA, enable ingress)
         run: |
           timoni apply podinfo oci://localhost:5000/podinfo \
             -f ./examples/podinfo-values/psp-values.cue \
             -f ./examples/podinfo-values/ingress-values.cue \
-            -v 1.0.0 \
-            -n test \
+            --namespace test \
             --wait
       - name: List
         run: |
@@ -77,6 +72,9 @@ jobs:
           timoni inspect resources podinfo -n test
           timoni inspect module podinfo -n test
           timoni inspect values podinfo -n test
+      - name: Status
+        run: |
+          timoni status podinfo -n test
       - name: Uninstall
         run: |
           timoni uninstall podinfo -n test --wait
