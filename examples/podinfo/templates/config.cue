@@ -5,7 +5,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Config defines the schema for the Instance values.
+// Config defines the schema and defaults for the Instance values.
 #Config: {
 	// Metadata (common to all resources)
 	metadata: metav1.#ObjectMeta
@@ -28,8 +28,8 @@ import (
 
 	// Container
 	image: {
-		repository: string
-		tag:        string
+		repository: *"ghcr.io/stefanprodan/podinfo" | string
+		tag:        *"6.3.4" | string
 		pullPolicy: *"IfNotPresent" | string
 	}
 	resources?:       corev1.#ResourceRequirements
@@ -47,7 +47,7 @@ import (
 		maxReplicas: *minReplicas | int & >=minReplicas
 	}
 
-	// Ingress (optinal)
+	// Ingress (optional)
 	ingress: {
 		enabled: *false | bool
 		tls:     *false | bool

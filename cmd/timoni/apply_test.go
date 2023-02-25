@@ -31,7 +31,7 @@ import (
 )
 
 func TestApply(t *testing.T) {
-	modPath := "testdata/cs"
+	modPath := "testdata/module"
 	tGroup := fmt.Sprintf("%s.%s", strings.ToLower(apiv1.InstanceKind), apiv1.GroupVersion.Group)
 	name := rnd("my-instance", 5)
 	namespace := rnd("my-namespace", 5)
@@ -150,7 +150,7 @@ func TestApply(t *testing.T) {
 }
 
 func TestApply_Actions(t *testing.T) {
-	modPath := "testdata/cs"
+	modPath := "testdata/module"
 	name := rnd("my-instance", 5)
 	namespace := rnd("my-namespace", 5)
 

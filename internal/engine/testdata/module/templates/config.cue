@@ -5,7 +5,7 @@ package templates
 		name:      *"test" | string
 		namespace: *"default" | string
 	}
-	hostname: string
+	hostname: *"default.internal" | string
 }
 
 #Instance: {

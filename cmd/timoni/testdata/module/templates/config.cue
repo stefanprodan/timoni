@@ -10,7 +10,7 @@ package templates
 
 	client: enabled: *true | bool
 	server: enabled: *true | bool
-	domain: string
+	domain: *"example.internal" | string
 }
 
 #Instance: {

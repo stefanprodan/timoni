@@ -30,7 +30,7 @@ import (
 )
 
 func TestDelete(t *testing.T) {
-	modPath := "testdata/cs"
+	modPath := "testdata/module"
 	name := rnd("my-instance", 5)
 	namespace := rnd("my-namespace", 5)
 

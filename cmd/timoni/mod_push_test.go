@@ -28,7 +28,7 @@ import (
 )
 
 func Test_PushMod(t *testing.T) {
-	modPath := "testdata/cs"
+	modPath := "testdata/module"
 
 	g := NewWithT(t)
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))

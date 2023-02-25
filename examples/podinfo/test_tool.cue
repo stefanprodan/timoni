@@ -6,12 +6,16 @@ import (
 	"text/tabwriter"
 )
 
+// The build command generates the Kubernetes manifests and prints the multi-docs YAML to stdout.
+// Run 'cue -t test build' to use the values from test_values.cue.
 command: build: {
 	task: print: cli.Print & {
 		text: yaml.MarshalStream(timoni.objects)
 	}
 }
 
+// The ls command prints a table with the Kubernetes resources kind, namespace, name and version.
+// Run 'cue -t test ls' to use the values from test_values.cue.
 command: ls: {
 	task: print: cli.Print & {
 		text: tabwriter.Write([
