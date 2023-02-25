@@ -24,6 +24,7 @@ import (
 	oci "github.com/fluxcd/pkg/oci/client"
 	"github.com/spf13/cobra"
 
+	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
@@ -32,7 +33,11 @@ var pullModCmd = &cobra.Command{
 	Short: "Pull a module version from a container registry",
 	Long: `The pull command downloads the module from a container registry and
 extract its contents the specified directory.`,
-	Example: `  # Pull a module version from GitHub Container Registry
+	Example: `  # Pull the latest stable version of a module
+  timoni mod pull oci://docker.io/org/app \
+	--output ./path/to/module
+
+  # Pull a specific module version from GitHub Container Registry
   timoni mod pull oci://ghcr.io/org/manifests/app --version 1.0.0 \
 	--output ./path/to/module \
 	--creds timoni:$GITHUB_TOKEN
@@ -62,10 +67,10 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module URL is required")
 	}
 	ociURL := args[0]
-	version := pullModArgs.version.String()
 
+	version := pullModArgs.version.String()
 	if version == "" {
-		return fmt.Errorf("module version is required")
+		version = engine.LatestTag
 	}
 
 	if pullModArgs.output == "" {
@@ -76,7 +81,7 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid output path %s", pullModArgs.output)
 	}
 
-	url, err := oci.ParseArtifactURL(ociURL + ":" + pullModArgs.version.String())
+	url, err := oci.ParseArtifactURL(ociURL + ":" + version)
 	if err != nil {
 		return err
 	}

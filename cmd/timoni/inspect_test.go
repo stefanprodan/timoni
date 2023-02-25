@@ -92,3 +92,43 @@ func TestInspect(t *testing.T) {
 		g.Expect(output).To(ContainSubstring(fmt.Sprintf("ConfigMap/%s/%s-client", namespace, name)))
 	})
 }
+
+func TestInspect_Latest(t *testing.T) {
+	g := NewWithT(t)
+	modPath := "testdata/module"
+	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modVer := "1.0.0"
+	name := rnd("my-instance", 5)
+	namespace := rnd("my-namespace", 5)
+
+	// Package the module as an OCI artifact and push it to registry
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s %s -v %s --latest",
+		modPath,
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	// Install the latest version from the registry
+	_, err = executeCommand(fmt.Sprintf(
+		"apply -n %s %s %s -p main --wait",
+		namespace,
+		name,
+		modURL,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Run("inspect module", func(t *testing.T) {
+		g := NewWithT(t)
+		output, err := executeCommand(fmt.Sprintf(
+			"inspect module -n %s %s",
+			namespace,
+			name,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		// Verify inspect output contains the module semver
+		g.Expect(output).To(ContainSubstring(modVer))
+	})
+}

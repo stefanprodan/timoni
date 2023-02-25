@@ -30,6 +30,9 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
+// LatestTag is the OCI tag name used to denote the latest stable version of a module.
+const LatestTag = "latest"
+
 // Fetcher downloads a module and extracts it locally.
 type Fetcher struct {
 	ctx     context.Context
@@ -79,7 +82,7 @@ func (f *Fetcher) Fetch() (*apiv1.ModuleReference, error) {
 }
 
 func (f *Fetcher) fetchOCI(dir string) (*apiv1.ModuleReference, error) {
-	if _, err := semver.StrictNewVersion(f.version); err != nil {
+	if _, err := semver.StrictNewVersion(f.version); f.version != LatestTag && err != nil {
 		return nil, fmt.Errorf("version is not in semver format, error: %w", err)
 	}
 
@@ -108,7 +111,7 @@ func (f *Fetcher) fetchOCI(dir string) (*apiv1.ModuleReference, error) {
 
 	mr := apiv1.ModuleReference{
 		Repository: f.src,
-		Version:    f.version,
+		Version:    meta.Revision,
 		Digest:     digest.DigestStr(),
 	}
 

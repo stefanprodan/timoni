@@ -123,8 +123,13 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	applyArgs.name = args[0]
 	applyArgs.module = args[1]
 
+	version := applyArgs.version.String()
+	if version == "" {
+		version = engine.LatestTag
+	}
+
 	if strings.HasPrefix(applyArgs.module, oci.OCIRepositoryPrefix) {
-		logger.Printf("pulling %s:%s", applyArgs.module, applyArgs.version.String())
+		logger.Printf("pulling %s:%s", applyArgs.module, version)
 	} else {
 		logger.Println("building", applyArgs.module)
 	}
@@ -141,7 +146,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	fetcher := engine.NewFetcher(
 		ctxPull,
 		applyArgs.module,
-		applyArgs.version.String(),
+		version,
 		tmpDir,
 		applyArgs.creds.String(),
 	)
@@ -163,6 +168,8 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	logger.Printf("using module %s version %s", mod.Name, mod.Version)
 
 	if len(applyArgs.valuesFiles) > 0 {
 		err = builder.MergeValuesFile(applyArgs.valuesFiles)
@@ -186,28 +193,27 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to extract objects, error: %w", err)
 	}
 
-	sm, err := runtime.NewResourceManager(kubeconfigArgs)
+	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
 	}
 
-	sm.SetOwnerLabels(objects, applyArgs.name, *kubeconfigArgs.Namespace)
+	rm.SetOwnerLabels(objects, applyArgs.name, *kubeconfigArgs.Namespace)
 
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	iExists := false
-	iName := fmt.Sprintf("%s/%s", applyArgs.name, *kubeconfigArgs.Namespace)
-	iStorage := runtime.NewStorageManager(sm)
-	if _, err := iStorage.Get(ctx, applyArgs.name, *kubeconfigArgs.Namespace); err == nil {
-		iExists = true
+	exists := false
+	sm := runtime.NewStorageManager(rm)
+	if _, err := sm.Get(ctx, applyArgs.name, *kubeconfigArgs.Namespace); err == nil {
+		exists = true
 	}
 
 	if applyArgs.dryrun || applyArgs.diff {
 		diffOpts := ssa.DefaultDiffOptions()
 		sort.Sort(ssa.SortableUnstructureds(objects))
 		for _, r := range objects {
-			change, liveObject, mergedObject, err := sm.Diff(ctx, r, diffOpts)
+			change, liveObject, mergedObject, err := rm.Diff(ctx, r, diffOpts)
 			if err != nil {
 				logger.Println(err)
 				continue
@@ -239,21 +245,21 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	iManager := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, *mod)
+	im := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, *mod)
 
-	if err := iManager.AddObjects(objects); err != nil {
+	if err := im.AddObjects(objects); err != nil {
 		return fmt.Errorf("adding objects to instance failed, error: %w", err)
 	}
 
-	if !iExists {
-		logger.Println("installing", iName)
+	if !exists {
+		logger.Printf("installing %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace)
 
-		nsExists, err := iStorage.NamespaceExists(ctx, *kubeconfigArgs.Namespace)
+		nsExists, err := sm.NamespaceExists(ctx, *kubeconfigArgs.Namespace)
 		if err != nil {
 			return fmt.Errorf("instance init failed, error: %w", err)
 		}
 
-		if err := iStorage.Apply(ctx, &iManager.Instance, true); err != nil {
+		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
 			return fmt.Errorf("instance init failed, error: %w", err)
 		}
 
@@ -261,11 +267,11 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 			logger.Printf("Namespace/%s created", *kubeconfigArgs.Namespace)
 		}
 	} else {
-		logger.Println("upgrading", iName)
+		logger.Printf("upgrading %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace)
 	}
 
 	applyOpts := runtime.ApplyOptions(applyArgs.force, time.Minute)
-	cs, err := sm.ApplyAllStaged(ctx, objects, applyOpts)
+	cs, err := rm.ApplyAllStaged(ctx, objects, applyOpts)
 	if err != nil {
 		return err
 	}
@@ -273,19 +279,19 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		logger.Println(change.String())
 	}
 
-	staleObjects, err := iStorage.GetStaleObjects(ctx, &iManager.Instance)
+	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
 	if err != nil {
 		return fmt.Errorf("getting stale objects failed, error: %w", err)
 	}
 
-	if err := iStorage.Apply(ctx, &iManager.Instance, true); err != nil {
+	if err := sm.Apply(ctx, &im.Instance, true); err != nil {
 		return fmt.Errorf("storing instance failed, error: %w", err)
 	}
 
 	var deletedObjects []*unstructured.Unstructured
 	if len(staleObjects) > 0 {
 		deleteOpts := runtime.DeleteOptions(applyArgs.name, *kubeconfigArgs.Namespace)
-		changeSet, err := sm.DeleteAll(ctx, staleObjects, deleteOpts)
+		changeSet, err := rm.DeleteAll(ctx, staleObjects, deleteOpts)
 		if err != nil {
 			return fmt.Errorf("prunning objects failed, error: %w", err)
 		}
@@ -297,14 +303,14 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	if applyArgs.wait {
 		logger.Println(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(objects)))
-		err = sm.Wait(objects, ssa.DefaultWaitOptions())
+		err = rm.Wait(objects, ssa.DefaultWaitOptions())
 		if err != nil {
 			return err
 		}
 
 		if len(deletedObjects) > 0 {
 			logger.Printf("waiting for %v resource(s) to be finalized...", len(deletedObjects))
-			err = sm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
+			err = rm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
 			if err != nil {
 				return fmt.Errorf("wating for termination failed, error: %w", err)
 			}

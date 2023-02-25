@@ -80,6 +80,11 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	buildArgs.name = args[0]
 	buildArgs.module = args[1]
 
+	version := buildArgs.version.String()
+	if version == "" {
+		version = engine.LatestTag
+	}
+
 	ctx := cuecontext.New()
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
@@ -94,7 +99,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	fetcher := engine.NewFetcher(
 		ctxPull,
 		buildArgs.module,
-		buildArgs.version.String(),
+		version,
 		tmpDir,
 		buildArgs.creds.String(),
 	)

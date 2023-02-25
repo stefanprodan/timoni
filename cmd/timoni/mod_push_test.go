@@ -18,13 +18,15 @@ package main
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/fluxcd/pkg/oci"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
-	"testing"
-
 	. "github.com/onsi/gomega"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/engine"
 )
 
 func Test_PushMod(t *testing.T) {
@@ -61,4 +63,21 @@ func Test_PushMod(t *testing.T) {
 	g.Expect(manifest.Config.MediaType).To(BeEquivalentTo(apiv1.ConfigMediaType))
 	g.Expect(len(manifest.Layers)).To(BeEquivalentTo(1))
 	g.Expect(manifest.Layers[0].MediaType).To(BeEquivalentTo(apiv1.ContentMediaType))
+
+	// Push latest
+	newVer := "1.0.1"
+	_, err = executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s --latest",
+		modPath,
+		modURL,
+		newVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	// Verify latest version
+	image, err = crane.Pull(fmt.Sprintf("%s:%s", modURL, engine.LatestTag))
+	g.Expect(err).ToNot(HaveOccurred())
+	manifest, err = image.Manifest()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(manifest.Annotations[oci.RevisionAnnotation]).To(BeEquivalentTo(newVer))
 }

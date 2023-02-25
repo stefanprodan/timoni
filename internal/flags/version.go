@@ -2,7 +2,10 @@ package flags
 
 import (
 	"fmt"
+
 	"github.com/Masterminds/semver/v3"
+
+	"github.com/stefanprodan/timoni/internal/engine"
 )
 
 type Version string
@@ -12,7 +15,7 @@ func (f *Version) String() string {
 }
 
 func (f *Version) Set(str string) error {
-	if str != "" {
+	if str != "" && str != engine.LatestTag {
 		if _, err := semver.StrictNewVersion(str); err != nil {
 			return err
 		}
