@@ -25,7 +25,7 @@ import (
 
 func TestInspect(t *testing.T) {
 	g := NewWithT(t)
-	modPath := "testdata/cs"
+	modPath := "testdata/module"
 	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-mod", 5))
 	modVer := "1.0.0"
 	name := rnd("my-instance", 5)
@@ -63,7 +63,7 @@ func TestInspect(t *testing.T) {
 		g.Expect(output).To(ContainSubstring(modURL))
 		g.Expect(output).To(ContainSubstring(modVer))
 		g.Expect(output).To(ContainSubstring("sha256"))
-		g.Expect(output).To(ContainSubstring("timoni.sh/cs"))
+		g.Expect(output).To(ContainSubstring("timoni.sh/test"))
 	})
 
 	t.Run("inspect values", func(t *testing.T) {

@@ -36,11 +36,13 @@ vet: ## Vet Go code.
 lint-samples: build
 	./bin/timoni mod lint ./examples/podinfo
 	cue fmt ./examples/podinfo-values/
-	./bin/timoni mod lint ./cmd/timoni/testdata/cs
-	cue fmt ./cmd/timoni/testdata/cs-values/
+	./bin/timoni mod lint ./cmd/timoni/testdata/module
+	cue fmt ./cmd/timoni/testdata/module-values/
+	./bin/timoni mod lint ./internal/engine/testdata/module
+	cue fmt ./internal/engine/testdata/module-values
 
 push-podinfo: build
-	$pv=$(shell cat ./examples/podinfo/values.cue | awk '/tag:/ {print $$2}' | tr -d '"')
+	$pv=$(shell cat ./examples/podinfo/templates/config.cue | awk '/tag:/ {print $$2}' | tr -d '*"')
 	./bin/timoni push ./examples/podinfo oci://ghcr.io/stefanprodan/modules/podinfo --version $$pv --source https://github.com/stefanprodan/podinfo
 
 .PHONY: install

@@ -41,13 +41,13 @@ Module structure:
 ```sh
 ├── cue.mod
 │   ├── gen # Kubernetes types
-│   └── module.cue
-├── templates # Kubernetes definitions
-│   ├── config.cue
-│   ├── deployment.cue
-│   └── service.cue
+│   └── module.cue # Module metadata
+├── templates
+│   ├── config.cue # Config schema and default values
+│   ├── deployment.cue # Kubernetes Deployment template
+│   └── service.cue # Kubernetes Service template
 ├── timoni.cue # Timoni entry point
-└── values.cue # Default values
+└── values.cue # Timoni values placeholder
 ```
 
 A module example can be found at [examples/podinfo](examples/podinfo).

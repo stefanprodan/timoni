@@ -27,7 +27,7 @@ import (
 )
 
 func TestBuild(t *testing.T) {
-	modPath := "testdata/cs"
+	modPath := "testdata/module"
 
 	t.Run("builds module with default values", func(t *testing.T) {
 		g := NewWithT(t)
