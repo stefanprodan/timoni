@@ -13,7 +13,13 @@ This module is available on GitHub Container Registry at
 To create an instance using the default values:
 
 ```shell
-timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v 6.3.4
+timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo
+```
+
+To install a specific module version:
+
+```shell
+timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v 6.3.0
 ```
 
 To change the [default configuration](#configuration),
@@ -33,7 +39,7 @@ values: {
 And apply the values with:
 
 ```shell
-timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v 6.3.4 \
+timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo \
 --values ./my-values.cue
 ```
 
@@ -49,20 +55,20 @@ timoni -n default delete podinfo
 
 ### General values
 
-| Key                      | Type                               | Default                                    | Description                                                                                                                                  |
-|--------------------------|------------------------------------|--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| `image: tag:`            | `string`                           | `6.3.4`                                    | Container image tag                                                                                                                          |
-| `image: repository:`     | `string`                           | `ghcr.io/stefanprodan/podinfo`             | Container image repository                                                                                                                   |
-| `image: pullPolicy:`     | `string`                           | `IfNotPresent`                             | [Kubernetes image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy)                                     |
-| `metadata: labels:`      | `{[ string]: string}`              | `{"app.kubernetes.io/version": image.tag}` | Common labels for all resources                                                                                                              |
-| `metadata: annotations:` | `{[ string]: string}`              | `{}`                                       | Common annotations for all resources                                                                                                         |
-| `podAnnotations:`        | `{[ string]: string}`              | `{}`                                       | Annotations applied to pods                                                                                                                  |
-| `imagePullSecrets:`      | `[...corev1.LocalObjectReference]` | `[]`                                       | [Kubernetes image pull secrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod)                 |
-| `tolerations:`           | `[ ...corev1.#Toleration]`         | `[]`                                       | [Kubernetes toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration)                                        |
-| `affinity:`              | `corev1.#Affinity`                 | `{}`                                       | [Kubernetes affinity and anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) |
-| `resources:`             | `corev1.#ResourceRequirements`     | `{}`                                       | [Kubernetes resource requests and limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers)                     |
-| `podSecurityContext:`    | `corev1.#PodSecurityContext`       | `{}`                                       | [Kubernetes pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)                                 |
-| `securityContext:`       | `corev1.#SecurityContext`          | `{}`                                       | [Kubernetes container security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)                           |
+| Key                      | Type                               | Default                        | Description                                                                                                                                  |
+|--------------------------|------------------------------------|--------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `image: tag:`            | `string`                           | `<latest version>`             | Container image tag                                                                                                                          |
+| `image: repository:`     | `string`                           | `ghcr.io/stefanprodan/podinfo` | Container image repository                                                                                                                   |
+| `image: pullPolicy:`     | `string`                           | `IfNotPresent`                 | [Kubernetes image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy)                                     |
+| `metadata: labels:`      | `{[ string]: string}`              | `{}`                           | Common labels for all resources                                                                                                              |
+| `metadata: annotations:` | `{[ string]: string}`              | `{}`                           | Common annotations for all resources                                                                                                         |
+| `podAnnotations:`        | `{[ string]: string}`              | `{}`                           | Annotations applied to pods                                                                                                                  |
+| `imagePullSecrets:`      | `[...corev1.LocalObjectReference]` | `[]`                           | [Kubernetes image pull secrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod)                 |
+| `tolerations:`           | `[ ...corev1.#Toleration]`         | `[]`                           | [Kubernetes toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration)                                        |
+| `affinity:`              | `corev1.#Affinity`                 | `{}`                           | [Kubernetes affinity and anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) |
+| `resources:`             | `corev1.#ResourceRequirements`     | `{}`                           | [Kubernetes resource requests and limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers)                     |
+| `podSecurityContext:`    | `corev1.#PodSecurityContext`       | `{}`                           | [Kubernetes pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)                                 |
+| `securityContext:`       | `corev1.#SecurityContext`          | `{}`                           | [Kubernetes container security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)                           |
 
 ### Autoscaling values
 

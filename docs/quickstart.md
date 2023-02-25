@@ -32,13 +32,14 @@ you have to specify the container registry address and the version of a module.
     and a Timoni **instance** is the equivalent of a Helm **release**.
     To learn more about modules and instances, please see the [concepts section](index.md#concepts).
 
-For example, to install [podinfo](https://github.com/stefanprodan/podinfo)
+For example, to install the latest stable version of [podinfo](https://github.com/stefanprodan/podinfo)
 in a new namespace:
 
 ```console
-$ timoni -n test apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo --version 6.3.3
-pulling oci://ghcr.io/stefanprodan/modules/podinfo:6.3.3
-installing podinfo/test
+$ timoni -n test apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo --version latest
+pulling oci://ghcr.io/stefanprodan/modules/podinfo:latest
+using module timoni.sh/podinfo version 6.3.4
+installing podinfo in namespace test
 Namespace/test created
 ServiceAccount/test/podinfo created
 Service/test/podinfo created
@@ -55,10 +56,10 @@ To get more information on an instance, you can use the `timoni inspect` sub-com
 
 ```console
 $ timoni -n test inspect module podinfo
-digest: sha256:a6763971b24afca01176d796657de96055952c0857317a99f0b2e06d43fdb10b
 name: timoni.sh/podinfo
+version: 6.3.4
 repository: oci://ghcr.io/stefanprodan/modules/podinfo
-version: 6.3.3
+digest: sha256:594b6f8c5c316b4a9aec4b5a8afb84e4ccb94ce5236548097ed74792d270683f
 ```
 
 To learn more about the available commands, use `timoni inspect --help`.
@@ -90,7 +91,7 @@ Apply the config to the podinfo module to perform an upgrade:
 
 ```shell
 timoni -n test apply podinfo \
-  oci://ghcr.io/stefanprodan/modules/podinfo -v 6.3.4 \
+  oci://ghcr.io/stefanprodan/modules/podinfo \
   --values qos-values.cue
 ```
 

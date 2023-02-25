@@ -24,11 +24,13 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	oci "github.com/fluxcd/pkg/oci/client"
 	gcr "github.com/google/go-containerregistry/pkg/name"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
+	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
@@ -48,6 +50,12 @@ container registry using the version as the image tag.`,
 	--source="$(git config --get remote.origin.url)" \
 	--version=1.0.0 \
 	--creds timoni:$GITHUB_TOKEN
+
+  # Push a release candidate without marking it as the latest stable
+  timoni mod push ./path/to/module oci://docker.io/org/app \
+	--source="$(git config --get remote.origin.url)" \
+	--version=2.0.0-rc.1 \
+	--latest=false
 `,
 	RunE: pushModCmdRun,
 }
@@ -56,6 +64,7 @@ type pushModFlags struct {
 	module      string
 	source      string
 	version     flags.Version
+	latest      bool
 	creds       flags.Credentials
 	ignorePaths []string
 	output      string
@@ -68,6 +77,8 @@ func init() {
 	pushModCmd.Flags().StringVar(&pushModArgs.source, "source", "",
 		"The VCS address of the module. When left empty, the Git CLI is used to get the remote origin URL.")
 	pushModCmd.Flags().Var(&pushModArgs.creds, pushModArgs.creds.Type(), pushModArgs.creds.Description())
+	pushModCmd.Flags().BoolVar(&pushModArgs.latest, "latest", true,
+		"Tags the current version as the latest stable release.")
 	pushModCmd.Flags().StringVarP(&pushModArgs.output, "output", "o", "",
 		"The format in which the artifact digest should be printed, can be 'yaml' or 'json'.")
 
@@ -81,6 +92,10 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	pushModArgs.module = args[0]
 	ociURL := args[1]
 	version := pushModArgs.version.String()
+
+	if _, err := semver.StrictNewVersion(version); err != nil {
+		return fmt.Errorf("version is not in semver format, error: %w", err)
+	}
 
 	url, err := oci.ParseArtifactURL(ociURL + ":" + version)
 	if err != nil {
@@ -117,7 +132,13 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 
 	digestURL, err := ociClient.Push(ctx, url, path, meta, pushModArgs.ignorePaths)
 	if err != nil {
-		return fmt.Errorf("pushing artifact failed: %w", err)
+		return fmt.Errorf("pushing module failed: %w", err)
+	}
+
+	if pushModArgs.latest {
+		if _, err := ociClient.Tag(ctx, digestURL, engine.LatestTag); err != nil {
+			return fmt.Errorf("tagging module version as latest failed: %w", err)
+		}
 	}
 
 	digest, err := gcr.NewDigest(digestURL)

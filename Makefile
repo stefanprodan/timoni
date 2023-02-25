@@ -41,9 +41,9 @@ lint-samples: build
 	./bin/timoni mod lint ./internal/engine/testdata/module
 	cue fmt ./internal/engine/testdata/module-values
 
+PODINFO_VER=$(shell cat ./examples/podinfo/templates/config.cue | awk '/tag:/ {print $$2}' | tr -d '*"')
 push-podinfo: build
-	$pv=$(shell cat ./examples/podinfo/templates/config.cue | awk '/tag:/ {print $$2}' | tr -d '*"')
-	./bin/timoni push ./examples/podinfo oci://ghcr.io/stefanprodan/modules/podinfo --version $$pv --source https://github.com/stefanprodan/podinfo
+	./bin/timoni mod push ./examples/podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v $(PODINFO_VER) --latest --source https://github.com/stefanprodan/podinfo
 
 .PHONY: install
 install: ## Build and install the CLI binary.
