@@ -34,8 +34,19 @@ const (
 	defaultPackage    = "main"
 	defaultValuesName = "values"
 	defaultValuesFile = "values.cue"
-	defaultOutputExp  = "timoni.objects"
+	defaultOutputExp  = "timoni.apply"
 )
+
+// ResourceSet is a named list of Kubernetes resource objects.
+type ResourceSet struct {
+
+	// Name of the object list.
+	Name string `json:"name"`
+
+	// Objects holds the list of Kubernetes objects.
+	// +optional
+	Objects []*unstructured.Unstructured `json:"objects,omitempty"`
+}
 
 // ModuleBuilder compiles CUE definitions to Kubernetes objects.
 type ModuleBuilder struct {
@@ -118,28 +129,48 @@ func (b *ModuleBuilder) Build() (cue.Value, error) {
 	return v, nil
 }
 
-// GetObjects coverts the CUE value to Kubernetes unstructured objects.
-func (b *ModuleBuilder) GetObjects(value cue.Value) ([]*unstructured.Unstructured, error) {
-	expr := value.LookupPath(cue.ParsePath(defaultOutputExp))
-	if expr.Err() != nil {
-		return nil, fmt.Errorf("lookup %s failed, error: %w", defaultOutputExp, expr.Err())
+// GetApplySets returns the list of Kubernetes unstructured objects to be applied in steps.
+func (b *ModuleBuilder) GetApplySets(value cue.Value) ([]ResourceSet, error) {
+	steps := value.LookupPath(cue.ParsePath(defaultOutputExp))
+	if steps.Err() != nil {
+		return nil, fmt.Errorf("lookup %s failed, error: %w", defaultOutputExp, steps.Err())
 	}
+	return GetResources(steps)
+}
 
-	switch expr.Kind() {
-	case cue.ListKind:
-		items, err := expr.List()
-		if err != nil {
-			return nil, fmt.Errorf("listing objects failed, error: %w", err)
-		}
+// GetResources converts the CUE value to a list of ResourceSets.
+func GetResources(value cue.Value) ([]ResourceSet, error) {
+	var sets []ResourceSet
+	iter, _ := value.Fields(cue.Concrete(true))
+	for iter.Next() {
+		name := iter.Selector().String()
+		expr := iter.Value()
+		switch expr.Kind() {
+		case cue.ListKind:
+			items, err := expr.List()
+			if err != nil {
+				return nil, fmt.Errorf("listing objects for %s failed, error: %w", name, err)
+			}
 
-		data, err := yaml.EncodeStream(items)
-		if err != nil {
-			return nil, fmt.Errorf("encoding objects to YAML failed, error: %w", err)
+			data, err := yaml.EncodeStream(items)
+			if err != nil {
+				return nil, fmt.Errorf("encoding objects for %s failed, error: %w", name, err)
+			}
+
+			objects, err := ssa.ReadObjects(bytes.NewReader(data))
+			if err != nil {
+				return nil, fmt.Errorf("decoding objects for %s failed, error: %w", name, err)
+			}
+
+			sets = append(sets, ResourceSet{
+				Name:    name,
+				Objects: objects,
+			})
+		default:
+			return nil, fmt.Errorf("objects in %s are not of type cue.ListKind, got %v", name, value.Kind())
 		}
-		return ssa.ReadObjects(bytes.NewReader(data))
-	default:
-		return nil, fmt.Errorf("objects are not of type cue.ListKind, got %v", value.Kind())
 	}
+	return sets, nil
 }
 
 // GetDefaultValues extracts the default values from the module.

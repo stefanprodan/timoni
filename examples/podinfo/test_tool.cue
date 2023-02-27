@@ -10,7 +10,7 @@ import (
 // Run 'cue -t test build' to use the values from test_values.cue.
 command: build: {
 	task: print: cli.Print & {
-		text: yaml.MarshalStream(timoni.objects)
+		text: yaml.MarshalStream(timoni.apply.all)
 	}
 }
 
@@ -20,7 +20,7 @@ command: ls: {
 	task: print: cli.Print & {
 		text: tabwriter.Write([
 			"RESOURCE \tAPI VERSION",
-			for r in timoni.objects {
+			for r in timoni.apply.all {
 				if r.metadata.namespace == _|_ {
 					"\(r.kind)/\(r.metadata.name) \t\(r.apiVersion)"
 				}

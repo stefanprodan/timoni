@@ -25,6 +25,7 @@ import (
 	imagePullSecrets?: [...corev1.LocalObjectReference]
 	tolerations?: [ ...corev1.#Toleration]
 	affinity?: corev1.#Affinity
+	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
 	// Container
 	image: {
