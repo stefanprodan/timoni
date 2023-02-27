@@ -57,9 +57,9 @@ The apply command performs the following steps:
 - Applies the Kubernetes resources on the cluster.
 - Creates or updates the instance inventory with the last applied resources IDs.
 - Recreates the resources annotated with 'action.timoni.sh/force: "enabled"' if they contain changes to immutable fields.
+- Waits for the applied resources to become ready.
 - Deletes the resources which were previously applied but are missing from the current instance.
 - Skips the resources annotated with 'action.timoni.sh/prune: "disabled"' from deletion.
-- Waits for the applied resources to become ready.
 - Waits for the deleted resources to be finalised.
 `,
 	Example: `  # Install a module instance and create the namespace if it doesn't exists
@@ -188,9 +188,14 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to extract values, error: %w", err)
 	}
 
-	objects, err := builder.GetObjects(buildResult)
+	applySets, err := builder.GetApplySets(buildResult)
 	if err != nil {
 		return fmt.Errorf("failed to extract objects, error: %w", err)
+	}
+
+	var objects []*unstructured.Unstructured
+	for _, set := range applySets {
+		objects = append(objects, set.Objects...)
 	}
 
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
@@ -271,12 +276,28 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	applyOpts := runtime.ApplyOptions(applyArgs.force, time.Minute)
-	cs, err := rm.ApplyAllStaged(ctx, objects, applyOpts)
-	if err != nil {
-		return err
-	}
-	for _, change := range cs.Entries {
-		logger.Println(change.String())
+
+	for _, set := range applySets {
+		if len(applySets) > 1 {
+			logger.Println("applying", set.Name)
+		}
+
+		cs, err := rm.ApplyAllStaged(ctx, set.Objects, applyOpts)
+		if err != nil {
+			return err
+		}
+		for _, change := range cs.Entries {
+			logger.Println(change.String())
+		}
+
+		if applyArgs.wait {
+			logger.Println(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
+			err = rm.Wait(set.Objects, ssa.DefaultWaitOptions())
+			if err != nil {
+				return err
+			}
+			logger.Println("resources are ready")
+		}
 	}
 
 	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
@@ -302,21 +323,15 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	if applyArgs.wait {
-		logger.Println(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(objects)))
-		err = rm.Wait(objects, ssa.DefaultWaitOptions())
-		if err != nil {
-			return err
-		}
-
 		if len(deletedObjects) > 0 {
 			logger.Printf("waiting for %v resource(s) to be finalized...", len(deletedObjects))
 			err = rm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
 			if err != nil {
 				return fmt.Errorf("wating for termination failed, error: %w", err)
 			}
-		}
 
-		logger.Println("all resources are ready")
+			logger.Println("all resources are ready")
+		}
 	}
 
 	return nil

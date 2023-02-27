@@ -133,10 +133,16 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("build failed, error: %w", err)
 	}
 
-	objects, err := builder.GetObjects(buildResult)
+	applySets, err := builder.GetApplySets(buildResult)
 	if err != nil {
-		return fmt.Errorf("extracting Kubernetes objects failed, error: %w", err)
+		return fmt.Errorf("failed to extract objects, error: %w", err)
 	}
+
+	var objects []*unstructured.Unstructured
+	for _, set := range applySets {
+		objects = append(objects, set.Objects...)
+	}
+
 	switch buildArgs.output {
 	case "yaml":
 		var sb strings.Builder

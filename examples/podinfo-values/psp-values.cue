@@ -1,8 +1,8 @@
 values: {
 	podSecurityContext: {
-		runAsUser:  1000
-		runAsGroup: 3000
-		fsGroup:    2000
+		runAsUser:  100
+		runAsGroup: 101
+		fsGroup:    101
 	}
 	securityContext: {
 		allowPrivilegeEscalation: false

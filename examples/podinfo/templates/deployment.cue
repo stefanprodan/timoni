@@ -59,6 +59,9 @@ import (
 				if _config.podSecurityContext != _|_ {
 					securityContext: _config.podSecurityContext
 				}
+				if _config.topologySpreadConstraints != _|_ {
+					topologySpreadConstraints: _config.topologySpreadConstraints
+				}
 				if _config.affinity != _|_ {
 					affinity: _config.affinity
 				}
