@@ -28,8 +28,11 @@ instance: templates.#Instance & {
 	}
 }
 
-// Pass Kubernetes resources outputted by the instance
-// to Timoni's multi-step apply.
+// Define Timoni's runtime.
 timoni: {
+	apiVersion: "v1alpha1"
+
+	// Pass Kubernetes resources outputted by the instance
+	// to Timoni's multi-step apply.
 	apply: all: [ for obj in instance.objects {obj}]
 }

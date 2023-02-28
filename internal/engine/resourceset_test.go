@@ -17,7 +17,6 @@ limitations under the License.
 package engine
 
 import (
-	"fmt"
 	"testing"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -26,22 +25,19 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-func TestValuesBuilder(t *testing.T) {
+func TestGetResources(t *testing.T) {
 	g := NewWithT(t)
 	ctx := cuecontext.New()
 
-	vb := NewValuesBuilder(ctx)
+	steps, err := ExtractValueFromFile(ctx, "testdata/api/apply-steps.cue", apiv1.ApplySelector.String())
+	g.Expect(err).ToNot(HaveOccurred())
 
-	base := "testdata/values/base.cue"
-	overlays := []string{
-		"testdata/values/overlay-1.cue",
-		"testdata/values/overlay-2.cue",
+	sets, err := GetResources(steps)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	expectedNames := []string{"app", "addons", "tests"}
+	for s, set := range sets {
+		g.Expect(sets[s].Name).To(BeEquivalentTo(expectedNames[s]))
+		g.Expect(len(set.Objects)).To(BeEquivalentTo(2))
 	}
-	finalVal, err := vb.MergeValues(overlays, base)
-	g.Expect(err).ToNot(HaveOccurred())
-
-	goldVal, err := ExtractValueFromFile(ctx, "testdata/values/golden.cue", apiv1.ValuesSelector.String())
-	g.Expect(err).ToNot(HaveOccurred())
-
-	g.Expect(fmt.Sprintf("%v", finalVal)).To(BeEquivalentTo(fmt.Sprintf("%v", goldVal)))
 }

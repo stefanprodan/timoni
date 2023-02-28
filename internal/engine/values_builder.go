@@ -20,6 +20,8 @@ import (
 	"fmt"
 
 	"cuelang.org/go/cue"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 // ValuesBuilder compiles and merges values files.
@@ -34,14 +36,14 @@ func NewValuesBuilder(ctx *cue.Context) *ValuesBuilder {
 
 // MergeValues merges the given overlays in order using the base as the starting point.
 func (b *ValuesBuilder) MergeValues(overlays []string, base string) (cue.Value, error) {
-	baseVal, err := ExtractValueFromFile(b.ctx, base, defaultValuesName)
+	baseVal, err := ExtractValueFromFile(b.ctx, base, apiv1.ValuesSelector.String())
 	if err != nil {
 		return cue.Value{},
 			fmt.Errorf("loading values from %s failed, error: %w", base, err)
 	}
 
 	for _, overlay := range overlays {
-		overlayVal, err := ExtractValueFromFile(b.ctx, overlay, defaultValuesName)
+		overlayVal, err := ExtractValueFromFile(b.ctx, overlay, apiv1.ValuesSelector.String())
 		if err != nil {
 			return cue.Value{},
 				fmt.Errorf("loading values from %s failed, error: %w", overlay, err)

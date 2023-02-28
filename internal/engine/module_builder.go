@@ -17,7 +17,6 @@ limitations under the License.
 package engine
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,28 +24,13 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
-	"cuelang.org/go/encoding/yaml"
-	"github.com/fluxcd/pkg/ssa"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 const (
 	defaultPackage    = "main"
-	defaultValuesName = "values"
 	defaultValuesFile = "values.cue"
-	defaultOutputExp  = "timoni.apply"
 )
-
-// ResourceSet is a named list of Kubernetes resource objects.
-type ResourceSet struct {
-
-	// Name of the object list.
-	Name string `json:"name"`
-
-	// Objects holds the list of Kubernetes objects.
-	// +optional
-	Objects []*unstructured.Unstructured `json:"objects,omitempty"`
-}
 
 // ModuleBuilder compiles CUE definitions to Kubernetes objects.
 type ModuleBuilder struct {
@@ -87,7 +71,7 @@ func (b *ModuleBuilder) MergeValuesFile(overlays []string) error {
 		return err
 	}
 
-	cueGen := fmt.Sprintf("package %s\n%s: %v", b.pkgName, defaultValuesName, finalVal)
+	cueGen := fmt.Sprintf("package %s\n%s: %v", b.pkgName, apiv1.ValuesSelector, finalVal)
 
 	// overwrite the values.cue file with the merged values
 	if err := os.MkdirAll(b.moduleRoot, os.ModePerm); err != nil {
@@ -129,48 +113,22 @@ func (b *ModuleBuilder) Build() (cue.Value, error) {
 	return v, nil
 }
 
-// GetApplySets returns the list of Kubernetes unstructured objects to be applied in steps.
-func (b *ModuleBuilder) GetApplySets(value cue.Value) ([]ResourceSet, error) {
-	steps := value.LookupPath(cue.ParsePath(defaultOutputExp))
-	if steps.Err() != nil {
-		return nil, fmt.Errorf("lookup %s failed, error: %w", defaultOutputExp, steps.Err())
+// GetAPIVersion returns the list of API version of the Timoni's CUE definition.
+func (b *ModuleBuilder) GetAPIVersion(value cue.Value) (string, error) {
+	ver := value.LookupPath(cue.ParsePath(apiv1.APIVersionSelector.String()))
+	if ver.Err() != nil {
+		return "", fmt.Errorf("lookup %s failed, error: %w", apiv1.APIVersionSelector, ver.Err())
 	}
-	return GetResources(steps)
+	return ver.String()
 }
 
-// GetResources converts the CUE value to a list of ResourceSets.
-func GetResources(value cue.Value) ([]ResourceSet, error) {
-	var sets []ResourceSet
-	iter, _ := value.Fields(cue.Concrete(true))
-	for iter.Next() {
-		name := iter.Selector().String()
-		expr := iter.Value()
-		switch expr.Kind() {
-		case cue.ListKind:
-			items, err := expr.List()
-			if err != nil {
-				return nil, fmt.Errorf("listing objects for %s failed, error: %w", name, err)
-			}
-
-			data, err := yaml.EncodeStream(items)
-			if err != nil {
-				return nil, fmt.Errorf("encoding objects for %s failed, error: %w", name, err)
-			}
-
-			objects, err := ssa.ReadObjects(bytes.NewReader(data))
-			if err != nil {
-				return nil, fmt.Errorf("decoding objects for %s failed, error: %w", name, err)
-			}
-
-			sets = append(sets, ResourceSet{
-				Name:    name,
-				Objects: objects,
-			})
-		default:
-			return nil, fmt.Errorf("objects in %s are not of type cue.ListKind, got %v", name, value.Kind())
-		}
+// GetApplySets returns the list of Kubernetes unstructured objects to be applied in steps.
+func (b *ModuleBuilder) GetApplySets(value cue.Value) ([]ResourceSet, error) {
+	steps := value.LookupPath(cue.ParsePath(apiv1.ApplySelector.String()))
+	if steps.Err() != nil {
+		return nil, fmt.Errorf("lookup %s failed, error: %w", apiv1.ApplySelector, steps.Err())
 	}
-	return sets, nil
+	return GetResources(steps)
 }
 
 // GetDefaultValues extracts the default values from the module.
@@ -187,9 +145,9 @@ func (b *ModuleBuilder) GetDefaultValues() (string, error) {
 		return "", value.Err()
 	}
 
-	expr := value.LookupPath(cue.ParsePath(defaultValuesName))
+	expr := value.LookupPath(cue.ParsePath(apiv1.ValuesSelector.String()))
 	if expr.Err() != nil {
-		return "", fmt.Errorf("lookup %s failed, error: %w", defaultValuesName, expr.Err())
+		return "", fmt.Errorf("lookup %s failed, error: %w", apiv1.ValuesSelector, expr.Err())
 	}
 
 	return fmt.Sprintf("%v", expr.Eval()), nil
@@ -224,9 +182,9 @@ func (b *ModuleBuilder) GetModuleName() (string, error) {
 
 // GetValues extracts the values from the build result.
 func (b *ModuleBuilder) GetValues(value cue.Value) (string, error) {
-	expr := value.LookupPath(cue.ParsePath(defaultValuesName))
+	expr := value.LookupPath(cue.ParsePath(apiv1.ValuesSelector.String()))
 	if expr.Err() != nil {
-		return "", fmt.Errorf("lookup %s failed, error: %w", defaultValuesName, expr.Err())
+		return "", fmt.Errorf("lookup %s failed, error: %w", apiv1.ValuesSelector, expr.Err())
 	}
 
 	return fmt.Sprintf("%v", expr.Eval()), nil
