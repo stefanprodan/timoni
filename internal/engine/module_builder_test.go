@@ -24,6 +24,8 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	. "github.com/onsi/gomega"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 func TestModuleBuilder(t *testing.T) {
@@ -47,28 +49,15 @@ func TestModuleBuilder(t *testing.T) {
 	val, err := mb.Build()
 	g.Expect(err).ToNot(HaveOccurred())
 
-	objects := val.LookupPath(cue.ParsePath("timoni.apply.all"))
+	apiVer, err := mb.GetAPIVersion(val)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(apiVer).To(BeEquivalentTo(apiv1.GroupVersion.Version))
+
+	objects := val.LookupPath(cue.ParsePath(apiv1.ApplySelector.String() + ".all"))
 	g.Expect(objects.Err()).ToNot(HaveOccurred())
 
 	gold, err := ExtractValueFromFile(ctx, "testdata/module-golden/overlay.cue", "objects")
 	g.Expect(err).ToNot(HaveOccurred())
 
 	g.Expect(fmt.Sprintf("%v", objects)).To(BeEquivalentTo(fmt.Sprintf("%v", gold)))
-}
-
-func TestExtractBuildResult(t *testing.T) {
-	g := NewWithT(t)
-	ctx := cuecontext.New()
-
-	steps, err := ExtractValueFromFile(ctx, "testdata/api/apply-steps.cue", defaultOutputExp)
-	g.Expect(err).ToNot(HaveOccurred())
-
-	sets, err := GetResources(steps)
-	g.Expect(err).ToNot(HaveOccurred())
-
-	expectedNames := []string{"app", "addons", "tests"}
-	for s, set := range sets {
-		g.Expect(sets[s].Name).To(BeEquivalentTo(expectedNames[s]))
-		g.Expect(len(set.Objects)).To(BeEquivalentTo(2))
-	}
 }
