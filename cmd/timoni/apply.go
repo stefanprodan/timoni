@@ -183,6 +183,15 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to build instance, error: %w", err)
 	}
 
+	apiVer, err := builder.GetAPIVersion(buildResult)
+	if err != nil {
+		return err
+	}
+
+	if apiVer != apiv1.GroupVersion.Version {
+		return fmt.Errorf("API version %s not supported, must be %s", apiVer, apiv1.GroupVersion.Version)
+	}
+
 	finalValues, err := builder.GetValues(buildResult)
 	if err != nil {
 		return fmt.Errorf("failed to extract values, error: %w", err)

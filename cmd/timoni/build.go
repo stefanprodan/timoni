@@ -133,6 +133,15 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("build failed, error: %w", err)
 	}
 
+	apiVer, err := builder.GetAPIVersion(buildResult)
+	if err != nil {
+		return err
+	}
+
+	if apiVer != apiv1.GroupVersion.Version {
+		return fmt.Errorf("API version %s not supported, must be %s", apiVer, apiv1.GroupVersion.Version)
+	}
+
 	applySets, err := builder.GetApplySets(buildResult)
 	if err != nil {
 		return fmt.Errorf("failed to extract objects, error: %w", err)
