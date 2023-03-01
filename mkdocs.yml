@@ -35,12 +35,18 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 
 nav:
   - Introduction: index.md
   - Installation: install.md
   - Quickstart: quickstart.md
   - GitHub Actions: github-actions.md
+  - GitOps with Flux: gitops-flux.md
   - Command Reference:
       - Modules:
           - Init: cmd/timoni_mod_init.md
