@@ -16,7 +16,7 @@ Each release comes with a Software Bill of Materials (SBOM) in SPDX format.
 
 === "Install from source"
 
-    Using Go >= 1.17:
+    Using Go >= 1.20:
     
     ```shell
     go install github.com/stefanprodan/timoni/cmd/timoni@latest

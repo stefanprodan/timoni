@@ -8,7 +8,7 @@ REPOSITORY_ROOT := $(shell git rev-parse --show-toplevel)
 BIN_DIR := $(REPOSITORY_ROOT)/bin
 
 # API gen tool
-CONTROLLER_GEN_VERSION ?= v0.11.1
+CONTROLLER_GEN_VERSION ?= v0.11.3
 
 # Kubernetes env test
 ENVTEST_ARCH?=amd64
@@ -25,7 +25,7 @@ test: tidy generate fmt vet install-envtest ## Run the Go tests.
 	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./... -coverprofile cover.out
 
 tidy: ## Tidy Go modules.
-	rm -f go.sum; go mod tidy -compat=1.19
+	rm -f go.sum; go mod tidy -compat=1.20
 
 fmt: ## Format Go code.
 	go fmt ./...
