@@ -35,13 +35,17 @@ func Test_PushMod(t *testing.T) {
 	g := NewWithT(t)
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
 	modVer := "1.0.0"
+	modLicense := "org.opencontainers.image.licenses=Apache-2.0"
+	modAbout := "org.opencontainers.image.description=My, test."
 
 	// Push the module to registry
 	output, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s -a '%s' -a '%s'",
 		modPath,
 		modURL,
 		modVer,
+		modLicense,
+		modAbout,
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(output).To(ContainSubstring(modURL))
@@ -57,6 +61,8 @@ func Test_PushMod(t *testing.T) {
 	// Verify that annotations exist in manifest
 	g.Expect(manifest.Annotations[oci.CreatedAnnotation]).ToNot(BeEmpty())
 	g.Expect(manifest.Annotations[oci.RevisionAnnotation]).To(BeEquivalentTo(modVer))
+	g.Expect(manifest.Annotations["org.opencontainers.image.licenses"]).To(BeEquivalentTo("Apache-2.0"))
+	g.Expect(manifest.Annotations["org.opencontainers.image.description"]).To(BeEquivalentTo("My, test."))
 
 	// Verify media types
 	g.Expect(manifest.MediaType).To(Equal(types.OCIManifestSchema1))
