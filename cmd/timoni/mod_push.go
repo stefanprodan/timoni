@@ -42,12 +42,10 @@ container registry using the version as the image tag.`,
 	Example: `  # Push a module to Docker Hub using the credentials from '~/.docker/config.json'
   echo $DOCKER_PAT | docker login --username timoni --password-stdin
   timoni mod push ./path/to/module oci://docker.io/org/app \
-	--source="$(git config --get remote.origin.url)" \
 	--version=1.0.0
 
   # Push a module to GitHub Container Registry using a GitHub token
   timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
-	--source="$(git config --get remote.origin.url)" \
 	--version=1.0.0 \
 	--creds timoni:$GITHUB_TOKEN
 
@@ -56,6 +54,14 @@ container registry using the version as the image tag.`,
 	--source="$(git config --get remote.origin.url)" \
 	--version=2.0.0-rc.1 \
 	--latest=false
+
+  # Push a module with custom OCI annotations
+  timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
+	--version=1.0.0 \
+	--source='https://github.com/my-org/my-app' \
+	--annotations='org.opencontainers.image.licenses=Apache-2.0' \
+	--annotations='org.opencontainers.image.documentation=https://app.org/docs' \
+	--annotations='org.opencontainers.image.description=A timoni.sh module for my app.'
 `,
 	RunE: pushModCmdRun,
 }
@@ -68,6 +74,7 @@ type pushModFlags struct {
 	creds       flags.Credentials
 	ignorePaths []string
 	output      string
+	annotations []string
 }
 
 var pushModArgs pushModFlags
@@ -79,6 +86,8 @@ func init() {
 	pushModCmd.Flags().Var(&pushModArgs.creds, pushModArgs.creds.Type(), pushModArgs.creds.Description())
 	pushModCmd.Flags().BoolVar(&pushModArgs.latest, "latest", true,
 		"Tags the current version as the latest stable release.")
+	pushModCmd.Flags().StringArrayVarP(&pushModArgs.annotations, "annotations", "a", nil,
+		"Set custom OCI annotations in the format '<key>=<value>'.")
 	pushModCmd.Flags().StringVarP(&pushModArgs.output, "output", "o", "",
 		"The format in which the artifact digest should be printed, can be 'yaml' or 'json'.")
 
@@ -117,11 +126,21 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	annotations := map[string]string{}
+	for _, annotation := range pushModArgs.annotations {
+		kv := strings.Split(annotation, "=")
+		if len(kv) != 2 {
+			return fmt.Errorf("invalid annotation %s, must be in the format key=value", annotation)
+		}
+		annotations[kv[0]] = kv[1]
+	}
+
 	ociClient := oci.NewClient(nil)
 	path := pushModArgs.module
 	meta := oci.Metadata{
-		Source:   pushModArgs.source,
-		Revision: version,
+		Source:      pushModArgs.source,
+		Revision:    version,
+		Annotations: annotations,
 	}
 
 	if pushModArgs.creds != "" {
