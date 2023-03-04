@@ -45,8 +45,11 @@ nav:
   - Introduction: index.md
   - Installation: install.md
   - Quickstart: quickstart.md
-  - GitHub Actions: github-actions.md
-  - GitOps with Flux: gitops-flux.md
+  - Topics:
+      - Module Structure: module.md
+  - Automation:
+      - GitHub Actions: github-actions.md
+      - GitOps with Flux: gitops-flux.md
   - Command Reference:
       - Modules:
           - Init: cmd/timoni_mod_init.md
