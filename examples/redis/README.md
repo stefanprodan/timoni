@@ -8,6 +8,10 @@ with persistent storage and
 [append-only](https://redis.io/docs/management/persistence/#append-only-file)
 durable strategy.
 
+This module uses the Chainguard
+[Redis container image](https://edu.chainguard.dev/chainguard/chainguard-images/reference/redis/overview/)
+which comes with ARM and x86-64 support and fewer CVEs than the DockerHub Redis images.
+
 ## Module Repository
 
 This module is available on GitHub Container Registry at
@@ -29,7 +33,7 @@ The Redis cluster can be accessed using the following Kubernetes Services:
 To install a specific module version:
 
 ```shell
-timoni -n default apply redis oci://ghcr.io/stefanprodan/modules/redis -v 7.0.9
+timoni -n default apply redis oci://ghcr.io/stefanprodan/modules/redis -v 7.0.8
 ```
 
 To change the [default configuration](#configuration),
@@ -92,18 +96,18 @@ timoni -n default delete redis
 
 ### General values
 
-| Key                          | Type                                    | Default                | Description                                                                                                                                  |
-|------------------------------|-----------------------------------------|------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| `image: tag:`                | `string`                                | `<latest version>`     | Container image tag                                                                                                                          |
-| `image: repository:`         | `string`                                | `docker.io/redis`      | Container image repository                                                                                                                   |
-| `image: pullPolicy:`         | `string`                                | `IfNotPresent`         | [Kubernetes image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy)                                     |
-| `metadata: labels:`          | `{[ string]: string}`                   | `{}`                   | Common labels for all resources                                                                                                              |
-| `metadata: annotations:`     | `{[ string]: string}`                   | `{}`                   | Common annotations for all resources                                                                                                         |
-| `podAnnotations:`            | `{[ string]: string}`                   | `{}`                   | Annotations applied to pods                                                                                                                  |
-| `imagePullSecrets:`          | `[...corev1.LocalObjectReference]`      | `[]`                   | [Kubernetes image pull secrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod)                 |
-| `tolerations:`               | `[ ...corev1.#Toleration]`              | `[]`                   | [Kubernetes toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration)                                        |
-| `affinity:`                  | `corev1.#Affinity`                      | `{}`                   | [Kubernetes affinity and anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) |
-| `resources:`                 | `corev1.#ResourceRequirements`          | `{}`                   | [Kubernetes resource requests and limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers)                     |
-| `topologySpreadConstraints:` | `[...corev1.#TopologySpreadConstraint]` | `[]`                   | [Kubernetes pod topology spread constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints)            |
-| `podSecurityContext:`        | `corev1.#PodSecurityContext`            | `{runAsUser: 1001}`    | [Kubernetes pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)                                 |
-| `securityContext:`           | `corev1.#SecurityContext`               | `{runAsNonRoot: true}` | [Kubernetes container security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)                           |
+| Key                          | Type                                    | Default                    | Description                                                                                                                                  |
+|------------------------------|-----------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `image: tag:`                | `string`                                | `<latest version>`         | Container image tag                                                                                                                          |
+| `image: repository:`         | `string`                                | `cgr.dev/chainguard/redis` | Container image repository                                                                                                                   |
+| `image: pullPolicy:`         | `string`                                | `IfNotPresent`             | [Kubernetes image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy)                                     |
+| `metadata: labels:`          | `{[ string]: string}`                   | `{}`                       | Common labels for all resources                                                                                                              |
+| `metadata: annotations:`     | `{[ string]: string}`                   | `{}`                       | Common annotations for all resources                                                                                                         |
+| `podAnnotations:`            | `{[ string]: string}`                   | `{}`                       | Annotations applied to pods                                                                                                                  |
+| `imagePullSecrets:`          | `[...corev1.LocalObjectReference]`      | `[]`                       | [Kubernetes image pull secrets](https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod)                 |
+| `tolerations:`               | `[ ...corev1.#Toleration]`              | `[]`                       | [Kubernetes toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration)                                        |
+| `affinity:`                  | `corev1.#Affinity`                      | `{}`                       | [Kubernetes affinity and anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) |
+| `resources:`                 | `corev1.#ResourceRequirements`          | `{}`                       | [Kubernetes resource requests and limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers)                     |
+| `topologySpreadConstraints:` | `[...corev1.#TopologySpreadConstraint]` | `[]`                       | [Kubernetes pod topology spread constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints)            |
+| `podSecurityContext:`        | `corev1.#PodSecurityContext`            | `{runAsUser: 1001}`        | [Kubernetes pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)                                 |
+| `securityContext:`           | `corev1.#SecurityContext`               | `{runAsNonRoot: true}`     | [Kubernetes container security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)                           |
