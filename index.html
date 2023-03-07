@@ -1,0 +1,1061 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Timoni is a package manager for Kubernetes powered by CUE lang.
+">
+      
+      
+        <meta name="author" content="Stefan Prodan">
+      
+      
+        <link rel="canonical" href="https://timoni.sh/">
+      
+      
+      
+        <link rel="next" href="install/">
+      
+      <link rel="icon" href="images/gopher.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.6">
+    
+    
+      
+        <title>timoni</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.558e4712.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.2505c338.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<meta property="og:url" content="https://timoni.sh/">
+
+<meta property="og:title" content="timoni">
+
+<meta property="og:description" content="Timoni is a package manager for Kubernetes powered by CUE lang.
+">
+<meta property="og:image" content="https://timoni.sh/images/gopher.png">
+<meta property="og:image:alt" content="timoni.sh">
+<meta property="og:image:type" content="image/png">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:site" content="@stefanprodan">
+<meta name="twitter:creator" content="@stefanprodan">
+
+<meta property="twitter:title" content="timoni">
+
+<meta name="twitter:description" content="Timoni is a package manager for Kubernetes powered by CUE lang.
+">
+<meta name="twitter:image" content="https://timoni.sh/images/gopher.png">
+<meta name="twitter:image:alt" content="timoni.sh">
+
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#timoni" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="timoni" class="md-header__button md-logo" aria-label="timoni" data-md-component="logo">
+      
+  <img src="images/gopher.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            timoni
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Introduction
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/stefanprodan/timoni" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    stefanprodan/timoni
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="timoni" class="md-nav__button md-logo" aria-label="timoni" data-md-component="logo">
+      
+  <img src="images/gopher.png" alt="logo">
+
+    </a>
+    timoni
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/stefanprodan/timoni" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    stefanprodan/timoni
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Introduction
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        Introduction
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#concepts" class="md-nav__link">
+    Concepts
+  </a>
+  
+    <nav class="md-nav" aria-label="Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#timoni-modules" class="md-nav__link">
+    Timoni Modules
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oci-artifacts" class="md-nav__link">
+    OCI Artifacts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timoni-instances" class="md-nav__link">
+    Timoni Instances
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    License
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="install/" class="md-nav__link">
+        Installation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="quickstart/" class="md-nav__link">
+        Quickstart
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4" tabindex="0" aria-expanded="false">
+          Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="module/" class="md-nav__link">
+        Module Structure
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5" tabindex="0" aria-expanded="false">
+          Automation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Automation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Automation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="github-actions/" class="md-nav__link">
+        GitHub Actions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="gitops-flux/" class="md-nav__link">
+        GitOps with Flux
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6" tabindex="0" aria-expanded="false">
+          Command Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Command Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Command Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_6_1" type="checkbox" id="__nav_6_1" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6_1" tabindex="0" aria-expanded="false">
+          Modules
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Modules" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_1">
+          <span class="md-nav__icon md-icon"></span>
+          Modules
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_mod_init/" class="md-nav__link">
+        Init
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_mod_lint/" class="md-nav__link">
+        Lint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_mod_push/" class="md-nav__link">
+        Push
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_mod_pull/" class="md-nav__link">
+        Pull
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_6_2" type="checkbox" id="__nav_6_2" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6_2" tabindex="0" aria-expanded="false">
+          Instances
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Instances" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_2">
+          <span class="md-nav__icon md-icon"></span>
+          Instances
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_apply/" class="md-nav__link">
+        Apply
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_build/" class="md-nav__link">
+        Build
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_delete/" class="md-nav__link">
+        Delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_list/" class="md-nav__link">
+        List
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_inspect_module/" class="md-nav__link">
+        Inspect Module
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_inspect_values/" class="md-nav__link">
+        Inspect Values
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_inspect_resources/" class="md-nav__link">
+        Inspect Resources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_status/" class="md-nav__link">
+        Status
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_6_3" type="checkbox" id="__nav_6_3" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6_3" tabindex="0" aria-expanded="false">
+          Completion
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Completion" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_3">
+          <span class="md-nav__icon md-icon"></span>
+          Completion
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_completion_bash/" class="md-nav__link">
+        Bash
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_completion_fish/" class="md-nav__link">
+        Fish
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_completion_powershell/" class="md-nav__link">
+        Powershell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cmd/timoni_completion_zsh/" class="md-nav__link">
+        ZSH
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#concepts" class="md-nav__link">
+    Concepts
+  </a>
+  
+    <nav class="md-nav" aria-label="Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#timoni-modules" class="md-nav__link">
+    Timoni Modules
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oci-artifacts" class="md-nav__link">
+    OCI Artifacts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timoni-instances" class="md-nav__link">
+    Timoni Instances
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    License
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="timoni">Timoni</h1>
+<p><a href="https://github.com/stefanprodan/timoni">Timoni</a> is a package manager for Kubernetes,
+powered by <a href="https://cuelang.org/">CUE</a>
+and inspired by <a href="https://helm.sh/">Helm</a>.</p>
+<p>The Timoni project strives to improve the UX of authoring Kubernetes configs.
+Instead of mingling Go templates with YAML like Helm,
+or layering YAML on top of each-other like Kustomize,
+Timoni relies on cuelang's type safety, code generation and data validation features
+to offer a better experience of creating, packaging and delivering apps to Kubernetes.</p>
+<div class="admonition warning">
+<p class="admonition-title">Development phase</p>
+<p>Timoni in under active development and is still in its infancy.
+Its APIs and interfaces may change in a backwards incompatible manner.</p>
+</div>
+<h2 id="concepts">Concepts</h2>
+<h3 id="timoni-modules">Timoni Modules</h3>
+<p>A Timoni module contains a set of CUE definitions and constraints organised
+into a <a href="https://cuelang.org/docs/concepts/packages/">CUE module</a>
+with an opinionated structure.
+A module accepts a set of values supplied by the user as <code>values.cue</code> files,
+and outputs a set of Kubernetes objects that Timoni deploys on Kubernetes.</p>
+<p>Module structure:
+<div class="highlight"><pre><span></span><code>├──<span class="w"> </span>cue.mod
+│<span class="w">   </span>├──<span class="w"> </span>gen<span class="w"> </span><span class="c1"># Kubernetes types</span>
+│<span class="w">   </span>└──<span class="w"> </span>module.cue<span class="w"> </span><span class="c1"># Module metadata</span>
+├──<span class="w"> </span>templates
+│<span class="w">   </span>├──<span class="w"> </span>config.cue<span class="w"> </span><span class="c1"># Config schema and default values</span>
+│<span class="w">   </span>├──<span class="w"> </span>deployment.cue<span class="w"> </span><span class="c1"># Kubernetes Deployment template</span>
+│<span class="w">   </span>└──<span class="w"> </span>service.cue<span class="w"> </span><span class="c1"># Kubernetes Service template</span>
+├──<span class="w"> </span>timoni.cue<span class="w"> </span><span class="c1"># Timoni entry point</span>
+└──<span class="w"> </span>values.cue<span class="w"> </span><span class="c1"># Timoni values placeholder</span>
+</code></pre></div></p>
+<div class="admonition tip">
+<p class="admonition-title">Module example</p>
+<p>An example module can be found in Timoni's repository at
+<a href="https://github.com/stefanprodan/timoni/tree/main/examples/podinfo">examples/podinfo</a>.
+The example module is published to GitHub Container Registry and is publicly available at
+<a href="https://github.com/stefanprodan/podinfo/pkgs/container/modules%2Fpodinfo">ghcr.io/stefanprodan/modules/podinfo</a>.</p>
+</div>
+<p>Commands for working with local modules:</p>
+<ul>
+<li><code>timoni mod init &lt;module-name&gt;</code></li>
+<li><code>timoni mod lint &lt;path/to/module&gt;</code></li>
+<li><code>timoni build &lt;name&gt; &lt;path/to/module&gt; -n &lt;namespace&gt;</code></li>
+<li><code>timoni apply &lt;name&gt; &lt;path/to/module&gt; -f &lt;path/to/values.cue&gt; --dry-run --diff</code></li>
+</ul>
+<h3 id="oci-artifacts">OCI Artifacts</h3>
+<p>Timoni modules are distributed as OCI artifacts and can be stored in container registries
+which support custom OCI media types.
+Modules are versioned using strict <a href="https://semver.org/">semantic versioning</a>,
+the version of a module is used as the OCI artifact tag.</p>
+<p>Commands for working with remote modules:</p>
+<ul>
+<li><code>timoni mod push &lt;path/to/module&gt; oci://&lt;module-url&gt; -v &lt;semver&gt;</code></li>
+<li><code>timoni mod pull oci://&lt;module-url&gt; -v &lt;semver&gt; -o &lt;path/to/module&gt;</code></li>
+</ul>
+<p>Timoni produces artifacts compatible with Docker Hub, GitHub Container Registry,
+Azure Container Registry, Amazon Elastic Container Registry, Google Artifact Registry,
+self-hosted Docker Registry and others.</p>
+<h3 id="timoni-instances">Timoni Instances</h3>
+<p>A Timoni instance represent a module instantiation on a Kubernetes cluster.
+A module can be installed multiple times on a cluster by giving its instances
+unique names per namespace.</p>
+<p>When instantiating a module, users can supply their own <code>values.cue</code>
+that gets merged with the defaults included in the module:</p>
+<div class="highlight"><pre><span></span><code>values: {
+    ingress: {
+        enabled:   true
+        className: &quot;nginx&quot;
+        host:      &quot;app.example.com&quot;
+    }
+    autoscaling: enabled: true
+    monitoring: enabled:  true
+}
+</code></pre></div>
+<p>Commands for working with module instances:</p>
+<ul>
+<li><code>timoni install &lt;name&gt; oci://&lt;module-url&gt; -v &lt;semver&gt; -n &lt;namespace&gt;</code></li>
+<li><code>timoni upgrade &lt;name&gt; oci://&lt;module-url&gt; -v &lt;semver&gt; -f &lt;path/to/values.cue&gt;</code></li>
+<li><code>timoni uninstall &lt;name&gt; -n &lt;namespace&gt;</code></li>
+<li><code>timoni list -n &lt;namespace&gt;</code></li>
+<li><code>timoni inspect [module|values|resources] &lt;name&gt; -n &lt;namespace&gt;</code></li>
+<li><code>timoni status &lt;name&gt; -n &lt;namespace&gt;</code></li>
+</ul>
+<p>The <code>install</code> and <code>upgrade</code> commands are aliases of <code>timoni apply</code>.
+To apply the Kubernetes resources belonging to a module instance,
+Timoni uses Kubernetes server-side apply and
+<a href="https://fluxcd.io">Flux</a>'s drift detection.</p>
+<p>The apply command validates all resources with a dry-run apply,
+and reconciles only the ones with changes to the cluster state.</p>
+<p>To recreate immutable resources such as Kubernetes Jobs,
+these resources can be annotated with <code>action.timoni.sh/force: "enabled"</code>.</p>
+<p>Timoni's garbage collector keeps track of the applied resources
+and prunes the Kubernetes objects that were previously applied
+but are missing from the current revision.</p>
+<p>To prevent Timoni's garbage collector from deleting certain
+resources such as Kubernetes Persistent Volumes,
+these resources can be annotated with <code>action.timoni.sh/prune: "disabled"</code>.</p>
+<p>After an installation or upgrade, Timoni waits for the
+applied resources to be fully reconciled by checking the ready status
+of deployments, jobs, services, ingresses, and Kubernetes custom resources.</p>
+<h2 id="license">License</h2>
+<p>Timoni is <a href="https://github.com/stefanprodan/timoni/blob/main/LICENSE">Apache 2.0 licensed</a>
+and accepts contributions via GitHub pull requests.</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.sections"], "search": "assets/javascripts/workers/search.e5c33ebb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="assets/javascripts/bundle.51d95adb.min.js"></script>
+      
+    
+  </body>
+</html>

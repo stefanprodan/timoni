@@ -1,0 +1,1243 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Timoni is a package manager for Kubernetes powered by CUE lang.
+">
+      
+      
+        <meta name="author" content="Stefan Prodan">
+      
+      
+        <link rel="canonical" href="https://timoni.sh/module/">
+      
+      
+        <link rel="prev" href="../quickstart/">
+      
+      
+        <link rel="next" href="../github-actions/">
+      
+      <link rel="icon" href="../images/gopher.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.6">
+    
+    
+      
+        <title>Module Structure - timoni</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.558e4712.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.2505c338.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<meta property="og:url" content="https://timoni.sh/module/">
+
+<meta property="og:title" content="Module Structure - timoni">
+
+<meta property="og:description" content="Timoni is a package manager for Kubernetes powered by CUE lang.
+">
+<meta property="og:image" content="https://timoni.sh/images/gopher.png">
+<meta property="og:image:alt" content="timoni.sh">
+<meta property="og:image:type" content="image/png">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:site" content="@stefanprodan">
+<meta name="twitter:creator" content="@stefanprodan">
+
+<meta property="twitter:title" content="Module Structure">
+
+<meta name="twitter:description" content="Timoni is a package manager for Kubernetes powered by CUE lang.
+">
+<meta name="twitter:image" content="https://timoni.sh/images/gopher.png">
+<meta name="twitter:image:alt" content="timoni.sh">
+
+
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#module-structure" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="timoni" class="md-header__button md-logo" aria-label="timoni" data-md-component="logo">
+      
+  <img src="../images/gopher.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            timoni
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Module Structure
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/stefanprodan/timoni" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    stefanprodan/timoni
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="timoni" class="md-nav__button md-logo" aria-label="timoni" data-md-component="logo">
+      
+  <img src="../images/gopher.png" alt="logo">
+
+    </a>
+    timoni
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/stefanprodan/timoni" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    stefanprodan/timoni
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        Installation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        Quickstart
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4" tabindex="0" aria-expanded="true">
+          Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Module Structure
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Module Structure
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#file-structure" class="md-nav__link">
+    File Structure
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#entry-point" class="md-nav__link">
+    Entry point
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#values" class="md-nav__link">
+    Values
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#templates" class="md-nav__link">
+    Templates
+  </a>
+  
+    <nav class="md-nav" aria-label="Templates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    Config
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance" class="md-nav__link">
+    Instance
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-resources" class="md-nav__link">
+    Kubernetes resources
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-types" class="md-nav__link">
+    Kubernetes types
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-crds" class="md-nav__link">
+    Kubernetes CRDs
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5" tabindex="0" aria-expanded="false">
+          Automation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Automation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Automation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../github-actions/" class="md-nav__link">
+        GitHub Actions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gitops-flux/" class="md-nav__link">
+        GitOps with Flux
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6" tabindex="0" aria-expanded="false">
+          Command Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Command Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Command Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_6_1" type="checkbox" id="__nav_6_1" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6_1" tabindex="0" aria-expanded="false">
+          Modules
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Modules" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_1">
+          <span class="md-nav__icon md-icon"></span>
+          Modules
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_init/" class="md-nav__link">
+        Init
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_lint/" class="md-nav__link">
+        Lint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_push/" class="md-nav__link">
+        Push
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_pull/" class="md-nav__link">
+        Pull
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_6_2" type="checkbox" id="__nav_6_2" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6_2" tabindex="0" aria-expanded="false">
+          Instances
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Instances" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_2">
+          <span class="md-nav__icon md-icon"></span>
+          Instances
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_apply/" class="md-nav__link">
+        Apply
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_build/" class="md-nav__link">
+        Build
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_delete/" class="md-nav__link">
+        Delete
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_list/" class="md-nav__link">
+        List
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_inspect_module/" class="md-nav__link">
+        Inspect Module
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_inspect_values/" class="md-nav__link">
+        Inspect Values
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_inspect_resources/" class="md-nav__link">
+        Inspect Resources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_status/" class="md-nav__link">
+        Status
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_6_3" type="checkbox" id="__nav_6_3" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6_3" tabindex="0" aria-expanded="false">
+          Completion
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Completion" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_3">
+          <span class="md-nav__icon md-icon"></span>
+          Completion
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_completion_bash/" class="md-nav__link">
+        Bash
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_completion_fish/" class="md-nav__link">
+        Fish
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_completion_powershell/" class="md-nav__link">
+        Powershell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_completion_zsh/" class="md-nav__link">
+        ZSH
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#file-structure" class="md-nav__link">
+    File Structure
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#entry-point" class="md-nav__link">
+    Entry point
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#values" class="md-nav__link">
+    Values
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#templates" class="md-nav__link">
+    Templates
+  </a>
+  
+    <nav class="md-nav" aria-label="Templates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    Config
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance" class="md-nav__link">
+    Instance
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-resources" class="md-nav__link">
+    Kubernetes resources
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-types" class="md-nav__link">
+    Kubernetes types
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-crds" class="md-nav__link">
+    Kubernetes CRDs
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="module-structure">Module Structure</h1>
+<p>A Timoni module contains a set of CUE definitions and constraints organised
+into a <a href="https://cuelang.org/docs/concepts/packages/">CUE module</a>
+with an opinionated file structure.</p>
+<h2 id="file-structure">File Structure</h2>
+<p>A module consists of a collection of CUE files inside a directory
+with the following structure:</p>
+<div class="highlight"><pre><span></span><code>myapp
+├──<span class="w"> </span>README.md
+├──<span class="w"> </span>cue.mod
+│<span class="w">   </span>├──<span class="w"> </span>gen<span class="w"> </span><span class="c1"># Kubernetes types</span>
+│<span class="w">   </span>└──<span class="w"> </span>module.cue<span class="w"> </span><span class="c1"># Module metadata</span>
+├──<span class="w"> </span>templates
+│<span class="w">   </span>├──<span class="w"> </span>config.cue<span class="w"> </span><span class="c1"># Config schema and default values</span>
+│<span class="w">   </span>├──<span class="w"> </span>deployment.cue<span class="w"> </span><span class="c1"># Kubernetes Deployment template</span>
+│<span class="w">   </span>└──<span class="w"> </span>service.cue<span class="w"> </span><span class="c1"># Kubernetes Service template</span>
+├──<span class="w"> </span>timoni.cue<span class="w"> </span><span class="c1"># Timoni entry point</span>
+└──<span class="w"> </span>values.cue<span class="w"> </span><span class="c1"># Timoni values placeholder</span>
+</code></pre></div>
+<p>To create a new module in the current directory:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>mod<span class="w"> </span>init<span class="w"> </span>myapp<span class="w"> </span>.
+</code></pre></div>
+<h2 id="entry-point">Entry point</h2>
+<p>The <code>timoni.cue</code> file contains the definition of how Timoni should
+validate, build and deploy a module instance.</p>
+<p>This file is generated by <code>timoni mod init</code> with the following content:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// source: myapp/timoni.cue</span>
+
+<span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="nx">templates</span><span class="w"> </span><span class="s">&quot;timoni.sh/myapp/templates&quot;</span>
+<span class="p">)</span>
+
+<span class="c1">// Define the schema for the user-supplied values.</span>
+<span class="c1">// At runtime, Timoni injects the supplied values</span>
+<span class="c1">// and validates them according to the Config schema.</span>
+<span class="nx">values</span><span class="p">:</span><span class="w"> </span><span class="nx">templates</span><span class="p">.</span><span class="err">#</span><span class="nx">Config</span>
+
+<span class="c1">// Define how Timoni should build, validate and</span>
+<span class="c1">// apply the Kubernetes resources.</span>
+<span class="nx">timoni</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1alpha1&quot;</span>
+
+<span class="w">    </span><span class="c1">// Define the instance that generates the Kubernetes resources.</span>
+<span class="w">    </span><span class="c1">// At runtime, Timoni builds the instance and validates</span>
+<span class="w">    </span><span class="c1">// the resulting resources according to their Kubernetes schema.</span>
+<span class="w">    </span><span class="nx">instance</span><span class="p">:</span><span class="w"> </span><span class="nx">templates</span><span class="p">.</span><span class="err">#</span><span class="nx">Instance</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// The user-supplied values are merged with the</span>
+<span class="w">        </span><span class="c1">// default values at runtime by Timoni.</span>
+<span class="w">        </span><span class="nx">config</span><span class="p">:</span><span class="w"> </span><span class="nx">values</span>
+<span class="w">        </span><span class="c1">// The instance name and namespace tag values</span>
+<span class="w">        </span><span class="c1">// are injected at runtime by Timoni.</span>
+<span class="w">        </span><span class="nx">config</span><span class="p">:</span><span class="w"> </span><span class="nx">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">name</span><span class="p">:</span><span class="w">      </span><span class="kt">string</span><span class="w"> </span><span class="err">@</span><span class="nx">tag</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span>
+<span class="w">            </span><span class="nx">namespace</span><span class="p">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="err">@</span><span class="nx">tag</span><span class="p">(</span><span class="nx">namespace</span><span class="p">)</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Pass the generated Kubernetes resources</span>
+<span class="w">    </span><span class="c1">// to Timoni&#39;s multi-step apply.</span>
+<span class="w">    </span><span class="nx">apply</span><span class="p">:</span><span class="w"> </span><span class="nx">all</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">obj</span><span class="w"> </span><span class="nx">in</span><span class="w"> </span><span class="nx">instance</span><span class="p">.</span><span class="nx">objects</span><span class="w"> </span><span class="p">{</span><span class="nx">obj</span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="values">Values</h2>
+<p>The <code>values.cue</code> file is a placeholder for the user-supplied values.
+This file is generated by <code>timoni mod init</code>, no customisations are allowed.</p>
+<p>The <code>values</code> schema is set in the <code>timoni.cue</code> file:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// source: myapp/timoni.cue</span>
+
+<span class="nx">values</span><span class="p">:</span><span class="w"> </span><span class="nx">templates</span><span class="p">.</span><span class="err">#</span><span class="nx">Config</span>
+</code></pre></div>
+<p>Note that the <code>README.md</code> file should contain the config values schema documentation.</p>
+<h2 id="templates">Templates</h2>
+<p>The templates directory is where module authors define Kubernetes resources
+and their configuration schema.</p>
+<h3 id="config">Config</h3>
+<p>The schema and defaults for the user-supplied values are defined in <code>templates/config.cue</code>.</p>
+<p>Example of a minimal config for an app deployment:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// source: myapp/templates/config.cue</span>
+
+<span class="err">#</span><span class="nx">Config</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">metadata</span><span class="p">:</span><span class="w"> </span><span class="nx">metav1</span><span class="p">.</span><span class="err">#</span><span class="nx">ObjectMeta</span>
+<span class="w">    </span><span class="nx">metadata</span><span class="p">:</span><span class="w"> </span><span class="nx">name</span><span class="p">:</span><span class="w">      </span><span class="o">*</span><span class="s">&quot;myapp&quot;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">metadata</span><span class="p">:</span><span class="w"> </span><span class="nx">namespace</span><span class="p">:</span><span class="w"> </span><span class="o">*</span><span class="s">&quot;default&quot;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">metadata</span><span class="p">:</span><span class="w"> </span><span class="nx">annotations</span><span class="err">?</span><span class="p">:</span><span class="w"> </span><span class="p">{[</span><span class="kt">string</span><span class="p">]:</span><span class="w"> </span><span class="kt">string</span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">service</span><span class="p">:</span><span class="w"> </span><span class="nx">port</span><span class="p">:</span><span class="w"> </span><span class="o">*</span><span class="mi">80</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">&gt;</span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">&lt;=</span><span class="mi">65535</span>
+
+<span class="w">    </span><span class="nx">image</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">repository</span><span class="p">:</span><span class="w"> </span><span class="o">*</span><span class="s">&quot;docker.io/myorg/myapp&quot;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">        </span><span class="nx">tag</span><span class="p">:</span><span class="w">        </span><span class="o">*</span><span class="s">&quot;1.0.0&quot;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">        </span><span class="nx">pullPolicy</span><span class="p">:</span><span class="w"> </span><span class="o">*</span><span class="s">&quot;IfNotPresent&quot;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">metadata</span><span class="p">:</span><span class="w"> </span><span class="nx">labels</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;app.kubernetes.io/name&quot;</span><span class="p">:</span><span class="w">    </span><span class="nx">metadata</span><span class="p">.</span><span class="nx">name</span>
+<span class="w">        </span><span class="s">&quot;app.kubernetes.io/version&quot;</span><span class="p">:</span><span class="w"> </span><span class="nx">image</span><span class="p">.</span><span class="nx">tag</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">resources</span><span class="err">?</span><span class="p">:</span><span class="w"> </span><span class="nx">corev1</span><span class="p">.</span><span class="err">#</span><span class="nx">ResourceRequirements</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The user-supplied values can:</p>
+<ul>
+<li>set a different value for the fields with defaults e.g. the service port</li>
+<li>add labels to metadata except for the name and version</li>
+<li>add annotations to metadata</li>
+<li>set resource requirements requests and/or limits</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="c1">// source: myapp-values/values.cue</span>
+
+<span class="nx">values</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">service</span><span class="p">:</span><span class="w"> </span><span class="nx">port</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span>
+<span class="w">    </span><span class="nx">metadata</span><span class="p">:</span><span class="w"> </span><span class="nx">annontations</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;org/owner&quot;</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dev-team&quot;</span>
+<span class="w">    </span><span class="nx">resources</span><span class="p">:</span><span class="w"> </span><span class="nx">limits</span><span class="p">:</span><span class="w"> </span><span class="nx">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1Gi&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="instance">Instance</h3>
+<p>Example of defining an instance containing a Kubernetes Service and Deployment:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// source: myapp/templates/config.cue</span>
+
+<span class="err">#</span><span class="nx">Instance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">config</span><span class="p">:</span><span class="w"> </span><span class="err">#</span><span class="nx">Config</span>
+
+<span class="w">    </span><span class="nx">objects</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">svc</span><span class="p">:</span><span class="w">    </span><span class="err">#</span><span class="nx">Service</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="nx">_config</span><span class="p">:</span><span class="w">        </span><span class="nx">config</span><span class="p">}</span>
+<span class="w">        </span><span class="nx">deploy</span><span class="p">:</span><span class="w"> </span><span class="err">#</span><span class="nx">Deployment</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="nx">_config</span><span class="p">:</span><span class="w">     </span><span class="nx">config</span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="kubernetes-resources">Kubernetes resources</h3>
+<p>Example of a Kubernetes Service template:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// source: myapp/templates/service.cue</span>
+
+<span class="kn">package</span><span class="w"> </span><span class="nx">templates</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="nx">corev1</span><span class="w"> </span><span class="s">&quot;k8s.io/api/core/v1&quot;</span>
+<span class="p">)</span>
+
+<span class="err">#</span><span class="nx">Service</span><span class="p">:</span><span class="w"> </span><span class="nx">corev1</span><span class="p">.</span><span class="err">#</span><span class="nx">Service</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">_config</span><span class="p">:</span><span class="w">    </span><span class="err">#</span><span class="nx">Config</span>
+<span class="w">    </span><span class="nx">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1&quot;</span>
+<span class="w">    </span><span class="nx">kind</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;Service&quot;</span>
+<span class="w">    </span><span class="nx">metadata</span><span class="p">:</span><span class="w">   </span><span class="nx">_config</span><span class="p">.</span><span class="nx">metadata</span>
+<span class="w">    </span><span class="nx">spec</span><span class="p">:</span><span class="w">       </span><span class="nx">corev1</span><span class="p">.</span><span class="err">#</span><span class="nx">ServiceSpec</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">type</span><span class="p">:</span><span class="w">     </span><span class="nx">corev1</span><span class="p">.</span><span class="err">#</span><span class="nx">ServiceTypeClusterIP</span>
+<span class="w">        </span><span class="nx">selector</span><span class="p">:</span><span class="w"> </span><span class="nx">_config</span><span class="p">.</span><span class="nx">metadata</span><span class="p">.</span><span class="nx">labels</span>
+<span class="w">        </span><span class="nx">ports</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;http&quot;</span>
+<span class="w">                </span><span class="nx">targetPort</span><span class="p">:</span><span class="w"> </span><span class="nx">name</span>
+<span class="w">                </span><span class="nx">port</span><span class="p">:</span><span class="w">       </span><span class="nx">_config</span><span class="p">.</span><span class="nx">service</span><span class="p">.</span><span class="nx">port</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="kubernetes-types">Kubernetes types</h2>
+<p>The <code>cue.mod</code> directory contains the Kubernetes types and their schema.
+These files are automatically generated by CUE from the Kubernetes API Go packages.</p>
+<div class="highlight"><pre><span></span><code>./myapp/cue.mod/
+├──<span class="w"> </span>gen
+│<span class="w">   </span>└──<span class="w"> </span>k8s.io
+│<span class="w">       </span>├──<span class="w"> </span>api
+│<span class="w">       </span>│<span class="w">   </span>├──<span class="w"> </span>apps
+│<span class="w">       </span>│<span class="w">   </span>└──<span class="w"> </span>core
+│<span class="w">       </span>└──<span class="w"> </span>apimachinery
+└──<span class="w"> </span>module.cue
+</code></pre></div>
+<p>To update the schemas to a specific Kubernetes version, run the following commands
+from within the <code>myapp</code> directory:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># download the Kubernetes Go APIs</span>
+go<span class="w"> </span>get<span class="w"> </span>k8s.io/api/...@v0.26.2
+
+<span class="c1"># generate the CUE types for v1 core and apps APIs</span>
+cue<span class="w"> </span>get<span class="w"> </span>go<span class="w"> </span>k8s.io/api/core/v1
+cue<span class="w"> </span>get<span class="w"> </span>go<span class="w"> </span>k8s.io/api/apps/v1
+</code></pre></div>
+<p>To add other Kubernetes types e.g. <code>Ingress</code> and <code>NetworkPolicy</code>:</p>
+<div class="highlight"><pre><span></span><code>cue<span class="w"> </span>get<span class="w"> </span>go<span class="w"> </span>k8s.io/api/networking/v1
+</code></pre></div>
+<h3 id="kubernetes-crds">Kubernetes CRDs</h3>
+<p>To add 3rd-party Kubernetes types e.g. Prometheus Operator <code>ServiceMonitor</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># download the Prometheus Operator Go APIs</span>
+go<span class="w"> </span>get<span class="w"> </span>github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1@v0.63.0
+
+<span class="c1"># generate the CUE types for v1 monitoring APIs</span>
+cue<span class="w"> </span>get<span class="w"> </span>go<span class="w"> </span>github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1
+</code></pre></div>
+<p>The Kubernetes CUE types are used in templates to set the validation schema of a resource e.g.:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">package</span><span class="w"> </span><span class="nx">templates</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="nx">promv1</span><span class="w"> </span><span class="s">&quot;github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1&quot;</span>
+<span class="p">)</span>
+
+<span class="err">#</span><span class="nx">ServiceMonitor</span><span class="p">:</span><span class="w"> </span><span class="nx">promv1</span><span class="p">.</span><span class="err">#</span><span class="nx">ServiceMonitor</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">_config</span><span class="p">:</span><span class="w">    </span><span class="err">#</span><span class="nx">Config</span>
+<span class="w">    </span><span class="nx">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;monitoring.coreos.com/v1&quot;</span>
+<span class="w">    </span><span class="nx">kind</span><span class="p">:</span><span class="w">       </span><span class="nx">promv1</span><span class="p">.</span><span class="err">#</span><span class="nx">ServiceMonitorsKind</span>
+<span class="w">    </span><span class="nx">metadata</span><span class="p">:</span><span class="w">   </span><span class="nx">_config</span><span class="p">.</span><span class="nx">metadata</span>
+<span class="w">    </span><span class="nx">spec</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">endpoints</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">            </span><span class="nx">path</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;/metrics&quot;</span>
+<span class="w">            </span><span class="nx">port</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;http-metrics&quot;</span>
+<span class="w">            </span><span class="nx">interval</span><span class="p">:</span><span class="w"> </span><span class="nx">_config</span><span class="p">.</span><span class="nx">monitoring</span><span class="p">.</span><span class="nx">interval</span>
+<span class="w">        </span><span class="p">}]</span>
+<span class="w">        </span><span class="nx">namespaceSelector</span><span class="p">:</span><span class="w"> </span><span class="nx">matchNames</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="nx">_config</span><span class="p">.</span><span class="nx">metadata</span><span class="p">.</span><span class="nx">namespace</span><span class="p">]</span>
+<span class="w">        </span><span class="nx">selector</span><span class="p">:</span><span class="w"> </span><span class="nx">matchLabels</span><span class="p">:</span><span class="w"> </span><span class="nx">_config</span><span class="p">.</span><span class="nx">selectorLabels</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections"], "search": "../assets/javascripts/workers/search.e5c33ebb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.51d95adb.min.js"></script>
+      
+    
+  </body>
+</html>
