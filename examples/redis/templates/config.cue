@@ -28,8 +28,8 @@ import (
 
 	// Container image
 	image: {
-		repository: *"docker.io/redis" | string
-		tag:        *"7.0.9" | string
+		repository: *"cgr.dev/chainguard/redis" | string
+		tag:        *"7.0.8" | string
 		pullPolicy: *"IfNotPresent" | string
 	}
 	imagePullSecrets?: [...corev1.LocalObjectReference]
