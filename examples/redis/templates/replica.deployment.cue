@@ -21,7 +21,7 @@ import (
 		}
 	}
 	spec: appsv1.#DeploymentSpec & {
-		strategy: type: "Recreate"
+		strategy: type: "RollingUpdate"
 		replicas: _config.readonly.replicas
 		selector: matchLabels: _selectorLabel
 		template: {
