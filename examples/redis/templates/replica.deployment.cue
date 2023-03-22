@@ -50,6 +50,12 @@ import (
 							"\(_config.service.port)",
 							"--include",
 							"/redis-replica/redis.conf",
+							if _config.password != _|_ {
+								"--masterauth \(_config.password)"
+							},
+							if _config.password != _|_ {
+								"--requirepass \(_config.password)"
+							},
 						]
 						livenessProbe: {
 							tcpSocket: port: "redis"
