@@ -120,3 +120,10 @@ values: {
 |-------------------------|----------|---------|-------------------------------------------------------------------------------|
 | `monitoring: enabled:`  | `bool`   | `false` | Enable [Prometheus ServiceMonitor](https://prometheus-operator.dev/) creation |
 | `monitoring: interval:` | `string` | `15s`   | Prometheus scrape interval                                                    |
+
+### Cashing values
+
+| Key                  | Type     | Default | Description                                             |
+|----------------------|----------|---------|---------------------------------------------------------|
+| `caching: enabled:`  | `bool`   | `false` | Enable Redis caching                                    |
+| `caching: redisURL:` | `string` | `""`    | Redis URL in the format `tcp://:[password]@host[:port]` |

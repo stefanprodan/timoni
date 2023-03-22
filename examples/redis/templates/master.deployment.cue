@@ -42,7 +42,13 @@ import (
 							containerPort: 6379
 							protocol:      "TCP"
 						}]
-						command: ["redis-server", "/redis-master/redis.conf"]
+						command: [
+							"redis-server",
+							"/redis-master/redis.conf",
+							if _config.password != _|_ {
+								"--requirepass \(_config.password)"
+							},
+						]
 						livenessProbe: {
 							tcpSocket: port: "redis"
 							initialDelaySeconds: 2

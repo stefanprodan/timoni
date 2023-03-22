@@ -54,6 +54,13 @@ import (
 						if _config.securityContext != _|_ {
 							securityContext: _config.securityContext
 						}
+						command: [
+							"./podinfo",
+							"--level=info",
+							if _config.caching.enabled {
+								"--cache-server=\(_config.caching.redisURL)"
+							},
+						]
 					},
 				]
 				if _config.podSecurityContext != _|_ {

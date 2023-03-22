@@ -1,6 +1,8 @@
 package templates
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -15,11 +17,12 @@ import (
 		storageClass: *"standard" | string
 		size:         *"8Gi" | string
 	}
+	password?: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$"
 
 	// Metadata (common to all resources)
 	metadata: metav1.#ObjectMeta
-	metadata: name:      *"redis" | string
-	metadata: namespace: *"default" | string
+	metadata: name:      *"redis" | string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)
+	metadata: namespace: *"default" | string & strings.MaxRunes(63)
 	metadata: labels: {
 		"app.kubernetes.io/version": image.tag
 		"app.kubernetes.io/part-of": metadata.name

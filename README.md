@@ -18,7 +18,7 @@ to offer a better experience of creating, packaging and delivering apps to Kuber
 > **Warning**
 >
 > Note that Timoni in under active development and is still in its infancy.
-> Its APIs and command-line interface may change in a backwards incompatible manner.
+> The APIs and command-line interface may change in a backwards incompatible manner.
 
 ## Get started
 
@@ -50,7 +50,7 @@ Module structure:
 └── values.cue # Timoni values placeholder
 ```
 
-A module example can be found at [examples/podinfo](examples/podinfo).
+Module examples can be found at [examples/podinfo](examples/podinfo) and [examples/redis](examples/redis).
 
 Commands for working with local modules:
 

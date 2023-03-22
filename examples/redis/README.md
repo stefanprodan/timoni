@@ -93,6 +93,7 @@ timoni -n default delete redis
 | `persistence: enabled:`      | `bool`   | `true`     | Enable persistent storage for the Redis master node                                                             |
 | `persistence: storageClass:` | `string` | `standard` | The [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) storage class name |
 | `persistence: size:`         | `string` | `8Gi`      | The persistent volume size                                                                                      |
+| `password`                   | `string` | `""`       | When set, it enables auth for both the master and replicas with the specified password                          |
 
 ### General values
 

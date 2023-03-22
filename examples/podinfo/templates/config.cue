@@ -1,6 +1,8 @@
 package templates
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -9,11 +11,14 @@ import (
 #Config: {
 	// Metadata (common to all resources)
 	metadata: metav1.#ObjectMeta
-	metadata: name:      *"podinfo" | string
-	metadata: namespace: *"default" | string
+	metadata: name:      *"podinfo" | string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)
+	metadata: namespace: *"default" | string & strings.MaxRunes(63)
 	metadata: labels:    *selectorLabels | {[ string]: string}
 	metadata: labels: "app.kubernetes.io/version": image.tag
 	metadata: annotations?: {[ string]:            string}
+
+	// Redis
+	redis?: string
 
 	// Deployment
 	replicas:       *1 | int & >0
@@ -61,6 +66,12 @@ import (
 	monitoring: {
 		enabled:  *false | bool
 		interval: *"15s" | string
+	}
+
+	// Caching (optional)
+	caching: {
+		enabled:   *false | bool
+		redisURL?: string & =~"^tcp://.*$"
 	}
 }
 
