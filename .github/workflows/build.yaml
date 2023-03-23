@@ -33,8 +33,6 @@ jobs:
         run: make lint-samples
       - name: Run setup action
         uses: ./actions/setup
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check if working tree is dirty
         run: |
           if [[ $(git diff --stat) != '' ]]; then
