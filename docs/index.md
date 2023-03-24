@@ -52,7 +52,7 @@ Commands for working with local modules:
 - `timoni build <name> <path/to/module> -n <namespace>`
 - `timoni apply <name> <path/to/module> -f <path/to/values.cue> --dry-run --diff`
 
-### OCI Artifacts
+#### OCI Artifacts
 
 Timoni modules are distributed as OCI artifacts and can be stored in container registries
 which support custom OCI media types.
@@ -120,6 +120,52 @@ these resources can be annotated with `action.timoni.sh/prune: "disabled"`.
 After an installation or upgrade, Timoni waits for the
 applied resources to be fully reconciled by checking the ready status
 of deployments, jobs, services, ingresses, and Kubernetes custom resources.
+
+### Timoni Bundles
+
+Timoni bundles offer a declarative way of managing the lifecycle of applications and their infra dependencies.
+
+A Timoni bundle is a CUE file for defining a group of instances together with their values and module references:
+
+```cue
+bundle: {
+	apiVersion: "v1alpha1"
+	instances: {
+		redis: {
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/modules/redis"
+				version: "7.0.9"
+			}
+			namespace: "podinfo"
+			values: maxmemory: 256
+		}
+		podinfo: {
+			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+			module: version: "6.3.4"
+			namespace: "podinfo"
+			values: caching: {
+				enabled:  true
+				redisURL: "tcp://redis:6379"
+			}
+		}
+	}
+}
+```
+
+!!! tip "Bundle example"
+
+    An example bundle can be found in Timoni's repository at
+    [examples/bundles/podinfo.cue](https://github.com/stefanprodan/timoni/tree/main/examples/bundles/).
+    This bundle defines a Redis master-replica cluster and a podinfo instance connected to the Redis instance.
+    The secret values are defined in a separate file which can be kept encrypted or pulled from a secure vault at apply time.
+
+In the bundle files you can use arithmetic operations,
+string interpolation and everything else that CUE std lib supports.
+
+Commands for working with bundles:
+
+- `timoni bundle apply -f bundle.cue --force --prune --wait`
+- `timoni bundle apply -f bundle.cue -f bundle_extras.cue --dry-run --diff`
 
 ## License
 

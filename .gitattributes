@@ -1,0 +1,2 @@
+examples/**/templates/*.cue -linguist-documentation
+examples/bundles -linguist-documentation
