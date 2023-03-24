@@ -7,44 +7,71 @@ branding:
 inputs:
   version:
     description: "Timoni version e.g. 0.0.2 (defaults to latest stable release)"
-    default: "latest"
-    required: true
-  arch:
-    description: "Arch can be amd64 or arm64"
-    required: true
-    default: "amd64"
-  token:
-    description: "GitHub Token used to query the GitHub API for the latest version"
-    required: true
+    required: false
 runs:
   using: composite
   steps:
-    - name: "Download the binary to the runner's cache dir"
+    - name: Download the binary to the runner's cache dir
       shell: bash
       run: |
-        ARCH=${{ inputs.arch }}
         VERSION=${{ inputs.version }}
-        TOKEN=${{ inputs.token }}
-
-        # Find the latest version
-        if [ "${VERSION}" == "latest" ]; then
-          VERSION_SLUG=$(curl -sL -H "Authorization: token ${TOKEN}" https://api.github.com/repos/stefanprodan/timoni/releases/latest  | grep tag_name)
-          VERSION=$(echo "${VERSION_SLUG}" | sed -E 's/.*"([^"]+)".*/\1/' | cut -c 2-)
+        if [[ -z "$VERSION" ]] || [[ "$VERSION" == "latest" ]]; then
+          VERSION=$(curl -fsSL -H "Authorization: token ${{github.token}}" https://api.github.com/repos/stefanprodan/timoni/releases/latest | grep tag_name | cut -d '"' -f 4)
+        fi
+        if [[ -z "$VERSION" ]]; then
+          echo "Unable to determine Timoni version"
+          exit 1
+        fi
+        if [[ $VERSION = v* ]]; then
+          VERSION="${VERSION:1}"
         fi
 
-        TIMONI_URL="https://github.com/stefanprodan/timoni/releases/download/v${VERSION}/timoni_${VERSION}_linux_${ARCH}.tar.gz"
-        TIMONI_DIR="$RUNNER_TOOL_CACHE/timoni/$VERSION/$ARCH/timoni/bin"
-        
-        # If the requested version is not cached, download the binary and add it to the PATH
-        if [[ ! -x "${TIMONI_DIR}/timoni" ]]; then
-          curl -sLf "${TIMONI_URL}" --output /tmp/timoni.tar.gz
-          mkdir -p /tmp/timoni
-          tar -C /tmp/timoni/ -zxvf /tmp/timoni.tar.gz
-          mkdir -p "${TIMONI_DIR}"
-          cp /tmp/timoni/timoni "${TIMONI_DIR}/"
-          echo "${TIMONI_DIR}" >> "$GITHUB_PATH"
-          rm -rf /tmp/timoni/ /tmp/timoni.tar.gz
+        OS=$(echo "${RUNNER_OS}" | tr '[:upper:]' '[:lower:]')
+        if [[ "$OS" == "macos" ]]; then
+          OS="darwin"
         fi
+
+        ARCH=$(echo "${RUNNER_ARCH}" | tr '[:upper:]' '[:lower:]')
+        if [[ "$ARCH" == "x64" ]]; then
+          ARCH="amd64"
+        fi
+
+        TIMONI_EXEC_FILE="timoni"
+        if [[ "$OS" == "windows" ]]; then
+            TIMONI_EXEC_FILE="${TIMONI_EXEC_FILE}.exe"
+        fi
+
+        TIMONI_TOOL_DIR="${RUNNER_TOOL_CACHE}/timoni/${VERSION}/${OS}/${ARCH}"
+        if [[ ! -x "$TIMONI_TOOL_DIR/$TIMONI_EXEC_FILE" ]]; then
+          DL_DIR="$(mktemp -dt timoni-XXXXXX)"
+          trap "rm -rf $DL_DIR" EXIT
+
+          echo "Downloading timoni ${VERSION} for ${OS}/${ARCH}"
+          TIMONI_TARGET_FILE="timoni_${VERSION}_${OS}_${ARCH}.tar.gz"
+          TIMONI_CHECKSUMS_FILE="timoni_${VERSION}_checksums.txt"
+
+          TIMONI_DOWNLOAD_URL="https://github.com/stefanprodan/timoni/releases/download/v${VERSION}/"
+
+          curl -fsSL -o "$DL_DIR/$TIMONI_TARGET_FILE" "$TIMONI_DOWNLOAD_URL/$TIMONI_TARGET_FILE"
+          curl -fsSL -o "$DL_DIR/$TIMONI_CHECKSUMS_FILE" "$TIMONI_DOWNLOAD_URL/$TIMONI_CHECKSUMS_FILE"
+
+          echo "Verifying checksum"
+          sum=$(openssl sha1 -sha256 "$DL_DIR/$TIMONI_TARGET_FILE" | awk '{print $2}')
+          expected_sum=$(grep "$TIMONI_TARGET_FILE" "$DL_DIR/$TIMONI_CHECKSUMS_FILE" | awk '{print $1}')
+          if [ "$sum" != "$expected_sum" ]; then
+            echo "SHA sum of ${TIMONI_TARGET_FILE} does not match. Aborting."
+            exit 1
+          fi
+
+          echo "Installing timoni to ${TIMONI_TOOL_DIR}"
+          mkdir -p "$TIMONI_TOOL_DIR"
+          tar xzf "$DL_DIR/$TIMONI_TARGET_FILE" -C "$TIMONI_TOOL_DIR" $TIMONI_EXEC_FILE
+          chmod +x "$TIMONI_TOOL_DIR/$TIMONI_EXEC_FILE"
+        fi
+
+        echo "Adding timoni to path"
+        echo "$TIMONI_TOOL_DIR" >> "$GITHUB_PATH"
+
     - name: "Print the version"
       shell: bash
       run: |
