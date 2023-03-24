@@ -33,4 +33,22 @@ const (
 
 	// ApplySelector is the CUE path for the Timoni's apply resource sets.
 	ApplySelector Selector = "timoni.apply"
+
+	// BundleAPIVersionSelector is the CUE path for the Timoni's bundle API version.
+	BundleAPIVersionSelector Selector = "bundle.apiVersion"
+
+	// BundleInstancesSelector is the CUE path for the Timoni's bundle instances.
+	BundleInstancesSelector Selector = "bundle.instances"
+
+	// BundleModuleURLSelector is the CUE path for the Timoni's bundle module url.
+	BundleModuleURLSelector Selector = "module.url"
+
+	// BundleModuleVersionSelector is the CUE path for the Timoni's bundle module version.
+	BundleModuleVersionSelector Selector = "module.version"
+
+	// BundleNamespaceSelector is the CUE path for the Timoni's bundle instance namespace.
+	BundleNamespaceSelector Selector = "namespace"
+
+	// BundleValuesSelector is the CUE path for the Timoni's bundle instance values.
+	BundleValuesSelector Selector = "values"
 )
