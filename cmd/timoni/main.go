@@ -17,14 +17,15 @@ limitations under the License.
 package main
 
 import (
-	"github.com/fluxcd/pkg/oci"
-	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"os"
 	"time"
 
+	"github.com/fluxcd/pkg/oci"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 var VERSION = "0.0.0-dev.0"
@@ -48,16 +49,26 @@ var (
 
 var kubeconfigArgs = genericclioptions.NewConfigFlags(false)
 
+// namespaceOrDefault returns the namespace from the current context or "default"
+// if no namespace is set.
+func namespaceOrDefault() string {
+	if ns, _, err := kubeconfigArgs.ToRawKubeConfigLoader().Namespace(); err == nil {
+		return ns
+	}
+	return "default"
+}
+
 func init() {
 	rootCmd.PersistentFlags().DurationVar(&rootArgs.timeout, "timeout", time.Minute,
 		"The length of time to wait before giving up on the current operation.")
 
+	// Nil the following fields to ensure they are not added by AddFlags.
 	kubeconfigArgs.Timeout = nil
 	kubeconfigArgs.Namespace = nil
 	kubeconfigArgs.AddFlags(rootCmd.PersistentFlags())
 
-	defaultNamespace := "default"
-	kubeconfigArgs.Namespace = &defaultNamespace
+	namespace := namespaceOrDefault()
+	kubeconfigArgs.Namespace = &namespace
 	rootCmd.PersistentFlags().StringVarP(kubeconfigArgs.Namespace, "namespace", "n", *kubeconfigArgs.Namespace, "The instance namespace.")
 
 	rootCmd.DisableAutoGenTag = true
