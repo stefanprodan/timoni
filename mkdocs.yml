@@ -65,6 +65,8 @@ nav:
           - Inspect Values: cmd/timoni_inspect_values.md
           - Inspect Resources: cmd/timoni_inspect_resources.md
           - Status: cmd/timoni_status.md
+      - Bundles:
+          - Apply: cmd/timoni_bundle_apply.md
       - Completion:
           - Bash: cmd/timoni_completion_bash.md
           - Fish: cmd/timoni_completion_fish.md
