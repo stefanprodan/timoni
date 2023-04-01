@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -121,8 +122,24 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if len(buildArgs.valuesFiles) > 0 {
-		err = builder.MergeValuesFile(buildArgs.valuesFiles)
+	if numfiles := len(buildArgs.valuesFiles); numfiles > 0 {
+		valuesCueFiles := make([]string, numfiles, numfiles)
+		for i, f := range buildArgs.valuesFiles {
+			switch filepath.Ext(f) {
+			case ".cue":
+				valuesCueFiles[i] = f
+			case ".json", ".yaml", ".yml":
+				newf, err := convertToCueFile(f)
+				if err != nil {
+					return fmt.Errorf("unable to import values file %s: %w", f, err)
+				}
+				valuesCueFiles[i] = newf
+			default:
+				return fmt.Errorf("unrecognized values file extension for %s", f)
+			}
+		}
+
+		err = builder.MergeValuesFile(valuesCueFiles)
 		if err != nil {
 			return err
 		}
@@ -185,4 +202,8 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	return err
+}
+
+func convertToCueFile(path string) (string, error) {
+	return path, nil
 }

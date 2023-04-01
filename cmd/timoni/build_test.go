@@ -153,4 +153,20 @@ func TestBuild(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("cannot find package"))
 	})
+
+	t.Run("fails to build with unrecognised values file", func(t *testing.T) {
+		g := NewWithT(t)
+		name := rnd("my-instance", 5)
+		namespace := rnd("my-namespace", 5)
+		output, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s %s -f %s -p main -o yaml",
+			namespace,
+			name,
+			modPath,
+			modPath+"-values/invalid.unknown-extension",
+		))
+		g.Expect(output).To(BeEmpty())
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("unrecognized values file extension"))
+	})
 }
