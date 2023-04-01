@@ -66,7 +66,7 @@ func init() {
 	buildCmd.Flags().StringSliceVarP(&buildArgs.valuesFiles, "values", "f", nil,
 		"The local path to values.cue files.")
 	buildCmd.Flags().StringVarP(&buildArgs.output, "output", "o", "yaml",
-		"The format in which the Kubernetes objects should be printed, can be 'yaml' or 'yaml'.")
+		"The format in which the Kubernetes objects should be printed, can be 'yaml' or 'json'.")
 	buildCmd.Flags().Var(&buildArgs.creds, buildArgs.creds.Type(), buildArgs.creds.Description())
 
 	rootCmd.AddCommand(buildCmd)
