@@ -37,6 +37,7 @@ const (
 )
 
 // BundleSchema defines the v1alpha1 CUE schema for Timoni's bundle API.
+// TODO: switch to go:embed when this is available https://github.com/cue-lang/cue/issues/607
 const BundleSchema = `
 import "strings"
 
