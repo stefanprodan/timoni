@@ -92,6 +92,10 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 		return v.Err()
 	}
 
+	if err := v.Validate(cue.Concrete(true)); err != nil {
+		return err
+	}
+
 	apiVersion := v.LookupPath(cue.ParsePath(apiv1.BundleAPIVersionSelector.String()))
 	if apiVersion.Err() != nil {
 		return fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleAPIVersionSelector.String(), apiVersion.Err())

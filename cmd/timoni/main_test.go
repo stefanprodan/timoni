@@ -114,6 +114,8 @@ func resetCmdArgs() {
 	listArgs = listFlags{}
 	pullModArgs = pullModFlags{}
 	pushModArgs = pushModFlags{}
+	bundleApplyArgs = bundleApplyFlags{}
+	bundleLintArgs = bundleLintFlags{}
 }
 
 func rnd(prefix string, n int) string {

@@ -27,9 +27,8 @@ import (
 	"time"
 
 	"cuelang.org/go/cue"
-	"cuelang.org/go/cue/load"
-
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/load"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -120,6 +119,10 @@ func runBundleApplyCmd(cmd *cobra.Command, args []string) error {
 	v := ctx.BuildInstance(inst)
 	if v.Err() != nil {
 		return v.Err()
+	}
+
+	if err := v.Validate(cue.Concrete(true)); err != nil {
+		return err
 	}
 
 	apiVersion := v.LookupPath(cue.ParsePath(apiv1.BundleAPIVersionSelector.String()))
