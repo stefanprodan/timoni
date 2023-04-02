@@ -18,8 +18,6 @@ package main
 
 import (
 	"context"
-	"cuelang.org/go/cue"
-	"cuelang.org/go/cue/load"
 	"fmt"
 	"os"
 	"os/exec"
@@ -28,7 +26,9 @@ import (
 	"strings"
 	"time"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/load"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -89,6 +89,15 @@ func init() {
 }
 
 func runBundleApplyCmd(cmd *cobra.Command, args []string) error {
+	bundleSchema, err := os.CreateTemp("", "schema.*.cue")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(bundleSchema.Name())
+	if _, err := bundleSchema.WriteString(apiv1.BundleSchema); err != nil {
+		return err
+	}
+
 	ctx := cuecontext.New()
 
 	cfg := &load.Config{
@@ -96,7 +105,8 @@ func runBundleApplyCmd(cmd *cobra.Command, args []string) error {
 		DataFiles: true,
 	}
 
-	ix := load.Instances(bundleApplyArgs.files, cfg)
+	files := append(bundleApplyArgs.files, bundleSchema.Name())
+	ix := load.Instances(files, cfg)
 	if len(ix) == 0 {
 		return fmt.Errorf("no bundle found")
 	}
@@ -109,6 +119,10 @@ func runBundleApplyCmd(cmd *cobra.Command, args []string) error {
 	v := ctx.BuildInstance(inst)
 	if v.Err() != nil {
 		return v.Err()
+	}
+
+	if err := v.Validate(cue.Concrete(true)); err != nil {
+		return err
 	}
 
 	apiVersion := v.LookupPath(cue.ParsePath(apiv1.BundleAPIVersionSelector.String()))
