@@ -13,9 +13,7 @@ steps:
   - name: Setup Timoni
     uses: stefanprodan/timoni/actions/setup@main
     with:
-      version: latest # latest or exact version e.g. 0.0.2
-      arch: amd64 # can be amd64 or arm64
-      token: ${{ secrets.GITHUB_TOKEN }}
+      version: latest # latest or exact version e.g. 0.2.0
   - name: Run Timoni
     run: timoni version
 ```
@@ -46,8 +44,6 @@ jobs:
         uses: cue-lang/setup-cue@main
       - name: Setup Timoni
         uses: stefanprodan/timoni/actions/setup@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Lint
         run: |
           timoni mod lint ./modules/my-module
@@ -83,8 +79,6 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup Timoni
         uses: stefanprodan/timoni/actions/setup@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:

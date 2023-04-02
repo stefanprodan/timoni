@@ -135,7 +135,7 @@ string interpolation and everything else that CUE std lib supports.
 
 Commands for working with bundles:
 
-- `timoni bundle apply -f bundle.cue --force --prune --wait`
+- `timoni bundle lint -f bundle.cue`
 - `timoni bundle apply -f bundle.cue -f bundle_extras.cue --dry-run --diff`
 
 ## Contributing
