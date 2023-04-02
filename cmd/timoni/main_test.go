@@ -25,10 +25,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 var (
 	envTestClient  client.Client
 	dockerRegistry string
