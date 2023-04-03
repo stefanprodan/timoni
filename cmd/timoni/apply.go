@@ -80,6 +80,9 @@ The apply command performs the following steps:
   timoni apply -n apps app oci://docker.io/org/module -v 2.0.0 \
   --values ./values-1.cue \
   --force
+
+  # Install or upgrade an instance with custom values from stdin
+  cat values.cue | timony apply -n apps app oci://docker.io/org/module -v 1.0.0 --values -
 `,
 	RunE: runApplyCmd,
 }

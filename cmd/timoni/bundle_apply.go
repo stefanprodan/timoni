@@ -56,6 +56,9 @@ var bundleApplyCmd = &cobra.Command{
   timoni bundle apply --force \
   -f ./bundle.cue \
   -f ./bundle_secrets.cue
+
+  # Install instances from a bundle using stdin
+  cat ./bundle.cue | timony bundle apply -f -
 `,
 	RunE: runBundleApplyCmd,
 }
