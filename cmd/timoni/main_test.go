@@ -79,6 +79,10 @@ func TestMain(m *testing.M) {
 }
 
 func executeCommand(cmd string) (string, error) {
+	return executeCommandWithIn(cmd, nil)
+}
+
+func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 	defer resetCmdArgs()
 	args, err := shellwords.Parse(cmd)
 	if err != nil {
@@ -90,6 +94,9 @@ func executeCommand(cmd string) (string, error) {
 	rootCmd.SetOut(buf)
 	rootCmd.SetErr(buf)
 	rootCmd.SetArgs(args)
+	if in != nil {
+		rootCmd.SetIn(in)
+	}
 
 	logger.stderr = rootCmd.ErrOrStderr()
 
