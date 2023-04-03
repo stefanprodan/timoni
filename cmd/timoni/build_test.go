@@ -96,6 +96,30 @@ func TestBuild(t *testing.T) {
 		}
 	})
 
+	t.Run("builds module with YAML values", func(t *testing.T) {
+		g := NewWithT(t)
+		name := rnd("my-instance", 5)
+		namespace := rnd("my-namespace", 5)
+		output, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s %s -f %s -p main -o yaml",
+			namespace,
+			name,
+			modPath,
+			modPath+"-values/example.com.yaml",
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(output).To(ContainSubstring("tcp://yaml.example.com"))
+
+		objects, err := ssa.ReadObjects(strings.NewReader(output))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(len(objects)).To(BeEquivalentTo(2))
+		for _, o := range objects {
+			g.Expect(o.GetAnnotations()).To(HaveKeyWithValue("scope", "external"))
+		}
+	})
+
 	t.Run("builds module with merged values", func(t *testing.T) {
 		g := NewWithT(t)
 		name := rnd("my-instance", 5)
