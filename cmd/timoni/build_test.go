@@ -123,6 +123,22 @@ func TestBuild(t *testing.T) {
 		g.Expect(val).To(BeEquivalentTo("tcp://example.io:9090"))
 	})
 
+	t.Run("fails to build with syntactically invalid file", func(t *testing.T) {
+		g := NewWithT(t)
+		name := rnd("my-instance", 5)
+		namespace := rnd("my-namespace", 5)
+		output, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s %s -f %s -p main -o yaml",
+			namespace,
+			name,
+			modPath,
+			modPath+"-values/badsyntax.cue",
+		))
+		g.Expect(output).To(BeEmpty())
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("expected")) // "expected TOKEN: found TOKEN" is the form of syntax errors
+	})
+
 	t.Run("fails to build with invalid values", func(t *testing.T) {
 		g := NewWithT(t)
 		name := rnd("my-instance", 5)
