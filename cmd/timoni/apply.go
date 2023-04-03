@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -79,6 +80,9 @@ The apply command performs the following steps:
   timoni apply -n apps app oci://docker.io/org/module -v 2.0.0 \
   --values ./values-1.cue \
   --force
+
+  # Install or upgrade an instance with custom values from stdin
+  cat values.cue | timony apply -n apps app oci://docker.io/org/module -v 1.0.0 --values -
 `,
 	RunE: runApplyCmd,
 }
@@ -172,6 +176,19 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	logger.Printf("using module %s version %s", mod.Name, mod.Version)
 
 	if len(applyArgs.valuesFiles) > 0 {
+		for i, valuesFile := range applyArgs.valuesFiles {
+			if valuesFile == "-" {
+				path, err := saveReaderToFile(cmd.InOrStdin())
+				if err != nil {
+					return err
+				}
+
+				defer os.Remove(path)
+
+				applyArgs.valuesFiles[i] = path
+			}
+		}
+
 		err = builder.MergeValuesFile(applyArgs.valuesFiles)
 		if err != nil {
 			return err
@@ -344,4 +361,19 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func saveReaderToFile(reader io.Reader) (string, error) {
+	f, err := os.CreateTemp("", "*.cue")
+	if err != nil {
+		return "", fmt.Errorf("unable to create temp dir for stdin")
+	}
+
+	defer f.Close()
+
+	if _, err := io.Copy(f, reader); err != nil {
+		return "", fmt.Errorf("error writing stdin to file: %w", err)
+	}
+
+	return f.Name(), nil
 }

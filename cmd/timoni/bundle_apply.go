@@ -56,6 +56,9 @@ var bundleApplyCmd = &cobra.Command{
   timoni bundle apply --force \
   -f ./bundle.cue \
   -f ./bundle_secrets.cue
+
+  # Install instances from a bundle using stdin
+  cat ./bundle.cue | timony bundle apply -f -
 `,
 	RunE: runBundleApplyCmd,
 }
@@ -106,6 +109,20 @@ func runBundleApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	files := append(bundleApplyArgs.files, bundleSchema.Name())
+
+	for i, file := range files {
+		if file == "-" {
+			path, err := saveReaderToFile(cmd.InOrStdin())
+			if err != nil {
+				return err
+			}
+
+			defer os.Remove(path)
+
+			files[i] = path
+		}
+	}
+
 	ix := load.Instances(files, cfg)
 	if len(ix) == 0 {
 		return fmt.Errorf("no bundle found")

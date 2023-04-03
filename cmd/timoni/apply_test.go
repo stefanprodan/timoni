@@ -87,6 +87,33 @@ func TestApply(t *testing.T) {
 		g.Expect(clientCM.Data["server"]).To(ContainSubstring("tcp://example.com"))
 	})
 
+	t.Run("updates instance with values from stdin", func(t *testing.T) {
+		g := NewWithT(t)
+
+		r := strings.NewReader(`values: domain: "example.org"`)
+
+		output, err := executeCommandWithIn(fmt.Sprintf(
+			"apply -n %s %s %s -f - -p main --wait",
+			namespace,
+			name,
+			modPath,
+		), r)
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		clientCM := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-client", name),
+				Namespace: namespace,
+			},
+		}
+
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(clientCM.Data["server"]).To(ContainSubstring("tcp://example.org"))
+	})
+
 	t.Run("prunes resources removed from instance", func(t *testing.T) {
 		g := NewWithT(t)
 		output, err := executeCommand(fmt.Sprintf(

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -77,32 +78,49 @@ bundle: {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	t.Run("creates instances from bundle", func(t *testing.T) {
-		g := NewWithT(t)
-		output, err := executeCommand(fmt.Sprintf(
-			"bundle apply -f %s -p main --wait",
-			bundlePath,
-		))
-		g.Expect(err).ToNot(HaveOccurred())
-		t.Log("\n", output)
-
-		clientCM := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-client", "frontend"),
-				Namespace: namespace,
+		execCommands := map[string]func() (string, error){
+			"using a file": func() (string, error) {
+				return executeCommand(fmt.Sprintf(
+					"bundle apply -f %s -p main --wait",
+					bundlePath,
+				))
+			},
+			"using stdin": func() (string, error) {
+				r := strings.NewReader(bundleData)
+				return executeCommandWithIn("bundle apply -f - -p main --wait", r)
 			},
 		}
 
-		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
-		g.Expect(err).ToNot(HaveOccurred())
+		for name, execCommand := range execCommands {
+			t.Run(name, func(t *testing.T) {
 
-		serverCM := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-server", "backend"),
-				Namespace: namespace,
-			},
+				g := NewWithT(t)
+				output, err := execCommand()
+				g.Expect(err).ToNot(HaveOccurred())
+				t.Log("\n", output)
+
+				clientCM := &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("%s-client", "frontend"),
+						Namespace: namespace,
+					},
+				}
+
+				err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				serverCM := &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("%s-server", "backend"),
+						Namespace: namespace,
+					},
+				}
+
+				err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(serverCM), serverCM)
+				g.Expect(err).ToNot(HaveOccurred())
+			})
 		}
 
-		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(serverCM), serverCM)
-		g.Expect(err).ToNot(HaveOccurred())
 	})
+
 }
