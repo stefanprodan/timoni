@@ -17,13 +17,20 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/format"
+	cuejson "cuelang.org/go/encoding/json"
+	cueyaml "cuelang.org/go/encoding/yaml"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
@@ -122,7 +129,11 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(buildArgs.valuesFiles) > 0 {
-		err = builder.MergeValuesFile(buildArgs.valuesFiles)
+		valuesCue, err := convertToCue(cmd, buildArgs.valuesFiles)
+		if err != nil {
+			return err
+		}
+		err = builder.MergeValuesFile(valuesCue)
 		if err != nil {
 			return err
 		}
@@ -185,4 +196,51 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	return err
+}
+
+func convertToCue(cmd *cobra.Command, paths []string) ([][]byte, error) {
+	valuesCue := make([][]byte, len(paths), len(paths))
+	for i, path := range paths {
+		var (
+			bs  []byte
+			err error
+			ext string
+		)
+
+		if path == "-" {
+			ext = ".cue"
+			var buf bytes.Buffer
+			_, err = io.Copy(&buf, cmd.InOrStdin())
+			if err == nil {
+				bs = buf.Bytes()
+			}
+		} else {
+			ext = filepath.Ext(path)
+			bs, err = os.ReadFile(path)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("could not read values file at %s: %w", path, err)
+		}
+
+		var node ast.Node
+
+		switch ext {
+		case ".cue":
+			valuesCue[i] = bs
+			continue
+		case ".json":
+			node, err = cuejson.Extract(path, bs)
+		case ".yaml", ".yml":
+			node, err = cueyaml.Extract(path, bs)
+		default:
+			return nil, fmt.Errorf("unknown values file format for %s", path)
+		}
+
+		bytes, err := format.Node(node)
+		if err != nil {
+			return nil, fmt.Errorf("could not serialise value from file at %s to cue: %w", path, err)
+		}
+		valuesCue[i] = bytes
+	}
+	return valuesCue, nil
 }

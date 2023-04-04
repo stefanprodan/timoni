@@ -18,6 +18,7 @@ package engine
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -26,6 +27,12 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
+func mustReadFile(g Gomega, path string) []byte {
+	bytes, err := os.ReadFile(path)
+	g.ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	return bytes
+}
+
 func TestValuesBuilder(t *testing.T) {
 	g := NewWithT(t)
 	ctx := cuecontext.New()
@@ -33,10 +40,11 @@ func TestValuesBuilder(t *testing.T) {
 	vb := NewValuesBuilder(ctx)
 
 	base := "testdata/values/base.cue"
-	overlays := []string{
-		"testdata/values/overlay-1.cue",
-		"testdata/values/overlay-2.cue",
+	overlays := [][]byte{
+		mustReadFile(g, "testdata/values/overlay-1.cue"),
+		mustReadFile(g, "testdata/values/overlay-2.cue"),
 	}
+
 	finalVal, err := vb.MergeValues(overlays, base)
 	g.Expect(err).ToNot(HaveOccurred())
 

@@ -43,7 +43,7 @@ func TestModuleBuilder(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(moduleName).To(BeEquivalentTo("timoni.sh/test"))
 
-	err = mb.MergeValuesFile([]string{"testdata/module-values/overlay.cue"})
+	err = mb.MergeValuesFile([][]byte{mustReadFile(g, "testdata/module-values/overlay.cue")})
 	g.Expect(err).ToNot(HaveOccurred())
 
 	val, err := mb.Build()

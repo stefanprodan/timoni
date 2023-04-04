@@ -37,7 +37,6 @@ lint-samples: build
 	./bin/timoni mod lint ./examples/podinfo
 	cue fmt ./examples/podinfo-values/
 	./bin/timoni mod lint ./cmd/timoni/testdata/module
-	cue fmt ./cmd/timoni/testdata/module-values/
 	./bin/timoni mod lint ./internal/engine/testdata/module
 	cue fmt ./internal/engine/testdata/module-values
 

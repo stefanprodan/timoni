@@ -96,6 +96,32 @@ func TestBuild(t *testing.T) {
 		}
 	})
 
+	t.Run("builds module with YAML and JSON values", func(t *testing.T) {
+		g := NewWithT(t)
+		name := rnd("my-instance", 5)
+		namespace := rnd("my-namespace", 5)
+		output, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s %s -f %s -f %s -p main -o yaml",
+			namespace,
+			name,
+			modPath,
+			modPath+"-values/example.com.yaml",
+			modPath+"-values/example.com.json",
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		// this domain is specified in the YAML file
+		g.Expect(output).To(ContainSubstring("tcp://yaml.example.com"))
+
+		objects, err := ssa.ReadObjects(strings.NewReader(output))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(len(objects)).To(BeEquivalentTo(2))
+		for _, o := range objects {
+			g.Expect(o.GetAnnotations()).To(HaveKeyWithValue("scope", "from-json"))
+		}
+	})
+
 	t.Run("builds module with merged values", func(t *testing.T) {
 		g := NewWithT(t)
 		name := rnd("my-instance", 5)
@@ -121,6 +147,22 @@ func TestBuild(t *testing.T) {
 		val, _, err := unstructured.NestedString(objects[0].Object, "data", "server")
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(val).To(BeEquivalentTo("tcp://example.io:9090"))
+	})
+
+	t.Run("fails to build with syntactically invalid file", func(t *testing.T) {
+		g := NewWithT(t)
+		name := rnd("my-instance", 5)
+		namespace := rnd("my-namespace", 5)
+		output, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s %s -f %s -p main -o yaml",
+			namespace,
+			name,
+			modPath,
+			modPath+"-values/badsyntax.cue",
+		))
+		g.Expect(output).To(BeEmpty())
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("expected")) // "expected TOKEN: found TOKEN" is the form of syntax errors
 	})
 
 	t.Run("fails to build with invalid values", func(t *testing.T) {
@@ -152,5 +194,21 @@ func TestBuild(t *testing.T) {
 		g.Expect(output).To(BeEmpty())
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("cannot find package"))
+	})
+
+	t.Run("fails to build with missing values file", func(t *testing.T) {
+		g := NewWithT(t)
+		name := rnd("my-instance", 5)
+		namespace := rnd("my-namespace", 5)
+		output, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s %s -f %s -p main -o yaml",
+			namespace,
+			name,
+			modPath,
+			modPath+"-values/invalid.unknown-extension",
+		))
+		g.Expect(output).To(BeEmpty())
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("unknown values file format"))
 	})
 }
