@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -410,4 +411,19 @@ func applyBundleInstance(name, namespace, moduleURL, moduleVersion string, value
 	}
 
 	return nil
+}
+
+func saveReaderToFile(reader io.Reader) (string, error) {
+	f, err := os.CreateTemp("", "*.cue")
+	if err != nil {
+		return "", fmt.Errorf("unable to create temp dir for stdin")
+	}
+
+	defer f.Close()
+
+	if _, err := io.Copy(f, reader); err != nil {
+		return "", fmt.Errorf("error writing stdin to file: %w", err)
+	}
+
+	return f.Name(), nil
 }

@@ -17,9 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -126,25 +128,12 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if numfiles := len(buildArgs.valuesFiles); numfiles > 0 {
-		valuesCueFiles := make([]string, numfiles, numfiles)
-		for i, f := range buildArgs.valuesFiles {
-			ext := filepath.Ext(f)
-			switch ext {
-			case ".cue":
-				valuesCueFiles[i] = f
-			case ".json", ".yaml", ".yml":
-				newf, err := convertToCueFile(tmpDir, ext, f)
-				if err != nil {
-					return fmt.Errorf("unable to import values file %s: %w", f, err)
-				}
-				valuesCueFiles[i] = newf
-			default:
-				return fmt.Errorf("unrecognized values file extension for %s", f)
-			}
+	if len(buildArgs.valuesFiles) > 0 {
+		valuesCue, err := convertToCue(cmd, buildArgs.valuesFiles)
+		if err != nil {
+			return err
 		}
-
-		err = builder.MergeValuesFile(valuesCueFiles)
+		err = builder.MergeValuesFile(valuesCue)
 		if err != nil {
 			return err
 		}
@@ -209,31 +198,49 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func convertToCueFile(tmpdir, ext, path string) (string, error) {
-	bs, err := os.ReadFile(path)
-	if err != nil {
-		return "", fmt.Errorf("could not read values file at %s: %w", path, err)
-	}
+func convertToCue(cmd *cobra.Command, paths []string) ([][]byte, error) {
+	valuesCue := make([][]byte, len(paths), len(paths))
+	for i, path := range paths {
+		var (
+			bs  []byte
+			err error
+			ext string
+		)
 
-	var node ast.Node
+		if path == "-" {
+			ext = ".cue"
+			var buf bytes.Buffer
+			_, err = io.Copy(&buf, cmd.InOrStdin())
+			if err == nil {
+				bs = buf.Bytes()
+			}
+		} else {
+			ext = filepath.Ext(path)
+			bs, err = os.ReadFile(path)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("could not read values file at %s: %w", path, err)
+		}
 
-	switch ext {
-	case ".json":
-		node, err = cuejson.Extract(path, bs)
-	case ".yaml", ".yml":
-		node, err = cueyaml.Extract(path, bs)
-	default:
-		return "", fmt.Errorf("unknown values file format for %s", path)
-	}
+		var node ast.Node
 
-	if err != nil {
-		return "", fmt.Errorf("could not parse values file at %s: %w", path, err)
-	}
+		switch ext {
+		case ".cue":
+			valuesCue[i] = bs
+			continue
+		case ".json":
+			node, err = cuejson.Extract(path, bs)
+		case ".yaml", ".yml":
+			node, err = cueyaml.Extract(path, bs)
+		default:
+			return nil, fmt.Errorf("unknown values file format for %s", path)
+		}
 
-	bytes, err := format.Node(node)
-	if err != nil {
-		return "", fmt.Errorf("could not serialise value from file at %s to cue: %w", path, err)
+		bytes, err := format.Node(node)
+		if err != nil {
+			return nil, fmt.Errorf("could not serialise value from file at %s to cue: %w", path, err)
+		}
+		valuesCue[i] = bytes
 	}
-	tmpfile := filepath.Join(tmpdir, filepath.Base(path)+".cue")
-	return tmpfile, os.WriteFile(tmpfile, bytes, 0444)
+	return valuesCue, nil
 }

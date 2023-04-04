@@ -129,8 +129,11 @@ func ExtractValueFromFile(ctx *cue.Context, filePath, expr string) (cue.Value, e
 	if err != nil {
 		return cue.Value{}, err
 	}
+	return ExtractValueFromBytes(ctx, vData, expr)
+}
 
-	vObj := ctx.CompileBytes(vData)
+func ExtractValueFromBytes(ctx *cue.Context, data []byte, expr string) (cue.Value, error) {
+	vObj := ctx.CompileBytes(data)
 	if vObj.Err() != nil {
 		return cue.Value{}, vObj.Err()
 	}

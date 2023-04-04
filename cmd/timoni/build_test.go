@@ -196,7 +196,7 @@ func TestBuild(t *testing.T) {
 		g.Expect(err.Error()).To(ContainSubstring("cannot find package"))
 	})
 
-	t.Run("fails to build with unrecognised values file", func(t *testing.T) {
+	t.Run("fails to build with missing values file", func(t *testing.T) {
 		g := NewWithT(t)
 		name := rnd("my-instance", 5)
 		namespace := rnd("my-namespace", 5)
@@ -209,6 +209,6 @@ func TestBuild(t *testing.T) {
 		))
 		g.Expect(output).To(BeEmpty())
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(ContainSubstring("unrecognized values file extension"))
+		g.Expect(err.Error()).To(ContainSubstring("unknown values file format"))
 	})
 }

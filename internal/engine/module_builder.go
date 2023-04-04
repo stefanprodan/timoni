@@ -62,7 +62,7 @@ func NewModuleBuilder(ctx *cue.Context, name, namespace, moduleRoot, pkgName str
 }
 
 // MergeValuesFile merges the given values overlays into the module's root values.cue.
-func (b *ModuleBuilder) MergeValuesFile(overlays []string) error {
+func (b *ModuleBuilder) MergeValuesFile(overlays [][]byte) error {
 	vb := NewValuesBuilder(b.ctx)
 	defaultFile := filepath.Join(b.pkgPath, defaultValuesFile)
 

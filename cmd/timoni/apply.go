@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -176,20 +175,11 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	logger.Printf("using module %s version %s", mod.Name, mod.Version)
 
 	if len(applyArgs.valuesFiles) > 0 {
-		for i, valuesFile := range applyArgs.valuesFiles {
-			if valuesFile == "-" {
-				path, err := saveReaderToFile(cmd.InOrStdin())
-				if err != nil {
-					return err
-				}
-
-				defer os.Remove(path)
-
-				applyArgs.valuesFiles[i] = path
-			}
+		valuesCue, err := convertToCue(cmd, applyArgs.valuesFiles)
+		if err != nil {
+			return err
 		}
-
-		err = builder.MergeValuesFile(applyArgs.valuesFiles)
+		err = builder.MergeValuesFile(valuesCue)
 		if err != nil {
 			return err
 		}
@@ -361,19 +351,4 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func saveReaderToFile(reader io.Reader) (string, error) {
-	f, err := os.CreateTemp("", "*.cue")
-	if err != nil {
-		return "", fmt.Errorf("unable to create temp dir for stdin")
-	}
-
-	defer f.Close()
-
-	if _, err := io.Copy(f, reader); err != nil {
-		return "", fmt.Errorf("error writing stdin to file: %w", err)
-	}
-
-	return f.Name(), nil
 }
