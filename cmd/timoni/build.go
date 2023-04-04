@@ -24,7 +24,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/format"
+	cuejson "cuelang.org/go/encoding/json"
+	cueyaml "cuelang.org/go/encoding/yaml"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
@@ -125,11 +129,12 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	if numfiles := len(buildArgs.valuesFiles); numfiles > 0 {
 		valuesCueFiles := make([]string, numfiles, numfiles)
 		for i, f := range buildArgs.valuesFiles {
-			switch filepath.Ext(f) {
+			ext := filepath.Ext(f)
+			switch ext {
 			case ".cue":
 				valuesCueFiles[i] = f
 			case ".json", ".yaml", ".yml":
-				newf, err := convertToCueFile(f)
+				newf, err := convertToCueFile(tmpDir, ext, f)
 				if err != nil {
 					return fmt.Errorf("unable to import values file %s: %w", f, err)
 				}
@@ -204,6 +209,31 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func convertToCueFile(path string) (string, error) {
-	return path, nil
+func convertToCueFile(tmpdir, ext, path string) (string, error) {
+	bs, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("could not read values file at %s: %w", path, err)
+	}
+
+	var node ast.Node
+
+	switch ext {
+	case ".json":
+		node, err = cuejson.Extract(path, bs)
+	case ".yaml", ".yml":
+		node, err = cueyaml.Extract(path, bs)
+	default:
+		return "", fmt.Errorf("unknown values file format for %s", path)
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("could not parse values file at %s: %w", path, err)
+	}
+
+	bytes, err := format.Node(node)
+	if err != nil {
+		return "", fmt.Errorf("could not serialise value from file at %s to cue: %w", path, err)
+	}
+	tmpfile := filepath.Join(tmpdir, filepath.Base(path)+".cue")
+	return tmpfile, os.WriteFile(tmpfile, bytes, 0444)
 }
