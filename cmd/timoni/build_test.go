@@ -96,19 +96,21 @@ func TestBuild(t *testing.T) {
 		}
 	})
 
-	t.Run("builds module with YAML values", func(t *testing.T) {
+	t.Run("builds module with YAML and JSON values", func(t *testing.T) {
 		g := NewWithT(t)
 		name := rnd("my-instance", 5)
 		namespace := rnd("my-namespace", 5)
 		output, err := executeCommand(fmt.Sprintf(
-			"build -n %s %s %s -f %s -p main -o yaml",
+			"build -n %s %s %s -f %s -f %s -p main -o yaml",
 			namespace,
 			name,
 			modPath,
 			modPath+"-values/example.com.yaml",
+			modPath+"-values/example.com.json",
 		))
 		g.Expect(err).ToNot(HaveOccurred())
 
+		// this domain is specified in the YAML file
 		g.Expect(output).To(ContainSubstring("tcp://yaml.example.com"))
 
 		objects, err := ssa.ReadObjects(strings.NewReader(output))
@@ -116,7 +118,7 @@ func TestBuild(t *testing.T) {
 
 		g.Expect(len(objects)).To(BeEquivalentTo(2))
 		for _, o := range objects {
-			g.Expect(o.GetAnnotations()).To(HaveKeyWithValue("scope", "external"))
+			g.Expect(o.GetAnnotations()).To(HaveKeyWithValue("scope", "from-json"))
 		}
 	})
 

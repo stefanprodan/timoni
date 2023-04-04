@@ -1,4 +1,2 @@
 values:
-  metadata:
-    annotations: {"scope": "external"}
   domain: "yaml.example.com"
