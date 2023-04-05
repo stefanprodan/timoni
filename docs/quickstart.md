@@ -72,7 +72,7 @@ timoni -n test status podinfo
 
 ## Configure a module instance
 
-To customise an instance, you can supply the configuration values using `values.cue` files.
+To customise an instance, you can supply the configuration values using [values files](values.md).
 
 For example, to set the [QoS](https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/)
 class to guaranteed, create a `qos-values.cue` file that sets the resources limits equal to the requests:
@@ -99,27 +99,6 @@ Before running an upgrade, you can review the changes that will
 be made on the cluster with `timoni apply --dry-run --diff`.
 
 To learn more about all the available apply options, use `timoni apply --help`.
-
-In the values files you can use arithmetic operations,
-string interpolation and everything else that CUE std lib supports.
-For example, to set the resources limits to 2x requests:
-
-```cue
-values: {
-	_mcpu: 500
-	_mem:  256
-	resources: {
-		requests: {
-			cpu:    "\(_mcpu)m"
-			memory: "\(_mem)Mi"
-		}
-		limits: {
-			cpu:    "\(_mcpu*2)m"
-			memory: "\(_mem*2)Mi"
-		}
-	}
-}
-```
 
 ## Uninstall a module instance
 
