@@ -81,7 +81,12 @@ The apply command performs the following steps:
   --force
 
   # Install or upgrade an instance with custom values from stdin
-  cat values.cue | timony apply -n apps app oci://docker.io/org/module -v 1.0.0 --values -
+  echo "values: replicas: 2" | timoni apply -n apps app oci://docker.io/org/module --values -
+
+  # Install or upgrade an instance with values in YAML and JSON format
+  timoni apply -n apps app oci://docker.io/org/module \
+  --values ./values-1.yaml \
+  --values ./values-2.json
 `,
 	RunE: runApplyCmd,
 }
@@ -105,7 +110,7 @@ func init() {
 	applyCmd.Flags().VarP(&applyArgs.version, applyArgs.version.Type(), applyArgs.version.Shorthand(), applyArgs.version.Description())
 	applyCmd.Flags().VarP(&applyArgs.pkg, applyArgs.pkg.Type(), applyArgs.pkg.Shorthand(), applyArgs.pkg.Description())
 	applyCmd.Flags().StringSliceVarP(&applyArgs.valuesFiles, "values", "f", nil,
-		"The local path to values.cue files.")
+		"The local path to values files (cue, yaml or json format).")
 	applyCmd.Flags().BoolVar(&applyArgs.force, "force", false,
 		"Recreate immutable Kubernetes resources.")
 	applyCmd.Flags().BoolVar(&applyArgs.dryrun, "dry-run", false,

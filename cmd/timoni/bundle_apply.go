@@ -58,8 +58,8 @@ var bundleApplyCmd = &cobra.Command{
   -f ./bundle.cue \
   -f ./bundle_secrets.cue
 
-  # Install instances from a bundle using stdin
-  cat ./bundle.cue | timony bundle apply -f -
+  # Pass secret values from stdin
+  cat ./bundle_secrets.cue | timoni bundle apply -f ./bundle.cue -f -
 `,
 	RunE: runBundleApplyCmd,
 }

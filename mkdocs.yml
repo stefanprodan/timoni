@@ -47,6 +47,7 @@ nav:
   - Quickstart: quickstart.md
   - Topics:
       - Module Structure: module.md
+      - Values files: values.md
   - Automation:
       - GitHub Actions: github-actions.md
       - GitOps with Flux: gitops-flux.md
