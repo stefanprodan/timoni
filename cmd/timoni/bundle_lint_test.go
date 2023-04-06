@@ -71,24 +71,6 @@ bundle: {
 `,
 		},
 		{
-			name:     "fails for missing module version",
-			matchErr: "bundle.instances.test.module.version",
-			bundle: `
-bundle: {
-	apiVersion: "v1alpha1"
-	instances: {
-		test: {
-			module: {
-				url:     "oci://docker.io/test"
-			}
-			namespace: "default"
-			values: {}
-		}
-	}
-}
-`,
-		},
-		{
 			name:     "fails for invalid module prop",
 			matchErr: "url2",
 			bundle: `
