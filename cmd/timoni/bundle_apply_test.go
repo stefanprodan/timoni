@@ -24,11 +24,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/crane"
+	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	. "github.com/onsi/gomega"
 )
 
 func Test_BundleApply(t *testing.T) {
@@ -93,7 +93,6 @@ bundle: {
 
 		for name, execCommand := range execCommands {
 			t.Run(name, func(t *testing.T) {
-
 				g := NewWithT(t)
 				output, err := execCommand()
 				g.Expect(err).ToNot(HaveOccurred())
@@ -121,5 +120,132 @@ bundle: {
 			})
 		}
 	})
+}
 
+func Test_BundleApply_Digest(t *testing.T) {
+	g := NewWithT(t)
+
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+	modVer1 := "1.0.0"
+	modVer2 := "2.0.0"
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s",
+		modPath,
+		modURL,
+		modVer1,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	modDigestv1, err := crane.Digest(fmt.Sprintf("%s:%s", modURL, modVer1))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	_, err = executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s --latest",
+		modPath,
+		modURL,
+		modVer2,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Run("creates instance for module digest", func(t *testing.T) {
+		g := NewWithT(t)
+
+		bundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	instances: {
+		test1: {
+			module: {
+				url:     "oci://%[1]s"
+				digest:  "%[3]s"
+			}
+			namespace: "%[4]s"
+		}
+	}
+}
+`, modURL, modVer1, modDigestv1, namespace)
+
+		r := strings.NewReader(bundleData)
+		output, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).To(ContainSubstring(modVer1))
+		g.Expect(output).To(ContainSubstring(modDigestv1))
+	})
+
+	t.Run("creates instance for module version digest", func(t *testing.T) {
+		g := NewWithT(t)
+
+		bundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	instances: {
+		test2: {
+			module: {
+				url:     "oci://%[1]s"
+				version: "%[2]s"
+				digest:  "%[3]s"
+			}
+			namespace: "%[4]s"
+		}
+	}
+}
+`, modURL, modVer1, modDigestv1, namespace)
+
+		r := strings.NewReader(bundleData)
+		output, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).To(ContainSubstring(modVer1))
+	})
+
+	t.Run("fails to create instance with digest mismatch", func(t *testing.T) {
+		g := NewWithT(t)
+
+		bundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	instances: {
+		test3: {
+			module: {
+				url:     "oci://%[1]s"
+				version: "%[2]s"
+				digest:  "%[3]s"
+			}
+			namespace: "%[4]s"
+		}
+	}
+}
+`, modURL, modVer2, modDigestv1, namespace)
+
+		r := strings.NewReader(bundleData)
+		_, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring(modDigestv1))
+	})
+
+	t.Run("creates instance for latest module", func(t *testing.T) {
+		g := NewWithT(t)
+
+		bundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	instances: {
+		test4: {
+			module: {
+				url:     "oci://%[1]s"
+			}
+			namespace: "%[2]s"
+		}
+	}
+}
+`, modURL, namespace)
+
+		r := strings.NewReader(bundleData)
+		output, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).To(ContainSubstring(modVer2))
+	})
 }
