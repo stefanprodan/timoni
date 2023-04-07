@@ -35,7 +35,7 @@ import (
 	// Container
 	image: {
 		repository: *"ghcr.io/stefanprodan/podinfo" | string
-		tag:        *"6.3.4" | string
+		tag:        *"6.3.5" | string
 		pullPolicy: *"IfNotPresent" | string
 	}
 	resources?:       corev1.#ResourceRequirements
