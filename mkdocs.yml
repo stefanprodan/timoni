@@ -47,6 +47,7 @@ nav:
   - Quickstart: quickstart.md
   - Topics:
       - Module Structure: module.md
+      - Module Versioning: module-semver.md
       - Values files: values.md
   - Automation:
       - GitHub Actions: github-actions.md
