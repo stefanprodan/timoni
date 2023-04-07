@@ -170,8 +170,8 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 	}
 
 	if instance.Module.Digest != "" && mod.Digest != instance.Module.Digest {
-		return fmt.Errorf("the upstream digest of version %s doesn't match the specified digest %s",
-			instance.Module.Version, instance.Module.Digest)
+		return fmt.Errorf("the upstream digest %s of version %s doesn't match the specified digest %s",
+			mod.Digest, instance.Module.Version, instance.Module.Digest)
 	}
 
 	cuectx := cuecontext.New()

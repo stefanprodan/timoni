@@ -248,4 +248,29 @@ bundle: {
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(output).To(ContainSubstring(modVer2))
 	})
+
+	t.Run("creates instance for digest ignoring latest", func(t *testing.T) {
+		g := NewWithT(t)
+
+		bundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	instances: {
+		test5: {
+			module: {
+				url:     "oci://%[1]s"
+				version: "latest"
+				digest:  "%[2]s"
+			}
+			namespace: "%[3]s"
+		}
+	}
+}
+`, modURL, modDigestv1, namespace)
+
+		r := strings.NewReader(bundleData)
+		output, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).To(ContainSubstring(modVer1))
+	})
 }
