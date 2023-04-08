@@ -1,8 +1,7 @@
 # timoni
 
 [![release](https://img.shields.io/github/release/stefanprodan/timoni/all.svg)](https://github.com/stefanprodan/timoni/releases)
-[![build](https://github.com/stefanprodan/timoni/workflows/build/badge.svg)](https://github.com/stefanprodan/timoni/actions)
-[![e2e](https://github.com/stefanprodan/timoni/workflows/e2e/badge.svg)](https://github.com/stefanprodan/timoni/actions)
+[![platforms](https://img.shields.io/badge/platforms-linux|macos|windows-9cf.svg)](https://timoni.sh/install)
 [![license](https://img.shields.io/github/license/stefanprodan/timoni.svg)](https://github.com/stefanprodan/timoni/blob/main/LICENSE)
 
 [Timoni](https://timoni.sh) is a package manager for Kubernetes,
@@ -112,14 +111,14 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.0.9"
+				version: "7.0.10"
 			}
 			namespace: "podinfo"
 			values: maxmemory: 256
 		}
 		podinfo: {
 			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-			module: version: "6.3.4"
+			module: version: "6.3.5"
 			namespace: "podinfo"
 			values: caching: {
 				enabled:  true

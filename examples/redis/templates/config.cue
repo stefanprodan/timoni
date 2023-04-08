@@ -33,6 +33,7 @@ import (
 	image: {
 		repository: *"cgr.dev/chainguard/redis" | string
 		tag:        *"7.0.10" | string
+		digest?:    string
 		pullPolicy: *"IfNotPresent" | string
 	}
 	imagePullSecrets?: [...corev1.LocalObjectReference]

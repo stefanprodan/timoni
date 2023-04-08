@@ -19,7 +19,7 @@ timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo
 To install a specific module version:
 
 ```shell
-timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v 6.3.0
+timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v 6.3.5
 ```
 
 To change the [default configuration](#configuration),
@@ -58,6 +58,7 @@ timoni -n default delete podinfo
 | Key                          | Type                                    | Default                        | Description                                                                                                                                  |
 |------------------------------|-----------------------------------------|--------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
 | `image: tag:`                | `string`                                | `<latest version>`             | Container image tag                                                                                                                          |
+| `image: digest:`             | `string`                                | `""`                           | Container image digest, takes precedence over `tag` when specified                                                                           |
 | `image: repository:`         | `string`                                | `ghcr.io/stefanprodan/podinfo` | Container image repository                                                                                                                   |
 | `image: pullPolicy:`         | `string`                                | `IfNotPresent`                 | [Kubernetes image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy)                                     |
 | `metadata: labels:`          | `{[ string]: string}`                   | `{}`                           | Common labels for all resources                                                                                                              |
@@ -73,7 +74,8 @@ timoni -n default delete podinfo
 
 #### Recommended values
 
-Comply with the restricted [Kubernetes pod security standard](https://kubernetes.io/docs/concepts/security/pod-security-standards/):
+Comply with the
+restricted [Kubernetes pod security standard](https://kubernetes.io/docs/concepts/security/pod-security-standards/):
 
 ```cue
 values: {

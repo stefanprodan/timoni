@@ -33,7 +33,7 @@ The Redis cluster can be accessed using the following Kubernetes Services:
 To install a specific module version:
 
 ```shell
-timoni -n default apply redis oci://ghcr.io/stefanprodan/modules/redis -v 7.0.8
+timoni -n default apply redis oci://ghcr.io/stefanprodan/modules/redis -v 7.0.10
 ```
 
 To change the [default configuration](#configuration),
@@ -93,13 +93,14 @@ timoni -n default delete redis
 | `persistence: enabled:`      | `bool`   | `true`     | Enable persistent storage for the Redis master node                                                             |
 | `persistence: storageClass:` | `string` | `standard` | The [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) storage class name |
 | `persistence: size:`         | `string` | `8Gi`      | The persistent volume size                                                                                      |
-| `password`                   | `string` | `""`       | When set, it enables auth for both the master and replicas with the specified password                          |
+| `password:`                  | `string` | `""`       | When set, it enables auth for both the master and replicas with the specified password                          |
 
 ### General values
 
 | Key                          | Type                                    | Default                    | Description                                                                                                                                  |
 |------------------------------|-----------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
 | `image: tag:`                | `string`                                | `<latest version>`         | Container image tag                                                                                                                          |
+| `image: digest:`             | `string`                                | `""`                       | Container image digest, takes precedence over `tag` when specified                                                                           |
 | `image: repository:`         | `string`                                | `cgr.dev/chainguard/redis` | Container image repository                                                                                                                   |
 | `image: pullPolicy:`         | `string`                                | `IfNotPresent`             | [Kubernetes image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy)                                     |
 | `metadata: labels:`          | `{[ string]: string}`                   | `{}`                       | Common labels for all resources                                                                                                              |
