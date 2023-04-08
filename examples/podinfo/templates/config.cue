@@ -36,6 +36,7 @@ import (
 	image: {
 		repository: *"ghcr.io/stefanprodan/podinfo" | string
 		tag:        *"6.3.5" | string
+		digest?:    string
 		pullPolicy: *"IfNotPresent" | string
 	}
 	resources?:       corev1.#ResourceRequirements

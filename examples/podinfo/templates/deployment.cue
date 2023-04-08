@@ -26,8 +26,13 @@ import (
 				serviceAccountName: _config.metadata.name
 				containers: [
 					{
-						name:            _config.metadata.name
-						image:           "\(_config.image.repository):\(_config.image.tag)"
+						name: _config.metadata.name
+						if _config.image.digest == _|_ {
+							image: "\(_config.image.repository):\(_config.image.tag)"
+						}
+						if _config.image.digest != _|_ {
+							image: "\(_config.image.repository)@\(_config.image.digest)"
+						}
 						imagePullPolicy: _config.image.pullPolicy
 						ports: [
 							{
