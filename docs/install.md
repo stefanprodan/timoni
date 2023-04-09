@@ -14,6 +14,16 @@ Each release comes with a Software Bill of Materials (SBOM) in SPDX format.
 
     Note that the Homebrew formula will setup shell autocompletion for Bash, Fish and Zsh.
 
+=== "Install with arkade"
+
+    Install the latest release on Windows, macOS or Linux with:
+    
+    ```shell
+    arkade get tiomni
+    ```
+
+    Note that the [Arkade](https://github.com/alexellis/arkade) version must be 0.9.11 or newer.
+
 === "Install from source"
 
     Using Go >= 1.20:
