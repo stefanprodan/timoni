@@ -63,6 +63,7 @@ Commands for working with remote modules:
 
 - `timoni mod push <path/to/module> oci://<module-url> -v <semver>`
 - `timoni mod pull oci://<module-url> -v <semver> -o <path/to/module>`
+- `timoni mod list oci://<module-url>`
 
 Timoni produces artifacts compatible with Docker Hub, GitHub Container Registry,
 Azure Container Registry, Amazon Elastic Container Registry, Google Artifact Registry,

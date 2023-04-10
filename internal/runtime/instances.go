@@ -18,8 +18,9 @@ package runtime
 
 import (
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sort"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/fluxcd/pkg/ssa"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -70,7 +71,7 @@ func (m *InstanceManager) AddObjects(objects []*unstructured.Unstructured) error
 	if m.Instance.Inventory == nil {
 		m.Instance.Inventory = &apiv1.ResourceInventory{Entries: entries}
 	} else {
-		return fmt.Errorf("inventory already containts objects: %v", m.Instance.Inventory)
+		return fmt.Errorf("inventory already contains objects: %v", m.Instance.Inventory)
 	}
 
 	return nil

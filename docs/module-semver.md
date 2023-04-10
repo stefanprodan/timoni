@@ -64,3 +64,22 @@ then it will tag the version as `latest` in the container registry.
     some registries allow enforcing immutability for semver tags but this is not guranteed by default.
 
 To automate the publishing of module versions, please see the [Timoni GitHub Actions](github-actions.md).
+
+## Listing module versions
+
+Timoni offer a command for listing all the versions available in a container registry for a particular module.
+
+The `timoni mod list oci://<module-url>` prints a table with the versions order by semver
+and the OCI digest corresponding to each version.
+
+Example:
+
+```console
+$ timoni mod list oci://ghcr.io/stefanprodan/modules/redis
+VERSION DIGEST                                                                  
+latest  sha256:7fcb6f6918902c0dedc2ba4545fbdeca119a04644a53400af15b977e3921c600 
+7.0.10  sha256:7fcb6f6918902c0dedc2ba4545fbdeca119a04644a53400af15b977e3921c600 
+7.0.9   sha256:e9137d41b0d263bfaf2a43fc862648ad9dc3a976b4b0fc6e27617ea28ee27d45 
+7.0.8   sha256:9340d4651f15305e7932c2fd9abf131d88fe77be2f0f3b6a0c3ede9772c3f622 
+7.0.7   sha256:ba83770ce982fb6532a765009ed0429c4729bdeaa7421277618d4fb38c106be8 
+```
