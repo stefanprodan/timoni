@@ -46,6 +46,7 @@ nav:
   - Installation: install.md
   - Quickstart: quickstart.md
   - Topics:
+      - Bundle files: bundles.md
       - Module Structure: module.md
       - Module Versioning: module-semver.md
       - Values files: values.md
