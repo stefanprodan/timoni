@@ -6,7 +6,7 @@ require (
 	cuelang.org/go v0.4.3
 	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/distribution/distribution/v3 v3.0.0-20230327091844-0c958010ace2
-	github.com/fluxcd/pkg/oci v0.22.0
+	github.com/fluxcd/pkg/oci v0.23.0
 	github.com/fluxcd/pkg/ssa v0.27.0
 	github.com/google/go-containerregistry v0.14.0
 	github.com/mattn/go-shellwords v1.0.12
@@ -14,7 +14,7 @@ require (
 	github.com/onsi/gomega v1.27.6
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/sirupsen/logrus v1.9.0
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	k8s.io/api v0.26.3
 	k8s.io/apiextensions-apiserver v0.26.3
 	k8s.io/apimachinery v0.26.3

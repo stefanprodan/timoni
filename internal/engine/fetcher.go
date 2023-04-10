@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	oci "github.com/fluxcd/pkg/oci/client"
+	"github.com/google/go-containerregistry/pkg/crane"
 	gcr "github.com/google/go-containerregistry/pkg/name"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -116,4 +118,67 @@ func (f *Fetcher) fetchOCI(dir string) (*apiv1.ModuleReference, error) {
 	}
 
 	return &mr, nil
+}
+
+type ModuleVersion struct {
+	Number string
+	Digest string
+}
+
+// GetVersions returns a list of OCI tags and their digests.
+// The list is ordered based on semver, newest version first.
+func (f *Fetcher) GetVersions() ([]ModuleVersion, error) {
+	var result []ModuleVersion
+
+	ociClient := oci.NewClient(nil)
+
+	if f.creds != "" {
+		if err := ociClient.LoginWithCredentials(f.creds); err != nil {
+			return nil, fmt.Errorf("could not login with credentials: %w", err)
+		}
+	}
+
+	url, err := oci.ParseRepositoryURL(f.src)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := ociClient.GetOptions()
+	opts = append(opts, crane.WithContext(f.ctx))
+
+	tags, err := crane.ListTags(url, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("listing tags failed: %w", err)
+	}
+
+	var versions []*semver.Version
+	for _, tag := range tags {
+		if v, err := semver.StrictNewVersion(tag); err != nil {
+			continue
+		} else {
+			versions = append(versions, v)
+		}
+	}
+	sort.Sort(sort.Reverse(semver.Collection(versions)))
+
+	if digest, err := crane.Digest(fmt.Sprintf("%s:%s", url, LatestTag), opts...); err == nil {
+		result = append(result, ModuleVersion{
+			Number: LatestTag,
+			Digest: digest,
+		})
+	}
+
+	// TODO: parallelize the digest calls in batches of go routines to speed up
+	for _, v := range versions {
+		digest, err := crane.Digest(fmt.Sprintf("%s:%s", url, v.String()), opts...)
+		if err != nil {
+			return nil, fmt.Errorf("faild to get digest for '%s', error: %w", v.String(), err)
+		}
+		result = append(result, ModuleVersion{
+			Number: v.String(),
+			Digest: digest,
+		})
+	}
+
+	return result, nil
 }

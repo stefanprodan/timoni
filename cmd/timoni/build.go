@@ -192,7 +192,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		}
 		_, err = cmd.OutOrStdout().Write(b)
 	default:
-		return fmt.Errorf("unkown --output=%s, can be yaml or json", buildArgs.output)
+		return fmt.Errorf("unknown --output=%s, can be yaml or json", buildArgs.output)
 	}
 
 	return err

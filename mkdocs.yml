@@ -58,6 +58,7 @@ nav:
           - Lint: cmd/timoni_mod_lint.md
           - Push: cmd/timoni_mod_push.md
           - Pull: cmd/timoni_mod_pull.md
+          - List: cmd/timoni_mod_list.md
       - Instances:
           - Apply: cmd/timoni_apply.md
           - Build: cmd/timoni_build.md

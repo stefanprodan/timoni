@@ -65,6 +65,7 @@ Commands for working with remote modules:
 
 - `timoni mod push <path/to/module> oci://<module-url> -v <semver>`
 - `timoni mod pull oci://<module-url> -v <semver> -o <path/to/module>`
+- `timoni mod list oci://<module-url>`
 
 To learn more about modules, please read the [docs](https://timoni.sh/#timoni-modules).
 
