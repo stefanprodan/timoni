@@ -84,8 +84,14 @@ func (f *Fetcher) Fetch() (*apiv1.ModuleReference, error) {
 }
 
 func (f *Fetcher) fetchOCI(dir string) (*apiv1.ModuleReference, error) {
-	if _, err := semver.StrictNewVersion(f.version); f.version != LatestTag && err != nil {
-		return nil, fmt.Errorf("version is not in semver format, error: %w", err)
+	ociURL := fmt.Sprintf("%s:%s", f.src, f.version)
+
+	if strings.HasPrefix(f.version, "@") {
+		ociURL = fmt.Sprintf("%s%s", f.src, f.version)
+	} else {
+		if _, err := semver.StrictNewVersion(f.version); f.version != LatestTag && err != nil {
+			return nil, fmt.Errorf("version is not in semver format, error: %w", err)
+		}
 	}
 
 	ociClient := oci.NewClient(nil)
@@ -96,7 +102,7 @@ func (f *Fetcher) fetchOCI(dir string) (*apiv1.ModuleReference, error) {
 		}
 	}
 
-	url, err := oci.ParseArtifactURL(f.src + ":" + f.version)
+	url, err := oci.ParseArtifactURL(ociURL)
 	if err != nil {
 		return nil, err
 	}

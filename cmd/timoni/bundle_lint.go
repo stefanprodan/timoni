@@ -20,12 +20,11 @@ import (
 	"fmt"
 	"os"
 
-	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"cuelang.org/go/cue/load"
 	"github.com/spf13/cobra"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
@@ -68,70 +67,30 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 	if _, err := bundleSchema.WriteString(apiv1.BundleSchema); err != nil {
 		return err
 	}
+	files := append(bundleLintArgs.files, bundleSchema.Name())
 
 	ctx := cuecontext.New()
+	bm := engine.NewBundleBuilder(ctx, files)
 
-	cfg := &load.Config{
-		Package:   "_",
-		DataFiles: true,
-	}
-
-	files := append(bundleLintArgs.files, bundleSchema.Name())
-	ix := load.Instances(files, cfg)
-	if len(ix) == 0 {
-		return fmt.Errorf("no bundle found")
-	}
-
-	inst := ix[0]
-	if inst.Err != nil {
-		return fmt.Errorf("bundle error: %w", inst.Err)
-	}
-
-	v := ctx.BuildInstance(inst)
-	if v.Err() != nil {
-		return v.Err()
-	}
-
-	if err := v.Validate(cue.Concrete(true)); err != nil {
+	v, err := bm.Build()
+	if err != nil {
 		return err
 	}
 
-	apiVersion := v.LookupPath(cue.ParsePath(apiv1.BundleAPIVersionSelector.String()))
-	if apiVersion.Err() != nil {
-		return fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleAPIVersionSelector.String(), apiVersion.Err())
+	instances, err := bm.GetInstances(v)
+	if err != nil {
+		return err
 	}
 
-	apiVer, _ := apiVersion.String()
-	if apiVer != apiv1.GroupVersion.Version {
-		return fmt.Errorf("API version %s not supported, must be %s", apiVer, apiv1.GroupVersion.Version)
-	}
-
-	instances := v.LookupPath(cue.ParsePath(apiv1.BundleInstancesSelector.String()))
-	if instances.Err() != nil {
-		return fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleInstancesSelector.String(), instances.Err())
-	}
-
-	var instCount int
-	iter, _ := instances.Fields(cue.Concrete(true))
-	for iter.Next() {
-		name := iter.Selector().String()
-		expr := iter.Value()
-
-		namespace := expr.LookupPath(cue.ParsePath(apiv1.BundleNamespaceSelector.String()))
-		if namespace.Err() != nil {
-			return fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleNamespaceSelector.String(), instances.Err())
-		}
-
-		if _, err := namespace.String(); err != nil {
-			return fmt.Errorf("invalid %s, error: %w", apiv1.BundleNamespaceSelector.String(), err)
-		}
-
-		logger.Printf("instance %s is valid", name)
-		instCount++
-	}
-
-	if instCount == 0 {
+	if len(instances) == 0 {
 		return fmt.Errorf("no instances found in bundle")
+	}
+
+	for _, i := range instances {
+		if i.Namespace == "" {
+			return fmt.Errorf("instance %s does not have a namespace", i.Name)
+		}
+		logger.Printf("instance %s is valid", i.Name)
 	}
 
 	logger.Printf("bundle is valid")

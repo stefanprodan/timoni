@@ -29,6 +29,9 @@ const (
 	// BundleModuleVersionSelector is the CUE path for the Timoni's bundle module version.
 	BundleModuleVersionSelector Selector = "module.version"
 
+	// BundleModuleDigestSelector is the CUE path for the Timoni's bundle module digest.
+	BundleModuleDigestSelector Selector = "module.digest"
+
 	// BundleNamespaceSelector is the CUE path for the Timoni's bundle instance namespace.
 	BundleNamespaceSelector Selector = "namespace"
 
@@ -46,7 +49,8 @@ import "strings"
 	instances: [string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)]: {
 		module: close({
 			url:     string & =~"^oci://.*$"
-			version: string & strings.MinRunes(3)
+			version: *"latest" | string
+			digest?:  string
 		})
 		namespace: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)
 		values: {...}

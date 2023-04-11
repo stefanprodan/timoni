@@ -27,9 +27,7 @@ import (
 	"strings"
 	"time"
 
-	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"cuelang.org/go/cue/load"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -102,15 +100,7 @@ func runBundleApplyCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx := cuecontext.New()
-
-	cfg := &load.Config{
-		Package:   "_",
-		DataFiles: true,
-	}
-
 	files := append(bundleApplyArgs.files, bundleSchema.Name())
-
 	for i, file := range files {
 		if file == "-" {
 			path, err := saveReaderToFile(cmd.InOrStdin())
@@ -124,73 +114,22 @@ func runBundleApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	ix := load.Instances(files, cfg)
-	if len(ix) == 0 {
-		return fmt.Errorf("no bundle found")
-	}
+	ctx := cuecontext.New()
+	bm := engine.NewBundleBuilder(ctx, files)
 
-	inst := ix[0]
-	if inst.Err != nil {
-		return fmt.Errorf("bundle error: %w", inst.Err)
-	}
-
-	v := ctx.BuildInstance(inst)
-	if v.Err() != nil {
-		return v.Err()
-	}
-
-	if err := v.Validate(cue.Concrete(true)); err != nil {
+	v, err := bm.Build()
+	if err != nil {
 		return err
 	}
 
-	apiVersion := v.LookupPath(cue.ParsePath(apiv1.BundleAPIVersionSelector.String()))
-	if apiVersion.Err() != nil {
-		return fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleAPIVersionSelector.String(), apiVersion.Err())
+	instances, err := bm.GetInstances(v)
+	if err != nil {
+		return err
 	}
 
-	apiVer, _ := apiVersion.String()
-	if apiVer != apiv1.GroupVersion.Version {
-		return fmt.Errorf("API version %s not supported, must be %s", apiVer, apiv1.GroupVersion.Version)
-	}
-
-	instances := v.LookupPath(cue.ParsePath(apiv1.BundleInstancesSelector.String()))
-	if instances.Err() != nil {
-		return fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleInstancesSelector.String(), instances.Err())
-	}
-
-	iter, _ := instances.Fields(cue.Concrete(true))
-	for iter.Next() {
-		name := iter.Selector().String()
-		expr := iter.Value()
-
-		logger.Printf("applying instance %s", name)
-
-		moduleURL := expr.LookupPath(cue.ParsePath(apiv1.BundleModuleURLSelector.String()))
-		if moduleURL.Err() != nil {
-			return fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleModuleURLSelector.String(), instances.Err())
-		}
-
-		moduleVersion := expr.LookupPath(cue.ParsePath(apiv1.BundleModuleVersionSelector.String()))
-		if moduleVersion.Err() != nil {
-			return fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleModuleVersionSelector.String(), instances.Err())
-		}
-
-		namespace := expr.LookupPath(cue.ParsePath(apiv1.BundleNamespaceSelector.String()))
-		if namespace.Err() != nil {
-			return fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleNamespaceSelector.String(), instances.Err())
-		}
-
-		values := expr.LookupPath(cue.ParsePath(apiv1.BundleValuesSelector.String()))
-		if values.Err() != nil {
-			return fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleValuesSelector.String(), instances.Err())
-		}
-
-		ns, _ := namespace.String()
-		url, _ := moduleURL.String()
-		version, _ := moduleVersion.String()
-
-		err := applyBundleInstance(name, ns, url, version, values)
-		if err != nil {
+	for _, instance := range instances {
+		logger.Printf("applying instance %s", instance.Name)
+		if err := applyBundleInstance(instance); err != nil {
 			return err
 		}
 	}
@@ -198,8 +137,16 @@ func runBundleApplyCmd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func applyBundleInstance(name, namespace, moduleURL, moduleVersion string, values cue.Value) error {
-	logger.Printf("pulling %s:%s", moduleURL, moduleVersion)
+func applyBundleInstance(instance engine.BundleInstance) error {
+	moduleVersion := instance.Module.Version
+	sourceURL := fmt.Sprintf("%s:%s", instance.Module.Repository, instance.Module.Version)
+
+	if moduleVersion == engine.LatestTag && instance.Module.Digest != "" {
+		sourceURL = fmt.Sprintf("%s@%s", instance.Module.Repository, instance.Module.Digest)
+		moduleVersion = "@" + instance.Module.Digest
+	}
+
+	logger.Printf("pulling %s", sourceURL)
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
@@ -212,7 +159,7 @@ func applyBundleInstance(name, namespace, moduleURL, moduleVersion string, value
 
 	fetcher := engine.NewFetcher(
 		ctxPull,
-		moduleURL,
+		instance.Module.Repository,
 		moduleVersion,
 		tmpDir,
 		bundleApplyArgs.creds.String(),
@@ -222,11 +169,16 @@ func applyBundleInstance(name, namespace, moduleURL, moduleVersion string, value
 		return err
 	}
 
+	if instance.Module.Digest != "" && mod.Digest != instance.Module.Digest {
+		return fmt.Errorf("the upstream digest %s of version %s doesn't match the specified digest %s",
+			mod.Digest, instance.Module.Version, instance.Module.Digest)
+	}
+
 	cuectx := cuecontext.New()
 	builder := engine.NewModuleBuilder(
 		cuectx,
-		name,
-		namespace,
+		instance.Name,
+		instance.Namespace,
 		fetcher.GetModuleRoot(),
 		bundleApplyArgs.pkg.String(),
 	)
@@ -238,7 +190,7 @@ func applyBundleInstance(name, namespace, moduleURL, moduleVersion string, value
 
 	logger.Printf("using module %s version %s", mod.Name, mod.Version)
 
-	err = builder.WriteValuesFile(values)
+	err = builder.WriteValuesFile(instance.Values)
 	if err != nil {
 		return err
 	}
@@ -277,14 +229,14 @@ func applyBundleInstance(name, namespace, moduleURL, moduleVersion string, value
 		return err
 	}
 
-	rm.SetOwnerLabels(objects, name, namespace)
+	rm.SetOwnerLabels(objects, instance.Name, instance.Namespace)
 
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
 	exists := false
 	sm := runtime.NewStorageManager(rm)
-	if _, err := sm.Get(ctx, name, namespace); err == nil {
+	if _, err := sm.Get(ctx, instance.Name, instance.Namespace); err == nil {
 		exists = true
 	}
 
@@ -322,20 +274,20 @@ func applyBundleInstance(name, namespace, moduleURL, moduleVersion string, value
 			}
 		}
 
-		logger.Println("bundled applied successfully")
+		logger.Println("bundle applied successfully")
 		return nil
 	}
 
-	im := runtime.NewInstanceManager(name, namespace, finalValues, *mod)
+	im := runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, *mod)
 
 	if err := im.AddObjects(objects); err != nil {
 		return fmt.Errorf("adding objects to instance failed, error: %w", err)
 	}
 
 	if !exists {
-		logger.Printf("installing %s in namespace %s", name, namespace)
+		logger.Printf("installing %s in namespace %s", instance.Name, instance.Namespace)
 
-		nsExists, err := sm.NamespaceExists(ctx, namespace)
+		nsExists, err := sm.NamespaceExists(ctx, instance.Namespace)
 		if err != nil {
 			return fmt.Errorf("instance init failed, error: %w", err)
 		}
@@ -345,10 +297,10 @@ func applyBundleInstance(name, namespace, moduleURL, moduleVersion string, value
 		}
 
 		if !nsExists {
-			logger.Printf("Namespace/%s created", namespace)
+			logger.Printf("Namespace/%s created", instance.Namespace)
 		}
 	} else {
-		logger.Printf("upgrading %s in namespace %s", name, namespace)
+		logger.Printf("upgrading %s in namespace %s", instance.Name, instance.Namespace)
 	}
 
 	bundleApplyOpts := runtime.ApplyOptions(bundleApplyArgs.force, time.Minute)
@@ -387,7 +339,7 @@ func applyBundleInstance(name, namespace, moduleURL, moduleVersion string, value
 
 	var deletedObjects []*unstructured.Unstructured
 	if len(staleObjects) > 0 {
-		deleteOpts := runtime.DeleteOptions(name, namespace)
+		deleteOpts := runtime.DeleteOptions(instance.Name, instance.Namespace)
 		changeSet, err := rm.DeleteAll(ctx, staleObjects, deleteOpts)
 		if err != nil {
 			return fmt.Errorf("prunning objects failed, error: %w", err)
