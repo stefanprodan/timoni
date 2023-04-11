@@ -178,6 +178,7 @@ Commands for working with bundles:
 
 - `timoni bundle lint -f bundle.cue`
 - `timoni bundle apply -f bundle.cue -f bundle_extras.cue --dry-run --diff`
+- `timoni bundle delete -f bundle.cue -f bundle_extras.cue`
 
 ## License
 

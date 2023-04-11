@@ -19,16 +19,18 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/fluxcd/pkg/ssa"
-	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 var (
@@ -84,7 +86,7 @@ func (s *StorageManager) Get(ctx context.Context, name, namespace string) (*apiv
 	cmKey := client.ObjectKeyFromObject(cm)
 	err := s.resManager.Client().Get(ctx, cmKey, cm)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("instance storage not found, error: %w", err)
 	}
 
 	if _, ok := cm.Data[storageDataKey]; !ok {
