@@ -297,6 +297,17 @@ Example:
 timoni bundle apply --dry-run --diff -f bundle.cue
 ```
 
+### Uninstall
+
+To uninstall the instances defined in a Bundle file,
+you can use the `timoni bundle delete` command.
+
+Example:
+
+```shell
+timoni bundle delete -f bundle.cue
+```
+
 ### Garbage collection
 
 Timoni's garbage collector keeps track of the applied resources and prunes the Kubernetes

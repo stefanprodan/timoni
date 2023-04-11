@@ -140,6 +140,8 @@ Commands for working with bundles:
 - `timoni bundle apply -f bundle.cue -f bundle_extras.cue --dry-run --diff`
 - `timoni bundle delete -f bundle.cue -f bundle_extras.cue`
 
+To learn more about bundles, please see the [Bundle API documentation](https://timoni.sh/bundles/).
+
 ## Contributing
 
 Timoni is [Apache 2.0 licensed](LICENSE) and accepts contributions via GitHub pull requests.

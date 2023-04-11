@@ -107,3 +107,56 @@ To uninstall an instance and delete all the managed Kubernetes resources:
 ```shell
 timoni -n test delete podinfo --wait
 ```
+
+## Bundling instances
+
+For deploying complex applications to production, it is recommended to use
+Timoni [Bundles](bundles.md).
+
+A Timoni Bundle is a CUE file for defining a group of instances together
+with their values and module references.
+
+The following is an example of a Bundle that defines a Redis master-replica cluster
+and a podinfo instance connected to the Redis instance.
+
+```cue
+bundle: {
+    apiVersion: "v1alpha1"
+    instances: {
+        redis: {
+            module: {
+                url:     "oci://ghcr.io/stefanprodan/modules/redis"
+                version: "7.0.10"
+            }
+            namespace: "podinfo"
+            values: maxmemory: 256
+        }
+        podinfo: {
+            module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+            module: version: "6.3.5"
+            namespace: "podinfo"
+            values: caching: {
+                enabled:  true
+                redisURL: "tcp://redis:6379"
+            }
+        }
+    }
+}
+```
+
+To apply the above bundle on a cluster, save the file as `podinfo.bundle.cue` and run:
+
+```shell
+timoni bundle apply -f podinfo.bundle.cue
+```
+
+To list the instances created from the bundle:
+
+```console
+$ timoni list -n podinfo
+NAME    MODULE                                          VERSION LAST APPLIED         
+podinfo oci://ghcr.io/stefanprodan/modules/podinfo      6.3.5   2023-04-10T16:20:07Z    
+redis   oci://ghcr.io/stefanprodan/modules/redis        7.0.10  2023-04-10T16:20:00Z
+```
+
+To learn more about bundles, please see the [Bundle API documentation](https://timoni.sh/bundles/).
