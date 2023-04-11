@@ -50,7 +50,7 @@ The apply command performs the following steps:
 - Pulls the module version from the specified container registry.
 - If the registry is private, uses the credentials found in '~/.docker/config.json'.
 - If the registry credentials are specified with '--creds', these take priority over the docker ones.
-- Creates the specified '--namespace' if it doesn't exists.
+- Creates the specified '--namespace' if it doesn't exist.
 - Merges all the values supplied with '--values' on top of the default values found in the module.
 - Builds the module by passing the instance name, namespace and values.
 - Labels the resulting Kubernetes resources with the instance name and namespace.
