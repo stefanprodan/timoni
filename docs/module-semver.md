@@ -28,7 +28,7 @@ Timoni offers a command for publishing a module version
 by packaging a local module as an OCI artifact and pushing
 the artifact to a container registry.
 
-When publishing a module with [timoni mod push](cmd/timoni_mod_pull.md),
+When publishing a module with [timoni mod push](cmd/timoni_mod_push.md),
 the version number must be specified using the `--version` flag.
 
 Example of publishing version `1.0.0` as the latest stable release:
