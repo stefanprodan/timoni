@@ -150,13 +150,10 @@ To apply the above bundle on a cluster, save the file as `podinfo.bundle.cue` an
 timoni bundle apply -f podinfo.bundle.cue
 ```
 
-To list the instances created from the bundle:
+To delete all the instances defined in a bundle:
 
-```console
-$ timoni list -n podinfo
-NAME    MODULE                                          VERSION LAST APPLIED         
-podinfo oci://ghcr.io/stefanprodan/modules/podinfo      6.3.5   2023-04-10T16:20:07Z    
-redis   oci://ghcr.io/stefanprodan/modules/redis        7.0.10  2023-04-10T16:20:00Z
+```shell
+timoni bundle delete -f podinfo.bundle.cue
 ```
 
 To learn more about bundles, please see the [Bundle API documentation](https://timoni.sh/bundles/).
