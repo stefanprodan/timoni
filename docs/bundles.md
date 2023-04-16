@@ -48,8 +48,8 @@ For the above example, Timoni performs the following actions at apply time:
 - If an instance already exists, Timoni performs a server-side apply dry-run to detect changes and
   applies only the resources with divergent state.
 - If previously applied resources are missing from the current revision, these
-  resources are deleted from the cluster when the apply flag `--prune` is set to `true`.
-- If the apply flag `--wait` is set to `true`, Timoni will wait for each instance's resources to become ready.
+  resources are deleted from the cluster.
+- Waits for each instance's resources to become ready.
 
 You can run this example by saving the Bundle into `podinfo.bundle.cue`.
 
@@ -279,14 +279,14 @@ The apply command performs the following actions for each instance:
 - Pulls the module version from the specified container registry.
 - If the registry is private, uses the credentials found in `~/.docker/config.json`.
 - If the registry credentials are specified with `--creds`, these take priority over the docker ones.
-- Creates the specified `--namespace` if it doesn't exist.
 - Merges the custom values supplied in the Bundle with the default values found in the module.
 - Builds the module by passing the instance name, namespace and values.
 - Labels the resulting Kubernetes resources with the instance name and namespace.
+- Creates the instance namespace if it doesn't exist.
 - Applies the Kubernetes resources on the cluster.
 - Creates or updates the instance inventory with the last applied resources IDs.
 
-### Preview changes
+### Diff Upgrade
 
 After editing a bundle file, you can review the changes that will
 be made on the cluster with `timoni bundle apply --diff`.
@@ -295,6 +295,31 @@ Example:
 
 ```shell
 timoni bundle apply --dry-run --diff -f bundle.cue
+```
+
+### Force Upgrade
+
+If an upgrade contains changes to immutable fields, such as changing the image
+tag of a Kubernetes Job, you need to set the `--force` flag.
+
+Example:
+
+```shell
+timoni bundle apply --force -f bundle.cue
+```
+
+With `--force`, Timoni will recreate only the resources that contain changes
+to immutable fields.
+
+### Uninstall
+
+To uninstall the instances defined in a Bundle file,
+you can use the `timoni bundle delete` command.
+
+Example:
+
+```shell
+timoni bundle delete -f bundle.cue
 ```
 
 ### Garbage collection
@@ -338,7 +363,7 @@ the apply command will exit with an error.
 
 The readiness check is enabled by default, to opt-out set `--wait=false`.
 
-### Linting
+### Lint
 
 To verify that one or more CUE files contain a valid Bundle definition,
 you can use the `timoni bundle lint` command.
@@ -348,6 +373,8 @@ Example:
 ```shell
 timoni bundle lint -f bundle.cue -f extras.cue
 ```
+
+### Format
 
 To format Bundle files, you can use the `cue fmt` command.
 

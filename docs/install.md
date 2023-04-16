@@ -19,7 +19,7 @@ Each release comes with a Software Bill of Materials (SBOM) in SPDX format.
     Install the latest release on Windows, macOS or Linux with:
     
     ```shell
-    arkade get tiomni
+    arkade get timoni
     ```
 
     Note that the [Arkade](https://github.com/alexellis/arkade) version must be 0.9.11 or newer.
