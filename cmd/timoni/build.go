@@ -141,7 +141,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return fmt.Errorf("build failed, error: %w", err)
+		return describeErr(fetcher.GetModuleRoot(), "build failed", err)
 	}
 
 	apiVer, err := builder.GetAPIVersion(buildResult)
