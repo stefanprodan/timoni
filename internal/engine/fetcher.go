@@ -80,7 +80,24 @@ func (f *Fetcher) Fetch() (*apiv1.ModuleReference, error) {
 		Digest:     "unknown",
 	}
 
-	return &mr, CopyModule(f.src, modulePath)
+	copier, err := NewCopier(f.src, modulePath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create copier, error: %w", err)
+	}
+
+	copier.AddSkipDirs(".git", "vendor")
+	if gopath, haveGoapth := os.LookupEnv("GOPATH"); haveGoapth {
+		copier.AddSkipDirs(gopath)
+	}
+
+	if err := copier.Scan(); err != nil {
+		return nil, fmt.Errorf("cannot scan module files, error: %w", err)
+	}
+	if err := copier.Copy(); err != nil {
+		return nil, fmt.Errorf("cannot copy module files, error: %w", err)
+	}
+
+	return &mr, nil
 }
 
 func (f *Fetcher) fetchOCI(dir string) (*apiv1.ModuleReference, error) {
