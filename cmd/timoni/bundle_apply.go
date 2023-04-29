@@ -197,7 +197,7 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return fmt.Errorf("failed to build instance, error: %w", err)
+		return describeErr(fetcher.GetModuleRoot(), "failed to build instance", err)
 	}
 
 	apiVer, err := builder.GetAPIVersion(buildResult)
