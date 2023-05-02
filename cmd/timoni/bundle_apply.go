@@ -63,13 +63,14 @@ var bundleApplyCmd = &cobra.Command{
 }
 
 type bundleApplyFlags struct {
-	pkg    flags.Package
-	files  []string
-	dryrun bool
-	diff   bool
-	wait   bool
-	force  bool
-	creds  flags.Credentials
+	pkg                flags.Package
+	files              []string
+	dryrun             bool
+	diff               bool
+	wait               bool
+	force              bool
+	overwriteOwnership bool
+	creds              flags.Credentials
 }
 
 var bundleApplyArgs bundleApplyFlags
@@ -80,6 +81,8 @@ func init() {
 		"The local path to bundle.cue files.")
 	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.force, "force", false,
 		"Recreate immutable Kubernetes resources.")
+	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.overwriteOwnership, "overwrite-ownership", false,
+		"Overwrite instance ownership, if any instances are owned by other Bundles.")
 	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.dryrun, "dry-run", false,
 		"Perform a server-side apply dry run.")
 	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.diff, "diff", false,
@@ -90,7 +93,7 @@ func init() {
 	bundleCmd.AddCommand(bundleApplyCmd)
 }
 
-func runBundleApplyCmd(cmd *cobra.Command, args []string) error {
+func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	bundleSchema, err := os.CreateTemp("", "schema.*.cue")
 	if err != nil {
 		return err
@@ -122,12 +125,19 @@ func runBundleApplyCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	instances, err := bm.GetInstances(v)
+	bundle, err := bm.GetBundle(v)
 	if err != nil {
 		return err
 	}
 
-	for _, instance := range instances {
+	if !bundleApplyArgs.overwriteOwnership {
+		err = bundleInstancesOwnershipConflicts(bundle.Instances)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, instance := range bundle.Instances {
 		logger.Printf("applying instance %s", instance.Name)
 		if err := applyBundleInstance(instance); err != nil {
 			return err
@@ -236,7 +246,7 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 
 	exists := false
 	sm := runtime.NewStorageManager(rm)
-	if _, err := sm.Get(ctx, instance.Name, instance.Namespace); err == nil {
+	if _, err = sm.Get(ctx, instance.Name, instance.Namespace); err == nil {
 		exists = true
 	}
 
@@ -279,6 +289,11 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 	}
 
 	im := runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, *mod)
+
+	if im.Instance.Labels == nil {
+		im.Instance.Labels = make(map[string]string)
+	}
+	im.Instance.Labels[apiv1.BundleNameLabelKey] = instance.Bundle
 
 	if err := im.AddObjects(objects); err != nil {
 		return fmt.Errorf("adding objects to instance failed, error: %w", err)
@@ -360,6 +375,34 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 
 			logger.Println("all resources are ready")
 		}
+	}
+
+	return nil
+}
+
+func bundleInstancesOwnershipConflicts(bundleInstances []engine.BundleInstance) error {
+	var conflicts []string
+	rm, err := runtime.NewResourceManager(kubeconfigArgs)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	sm := runtime.NewStorageManager(rm)
+	for _, instance := range bundleInstances {
+		if existingInstance, err := sm.Get(ctx, instance.Name, instance.Namespace); err == nil {
+			currentOwnerBundle := existingInstance.Labels[apiv1.BundleNameLabelKey]
+			if currentOwnerBundle == "" {
+				conflicts = append(conflicts, fmt.Sprintf("instance \"%s\" exists and is managed by no bundle", instance.Name))
+			} else if currentOwnerBundle != instance.Bundle {
+				conflicts = append(conflicts, fmt.Sprintf("instance \"%s\" exists and is managed by another bundle \"%s\"", instance.Name, currentOwnerBundle))
+			}
+		}
+	}
+	if len(conflicts) > 0 {
+		return fmt.Errorf("instance ownership conflicts encountered. Apply with \"--overwrite-ownership\" to gain instance ownership. Conflicts: %s", strings.Join(conflicts, "; "))
 	}
 
 	return nil

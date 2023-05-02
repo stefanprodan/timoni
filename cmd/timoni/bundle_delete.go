@@ -41,6 +41,9 @@ deletes all their Kubernetes resources from the cluster.'.
 	Example: `  # Uninstall all instances in a bundle
   timoni bundle delete -f bundle.cue
 
+  # Uninstall all instances in a named bundle
+  timoni bundle delete --name podinfo
+
   # Uninstall all instances without waiting for finalisation
   timoni bundle delete -f bundle.cue --wait=false
 
@@ -51,9 +54,11 @@ deletes all their Kubernetes resources from the cluster.'.
 }
 
 type bundleDelFlags struct {
-	files  []string
-	wait   bool
-	dryrun bool
+	files         []string
+	allNamespaces bool
+	wait          bool
+	dryrun        bool
+	name          string
 }
 
 var bundleDelArgs bundleDelFlags
@@ -65,10 +70,58 @@ func init() {
 		"Wait for the deleted Kubernetes objects to be finalized.")
 	bundleDelCmd.Flags().BoolVar(&bundleDelArgs.dryrun, "dry-run", false,
 		"Perform a server-side delete dry run.")
+	bundleDelCmd.Flags().StringVarP(&bundleDelArgs.name, "name", "", "",
+		"Name of the bundle to delete.")
+	bundleDelCmd.Flags().BoolVarP(&bundleDelArgs.allNamespaces, "all-namespaces", "A", false,
+		"Delete the requested Bundle across all namespaces.")
 	bundleCmd.AddCommand(bundleDelCmd)
 }
 
-func runBundleDelCmd(cmd *cobra.Command, args []string) error {
+func runBundleDelCmd(cmd *cobra.Command, _ []string) error {
+	if bundleDelArgs.name != "" {
+		return deleteBundleByName()
+	}
+	return deleteBundleFromFile(cmd)
+}
+
+func deleteBundleByName() error {
+	sm, err := runtime.NewResourceManager(kubeconfigArgs)
+	if err != nil {
+		return err
+	}
+
+	iStorage := runtime.NewStorageManager(sm)
+
+	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	var instances []*apiv1.Instance
+	if bundleDelArgs.allNamespaces {
+		instances, err = iStorage.List(ctx, "", bundleDelArgs.name)
+		if err != nil {
+			return err
+		}
+	} else {
+		instances, err = iStorage.List(ctx, *kubeconfigArgs.Namespace, bundleDelArgs.name)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, instance := range instances {
+		logger.Printf("deleting instance %s from bundle %s", instance.Name, bundleDelArgs.name)
+		if err := deleteBundleInstance(engine.BundleInstance{
+			Name:      instance.Name,
+			Namespace: instance.Namespace,
+		}, bundleDelArgs.wait, bundleDelArgs.dryrun); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func deleteBundleFromFile(cmd *cobra.Command) error {
 	bundleSchema, err := os.CreateTemp("", "schema.*.cue")
 	if err != nil {
 		return err
@@ -100,16 +153,16 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	instances, err := bm.GetInstances(v)
+	bundle, err := bm.GetBundle(v)
 	if err != nil {
 		return err
 	}
 
-	if len(instances) == 0 {
+	if len(bundle.Instances) == 0 {
 		return fmt.Errorf("no instances found in bundle")
 	}
 
-	for _, instance := range instances {
+	for _, instance := range bundle.Instances {
 		logger.Printf("deleting instance %s", instance.Name)
 		if err := deleteBundleInstance(instance, bundleDelArgs.wait, bundleDelArgs.dryrun); err != nil {
 			return err

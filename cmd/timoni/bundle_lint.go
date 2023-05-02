@@ -77,16 +77,16 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	instances, err := bm.GetInstances(v)
+	bundle, err := bm.GetBundle(v)
 	if err != nil {
 		return err
 	}
 
-	if len(instances) == 0 {
+	if len(bundle.Instances) == 0 {
 		return fmt.Errorf("no instances found in bundle")
 	}
 
-	for _, i := range instances {
+	for _, i := range bundle.Instances {
 		if i.Namespace == "" {
 			return fmt.Errorf("instance %s does not have a namespace", i.Name)
 		}

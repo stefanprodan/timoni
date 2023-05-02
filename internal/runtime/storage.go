@@ -72,6 +72,10 @@ func (s *StorageManager) Apply(ctx context.Context, i *apiv1.Instance, createNam
 		storageDataKey: inst,
 	}
 
+	for labelKey, labelValue := range i.Labels {
+		cm.Labels[labelKey] = labelValue
+	}
+
 	opts := []client.PatchOption{
 		client.ForceOwnership,
 		client.FieldOwner(ownerRef.Field),
@@ -98,15 +102,20 @@ func (s *StorageManager) Get(ctx context.Context, name, namespace string) (*apiv
 	if err != nil {
 		return nil, err
 	}
+	inst.Labels = cm.Labels
 
 	return &inst, nil
 }
 
 // List returns the instances found in the given namespace.
-func (s *StorageManager) List(ctx context.Context, namespace string) ([]*apiv1.Instance, error) {
+func (s *StorageManager) List(ctx context.Context, namespace, bundle string) ([]*apiv1.Instance, error) {
 	var res []*apiv1.Instance
 	cmList := &corev1.SecretList{}
-	err := s.resManager.Client().List(ctx, cmList, client.InNamespace(namespace), s.getOwnerLabels())
+	labels := s.getOwnerLabels()
+	if bundle != "" {
+		labels[apiv1.BundleNameLabelKey] = bundle
+	}
+	err := s.resManager.Client().List(ctx, cmList, client.InNamespace(namespace), labels)
 	if err != nil {
 		return res, err
 	}
@@ -123,6 +132,7 @@ func (s *StorageManager) List(ctx context.Context, namespace string) ([]*apiv1.I
 			return res, fmt.Errorf("invalid instance found in Secret/%s/%s, error: %w",
 				cm.GetNamespace(), cm.GetName(), err)
 		}
+		inst.Labels = cm.Labels
 		res = append(res, &inst)
 	}
 

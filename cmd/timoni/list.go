@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"io"
 
 	"github.com/olekukonko/tablewriter"
@@ -35,12 +36,16 @@ var listCmd = &cobra.Command{
 
   # List all instances on a cluster
   timoni ls -A
+
+  # List all instances on a cluster subject to a certain bundle
+  timoni ls -A --bundle podinfo
 `,
 	RunE: runListCmd,
 }
 
 type listFlags struct {
 	allNamespaces bool
+	bundleName    string
 }
 
 var listArgs listFlags
@@ -48,6 +53,8 @@ var listArgs listFlags
 func init() {
 	listCmd.Flags().BoolVarP(&listArgs.allNamespaces, "all-namespaces", "A", false,
 		"List the requested object(s) across all namespaces.")
+	listCmd.Flags().StringVarP(&listArgs.bundleName, "bundle", "", "",
+		"List the requested object(s) subject to a certain bundle.")
 
 	rootCmd.AddCommand(listCmd)
 }
@@ -68,7 +75,7 @@ func runListCmd(cmd *cobra.Command, args []string) error {
 		ns = ""
 	}
 
-	instances, err := iStorage.List(ctx, ns)
+	instances, err := iStorage.List(ctx, ns, listArgs.bundleName)
 	if err != nil {
 		return err
 	}
@@ -83,6 +90,7 @@ func runListCmd(cmd *cobra.Command, args []string) error {
 				inv.Module.Repository,
 				inv.Module.Version,
 				inv.LastTransitionTime,
+				printOrPass(inv.Labels[apiv1.BundleNameLabelKey]),
 			}
 		} else {
 			row = []string{
@@ -90,15 +98,16 @@ func runListCmd(cmd *cobra.Command, args []string) error {
 				inv.Module.Repository,
 				inv.Module.Version,
 				inv.LastTransitionTime,
+				printOrPass(inv.Labels[apiv1.BundleNameLabelKey]),
 			}
 		}
 		rows = append(rows, row)
 	}
 
 	if listArgs.allNamespaces {
-		printTable(rootCmd.OutOrStdout(), []string{"name", "namespace", "module", "version", "last applied"}, rows)
+		printTable(rootCmd.OutOrStdout(), []string{"name", "namespace", "module", "version", "last applied", "bundle"}, rows)
 	} else {
-		printTable(rootCmd.OutOrStdout(), []string{"name", "module", "version", "last applied"}, rows)
+		printTable(rootCmd.OutOrStdout(), []string{"name", "module", "version", "last applied", "bundle"}, rows)
 	}
 
 	return nil
@@ -120,4 +129,11 @@ func printTable(writer io.Writer, header []string, rows [][]string) {
 	table.SetNoWhiteSpace(true)
 	table.AppendBulk(rows)
 	table.Render()
+}
+
+func printOrPass(value string) string {
+	if value == "" {
+		return "-"
+	}
+	return value
 }

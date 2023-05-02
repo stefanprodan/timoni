@@ -14,6 +14,7 @@ master-replica cluster and a podinfo instance connected to the Redis instance.
 ```cue
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "podinfo"
 	instances: {
 		redis: {
 			module: {
@@ -104,9 +105,25 @@ List the instances in the `podinfo` namespace:
 === "output"
 
      ```text
-     NAME    MODULE                                          VERSION LAST APPLIED         
-     podinfo oci://ghcr.io/stefanprodan/modules/podinfo      6.3.5   2023-04-10T16:20:07Z    
-     redis   oci://ghcr.io/stefanprodan/modules/redis        7.0.10  2023-04-10T16:20:00Z
+     NAME    MODULE                                          VERSION LAST APPLIED            BUNDLE
+     podinfo oci://ghcr.io/stefanprodan/modules/podinfo      6.3.5   2023-05-02T12:36:59Z    podinfo
+     redis   oci://ghcr.io/stefanprodan/modules/redis        7.0.10  2023-05-02T12:36:51Z    podinfo
+     ```
+
+List the instances in Bundle `podinfo` across all namespaces:
+
+=== "command"
+
+      ```sh
+      timoni list --bundle podinfo -A
+      ```
+
+=== "output"
+
+     ```text
+     NAME    NAMESPACE         MODULE                                          VERSION LAST APPLIED          BUNDLE
+     podinfo podinfo           oci://ghcr.io/stefanprodan/modules/podinfo      6.3.5   2023-04-10T16:20:07Z  podinfo
+     redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        7.0.10  2023-04-10T16:20:00Z  podinfo
      ```
 
 List the instance resources and their rollout status:
@@ -153,6 +170,7 @@ A Bundle file must contain a definition that matches the following schema:
 ```cue
 #Bundle: {
 	apiVersion: string
+	name: string
 	instances: [string]: {
 		module: {
 			url:     string
@@ -185,6 +203,7 @@ A Bundle must contain at least one instance with the following required fields:
 ```cue
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "podinfo"
 	instances: {
 		podinfo: {
 			module: url: "oci://ghcr.io/stefanprodan/modules/podinfo"
@@ -310,6 +329,17 @@ timoni bundle apply --force -f bundle.cue
 
 With `--force`, Timoni will recreate only the resources that contain changes
 to immutable fields.
+
+### Transfer ownership
+
+If an install or upgrade involves Instances already created, either separately or as a part of another Bundle, the operation
+will fail. To transfer ownership to the current Bundle, you need to set the `--overwrite-ownership` flag.
+
+Example:
+
+```shell
+timoni bundle apply --overwrite-ownership -f bundle.cue
+```
 
 ### Uninstall
 

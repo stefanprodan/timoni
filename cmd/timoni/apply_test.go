@@ -19,6 +19,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -174,6 +176,88 @@ func TestApply(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	})
+}
+
+func TestApply_WithBundleConflicts(t *testing.T) {
+	g := NewWithT(t)
+
+	bundleName := "my-bundle"
+	instanceName := "frontend"
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+	modVer := "1.0.0"
+
+	// Push the module to registry
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s",
+		modPath,
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	bundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		frontend: {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+			values: server: enabled: false
+		}
+	}
+}
+`, bundleName, modURL, modVer, namespace)
+
+	bundlePath := filepath.Join(t.TempDir(), "bundle.cue")
+	err = os.WriteFile(bundlePath, []byte(bundleData), 0644)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Run("fails to create instance overlapping with existing bundle-owned instance", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err = executeCommandWithIn("bundle apply -f - -p main --wait", strings.NewReader(bundleData))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		_, err := executeCommand(fmt.Sprintf(
+			"apply -n %s %s %s -p main --wait",
+			namespace,
+			instanceName,
+			modPath,
+		))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by bundle \"%s\"", instanceName, bundleName)))
+
+		output, err := executeCommand(fmt.Sprintf("ls -n %[1]s", namespace))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).To(ContainSubstring(bundleName))
+	})
+
+	t.Run("create instance overriding existing bundle-owned instance", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err = executeCommandWithIn("bundle apply -f - -p main --wait", strings.NewReader(bundleData))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		_, err := executeCommand(fmt.Sprintf(
+			"apply -n %s %s %s -p main --wait --overwrite-ownership",
+			namespace,
+			instanceName,
+			modPath,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		output, err := executeCommand(fmt.Sprintf("ls -n %[1]s", namespace))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).ToNot(ContainSubstring(bundleName))
+	})
+
 }
 
 func TestApply_Actions(t *testing.T) {
