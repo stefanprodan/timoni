@@ -18,9 +18,10 @@ package engine
 
 import (
 	"bytes"
+	"fmt"
+
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/yaml"
-	"fmt"
 	"github.com/fluxcd/pkg/ssa"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -39,34 +40,36 @@ type ResourceSet struct {
 // GetResources converts the CUE value to a list of ResourceSets.
 func GetResources(value cue.Value) ([]ResourceSet, error) {
 	var sets []ResourceSet
-	iter, _ := value.Fields(cue.Concrete(true))
+	iter, err := value.Fields(cue.Concrete(true), cue.Final())
+	if err != nil {
+		return nil, fmt.Errorf("getting resources failed, error: %w", err)
+	}
 	for iter.Next() {
 		name := iter.Selector().String()
 		expr := iter.Value()
-		switch expr.Kind() {
-		case cue.ListKind:
-			items, err := expr.List()
-			if err != nil {
-				return nil, fmt.Errorf("listing objects for %s failed, error: %w", name, err)
-			}
-
-			data, err := yaml.EncodeStream(items)
-			if err != nil {
-				return nil, fmt.Errorf("encoding objects for %s failed, error: %w", name, err)
-			}
-
-			objects, err := ssa.ReadObjects(bytes.NewReader(data))
-			if err != nil {
-				return nil, fmt.Errorf("decoding objects for %s failed, error: %w", name, err)
-			}
-
-			sets = append(sets, ResourceSet{
-				Name:    name,
-				Objects: objects,
-			})
-		default:
-			return nil, fmt.Errorf("objects in %s are not of type cue.ListKind, got %v", name, value.Kind())
+		if expr.Err() != nil {
+			return nil, fmt.Errorf("getting value of resource list %q failed, error: %w", name, expr.Err())
 		}
+
+		items, err := expr.List()
+		if err != nil {
+			return nil, fmt.Errorf("listing objects in resource list %q failed, error: %w", name, err)
+		}
+
+		data, err := yaml.EncodeStream(items)
+		if err != nil {
+			return nil, fmt.Errorf("converting objects for resource list %q failed, error: %w", name, err)
+		}
+
+		objects, err := ssa.ReadObjects(bytes.NewReader(data))
+		if err != nil {
+			return nil, fmt.Errorf("loading objects for resource list %q failed, error: %w", name, err)
+		}
+
+		sets = append(sets, ResourceSet{
+			Name:    name,
+			Objects: objects,
+		})
 	}
 	return sets, nil
 }
