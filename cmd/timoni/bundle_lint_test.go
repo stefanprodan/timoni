@@ -38,6 +38,7 @@ func Test_BundleLint(t *testing.T) {
 			bundle: `
 bundle: {
 	apiVersion: "v1alpha2"
+	name: "test"
 	instances: {
 		test: {
 			module: {
@@ -57,6 +58,7 @@ bundle: {
 			bundle: `
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "test"
 	instances: {
 		test: {
 			module: {
@@ -76,6 +78,7 @@ bundle: {
 			bundle: `
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "test"
 	instances: {
 		test: {
 			module: {
@@ -95,6 +98,7 @@ bundle: {
 			bundle: `
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "test"
 	instances: {
 		test: {
 			module: {
@@ -112,7 +116,25 @@ bundle: {
 			bundle: `
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "test"
 	instances: {}
+}
+`,
+		},
+		{
+			name:     "fails for missing name",
+			matchErr: "bundle.name",
+			bundle: `
+bundle: {
+	apiVersion: "v1alpha1"
+	instances: {
+		test: {
+			module: {
+				url:     "oci://docker.io/test"
+				version: "latest"
+			}
+		}
+	}
 }
 `,
 		},

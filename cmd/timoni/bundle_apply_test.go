@@ -34,6 +34,7 @@ import (
 func Test_BundleApply(t *testing.T) {
 	g := NewWithT(t)
 
+	bundleName := "my-bundle"
 	modPath := "testdata/module"
 	namespace := rnd("my-namespace", 5)
 	modName := rnd("my-mod", 5)
@@ -52,26 +53,27 @@ func Test_BundleApply(t *testing.T) {
 	bundleData := fmt.Sprintf(`
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "%[1]s"
 	instances: {
 		frontend: {
 			module: {
-				url:     "oci://%[1]s"
-				version: "%[2]s"
+				url:     "oci://%[2]s"
+				version: "%[3]s"
 			}
-			namespace: "%[3]s"
+			namespace: "%[4]s"
 			values: server: enabled: false
 		}
 		backend: {
 			module: {
-				url:     "oci://%[1]s"
-				version: "%[2]s"
+				url:     "oci://%[2]s"
+				version: "%[3]s"
 			}
-			namespace: "%[3]s"
+			namespace: "%[4]s"
 			values: client: enabled: false
 		}
 	}
 }
-`, modURL, modVer, namespace)
+`, bundleName, modURL, modVer, namespace)
 
 	bundlePath := filepath.Join(t.TempDir(), "bundle.cue")
 	err = os.WriteFile(bundlePath, []byte(bundleData), 0644)
@@ -120,11 +122,136 @@ bundle: {
 			})
 		}
 	})
+
+	t.Run("fails to create instances from completely overlapping bundle", func(t *testing.T) {
+		anotherBundleName := "my-other-bundle"
+		anotherBundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		frontend: {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+			values: server: enabled: false
+		}
+		backend: {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+			values: client: enabled: false
+		}
+	}
+}
+`, anotherBundleName, modURL, modVer, namespace)
+
+		_, err = executeCommandWithIn("bundle apply -f - -p main --wait", strings.NewReader(anotherBundleData))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by another bundle \"%s\"", "frontend", bundleName)))
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by another bundle \"%s\"", "backend", bundleName)))
+	})
+
+	t.Run("fails to create instances from partially overlapping bundle", func(t *testing.T) {
+		anotherBundleName := "my-other-bundle"
+		anotherBundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		frontend: {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+			values: server: enabled: false
+		}
+		anyend: {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+			values: client: enabled: false
+		}
+	}
+}
+`, anotherBundleName, modURL, modVer, namespace)
+
+		_, err = executeCommandWithIn("bundle apply -f - -p main --wait", strings.NewReader(anotherBundleData))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by another bundle \"%s\"", "frontend", bundleName)))
+		g.Expect(err.Error()).NotTo(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by another bundle \"%s\"", "anyend", bundleName)))
+	})
+
+	t.Run("create instances from completely overlapping bundle - gaining ownership", func(t *testing.T) {
+		anotherBundleName := "my-other-bundle"
+		anotherBundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		frontend: {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+			values: server: enabled: false
+		}
+		backend: {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+			values: client: enabled: false
+		}
+	}
+}
+`, anotherBundleName, modURL, modVer, namespace)
+
+		_, err = executeCommandWithIn("bundle apply -f - -p main --wait --overwrite-ownership", strings.NewReader(anotherBundleData))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		output, err := executeCommand(fmt.Sprintf("ls -n %[1]s", namespace))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).ToNot(ContainSubstring(bundleName))
+		g.Expect(output).To(ContainSubstring(anotherBundleName))
+
+		t.Cleanup(func() {
+			_, err = executeCommand(fmt.Sprintf("bundle delete --name %[1]s -n %[2]s", anotherBundleName, namespace))
+			g.Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
+	t.Run("fails to create instances partially overlapping with independent instance", func(t *testing.T) {
+		g := NewWithT(t)
+		instanceName := "frontend"
+
+		_, err = executeCommand(fmt.Sprintf(
+			"apply -n %s %s %s -p main --wait",
+			namespace,
+			instanceName,
+			modPath,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		_, err = executeCommandWithIn("bundle apply -f - -p main --wait", strings.NewReader(bundleData))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by no bundle", instanceName)))
+	})
 }
 
 func Test_BundleApply_Digest(t *testing.T) {
 	g := NewWithT(t)
 
+	bundleName := "my-bundle"
 	modPath := "testdata/module"
 	namespace := rnd("my-namespace", 5)
 	modName := rnd("my-mod", 5)
@@ -157,17 +284,18 @@ func Test_BundleApply_Digest(t *testing.T) {
 		bundleData := fmt.Sprintf(`
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "%[1]s"
 	instances: {
 		test1: {
 			module: {
-				url:     "oci://%[1]s"
+				url:     "oci://%[2]s"
 				digest:  "%[3]s"
 			}
 			namespace: "%[4]s"
 		}
 	}
 }
-`, modURL, modVer1, modDigestv1, namespace)
+`, bundleName, modURL, modDigestv1, namespace)
 
 		r := strings.NewReader(bundleData)
 		output, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
@@ -182,18 +310,19 @@ bundle: {
 		bundleData := fmt.Sprintf(`
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "%[1]s"
 	instances: {
 		test2: {
 			module: {
-				url:     "oci://%[1]s"
-				version: "%[2]s"
-				digest:  "%[3]s"
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+				digest:  "%[4]s"
 			}
-			namespace: "%[4]s"
+			namespace: "%[5]s"
 		}
 	}
 }
-`, modURL, modVer1, modDigestv1, namespace)
+`, bundleName, modURL, modVer1, modDigestv1, namespace)
 
 		r := strings.NewReader(bundleData)
 		output, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
@@ -207,18 +336,19 @@ bundle: {
 		bundleData := fmt.Sprintf(`
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "%[1]s"
 	instances: {
 		test3: {
 			module: {
-				url:     "oci://%[1]s"
-				version: "%[2]s"
-				digest:  "%[3]s"
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+				digest:  "%[4]s"
 			}
-			namespace: "%[4]s"
+			namespace: "%[5]s"
 		}
 	}
 }
-`, modURL, modVer2, modDigestv1, namespace)
+`, bundleName, modURL, modVer2, modDigestv1, namespace)
 
 		r := strings.NewReader(bundleData)
 		_, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
@@ -232,16 +362,17 @@ bundle: {
 		bundleData := fmt.Sprintf(`
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "%[1]s"
 	instances: {
 		test4: {
 			module: {
-				url:     "oci://%[1]s"
+				url:     "oci://%[2]s"
 			}
-			namespace: "%[2]s"
+			namespace: "%[3]s"
 		}
 	}
 }
-`, modURL, namespace)
+`, bundleName, modURL, namespace)
 
 		r := strings.NewReader(bundleData)
 		output, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
@@ -255,18 +386,19 @@ bundle: {
 		bundleData := fmt.Sprintf(`
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "%[1]s"
 	instances: {
 		test5: {
 			module: {
-				url:     "oci://%[1]s"
+				url:     "oci://%[2]s"
 				version: "latest"
-				digest:  "%[2]s"
+				digest:  "%[3]s"
 			}
-			namespace: "%[3]s"
+			namespace: "%[4]s"
 		}
 	}
 }
-`, modURL, modDigestv1, namespace)
+`, bundleName, modURL, modDigestv1, namespace)
 
 		r := strings.NewReader(bundleData)
 		output, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)

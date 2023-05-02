@@ -5,6 +5,7 @@
 // a podinfo instance connected to Redis using the supplied password.
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "podinfo"
 	instances: {
 		redis: {
 			module: {

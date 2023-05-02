@@ -33,7 +33,13 @@ type BundleBuilder struct {
 	files   []string
 }
 
+type Bundle struct {
+	Name      string
+	Instances []BundleInstance
+}
+
 type BundleInstance struct {
+	Bundle    string
 	Name      string
 	Namespace string
 	Module    apiv1.ModuleReference
@@ -82,8 +88,14 @@ func (b *BundleBuilder) Build() (cue.Value, error) {
 	return v, nil
 }
 
-// GetInstances returns a list of BundleInstance from the bundle CUE value.
-func (b *BundleBuilder) GetInstances(v cue.Value) ([]BundleInstance, error) {
+// GetBundle returns a Bundle from the bundle CUE value.
+func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
+	bundleNameValue := v.LookupPath(cue.ParsePath(apiv1.BundleName.String()))
+	bundleName, err := bundleNameValue.String()
+	if err != nil {
+		return nil, fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleName.String(), bundleNameValue.Err())
+	}
+
 	instances := v.LookupPath(cue.ParsePath(apiv1.BundleInstancesSelector.String()))
 	if instances.Err() != nil {
 		return nil, fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleInstancesSelector.String(), instances.Err())
@@ -114,6 +126,7 @@ func (b *BundleBuilder) GetInstances(v cue.Value) ([]BundleInstance, error) {
 		values := expr.LookupPath(cue.ParsePath(apiv1.BundleValuesSelector.String()))
 
 		list = append(list, BundleInstance{
+			Bundle:    bundleName,
 			Name:      name,
 			Namespace: namespace,
 			Module: apiv1.ModuleReference{
@@ -125,5 +138,8 @@ func (b *BundleBuilder) GetInstances(v cue.Value) ([]BundleInstance, error) {
 		})
 	}
 
-	return list, nil
+	return &Bundle{
+		Name:      bundleName,
+		Instances: list,
+	}, nil
 }

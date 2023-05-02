@@ -92,16 +92,17 @@ The apply command performs the following steps:
 }
 
 type applyFlags struct {
-	name        string
-	module      string
-	version     flags.Version
-	pkg         flags.Package
-	valuesFiles []string
-	dryrun      bool
-	diff        bool
-	wait        bool
-	force       bool
-	creds       flags.Credentials
+	name               string
+	module             string
+	version            flags.Version
+	pkg                flags.Package
+	valuesFiles        []string
+	dryrun             bool
+	diff               bool
+	wait               bool
+	force              bool
+	overwriteOwnership bool
+	creds              flags.Credentials
 }
 
 var applyArgs applyFlags
@@ -113,6 +114,8 @@ func init() {
 		"The local path to values files (cue, yaml or json format).")
 	applyCmd.Flags().BoolVar(&applyArgs.force, "force", false,
 		"Recreate immutable Kubernetes resources.")
+	applyCmd.Flags().BoolVar(&applyArgs.overwriteOwnership, "overwrite-ownership", false,
+		"Overwrite instance ownership, if the instance is owned by a Bundle.")
 	applyCmd.Flags().BoolVar(&applyArgs.dryrun, "dry-run", false,
 		"Perform a server-side apply dry run.")
 	applyCmd.Flags().BoolVar(&applyArgs.diff, "diff", false,
@@ -231,8 +234,16 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	exists := false
 	sm := runtime.NewStorageManager(rm)
-	if _, err := sm.Get(ctx, applyArgs.name, *kubeconfigArgs.Namespace); err == nil {
+	instance, err := sm.Get(ctx, applyArgs.name, *kubeconfigArgs.Namespace)
+	if err == nil {
 		exists = true
+	}
+
+	if !applyArgs.overwriteOwnership && exists {
+		err = instanceOwnershipConflicts(*instance)
+		if err != nil {
+			return err
+		}
 	}
 
 	if applyArgs.dryrun || applyArgs.diff {
@@ -355,5 +366,12 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	return nil
+}
+
+func instanceOwnershipConflicts(instance apiv1.Instance) error {
+	if currentOwnerBundle := instance.Labels[apiv1.BundleNameLabelKey]; currentOwnerBundle != "" {
+		return fmt.Errorf("instance ownership conflict encountered. Apply with \"--overwrite-ownership\" to gain instance ownership. Conflict: instance \"%s\" exists and is managed by bundle \"%s\"", instance.Name, currentOwnerBundle)
+	}
 	return nil
 }

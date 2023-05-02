@@ -109,6 +109,7 @@ A Timoni bundle is a CUE file for defining a group of instances together with th
 ```cue
 bundle: {
 	apiVersion: "v1alpha1"
+	name: "podinfo"
 	instances: {
 		redis: {
 			module: {
