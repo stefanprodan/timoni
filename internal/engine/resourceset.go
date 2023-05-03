@@ -40,30 +40,35 @@ type ResourceSet struct {
 // GetResources converts the CUE value to a list of ResourceSets.
 func GetResources(value cue.Value) ([]ResourceSet, error) {
 	var sets []ResourceSet
+
+	if err := value.Validate(cue.Concrete(true), cue.Final()); err != nil {
+		return nil, err
+	}
+
 	iter, err := value.Fields(cue.Concrete(true), cue.Final())
 	if err != nil {
-		return nil, fmt.Errorf("getting resources failed, error: %w", err)
+		return nil, fmt.Errorf("getting resources failed: %w", err)
 	}
 	for iter.Next() {
 		name := iter.Selector().String()
 		expr := iter.Value()
 		if expr.Err() != nil {
-			return nil, fmt.Errorf("getting value of resource list %q failed, error: %w", name, expr.Err())
+			return nil, fmt.Errorf("getting value of resource list %q failed: %w", name, expr.Err())
 		}
 
 		items, err := expr.List()
 		if err != nil {
-			return nil, fmt.Errorf("listing objects in resource list %q failed, error: %w", name, err)
+			return nil, fmt.Errorf("listing objects in resource list %q failed: %w", name, err)
 		}
 
 		data, err := yaml.EncodeStream(items)
 		if err != nil {
-			return nil, fmt.Errorf("converting objects for resource list %q failed, error: %w", name, err)
+			return nil, fmt.Errorf("converting objects for resource list %q failed: %w", name, err)
 		}
 
 		objects, err := ssa.ReadObjects(bytes.NewReader(data))
 		if err != nil {
-			return nil, fmt.Errorf("loading objects for resource list %q failed, error: %w", name, err)
+			return nil, fmt.Errorf("loading objects for resource list %q failed: %w", name, err)
 		}
 
 		sets = append(sets, ResourceSet{

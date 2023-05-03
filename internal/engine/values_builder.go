@@ -39,20 +39,20 @@ func (b *ValuesBuilder) MergeValues(overlays [][]byte, base string) (cue.Value, 
 	baseVal, err := ExtractValueFromFile(b.ctx, base, apiv1.ValuesSelector.String())
 	if err != nil {
 		return cue.Value{},
-			fmt.Errorf("loading values from %s failed, error: %w", base, err)
+			fmt.Errorf("loading values from %s failed: %w", base, err)
 	}
 
 	for _, overlay := range overlays {
 		overlayVal, err := ExtractValueFromBytes(b.ctx, overlay, apiv1.ValuesSelector.String())
 		if err != nil {
 			return cue.Value{},
-				fmt.Errorf("loading values from %s failed, error: %w", overlay, err)
+				fmt.Errorf("loading values from %s failed: %w", overlay, err)
 		}
 
 		baseVal, err = MergeValue(overlayVal, baseVal)
 		if err != nil {
 			return cue.Value{},
-				fmt.Errorf("merging values from %s failed, error: %w", overlay, err)
+				fmt.Errorf("merging values from %s failed: %w", overlay, err)
 		}
 	}
 

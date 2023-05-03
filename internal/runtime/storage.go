@@ -90,7 +90,7 @@ func (s *StorageManager) Get(ctx context.Context, name, namespace string) (*apiv
 	cmKey := client.ObjectKeyFromObject(cm)
 	err := s.resManager.Client().Get(ctx, cmKey, cm)
 	if err != nil {
-		return nil, fmt.Errorf("instance storage not found, error: %w", err)
+		return nil, fmt.Errorf("instance storage not found: %w", err)
 	}
 
 	if _, ok := cm.Data[storageDataKey]; !ok {
@@ -129,7 +129,7 @@ func (s *StorageManager) List(ctx context.Context, namespace, bundle string) ([]
 		var inst apiv1.Instance
 		err = json.Unmarshal(cm.Data[storageDataKey], &inst)
 		if err != nil {
-			return res, fmt.Errorf("invalid instance found in Secret/%s/%s, error: %w",
+			return res, fmt.Errorf("invalid instance found in Secret/%s/%s: %w",
 				cm.GetNamespace(), cm.GetName(), err)
 		}
 		inst.Labels = cm.Labels
@@ -146,7 +146,7 @@ func (s *StorageManager) Delete(ctx context.Context, name, namespace string) err
 	cmKey := client.ObjectKeyFromObject(cm)
 	err := s.resManager.Client().Delete(ctx, cm)
 	if err != nil && !apierrors.IsNotFound(err) {
-		return fmt.Errorf("failed to delete Secret/%s, error: %w", cmKey, err)
+		return fmt.Errorf("failed to delete Secret/%s: %w", cmKey, err)
 	}
 	return nil
 }

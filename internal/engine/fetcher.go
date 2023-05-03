@@ -90,7 +90,7 @@ func (f *Fetcher) fetchOCI(dir string) (*apiv1.ModuleReference, error) {
 		ociURL = fmt.Sprintf("%s%s", f.src, f.version)
 	} else {
 		if _, err := semver.StrictNewVersion(f.version); f.version != LatestTag && err != nil {
-			return nil, fmt.Errorf("version is not in semver format, error: %w", err)
+			return nil, fmt.Errorf("version is not in semver format: %w", err)
 		}
 	}
 
@@ -178,7 +178,7 @@ func (f *Fetcher) GetVersions() ([]ModuleVersion, error) {
 	for _, v := range versions {
 		digest, err := crane.Digest(fmt.Sprintf("%s:%s", url, v.String()), opts...)
 		if err != nil {
-			return nil, fmt.Errorf("faild to get digest for '%s', error: %w", v.String(), err)
+			return nil, fmt.Errorf("faild to get digest for '%s': %w", v.String(), err)
 		}
 		result = append(result, ModuleVersion{
 			Number: v.String(),

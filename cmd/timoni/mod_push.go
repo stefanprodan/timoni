@@ -103,7 +103,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	version := pushModArgs.version.String()
 
 	if _, err := semver.StrictNewVersion(version); err != nil {
-		return fmt.Errorf("version is not in semver format, error: %w", err)
+		return fmt.Errorf("version is not in semver format: %w", err)
 	}
 
 	url, err := oci.ParseArtifactURL(ociURL + ":" + version)

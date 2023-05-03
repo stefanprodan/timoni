@@ -67,7 +67,7 @@ func runInspectModuleCmd(cmd *cobra.Command, args []string) error {
 
 	data, err := yaml.Marshal(inst.Module)
 	if err != nil {
-		return fmt.Errorf("failed to read module info, error: %w", err)
+		return fmt.Errorf("failed to read module info: %w", err)
 	}
 	cmd.OutOrStdout().Write(data)
 	return nil
