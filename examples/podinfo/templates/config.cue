@@ -35,7 +35,7 @@ import (
 	// Container
 	image: {
 		repository: *"ghcr.io/stefanprodan/podinfo" | string
-		tag:        *"6.3.5" | string
+		tag:        *"6.3.6" | string
 		digest?:    string
 		pullPolicy: *"IfNotPresent" | string
 	}

@@ -32,7 +32,7 @@ import (
 	// Container image
 	image: {
 		repository: *"cgr.dev/chainguard/redis" | string
-		tag:        *"7.0.10" | string
+		tag:        *"7.0.11" | string
 		digest?:    string
 		pullPolicy: *"IfNotPresent" | string
 	}

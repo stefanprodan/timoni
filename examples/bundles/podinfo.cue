@@ -5,12 +5,13 @@
 // a podinfo instance connected to Redis using the supplied password.
 bundle: {
 	apiVersion: "v1alpha1"
-	name: "podinfo"
+	name:       "podinfo"
 	instances: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				digest:  "sha256:e9137d41b0d263bfaf2a43fc862648ad9dc3a976b4b0fc6e27617ea28ee27d45"
+				version: "7.0.11"
+				digest:  "sha256:0e0f40e7824ff8c59e309d9b8bf19e235c6e779c93aafeeeaa86cbca49989950"
 			}
 			namespace: "podinfo"
 			values: {
@@ -20,8 +21,11 @@ bundle: {
 			}
 		}
 		podinfo: {
-			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-			module: version: "6.3.4"
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+				version: "6.3.6"
+				digest:  "sha256:b317bc7e4736287af10cbf52f9c0f1e8cd1f8c180bba29bc563fe697bfa2dd3d"
+			}
 			namespace: "podinfo"
 			values: caching: {
 				enabled:  true
