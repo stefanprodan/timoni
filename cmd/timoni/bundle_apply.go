@@ -193,6 +193,10 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 		bundleApplyArgs.pkg.String(),
 	)
 
+	if err := builder.WriteSchemaFile(); err != nil {
+		return err
+	}
+
 	mod.Name, err = builder.GetModuleName()
 	if err != nil {
 		return err
@@ -210,23 +214,14 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 		return describeErr(fetcher.GetModuleRoot(), "failed to build instance", err)
 	}
 
-	apiVer, err := builder.GetAPIVersion(buildResult)
-	if err != nil {
-		return err
-	}
-
-	if apiVer != apiv1.GroupVersion.Version {
-		return fmt.Errorf("API version %s not supported, must be %s", apiVer, apiv1.GroupVersion.Version)
-	}
-
 	finalValues, err := builder.GetValues(buildResult)
 	if err != nil {
-		return fmt.Errorf("failed to extract values, error: %w", err)
+		return fmt.Errorf("failed to extract values: %w", err)
 	}
 
 	bundleApplySets, err := builder.GetApplySets(buildResult)
 	if err != nil {
-		return fmt.Errorf("failed to extract objects, error: %w", err)
+		return fmt.Errorf("failed to extract objects: %w", err)
 	}
 
 	var objects []*unstructured.Unstructured
@@ -296,7 +291,7 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 	im.Instance.Labels[apiv1.BundleNameLabelKey] = instance.Bundle
 
 	if err := im.AddObjects(objects); err != nil {
-		return fmt.Errorf("adding objects to instance failed, error: %w", err)
+		return fmt.Errorf("adding objects to instance failed: %w", err)
 	}
 
 	if !exists {
@@ -304,11 +299,11 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 
 		nsExists, err := sm.NamespaceExists(ctx, instance.Namespace)
 		if err != nil {
-			return fmt.Errorf("instance init failed, error: %w", err)
+			return fmt.Errorf("instance init failed: %w", err)
 		}
 
 		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
-			return fmt.Errorf("instance init failed, error: %w", err)
+			return fmt.Errorf("instance init failed: %w", err)
 		}
 
 		if !nsExists {
@@ -345,11 +340,11 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 
 	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
 	if err != nil {
-		return fmt.Errorf("getting stale objects failed, error: %w", err)
+		return fmt.Errorf("getting stale objects failed: %w", err)
 	}
 
 	if err := sm.Apply(ctx, &im.Instance, true); err != nil {
-		return fmt.Errorf("storing instance failed, error: %w", err)
+		return fmt.Errorf("storing instance failed: %w", err)
 	}
 
 	var deletedObjects []*unstructured.Unstructured
@@ -357,7 +352,7 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 		deleteOpts := runtime.DeleteOptions(instance.Name, instance.Namespace)
 		changeSet, err := rm.DeleteAll(ctx, staleObjects, deleteOpts)
 		if err != nil {
-			return fmt.Errorf("prunning objects failed, error: %w", err)
+			return fmt.Errorf("prunning objects failed: %w", err)
 		}
 		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
 		for _, change := range changeSet.Entries {
@@ -370,7 +365,7 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 			logger.Printf("waiting for %v resource(s) to be finalized...", len(deletedObjects))
 			err = rm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
 			if err != nil {
-				return fmt.Errorf("wating for termination failed, error: %w", err)
+				return fmt.Errorf("wating for termination failed: %w", err)
 			}
 
 			logger.Println("all resources are ready")

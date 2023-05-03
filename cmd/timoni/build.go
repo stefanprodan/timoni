@@ -123,6 +123,10 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		buildArgs.pkg.String(),
 	)
 
+	if err := builder.WriteSchemaFile(); err != nil {
+		return err
+	}
+
 	mod.Name, err = builder.GetModuleName()
 	if err != nil {
 		return err
@@ -155,7 +159,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 
 	applySets, err := builder.GetApplySets(buildResult)
 	if err != nil {
-		return fmt.Errorf("failed to extract objects, error: %w", err)
+		return fmt.Errorf("failed to extract objects: %w", err)
 	}
 
 	var objects []*unstructured.Unstructured
@@ -169,7 +173,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		for _, obj := range objects {
 			data, err := yaml.Marshal(obj)
 			if err != nil {
-				return fmt.Errorf("converting objects failed, error: %w", err)
+				return fmt.Errorf("converting objects failed: %w", err)
 			}
 			sb.Write(data)
 			sb.WriteString("---\n")
@@ -188,7 +192,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 
 		b, err := json.MarshalIndent(list, "", "    ")
 		if err != nil {
-			return fmt.Errorf("converting objects failed, error: %w", err)
+			return fmt.Errorf("converting objects failed: %w", err)
 		}
 		_, err = cmd.OutOrStdout().Write(b)
 	default:

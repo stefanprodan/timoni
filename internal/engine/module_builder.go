@@ -24,12 +24,14 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
+
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 const (
 	defaultPackage    = "main"
 	defaultValuesFile = "values.cue"
+	defaultSchemaFile = "timoni.schema.cue"
 )
 
 // ModuleBuilder compiles CUE definitions to Kubernetes objects.
@@ -93,6 +95,17 @@ func (b *ModuleBuilder) WriteValuesFile(val cue.Value) error {
 	return os.WriteFile(defaultFile, []byte(cueGen), 0644)
 }
 
+// WriteSchemaFile generates the module's instance schema.
+func (b *ModuleBuilder) WriteSchemaFile() error {
+	if fs, err := os.Stat(b.pkgPath); err != nil || !fs.IsDir() {
+		return fmt.Errorf("cannot find package %s", b.pkgPath)
+	}
+
+	cueGen := fmt.Sprintf("package %s\n%v", b.pkgName, apiv1.InstanceSchema)
+
+	return os.WriteFile(filepath.Join(b.pkgPath, defaultSchemaFile), []byte(cueGen), 0644)
+}
+
 // Build builds a CUE instances for the specified package and returns the CUE value.
 func (b *ModuleBuilder) Build() (cue.Value, error) {
 	var value cue.Value
@@ -130,7 +143,7 @@ func (b *ModuleBuilder) Build() (cue.Value, error) {
 func (b *ModuleBuilder) GetAPIVersion(value cue.Value) (string, error) {
 	ver := value.LookupPath(cue.ParsePath(apiv1.APIVersionSelector.String()))
 	if ver.Err() != nil {
-		return "", fmt.Errorf("lookup %s failed, error: %w", apiv1.APIVersionSelector, ver.Err())
+		return "", fmt.Errorf("lookup %s failed: %w", apiv1.APIVersionSelector, ver.Err())
 	}
 	return ver.String()
 }
@@ -139,7 +152,7 @@ func (b *ModuleBuilder) GetAPIVersion(value cue.Value) (string, error) {
 func (b *ModuleBuilder) GetApplySets(value cue.Value) ([]ResourceSet, error) {
 	steps := value.LookupPath(cue.ParsePath(apiv1.ApplySelector.String()))
 	if steps.Err() != nil {
-		return nil, fmt.Errorf("lookup %s failed, error: %w", apiv1.ApplySelector, steps.Err())
+		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.ApplySelector, steps.Err())
 	}
 	return GetResources(steps)
 }
@@ -160,7 +173,7 @@ func (b *ModuleBuilder) GetDefaultValues() (string, error) {
 
 	expr := value.LookupPath(cue.ParsePath(apiv1.ValuesSelector.String()))
 	if expr.Err() != nil {
-		return "", fmt.Errorf("lookup %s failed, error: %w", apiv1.ValuesSelector, expr.Err())
+		return "", fmt.Errorf("lookup %s failed: %w", apiv1.ValuesSelector, expr.Err())
 	}
 
 	return fmt.Sprintf("%v", expr.Eval()), nil
@@ -182,12 +195,12 @@ func (b *ModuleBuilder) GetModuleName() (string, error) {
 
 	expr := value.LookupPath(cue.ParsePath("module"))
 	if expr.Err() != nil {
-		return "", fmt.Errorf("lookup module name failed, error: %w", expr.Err())
+		return "", fmt.Errorf("lookup module name failed: %w", expr.Err())
 	}
 
 	mod, err := expr.String()
 	if expr.Err() != nil {
-		return "", fmt.Errorf("lookup module name failed, error: %w", expr.Err())
+		return "", fmt.Errorf("lookup module name failed: %w", expr.Err())
 	}
 
 	return mod, nil
@@ -197,7 +210,7 @@ func (b *ModuleBuilder) GetModuleName() (string, error) {
 func (b *ModuleBuilder) GetValues(value cue.Value) (string, error) {
 	expr := value.LookupPath(cue.ParsePath(apiv1.ValuesSelector.String()))
 	if expr.Err() != nil {
-		return "", fmt.Errorf("lookup %s failed, error: %w", apiv1.ValuesSelector, expr.Err())
+		return "", fmt.Errorf("lookup %s failed: %w", apiv1.ValuesSelector, expr.Err())
 	}
 
 	return fmt.Sprintf("%v", expr.Eval()), nil

@@ -93,12 +93,12 @@ func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
 	bundleNameValue := v.LookupPath(cue.ParsePath(apiv1.BundleName.String()))
 	bundleName, err := bundleNameValue.String()
 	if err != nil {
-		return nil, fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleName.String(), bundleNameValue.Err())
+		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.BundleName.String(), bundleNameValue.Err())
 	}
 
 	instances := v.LookupPath(cue.ParsePath(apiv1.BundleInstancesSelector.String()))
 	if instances.Err() != nil {
-		return nil, fmt.Errorf("lookup %s failed, error: %w", apiv1.BundleInstancesSelector.String(), instances.Err())
+		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.BundleInstancesSelector.String(), instances.Err())
 	}
 
 	var list []BundleInstance
