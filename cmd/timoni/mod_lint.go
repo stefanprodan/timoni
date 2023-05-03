@@ -17,22 +17,23 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
 
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/flags"
 )
 
 var lintModCmd = &cobra.Command{
 	Use:   "lint [MODULE PATH]",
-	Short: "Format and validate a local module",
-	Long: `The lint command formats the module's files with 'cue fmt' and
-validates the cue definitions with 'cue vet -c'.
-This command requires that the cue CLI binary is present in PATH.`,
+	Short: "Validate a local module",
+	Long:  `The lint command builds the local module and validates the resulting Kubernetes objects.`,
 	Example: `  # lint a local module
   timoni mod lint ./path/to/module
 `,
@@ -41,11 +42,14 @@ This command requires that the cue CLI binary is present in PATH.`,
 
 type lintModFlags struct {
 	path string
+	pkg  flags.Package
 }
 
 var lintModArgs lintModFlags
 
 func init() {
+	lintModCmd.Flags().VarP(&lintModArgs.pkg, lintModArgs.pkg.Type(), lintModArgs.pkg.Shorthand(), lintModArgs.pkg.Description())
+
 	modCmd.AddCommand(lintModCmd)
 }
 
@@ -59,27 +63,74 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module not found at path %s", lintModArgs.path)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx := cuecontext.New()
+
+	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	logger.Println("formatting", lintModArgs.path)
-	if err := execCUE(ctx, lintModArgs.path, "fmt", "./..."); err != nil {
+	fetcher := engine.NewFetcher(
+		ctxPull,
+		lintModArgs.path,
+		engine.LatestTag,
+		tmpDir,
+		"",
+	)
+	mod, err := fetcher.Fetch()
+	if err != nil {
 		return err
 	}
 
-	logger.Println("vetting", lintModArgs.path)
-	if err := execCUE(ctx, lintModArgs.path, "vet", "-c", "./..."); err != nil {
+	builder := engine.NewModuleBuilder(
+		ctx,
+		"default",
+		*kubeconfigArgs.Namespace,
+		fetcher.GetModuleRoot(),
+		lintModArgs.pkg.String(),
+	)
+
+	if err := builder.WriteSchemaFile(); err != nil {
 		return err
 	}
+
+	mod.Name, err = builder.GetModuleName()
+	if err != nil {
+		return fmt.Errorf("build failed: %w", err)
+	}
+
+	buildResult, err := builder.Build()
+	if err != nil {
+		return describeErr(fetcher.GetModuleRoot(), "build failed", err)
+	}
+
+	if _, err := builder.GetValues(buildResult); err != nil {
+		return fmt.Errorf("failed to extract values: %w", err)
+	}
+
+	applySets, err := builder.GetApplySets(buildResult)
+	if err != nil {
+		return fmt.Errorf("build failed: %w", err)
+	}
+
+	if len(applySets) == 0 {
+		return fmt.Errorf("%s contains no objects", apiv1.ApplySelector)
+	}
+
+	var objects []*unstructured.Unstructured
+	for _, set := range applySets {
+		objects = append(objects, set.Objects...)
+	}
+
+	if len(objects) == 0 {
+		return fmt.Errorf("build failed, no objects to apply")
+	}
+
+	logger.Printf("%s linted", mod.Name)
 
 	return nil
-}
-
-func execCUE(ctx context.Context, dir string, args ...string) error {
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cueCmd := exec.CommandContext(ctx, "cue", args...)
-	cueCmd.Dir = dir
-	cueCmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
-	cueCmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
-	return cueCmd.Run()
 }
