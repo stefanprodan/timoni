@@ -23,14 +23,3 @@ type Selector string
 func (s Selector) String() string {
 	return string(s)
 }
-
-const (
-	// APIVersionSelector is the CUE path for the Timoni's API version.
-	APIVersionSelector Selector = "timoni.apiVersion"
-
-	// ValuesSelector is the CUE path for the Timoni's module values.
-	ValuesSelector Selector = "values"
-
-	// ApplySelector is the CUE path for the Timoni's apply resource sets.
-	ApplySelector Selector = "timoni.apply"
-)
