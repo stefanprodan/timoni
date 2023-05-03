@@ -14,7 +14,7 @@ master-replica cluster and a podinfo instance connected to the Redis instance.
 ```cue
 bundle: {
 	apiVersion: "v1alpha1"
-	name: "podinfo"
+	name:       "podinfo"
 	instances: {
 		redis: {
 			module: {
@@ -93,22 +93,6 @@ Apply the Bundle on the cluster:
       waiting for 3 resource(s) to become ready...
       resources are ready
       ```
-
-List the instances in the `podinfo` namespace:
-
-=== "command"
-
-      ```sh
-      timoni list -n podinfo
-      ```
-
-=== "output"
-
-     ```text
-     NAME    MODULE                                          VERSION LAST APPLIED            BUNDLE
-     podinfo oci://ghcr.io/stefanprodan/modules/podinfo      6.3.5   2023-05-02T12:36:59Z    podinfo
-     redis   oci://ghcr.io/stefanprodan/modules/redis        7.0.10  2023-05-02T12:36:51Z    podinfo
-     ```
 
 List the instances in Bundle `podinfo` across all namespaces:
 
@@ -193,6 +177,13 @@ and everything else that CUE [std lib](https://cuelang.org/docs/references/spec/
 The `apiVersion` is a required field that specifies the version of the Bundle schema.
 
 Currently, the only supported value is `v1alpha1`.
+
+### Name
+
+The `name` is a required field used to track the ownership of instances deployed to a Kubernetes cluster.
+
+Note that Bundles should have unique names per cluster, using the same name for different bundles
+will result in [ownership conflict](#transfer-ownership).
 
 ### Instances
 
@@ -332,8 +323,9 @@ to immutable fields.
 
 ### Transfer ownership
 
-If an install or upgrade involves Instances already created, either separately or as a part of another Bundle, the operation
-will fail. To transfer ownership to the current Bundle, you need to set the `--overwrite-ownership` flag.
+If an install or upgrade involves Instances already created, either separately or as a part of another Bundle,
+the operation will fail.
+To transfer ownership to the current Bundle, you need to set the `--overwrite-ownership` flag.
 
 Example:
 
@@ -350,6 +342,14 @@ Example:
 
 ```shell
 timoni bundle delete -f bundle.cue
+```
+
+Another option is to specify the Bundle name, and Timoni
+will search the cluster and delete all the instances having
+the `bundle.timoni.sh/name: <name>` label:
+
+```shell
+timoni bundle delete --name my-bundle
 ```
 
 ### Garbage collection

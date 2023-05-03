@@ -70,7 +70,7 @@ func init() {
 		"Wait for the deleted Kubernetes objects to be finalized.")
 	bundleDelCmd.Flags().BoolVar(&bundleDelArgs.dryrun, "dry-run", false,
 		"Perform a server-side delete dry run.")
-	bundleDelCmd.Flags().StringVarP(&bundleDelArgs.name, "name", "", "",
+	bundleDelCmd.Flags().StringVar(&bundleDelArgs.name, "name", "",
 		"Name of the bundle to delete.")
 	bundleDelCmd.Flags().BoolVarP(&bundleDelArgs.allNamespaces, "all-namespaces", "A", false,
 		"Delete the requested Bundle across all namespaces.")
@@ -95,17 +95,9 @@ func deleteBundleByName() error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	var instances []*apiv1.Instance
-	if bundleDelArgs.allNamespaces {
-		instances, err = iStorage.List(ctx, "", bundleDelArgs.name)
-		if err != nil {
-			return err
-		}
-	} else {
-		instances, err = iStorage.List(ctx, *kubeconfigArgs.Namespace, bundleDelArgs.name)
-		if err != nil {
-			return err
-		}
+	instances, err := iStorage.List(ctx, "", bundleDelArgs.name)
+	if err != nil {
+		return err
 	}
 
 	for _, instance := range instances {

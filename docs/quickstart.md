@@ -121,26 +121,27 @@ and a podinfo instance connected to the Redis instance.
 
 ```cue
 bundle: {
-    apiVersion: "v1alpha1"
-    instances: {
-        redis: {
-            module: {
-                url:     "oci://ghcr.io/stefanprodan/modules/redis"
-                version: "7.0.10"
-            }
-            namespace: "podinfo"
-            values: maxmemory: 256
-        }
-        podinfo: {
-            module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-            module: version: "6.3.5"
-            namespace: "podinfo"
-            values: caching: {
-                enabled:  true
-                redisURL: "tcp://redis:6379"
-            }
-        }
-    }
+	apiVersion: "v1alpha1"
+	name:       "podinfo"
+	instances: {
+		redis: {
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/modules/redis"
+				version: "7.0.10"
+			}
+			namespace: "podinfo"
+			values: maxmemory: 256
+		}
+		podinfo: {
+			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+			module: version: "6.3.5"
+			namespace: "podinfo"
+			values: caching: {
+				enabled:  true
+				redisURL: "tcp://redis:6379"
+			}
+		}
+	}
 }
 ```
 
@@ -148,6 +149,12 @@ To apply the above bundle on a cluster, save the file as `podinfo.bundle.cue` an
 
 ```shell
 timoni bundle apply -f podinfo.bundle.cue
+```
+
+To list all the instances managed by a bundle:
+
+```shell
+timoni list -A --bundle podinfo
 ```
 
 To delete all the instances defined in a bundle:
