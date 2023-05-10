@@ -202,5 +202,5 @@ func initModuleFromTemplate(mName, mTmpl, src string, dst string) (err error) {
 		}
 	}
 
-	return
+	return os.WriteFile(filepath.Join(dst, apiv1.IgnoreFile), []byte(apiv1.DefaultIgnorePatterns), 0600)
 }

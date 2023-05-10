@@ -17,109 +17,57 @@ limitations under the License.
 package engine
 
 import (
-	"fmt"
-	"io"
+	"bufio"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"cuelang.org/go/cue"
+	"github.com/fluxcd/pkg/sourceignore"
+	cp "github.com/otiai10/copy"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 // CopyModule copies the given module to the destination directory,
-// while excluding symlinks. The destination directory must not exit.
-func CopyModule(src string, dst string) (err error) {
-	src = filepath.Clean(src)
-	dst = filepath.Clean(dst)
+// while excluding files that match the timoni.ignore patterns.
+func CopyModule(srcDir string, dstDir string) (err error) {
+	srcDir = filepath.Clean(srcDir)
+	dstDir = filepath.Clean(dstDir)
 
-	si, err := os.Stat(src)
+	domain := strings.Split(srcDir, string(filepath.Separator))
+	ps, err := sourceignore.ReadIgnoreFile(filepath.Join(srcDir, apiv1.IgnoreFile), domain)
 	if err != nil {
 		return err
 	}
-	if !si.IsDir() {
-		return fmt.Errorf("source %s is not a directory", src)
+	matcher := sourceignore.NewMatcher(ps)
+
+	opt := cp.Options{
+		Skip: func(info os.FileInfo, src, dest string) (bool, error) {
+			return matcher.Match(strings.Split(src, string(filepath.Separator)), info.IsDir()), nil
+		},
 	}
 
-	_, err = os.Stat(dst)
-	if err != nil && !os.IsNotExist(err) {
-		return
-	}
-	if err == nil {
-		return fmt.Errorf("destination %s already exists", dst)
-	}
-
-	err = os.MkdirAll(dst, si.Mode())
-	if err != nil {
-		return
-	}
-
-	entries, err := os.ReadDir(src)
-	if err != nil {
-		return
-	}
-
-	for _, entry := range entries {
-		srcPath := filepath.Join(src, entry.Name())
-		dstPath := filepath.Join(dst, entry.Name())
-
-		if entry.IsDir() {
-			err = CopyModule(srcPath, dstPath)
-			if err != nil {
-				return
-			}
-		} else {
-			if fi, fiErr := entry.Info(); fiErr != nil || !fi.Mode().IsRegular() {
-				return
-			}
-
-			err = CopyModuleFile(srcPath, dstPath)
-			if err != nil {
-				return
-			}
-		}
-	}
-
-	return
+	return cp.Copy(srcDir, dstDir, opt)
 }
 
-// CopyModuleFile copies a file from source to destination
-// while preserving permissions.
-func CopyModuleFile(src, dst string) (err error) {
-	in, err := os.Open(src)
-	if err != nil {
-		return
-	}
-	defer in.Close()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		return
-	}
-	defer func() {
-		if e := out.Close(); e != nil {
-			err = e
+// ReadIgnoreFile returns the ignore patters found in the module root.
+func ReadIgnoreFile(moduleRoot string) ([]string, error) {
+	path := filepath.Join(moduleRoot, apiv1.IgnoreFile)
+	var ps []string
+	if f, err := os.Open(path); err == nil {
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			s := scanner.Text()
+			if !strings.HasPrefix(s, "#") && len(strings.TrimSpace(s)) > 0 {
+				ps = append(ps, s)
+			}
 		}
-	}()
-
-	_, err = io.Copy(out, in)
-	if err != nil {
-		return
+	} else if !os.IsNotExist(err) {
+		return nil, err
 	}
-
-	err = out.Sync()
-	if err != nil {
-		return
-	}
-
-	si, err := os.Stat(src)
-	if err != nil {
-		return
-	}
-	err = os.Chmod(dst, si.Mode())
-	if err != nil {
-		return
-	}
-
-	return
+	return ps, nil
 }
 
 // ExtractValueFromFile compiles the given file and

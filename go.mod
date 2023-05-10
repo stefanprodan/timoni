@@ -7,11 +7,13 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/distribution/distribution/v3 v3.0.0-20230327091844-0c958010ace2
 	github.com/fluxcd/pkg/oci v0.23.0
+	github.com/fluxcd/pkg/sourceignore v0.3.3
 	github.com/fluxcd/pkg/ssa v0.27.0
 	github.com/google/go-containerregistry v0.14.0
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/gomega v1.27.6
+	github.com/otiai10/copy v1.11.0
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.7.0
@@ -73,7 +75,6 @@ require (
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fluxcd/go-git/v5 v5.0.0-20221219190809-2e5c9d01cfc4 // indirect
-	github.com/fluxcd/pkg/sourceignore v0.3.3 // indirect
 	github.com/fluxcd/pkg/tar v0.2.0 // indirect
 	github.com/fluxcd/pkg/version v0.2.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

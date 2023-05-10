@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
 )
@@ -148,6 +149,12 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("could not login with credentials: %w", err)
 		}
 	}
+
+	ps, err := engine.ReadIgnoreFile(path)
+	if err != nil {
+		return fmt.Errorf("reading %s failed: %w", apiv1.IgnoreFile, err)
+	}
+	pushModArgs.ignorePaths = append(pushModArgs.ignorePaths, ps...)
 
 	digestURL, err := ociClient.Push(ctx, url, path, meta, pushModArgs.ignorePaths)
 	if err != nil {
