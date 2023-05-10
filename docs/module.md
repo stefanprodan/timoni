@@ -20,6 +20,7 @@ myapp
 │   ├── deployment.cue # Kubernetes Deployment template
 │   └── service.cue # Kubernetes Service template
 ├── timoni.cue # Timoni entry point
+├── timoni.ignore # Ignore rules
 └── values.cue # Timoni values placeholder
 ```
 
@@ -74,6 +75,34 @@ timoni: {
 	// to Timoni's multi-step apply.
 	apply: all: [ for obj in instance.objects {obj}]
 }
+```
+
+## Ignore
+
+The `timoni.ignore` file contains rules in the
+[.gitignore pattern format](https://git-scm.com/docs/gitignore#_pattern_format).
+The paths matching the defined rules are excluded when publishing
+the module to a container registry.
+
+When publishing modules as OCI artifacts, it is recommended to use the following ignore patterns:
+
+```.gitignore
+# VCS
+.git/
+.gitignore
+.gitmodules
+.gitattributes
+
+# Go
+vendor/
+go.mod
+go.sum
+
+# CUE
+*_tool.cue
+
+# Timoni
+timoni.ignore
 ```
 
 ## Values
