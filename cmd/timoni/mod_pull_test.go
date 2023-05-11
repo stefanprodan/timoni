@@ -56,11 +56,20 @@ func Test_PullMod(t *testing.T) {
 	fsErr := filepath.Walk(modPath, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
 			tmpPath := filepath.Join(tmpDir, strings.TrimPrefix(path, modPath))
-			if _, err := os.Stat(tmpPath); err != nil && os.IsNotExist(err) {
+			if _, err := os.Stat(tmpPath); err != nil && os.IsNotExist(err) && !strings.Contains(tmpPath, "ignore") {
 				return fmt.Errorf("file '%s' should exist in pulled module", path)
 			}
 		}
 
+		return nil
+	})
+	g.Expect(fsErr).ToNot(HaveOccurred())
+
+	// Walk the pulled module and check ignored files
+	fsErr = filepath.Walk(tmpDir, func(path string, info fs.FileInfo, err error) error {
+		if strings.Contains(info.Name(), "ignore") {
+			return fmt.Errorf("file '%s' should not exist in pulled module", path)
+		}
 		return nil
 	})
 	g.Expect(fsErr).ToNot(HaveOccurred())

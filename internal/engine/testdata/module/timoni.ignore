@@ -1,0 +1,8 @@
+# Timoni ignore
+timoni.ignore
+
+# CUE tools
+*_tool.cue
+
+# Dirs
+ignore/
