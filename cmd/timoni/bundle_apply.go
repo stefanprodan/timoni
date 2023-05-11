@@ -21,9 +21,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -31,7 +28,6 @@ import (
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/yaml"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
@@ -245,41 +241,17 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 		exists = true
 	}
 
+	nsExists, err := sm.NamespaceExists(ctx, instance.Namespace)
+	if err != nil {
+		return fmt.Errorf("instance init failed: %w", err)
+	}
+
 	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
-		diffOpts := ssa.DefaultDiffOptions()
-		sort.Sort(ssa.SortableUnstructureds(objects))
-		for _, r := range objects {
-			change, liveObject, mergedObject, err := rm.Diff(ctx, r, diffOpts)
-			if err != nil {
-				logger.Println(err)
-				continue
-			}
-
-			logger.Println(change.String(), "(server dry run)")
-
-			if bundleApplyArgs.diff && change.Action == ssa.ConfiguredAction {
-				liveYAML, _ := yaml.Marshal(liveObject)
-				liveFile := filepath.Join(tmpDir, "live.yaml")
-				if err := os.WriteFile(liveFile, liveYAML, 0644); err != nil {
-					return err
-				}
-
-				mergedYAML, _ := yaml.Marshal(mergedObject)
-				mergedFile := filepath.Join(tmpDir, "merged.yaml")
-				if err := os.WriteFile(mergedFile, mergedYAML, 0644); err != nil {
-					return err
-				}
-
-				out, _ := exec.Command("diff", "-N", "-u", liveFile, mergedFile).Output()
-				for i, line := range strings.Split(string(out), "\n") {
-					if i > 1 && len(line) > 0 {
-						logger.Println(line)
-					}
-				}
-			}
+		if err := dryRun(ctx, rm, objects, nsExists, tmpDir); err != nil {
+			return err
 		}
 
-		logger.Println("bundle applied successfully")
+		logger.Println("bundle applied successfully (server dry run)")
 		return nil
 	}
 
@@ -296,11 +268,6 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 
 	if !exists {
 		logger.Printf("installing %s in namespace %s", instance.Name, instance.Namespace)
-
-		nsExists, err := sm.NamespaceExists(ctx, instance.Namespace)
-		if err != nil {
-			return fmt.Errorf("instance init failed: %w", err)
-		}
 
 		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
 			return fmt.Errorf("instance init failed: %w", err)

@@ -234,6 +234,11 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		exists = true
 	}
 
+	nsExists, err := sm.NamespaceExists(ctx, *kubeconfigArgs.Namespace)
+	if err != nil {
+		return fmt.Errorf("instance init failed: %w", err)
+	}
+
 	if !applyArgs.overwriteOwnership && exists {
 		err = instanceOwnershipConflicts(*instance)
 		if err != nil {
@@ -242,39 +247,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	if applyArgs.dryrun || applyArgs.diff {
-		diffOpts := ssa.DefaultDiffOptions()
-		sort.Sort(ssa.SortableUnstructureds(objects))
-		for _, r := range objects {
-			change, liveObject, mergedObject, err := rm.Diff(ctx, r, diffOpts)
-			if err != nil {
-				logger.Println(err)
-				continue
-			}
-
-			logger.Println(change.String(), "(server dry run)")
-
-			if applyArgs.diff && change.Action == ssa.ConfiguredAction {
-				liveYAML, _ := yaml.Marshal(liveObject)
-				liveFile := filepath.Join(tmpDir, "live.yaml")
-				if err := os.WriteFile(liveFile, liveYAML, 0644); err != nil {
-					return err
-				}
-
-				mergedYAML, _ := yaml.Marshal(mergedObject)
-				mergedFile := filepath.Join(tmpDir, "merged.yaml")
-				if err := os.WriteFile(mergedFile, mergedYAML, 0644); err != nil {
-					return err
-				}
-
-				out, _ := exec.Command("diff", "-N", "-u", liveFile, mergedFile).Output()
-				for i, line := range strings.Split(string(out), "\n") {
-					if i > 1 && len(line) > 0 {
-						logger.Println(line)
-					}
-				}
-			}
-		}
-		return nil
+		return dryRun(ctx, rm, objects, nsExists, tmpDir)
 	}
 
 	im := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, *mod)
@@ -285,11 +258,6 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	if !exists {
 		logger.Printf("installing %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace)
-
-		nsExists, err := sm.NamespaceExists(ctx, *kubeconfigArgs.Namespace)
-		if err != nil {
-			return fmt.Errorf("instance init failed: %w", err)
-		}
 
 		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
 			return fmt.Errorf("instance init failed: %w", err)
@@ -367,6 +335,52 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 func instanceOwnershipConflicts(instance apiv1.Instance) error {
 	if currentOwnerBundle := instance.Labels[apiv1.BundleNameLabelKey]; currentOwnerBundle != "" {
 		return fmt.Errorf("instance ownership conflict encountered. Apply with \"--overwrite-ownership\" to gain instance ownership. Conflict: instance \"%s\" exists and is managed by bundle \"%s\"", instance.Name, currentOwnerBundle)
+	}
+	return nil
+}
+
+func dryRun(ctx context.Context, rm *ssa.ResourceManager, objects []*unstructured.Unstructured, nsExists bool, tmpDir string) error {
+	diffOpts := ssa.DefaultDiffOptions()
+	sort.Sort(ssa.SortableUnstructureds(objects))
+
+	if !nsExists {
+		logger.Printf("Namespace/%s created (server dry run)", *kubeconfigArgs.Namespace)
+	}
+
+	for _, r := range objects {
+		if !nsExists {
+			logger.Printf("%s created (server dry run)", ssa.FmtUnstructured(r))
+			continue
+		}
+
+		change, liveObject, mergedObject, err := rm.Diff(ctx, r, diffOpts)
+		if err != nil {
+			logger.Println(err)
+			continue
+		}
+
+		logger.Println(change.String(), "(server dry run)")
+
+		if applyArgs.diff && change.Action == ssa.ConfiguredAction {
+			liveYAML, _ := yaml.Marshal(liveObject)
+			liveFile := filepath.Join(tmpDir, "live.yaml")
+			if err := os.WriteFile(liveFile, liveYAML, 0644); err != nil {
+				return err
+			}
+
+			mergedYAML, _ := yaml.Marshal(mergedObject)
+			mergedFile := filepath.Join(tmpDir, "merged.yaml")
+			if err := os.WriteFile(mergedFile, mergedYAML, 0644); err != nil {
+				return err
+			}
+
+			out, _ := exec.Command("diff", "-N", "-u", liveFile, mergedFile).Output()
+			for i, line := range strings.Split(string(out), "\n") {
+				if i > 1 && len(line) > 0 {
+					logger.Println(line)
+				}
+			}
+		}
 	}
 	return nil
 }
