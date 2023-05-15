@@ -94,6 +94,333 @@ Apply the Bundle on the cluster:
       resources are ready
       ```
 
+Build the Bundle and print the resulting Kubernetes resources for all of the Bundle's instances:
+=== "command"
+
+      ```sh
+      timoni bundle build -f podinfo.bundle.cue
+      ```
+
+=== "output"
+
+      ```text
+      ---
+      # Instance: redis
+      ---
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+      labels:
+        app.kubernetes.io/part-of: redis
+        app.kubernetes.io/version: 7.0.10
+      name: redis
+      namespace: podinfo
+      ---
+      apiVersion: v1
+      data:
+      redis.conf: |
+        maxmemory 256mb
+        maxmemory-policy allkeys-lru
+
+        dir /data
+        save ""
+        appendonly yes
+
+        protected-mode no
+        rename-command CONFIG ""
+      kind: ConfigMap
+      metadata:
+      labels:
+        app.kubernetes.io/part-of: redis
+        app.kubernetes.io/version: 7.0.10
+      name: redis
+      namespace: podinfo
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+      labels:
+        app.kubernetes.io/name: redis-master
+        app.kubernetes.io/part-of: redis
+        app.kubernetes.io/version: 7.0.10
+      name: redis
+      namespace: podinfo
+      spec:
+      ports:
+      - name: redis
+        port: 6379
+        protocol: TCP
+        targetPort: redis
+      selector:
+        app.kubernetes.io/name: redis-master
+      type: ClusterIP
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+      labels:
+        app.kubernetes.io/name: redis-replica
+        app.kubernetes.io/part-of: redis
+        app.kubernetes.io/version: 7.0.10
+      name: redis-readonly
+      namespace: podinfo
+      spec:
+      ports:
+      - name: redis
+        port: 6379
+        protocol: TCP
+        targetPort: redis
+      selector:
+        app.kubernetes.io/name: redis-replica
+      type: ClusterIP
+      ---
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+      labels:
+        app.kubernetes.io/name: redis-master
+        app.kubernetes.io/part-of: redis
+        app.kubernetes.io/version: 7.0.10
+      name: redis-master
+      namespace: podinfo
+      spec:
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: redis-master
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: redis-master
+        spec:
+          containers:
+          - command:
+            - redis-server
+            - /redis-master/redis.conf
+            image: cgr.dev/chainguard/redis:7.0.10
+            imagePullPolicy: IfNotPresent
+            livenessProbe:
+              initialDelaySeconds: 2
+              tcpSocket:
+                port: redis
+              timeoutSeconds: 2
+            name: redis
+            ports:
+            - containerPort: 6379
+              name: redis
+              protocol: TCP
+            readinessProbe:
+              exec:
+                command:
+                - redis-cli
+                - ping
+              initialDelaySeconds: 2
+              timeoutSeconds: 5
+            resources:
+              limits:
+                memory: 288Mi
+              requests:
+                memory: 64Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              seccompProfile:
+                type: RuntimeDefault
+            volumeMounts:
+            - mountPath: /data
+              name: data
+            - mountPath: /redis-master
+              name: config
+          securityContext:
+            fsGroup: 1001
+            runAsGroup: 1001
+            runAsUser: 1001
+          serviceAccountName: redis
+          volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: redis-master
+          - configMap:
+              items:
+              - key: redis.conf
+                path: redis.conf
+              name: redis
+            name: config
+      ---
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+      labels:
+        app.kubernetes.io/name: redis-replica
+        app.kubernetes.io/part-of: redis
+        app.kubernetes.io/version: 7.0.10
+      name: redis-replica
+      namespace: podinfo
+      spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: redis-replica
+      strategy:
+        type: RollingUpdate
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: redis-replica
+        spec:
+          containers:
+          - command:
+            - redis-server
+            - --replicaof
+            - redis.podinfo.svc.cluster.local
+            - "6379"
+            - --include
+            - /redis-replica/redis.conf
+            image: cgr.dev/chainguard/redis:7.0.10
+            imagePullPolicy: IfNotPresent
+            livenessProbe:
+              initialDelaySeconds: 2
+              tcpSocket:
+                port: redis
+              timeoutSeconds: 2
+            name: redis
+            ports:
+            - containerPort: 6379
+              name: redis
+              protocol: TCP
+            readinessProbe:
+              exec:
+                command:
+                - redis-cli
+                - ping
+              initialDelaySeconds: 2
+              timeoutSeconds: 5
+            resources:
+              limits:
+                memory: 288Mi
+              requests:
+                memory: 64Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              seccompProfile:
+                type: RuntimeDefault
+            volumeMounts:
+            - mountPath: /data
+              name: data
+            - mountPath: /redis-replica
+              name: config
+          securityContext:
+            fsGroup: 1001
+            runAsGroup: 1001
+            runAsUser: 1001
+          serviceAccountName: redis
+          volumes:
+          - emptyDir: {}
+            name: data
+          - configMap:
+              items:
+              - key: redis.conf
+                path: redis.conf
+              name: redis
+            name: config
+      ---
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+      labels:
+        app.kubernetes.io/part-of: redis
+        app.kubernetes.io/version: 7.0.10
+      name: redis-master
+      namespace: podinfo
+      spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 8Gi
+      storageClassName: standard
+
+      ---
+      # Instance: podinfo
+      ---
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+      labels:
+        app.kubernetes.io/name: podinfo
+        app.kubernetes.io/version: 6.3.5
+      name: podinfo
+      namespace: podinfo
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+      labels:
+        app.kubernetes.io/name: podinfo
+        app.kubernetes.io/version: 6.3.5
+      name: podinfo
+      namespace: podinfo
+      spec:
+      ports:
+      - name: http
+        port: 80
+        protocol: TCP
+        targetPort: http
+      selector:
+        app.kubernetes.io/name: podinfo
+      type: ClusterIP
+      ---
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+      labels:
+        app.kubernetes.io/name: podinfo
+        app.kubernetes.io/version: 6.3.5
+      name: podinfo
+      namespace: podinfo
+      spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: podinfo
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: podinfo
+        spec:
+          containers:
+          - command:
+            - ./podinfo
+            - --level=info
+            - --cache-server=tcp://redis:6379
+            image: ghcr.io/stefanprodan/podinfo:6.3.5
+            imagePullPolicy: IfNotPresent
+            livenessProbe:
+              httpGet:
+                path: /healthz
+                port: http
+            name: podinfo
+            ports:
+            - containerPort: 9898
+              name: http
+              protocol: TCP
+            readinessProbe:
+              httpGet:
+                path: /readyz
+                port: http
+          serviceAccountName: podinfo
+      ```
+
 List the instances in Bundle `podinfo` across all namespaces:
 
 === "command"
@@ -331,6 +658,17 @@ Example:
 
 ```shell
 timoni bundle apply --overwrite-ownership -f bundle.cue
+```
+
+### Build
+
+To build the instances defined in a Bundle file and print the resulting Kubernetes resources,
+you can use the `timoni bundle build` command.
+
+Example:
+
+```shell
+timoni bundle build -f bundle.cue
 ```
 
 ### Uninstall

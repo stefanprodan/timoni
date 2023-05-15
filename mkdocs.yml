@@ -71,6 +71,7 @@ nav:
           - Status: cmd/timoni_status.md
       - Bundles:
           - Apply: cmd/timoni_bundle_apply.md
+          - Build: cmd/timoni_bundle_build.md
           - Delete: cmd/timoni_bundle_delete.md
           - Lint: cmd/timoni_bundle_lint.md
       - Completion:
