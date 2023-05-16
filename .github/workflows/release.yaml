@@ -9,6 +9,8 @@ permissions:
 
 jobs:
   goreleaser:
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
