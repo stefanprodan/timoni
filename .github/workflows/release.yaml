@@ -29,7 +29,7 @@ jobs:
       - name: Setup Syft
         uses: anchore/sbom-action/download-syft@4d571ad1038a9cc29d676154ef265ab8f9027042 # v0.14.2
       - name: Run GoReleaser
-        id: goreleaser
+        id: run-goreleaser
         uses: goreleaser/goreleaser-action@f82d6c1c344bcacabba2c841718984797f664a6b # v4.2.0
         with:
           version: latest
@@ -40,14 +40,20 @@ jobs:
       - name: Generate SLSA subject
         id: hash
         env:
-          ARTIFACTS: "${{ steps.goreleaser.outputs.artifacts }}"
+          ARTIFACTS: "${{ steps.run-goreleaser.outputs.artifacts }}"
         run: |
           set -euo pipefail
 
           hashes=$(echo $ARTIFACTS | jq --raw-output '.[] | {name, "digest": (.extra.Digest // .extra.Checksum)} | select(.digest) | {digest} + {name} | join("  ") | sub("^sha256:";"")' | base64 -w0)
           echo "hashes=$hashes" >> $GITHUB_OUTPUT
-      - name: Generate SLSA provenance
-        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.6.0
-        with:
-          base64-subjects: "${{ steps.hash.outputs.hashes }}"
-          upload-assets: true
+
+  provenance:
+    needs: [goreleaser]
+    permissions:
+      actions: read # To read the workflow path.
+      id-token: write # To sign the provenance.
+      contents: write # To add assets to a release.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.6.0
+    with:
+      base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
+      upload-assets: true # upload to a new release
