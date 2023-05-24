@@ -31,7 +31,7 @@ jobs:
         uses: helm/kind-action@fa81e57adff234b2908110485695db0f181f3c67 # v1.7.0
         with:
           version: v0.18.0
-          node_image: kindest/node:v1.26.2
+          node_image: kindest/node:v1.27.2
           cluster_name: kind
       - name: Install
         run: make install
