@@ -22,10 +22,11 @@ import (
 
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
-	"github.com/stefanprodan/timoni/internal/runtime"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/cli-utils/pkg/kstatus/status"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/stefanprodan/timoni/internal/runtime"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
@@ -81,19 +82,19 @@ func runstatusCmd(cmd *cobra.Command, args []string) error {
 		err = rm.Client().Get(ctx, client.ObjectKeyFromObject(obj), obj)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logger.Printf("%s NotFound", ssa.FmtUnstructured(obj))
+				logger.Error(err, fmt.Sprintf("%s NotFound", ssa.FmtUnstructured(obj)))
 				continue
 			}
-			logger.Printf("%s %s", ssa.FmtUnstructured(obj), err.Error())
+			logger.Error(err, fmt.Sprintf("%s query failed", ssa.FmtUnstructured(obj)))
 			continue
 		}
 
 		res, err := status.Compute(obj)
 		if err != nil {
-			logger.Printf("%s %s", ssa.FmtUnstructured(obj), err.Error())
+			logger.Error(err, fmt.Sprintf("%s status failed", ssa.FmtUnstructured(obj)))
 			continue
 		}
-		logger.Printf("%s %s %s", ssa.FmtUnstructured(obj), res.Status, res.Message)
+		logger.Info(fmt.Sprintf("%s %s %s", ssa.FmtUnstructured(obj), res.Status, res.Message))
 	}
 
 	return nil

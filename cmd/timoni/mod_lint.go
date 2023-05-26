@@ -130,7 +130,7 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("build failed, no objects to apply")
 	}
 
-	logger.Printf("%s linted", mod.Name)
+	logger.Info(fmt.Sprintf("%s linted", mod.Name))
 
 	return nil
 }

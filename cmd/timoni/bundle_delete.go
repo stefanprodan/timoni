@@ -101,7 +101,7 @@ func deleteBundleByName() error {
 	}
 
 	for _, instance := range instances {
-		logger.Printf("deleting instance %s from bundle %s", instance.Name, bundleDelArgs.name)
+		logger.Info(fmt.Sprintf("deleting instance %s from bundle %s", instance.Name, bundleDelArgs.name))
 		if err := deleteBundleInstance(engine.BundleInstance{
 			Name:      instance.Name,
 			Namespace: instance.Namespace,
@@ -155,7 +155,7 @@ func deleteBundleFromFile(cmd *cobra.Command) error {
 	}
 
 	for _, instance := range bundle.Instances {
-		logger.Printf("deleting instance %s", instance.Name)
+		logger.Info(fmt.Sprintf("deleting instance %s", instance.Name))
 		if err := deleteBundleInstance(instance, bundleDelArgs.wait, bundleDelArgs.dryrun); err != nil {
 			return err
 		}
@@ -189,26 +189,26 @@ func deleteBundleInstance(instance engine.BundleInstance, wait bool, dryrun bool
 
 	if dryrun {
 		for _, object := range objects {
-			logger.Println(fmt.Sprintf(
+			logger.Info(fmt.Sprintf(
 				"%s/%s/%s deleted (dry run)",
 				object.GetKind(), object.GetNamespace(), object.GetName()))
 		}
 		return nil
 	}
 
-	logger.Println(fmt.Sprintf("deleting %v resource(s)...", len(objects)))
+	logger.Info(fmt.Sprintf("deleting %v resource(s)...", len(objects)))
 	hasErrors := false
 	cs := ssa.NewChangeSet()
 	for _, object := range objects {
 		deleteOpts := runtime.DeleteOptions(instance.Name, instance.Namespace)
 		change, err := sm.Delete(ctx, object, deleteOpts)
 		if err != nil {
-			logger.Println(`✗`, err)
+			logger.Error(err, "deletion failed")
 			hasErrors = true
 			continue
 		}
 		cs.Add(*change)
-		logger.Println(change.String())
+		logger.Info(fmt.Sprintf(change.String()))
 	}
 
 	if hasErrors {
@@ -223,12 +223,12 @@ func deleteBundleInstance(instance engine.BundleInstance, wait bool, dryrun bool
 	if wait && len(deletedObjects) > 0 {
 		waitOpts := ssa.DefaultWaitOptions()
 		waitOpts.Timeout = rootArgs.timeout
-		logger.Printf("waiting for %v resource(s) to be finalized...", len(deletedObjects))
+		logger.Info(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 		err = sm.WaitForTermination(deletedObjects, waitOpts)
 		if err != nil {
 			return err
 		}
-		logger.Println("all resources have been deleted")
+		logger.Info("all resources have been deleted")
 	}
 
 	return nil

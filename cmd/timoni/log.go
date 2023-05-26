@@ -17,18 +17,30 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
-	"io"
+	"os"
+
+	"github.com/go-logr/logr"
+	"github.com/go-logr/zerologr"
+	"github.com/rs/zerolog"
+	runtimeLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-type stderrLogger struct {
-	stderr io.Writer
-}
+// NewConsoleLogger returns a human-friendly Logger.
+// Pretty print adds timestamp, log level and colorized output to the logs.
+func NewConsoleLogger(pretty bool) logr.Logger {
+	output := zerolog.ConsoleWriter{Out: os.Stderr, NoColor: !pretty}
+	if !pretty {
+		output.PartsExclude = []string{
+			zerolog.TimestampFieldName,
+			zerolog.LevelFieldName,
+		}
+	}
 
-func (l stderrLogger) Println(a ...any) {
-	fmt.Fprintln(l.stderr, a...)
-}
+	zlog := zerolog.New(output).With().Timestamp().Logger()
 
-func (l stderrLogger) Printf(format string, a ...any) {
-	fmt.Fprintln(l.stderr, fmt.Sprintf(format, a...))
+	zerologr.VerbosityFieldName = ""
+	lg := zerologr.New(&zlog)
+	runtimeLog.SetLogger(lg)
+
+	return lg
 }

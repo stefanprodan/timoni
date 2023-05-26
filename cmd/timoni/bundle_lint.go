@@ -90,9 +90,9 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 		if i.Namespace == "" {
 			return fmt.Errorf("instance %s does not have a namespace", i.Name)
 		}
-		logger.Printf("instance %s is valid", i.Name)
+		logger.Info(fmt.Sprintf("instance %s is valid", i.Name))
 	}
 
-	logger.Printf("bundle is valid")
+	logger.Info("bundle is valid")
 	return nil
 }

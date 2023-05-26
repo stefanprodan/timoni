@@ -101,7 +101,7 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	logger.Println("module extracted to", pullModArgs.output)
+	logger.Info(fmt.Sprintf("module extracted to %s", pullModArgs.output))
 
 	return nil
 }

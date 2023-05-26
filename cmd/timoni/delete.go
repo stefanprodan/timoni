@@ -88,26 +88,26 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 
 	if deleteArgs.dryrun {
 		for _, object := range objects {
-			logger.Println(fmt.Sprintf(
+			logger.Info(fmt.Sprintf(
 				"%s/%s/%s deleted (dry run)",
 				object.GetKind(), object.GetNamespace(), object.GetName()))
 		}
 		return nil
 	}
 
-	logger.Println(fmt.Sprintf("deleting %v resource(s)...", len(objects)))
+	logger.Info(fmt.Sprintf("deleting %v resource(s)...", len(objects)))
 	hasErrors := false
 	cs := ssa.NewChangeSet()
 	for _, object := range objects {
 		deleteOpts := runtime.DeleteOptions(deleteArgs.name, *kubeconfigArgs.Namespace)
 		change, err := sm.Delete(ctx, object, deleteOpts)
 		if err != nil {
-			logger.Println(`✗`, err)
+			logger.Error(err, "deletion failed")
 			hasErrors = true
 			continue
 		}
 		cs.Add(*change)
-		logger.Println(change.String())
+		logger.Info(change.String())
 	}
 
 	if hasErrors {
@@ -122,12 +122,12 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 	if deleteArgs.wait && len(deletedObjects) > 0 {
 		waitOpts := ssa.DefaultWaitOptions()
 		waitOpts.Timeout = rootArgs.timeout
-		logger.Printf("waiting for %v resource(s) to be finalized...", len(deletedObjects))
+		logger.Info(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 		err = sm.WaitForTermination(deletedObjects, waitOpts)
 		if err != nil {
 			return err
 		}
-		logger.Println("all resources have been deleted")
+		logger.Info("all resources have been deleted")
 	}
 
 	return nil
