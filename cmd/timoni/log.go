@@ -17,10 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zerologr"
+	gcrLog "github.com/google/go-containerregistry/pkg/logs"
 	"github.com/rs/zerolog"
 	runtimeLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -28,19 +30,36 @@ import (
 // NewConsoleLogger returns a human-friendly Logger.
 // Pretty print adds timestamp, log level and colorized output to the logs.
 func NewConsoleLogger(pretty bool) logr.Logger {
-	output := zerolog.ConsoleWriter{Out: os.Stderr, NoColor: !pretty}
+	zconfig := zerolog.ConsoleWriter{Out: os.Stderr, NoColor: !pretty}
 	if !pretty {
-		output.PartsExclude = []string{
+		zconfig.PartsExclude = []string{
 			zerolog.TimestampFieldName,
 			zerolog.LevelFieldName,
 		}
 	}
 
-	zlog := zerolog.New(output).With().Timestamp().Logger()
+	zlog := zerolog.New(zconfig).With().Timestamp().Logger()
 
+	// Set container registry client logger.
+	gcrLog.Warn.SetOutput(zlog)
+
+	// Create a logr.Logger using zerolog as sink.
 	zerologr.VerbosityFieldName = ""
-	lg := zerologr.New(&zlog)
-	runtimeLog.SetLogger(lg)
+	log := zerologr.New(&zlog)
 
-	return lg
+	// Set controller-runtime logger.
+	runtimeLog.SetLogger(log)
+
+	return log
+}
+
+// LoggerFrom returns a logr.Logger with predefined values from a context.Context.
+func LoggerFrom(ctx context.Context, keysAndValues ...interface{}) logr.Logger {
+	newLogger := logger
+	if ctx != nil {
+		if l, err := logr.FromContext(ctx); err == nil {
+			newLogger = l
+		}
+	}
+	return newLogger.WithValues(keysAndValues...)
 }

@@ -78,22 +78,24 @@ func init() {
 }
 
 func runBundleDelCmd(cmd *cobra.Command, _ []string) error {
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+	defer cancel()
+
 	if bundleDelArgs.name != "" {
-		return deleteBundleByName()
+		return deleteBundleByName(ctx)
 	}
-	return deleteBundleFromFile(cmd)
+
+	return deleteBundleFromFile(ctx, cmd)
 }
 
-func deleteBundleByName() error {
+func deleteBundleByName(ctx context.Context) error {
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
 	}
 
+	log := LoggerFrom(ctx, "bundle", bundleDelArgs.name)
 	iStorage := runtime.NewStorageManager(sm)
-
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
 
 	instances, err := iStorage.List(ctx, "", bundleDelArgs.name)
 	if err != nil {
@@ -101,8 +103,8 @@ func deleteBundleByName() error {
 	}
 
 	for _, instance := range instances {
-		logger.Info(fmt.Sprintf("deleting instance %s from bundle %s", instance.Name, bundleDelArgs.name))
-		if err := deleteBundleInstance(engine.BundleInstance{
+		log.Info(fmt.Sprintf("deleting instance %s from bundle %s", instance.Name, bundleDelArgs.name))
+		if err := deleteBundleInstance(ctx, engine.BundleInstance{
 			Name:      instance.Name,
 			Namespace: instance.Namespace,
 		}, bundleDelArgs.wait, bundleDelArgs.dryrun); err != nil {
@@ -113,7 +115,7 @@ func deleteBundleByName() error {
 	return nil
 }
 
-func deleteBundleFromFile(cmd *cobra.Command) error {
+func deleteBundleFromFile(ctx context.Context, cmd *cobra.Command) error {
 	bundleSchema, err := os.CreateTemp("", "schema.*.cue")
 	if err != nil {
 		return err
@@ -137,8 +139,8 @@ func deleteBundleFromFile(cmd *cobra.Command) error {
 		}
 	}
 
-	ctx := cuecontext.New()
-	bm := engine.NewBundleBuilder(ctx, files)
+	cuectx := cuecontext.New()
+	bm := engine.NewBundleBuilder(cuectx, files)
 
 	v, err := bm.Build()
 	if err != nil {
@@ -150,13 +152,15 @@ func deleteBundleFromFile(cmd *cobra.Command) error {
 		return err
 	}
 
+	log := LoggerFrom(ctx, "bundle", bundle.Name)
+
 	if len(bundle.Instances) == 0 {
 		return fmt.Errorf("no instances found in bundle")
 	}
 
 	for _, instance := range bundle.Instances {
-		logger.Info(fmt.Sprintf("deleting instance %s", instance.Name))
-		if err := deleteBundleInstance(instance, bundleDelArgs.wait, bundleDelArgs.dryrun); err != nil {
+		log.Info(fmt.Sprintf("deleting instance %s", instance.Name))
+		if err := deleteBundleInstance(ctx, instance, bundleDelArgs.wait, bundleDelArgs.dryrun); err != nil {
 			return err
 		}
 	}
@@ -164,7 +168,9 @@ func deleteBundleFromFile(cmd *cobra.Command) error {
 	return nil
 }
 
-func deleteBundleInstance(instance engine.BundleInstance, wait bool, dryrun bool) error {
+func deleteBundleInstance(ctx context.Context, instance engine.BundleInstance, wait bool, dryrun bool) error {
+	log := LoggerFrom(ctx, "bundle", instance.Bundle)
+
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
@@ -189,26 +195,26 @@ func deleteBundleInstance(instance engine.BundleInstance, wait bool, dryrun bool
 
 	if dryrun {
 		for _, object := range objects {
-			logger.Info(fmt.Sprintf(
+			log.Info(fmt.Sprintf(
 				"%s/%s/%s deleted (dry run)",
 				object.GetKind(), object.GetNamespace(), object.GetName()))
 		}
 		return nil
 	}
 
-	logger.Info(fmt.Sprintf("deleting %v resource(s)...", len(objects)))
+	log.Info(fmt.Sprintf("deleting %v resource(s)...", len(objects)))
 	hasErrors := false
 	cs := ssa.NewChangeSet()
 	for _, object := range objects {
 		deleteOpts := runtime.DeleteOptions(instance.Name, instance.Namespace)
 		change, err := sm.Delete(ctx, object, deleteOpts)
 		if err != nil {
-			logger.Error(err, "deletion failed")
+			log.Error(err, "deletion failed")
 			hasErrors = true
 			continue
 		}
 		cs.Add(*change)
-		logger.Info(fmt.Sprintf(change.String()))
+		log.Info(fmt.Sprintf(change.String()))
 	}
 
 	if hasErrors {
@@ -223,12 +229,12 @@ func deleteBundleInstance(instance engine.BundleInstance, wait bool, dryrun bool
 	if wait && len(deletedObjects) > 0 {
 		waitOpts := ssa.DefaultWaitOptions()
 		waitOpts.Timeout = rootArgs.timeout
-		logger.Info(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
+		log.Info(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 		err = sm.WaitForTermination(deletedObjects, waitOpts)
 		if err != nil {
 			return err
 		}
-		logger.Info("all resources have been deleted")
+		log.Info("all resources have been deleted")
 	}
 
 	return nil

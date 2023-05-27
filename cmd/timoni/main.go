@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -44,6 +45,10 @@ var rootCmd = &cobra.Command{
 		if logger.IsZero() {
 			logger = NewConsoleLogger(rootArgs.prettyLog)
 		}
+
+		// Inject the logger in the command context.
+		ctx := logr.NewContext(context.Background(), logger)
+		cmd.SetContext(ctx)
 	},
 }
 

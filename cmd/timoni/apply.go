@@ -134,15 +134,17 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	applyArgs.name = args[0]
 	applyArgs.module = args[1]
 
+	log := LoggerFrom(cmd.Context(), "instance", applyArgs.name)
+
 	version := applyArgs.version.String()
 	if version == "" {
 		version = engine.LatestTag
 	}
 
 	if strings.HasPrefix(applyArgs.module, oci.OCIRepositoryPrefix) {
-		logger.Info(fmt.Sprintf("pulling %s:%s", applyArgs.module, version))
+		log.Info(fmt.Sprintf("pulling %s:%s", applyArgs.module, version))
 	} else {
-		logger.Info(fmt.Sprintf("building %s", applyArgs.module))
+		log.Info(fmt.Sprintf("building %s", applyArgs.module))
 	}
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
@@ -184,7 +186,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	logger.Info(fmt.Sprintf("using module %s version %s", mod.Name, mod.Version))
+	log.Info(fmt.Sprintf("using module %s version %s", mod.Name, mod.Version))
 
 	if len(applyArgs.valuesFiles) > 0 {
 		valuesCue, err := convertToCue(cmd, applyArgs.valuesFiles)
@@ -224,7 +226,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	rm.SetOwnerLabels(objects, applyArgs.name, *kubeconfigArgs.Namespace)
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	exists := false
@@ -248,9 +250,9 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	if applyArgs.dryrun || applyArgs.diff {
 		if !nsExists {
-			logger.Info(fmt.Sprintf("Namespace/%s created (server dry run)", *kubeconfigArgs.Namespace))
+			log.Info(fmt.Sprintf("Namespace/%s created (server dry run)", *kubeconfigArgs.Namespace))
 		}
-		return instanceDryRun(ctx, rm, objects, nsExists, tmpDir, applyArgs.diff, logger)
+		return instanceDryRun(logr.NewContext(ctx, log), rm, objects, nsExists, tmpDir, applyArgs.diff)
 	}
 
 	im := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, *mod)
@@ -260,24 +262,24 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	if !exists {
-		logger.Info(fmt.Sprintf("installing %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
+		log.Info(fmt.Sprintf("installing %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
 
 		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
 			return fmt.Errorf("instance init failed: %w", err)
 		}
 
 		if !nsExists {
-			logger.Info(fmt.Sprintf("Namespace/%s created", *kubeconfigArgs.Namespace))
+			log.Info(fmt.Sprintf("Namespace/%s created", *kubeconfigArgs.Namespace))
 		}
 	} else {
-		logger.Info(fmt.Sprintf("upgrading %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
+		log.Info(fmt.Sprintf("upgrading %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
 	}
 
 	applyOpts := runtime.ApplyOptions(applyArgs.force, time.Minute)
 
 	for _, set := range applySets {
 		if len(applySets) > 1 {
-			logger.Info(fmt.Sprintf("applying %s", set.Name))
+			log.Info(fmt.Sprintf("applying %s", set.Name))
 		}
 
 		cs, err := rm.ApplyAllStaged(ctx, set.Objects, applyOpts)
@@ -285,16 +287,16 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		for _, change := range cs.Entries {
-			logger.Info(change.String())
+			log.Info(change.String())
 		}
 
 		if applyArgs.wait {
-			logger.Info(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
+			log.Info(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
 			err = rm.Wait(set.Objects, ssa.DefaultWaitOptions())
 			if err != nil {
 				return err
 			}
-			logger.Info("resources are ready")
+			log.Info("resources are ready")
 		}
 	}
 
@@ -316,19 +318,19 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
 		for _, change := range changeSet.Entries {
-			logger.Info(change.String())
+			log.Info(change.String())
 		}
 	}
 
 	if applyArgs.wait {
 		if len(deletedObjects) > 0 {
-			logger.Info(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
+			log.Info(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 			err = rm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
 			if err != nil {
 				return fmt.Errorf("wating for termination failed: %w", err)
 			}
 
-			logger.Info("all resources are ready")
+			log.Info("all resources are ready")
 		}
 	}
 
@@ -347,8 +349,8 @@ func instanceDryRun(ctx context.Context,
 	objects []*unstructured.Unstructured,
 	nsExists bool,
 	tmpDir string,
-	withDiff bool,
-	log logr.Logger) error {
+	withDiff bool) error {
+	log := LoggerFrom(ctx)
 	diffOpts := ssa.DefaultDiffOptions()
 	sort.Sort(ssa.SortableUnstructureds(objects))
 

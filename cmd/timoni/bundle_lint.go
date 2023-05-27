@@ -59,6 +59,8 @@ func init() {
 }
 
 func runBundleLintCmd(cmd *cobra.Command, args []string) error {
+	log := LoggerFrom(cmd.Context())
+
 	bundleSchema, err := os.CreateTemp("", "schema.*.cue")
 	if err != nil {
 		return err
@@ -90,9 +92,9 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 		if i.Namespace == "" {
 			return fmt.Errorf("instance %s does not have a namespace", i.Name)
 		}
-		logger.Info(fmt.Sprintf("instance %s is valid", i.Name))
+		log.Info(fmt.Sprintf("instance %s is valid", i.Name))
 	}
 
-	logger.Info("bundle is valid")
+	log.Info("bundle is valid")
 	return nil
 }

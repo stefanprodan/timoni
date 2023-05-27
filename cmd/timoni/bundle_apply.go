@@ -114,8 +114,8 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	ctx := cuecontext.New()
-	bm := engine.NewBundleBuilder(ctx, files)
+	cuectx := cuecontext.New()
+	bm := engine.NewBundleBuilder(cuectx, files)
 
 	v, err := bm.Build()
 	if err != nil {
@@ -127,6 +127,8 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	log := LoggerFrom(cmd.Context(), "bundle", bundle.Name)
+
 	if !bundleApplyArgs.overwriteOwnership {
 		err = bundleInstancesOwnershipConflicts(bundle.Instances)
 		if err != nil {
@@ -134,12 +136,14 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	log := logger.WithValues("bundle", bundle.Name)
 	log.Info(fmt.Sprintf("applying %v instance(s)", len(bundle.Instances)))
+
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+	defer cancel()
 
 	for _, instance := range bundle.Instances {
 		log.Info(fmt.Sprintf("applying instance %s", instance.Name))
-		if err := applyBundleInstance(instance, log); err != nil {
+		if err := applyBundleInstance(logr.NewContext(ctx, log), instance); err != nil {
 			return err
 		}
 	}
@@ -153,7 +157,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func applyBundleInstance(instance engine.BundleInstance, logger logr.Logger) error {
+func applyBundleInstance(ctx context.Context, instance engine.BundleInstance) error {
 	moduleVersion := instance.Module.Version
 	sourceURL := fmt.Sprintf("%s:%s", instance.Module.Repository, instance.Module.Version)
 
@@ -162,7 +166,7 @@ func applyBundleInstance(instance engine.BundleInstance, logger logr.Logger) err
 		moduleVersion = "@" + instance.Module.Digest
 	}
 
-	log := logger.WithValues("instance", instance.Name)
+	log := LoggerFrom(ctx, "instance", instance.Name)
 	log.Info(fmt.Sprintf("pulling %s", sourceURL))
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
@@ -243,9 +247,6 @@ func applyBundleInstance(instance engine.BundleInstance, logger logr.Logger) err
 
 	rm.SetOwnerLabels(objects, instance.Name, instance.Namespace)
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
-
 	exists := false
 	sm := runtime.NewStorageManager(rm)
 	if _, err = sm.Get(ctx, instance.Name, instance.Namespace); err == nil {
@@ -261,7 +262,7 @@ func applyBundleInstance(instance engine.BundleInstance, logger logr.Logger) err
 		if !nsExists {
 			log.Info(fmt.Sprintf("Namespace/%s created (server dry run)", instance.Namespace))
 		}
-		if err := instanceDryRun(ctx, rm, objects, nsExists, tmpDir, bundleApplyArgs.diff, log); err != nil {
+		if err := instanceDryRun(logr.NewContext(ctx, log), rm, objects, nsExists, tmpDir, bundleApplyArgs.diff); err != nil {
 			return err
 		}
 

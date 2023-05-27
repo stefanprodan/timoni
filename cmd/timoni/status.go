@@ -57,6 +57,7 @@ func runstatusCmd(cmd *cobra.Command, args []string) error {
 
 	statusArgs.name = args[0]
 
+	log := LoggerFrom(cmd.Context())
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
@@ -82,19 +83,19 @@ func runstatusCmd(cmd *cobra.Command, args []string) error {
 		err = rm.Client().Get(ctx, client.ObjectKeyFromObject(obj), obj)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logger.Error(err, fmt.Sprintf("%s NotFound", ssa.FmtUnstructured(obj)))
+				log.Error(err, fmt.Sprintf("%s NotFound", ssa.FmtUnstructured(obj)))
 				continue
 			}
-			logger.Error(err, fmt.Sprintf("%s query failed", ssa.FmtUnstructured(obj)))
+			log.Error(err, fmt.Sprintf("%s query failed", ssa.FmtUnstructured(obj)))
 			continue
 		}
 
 		res, err := status.Compute(obj)
 		if err != nil {
-			logger.Error(err, fmt.Sprintf("%s status failed", ssa.FmtUnstructured(obj)))
+			log.Error(err, fmt.Sprintf("%s status failed", ssa.FmtUnstructured(obj)))
 			continue
 		}
-		logger.Info(fmt.Sprintf("%s %s %s", ssa.FmtUnstructured(obj), res.Status, res.Message))
+		log.Info(fmt.Sprintf("%s %s %s", ssa.FmtUnstructured(obj), res.Status, res.Message))
 	}
 
 	return nil

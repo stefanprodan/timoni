@@ -68,6 +68,8 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	ociURL := args[0]
 
+	log := LoggerFrom(cmd.Context())
+
 	version := pullModArgs.version.String()
 	if version == "" {
 		version = engine.LatestTag
@@ -101,7 +103,7 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	logger.Info(fmt.Sprintf("module extracted to %s", pullModArgs.output))
+	log.Info(fmt.Sprintf("module extracted to %s", pullModArgs.output))
 
 	return nil
 }
