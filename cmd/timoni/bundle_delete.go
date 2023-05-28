@@ -82,22 +82,22 @@ func runBundleDelCmd(cmd *cobra.Command, _ []string) error {
 	defer cancel()
 
 	if bundleDelArgs.name != "" {
-		return deleteBundleByName(ctx)
+		return deleteBundleByName(ctx, bundleDelArgs.name)
 	}
 
 	return deleteBundleFromFile(ctx, cmd)
 }
 
-func deleteBundleByName(ctx context.Context) error {
+func deleteBundleByName(ctx context.Context, bundle string) error {
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
 	}
 
-	log := LoggerFrom(ctx, "bundle", bundleDelArgs.name)
+	log := LoggerFrom(ctx, "bundle", bundle)
 	iStorage := runtime.NewStorageManager(sm)
 
-	instances, err := iStorage.List(ctx, "", bundleDelArgs.name)
+	instances, err := iStorage.List(ctx, "", bundle)
 	if err != nil {
 		return err
 	}
@@ -105,6 +105,7 @@ func deleteBundleByName(ctx context.Context) error {
 	for _, instance := range instances {
 		log.Info(fmt.Sprintf("deleting instance %s from bundle %s", instance.Name, bundleDelArgs.name))
 		if err := deleteBundleInstance(ctx, engine.BundleInstance{
+			Bundle:    bundle,
 			Name:      instance.Name,
 			Namespace: instance.Namespace,
 		}, bundleDelArgs.wait, bundleDelArgs.dryrun); err != nil {
@@ -229,8 +230,9 @@ func deleteBundleInstance(ctx context.Context, instance engine.BundleInstance, w
 	if wait && len(deletedObjects) > 0 {
 		waitOpts := ssa.DefaultWaitOptions()
 		waitOpts.Timeout = rootArgs.timeout
-		log.Info(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
+		spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 		err = sm.WaitForTermination(deletedObjects, waitOpts)
+		spin.Stop()
 		if err != nil {
 			return err
 		}

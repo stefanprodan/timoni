@@ -64,6 +64,8 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 	initModArgs.name = args[0]
 	initModArgs.path = args[1]
 
+	log := LoggerFrom(cmd.Context())
+
 	if fs, err := os.Stat(initModArgs.path); err != nil || !fs.IsDir() {
 		return fmt.Errorf("path not found: %s", initModArgs.path)
 	}
@@ -79,16 +81,31 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 
 	ociClient := oci.NewClient(nil)
 
-	if _, err := ociClient.Pull(ctx, modTemplateURL, tmpDir); err != nil {
+	spin := StartSpinner(fmt.Sprintf("pulling template from %s", modTemplateURL))
+	_, err = ociClient.Pull(ctx, modTemplateURL, tmpDir)
+	spin.Stop()
+	if err != nil {
 		return err
 	}
 
-	return initModuleFromTemplate(
+	dst := filepath.Join(initModArgs.path, initModArgs.name)
+	err = initModuleFromTemplate(
 		initModArgs.name,
 		modTemplateName,
 		tmpDir,
-		filepath.Join(initModArgs.path, initModArgs.name),
+		dst,
 	)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(filepath.Join(dst, apiv1.IgnoreFile), []byte(apiv1.DefaultIgnorePatterns), 0600)
+	if err != nil {
+		return err
+	}
+
+	log.Info(fmt.Sprintf("module initialized at %s", dst))
+	return nil
 }
 
 func copyModuleFile(mName, mTmpl, src, dst string) (err error) {
@@ -202,5 +219,5 @@ func initModuleFromTemplate(mName, mTmpl, src string, dst string) (err error) {
 		}
 	}
 
-	return os.WriteFile(filepath.Join(dst, apiv1.IgnoreFile), []byte(apiv1.DefaultIgnorePatterns), 0600)
+	return err
 }

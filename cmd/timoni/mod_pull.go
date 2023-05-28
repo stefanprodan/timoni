@@ -99,7 +99,10 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if _, err := ociClient.Pull(ctx, url, pullModArgs.output); err != nil {
+	spin := StartSpinner("pulling module")
+	_, err = ociClient.Pull(ctx, url, pullModArgs.output)
+	spin.Stop()
+	if err != nil {
 		return err
 	}
 

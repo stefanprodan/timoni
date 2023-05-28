@@ -19,7 +19,9 @@ package main
 import (
 	"context"
 	"os"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zerologr"
 	gcrLog "github.com/google/go-containerregistry/pkg/logs"
@@ -62,4 +64,12 @@ func LoggerFrom(ctx context.Context, keysAndValues ...interface{}) logr.Logger {
 		}
 	}
 	return newLogger.WithValues(keysAndValues...)
+}
+
+// StartSpinner starts a spinner with the given message.
+func StartSpinner(msg string) *spinner.Spinner {
+	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond, spinner.WithWriter(os.Stderr))
+	s.Suffix = " " + msg
+	s.Start()
+	return s
 }

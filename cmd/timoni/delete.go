@@ -123,8 +123,9 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 	if deleteArgs.wait && len(deletedObjects) > 0 {
 		waitOpts := ssa.DefaultWaitOptions()
 		waitOpts.Timeout = rootArgs.timeout
-		log.Info(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
+		spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 		err = sm.WaitForTermination(deletedObjects, waitOpts)
+		spin.Stop()
 		if err != nil {
 			return err
 		}

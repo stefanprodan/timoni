@@ -291,8 +291,9 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		if applyArgs.wait {
-			log.Info(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
+			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
 			err = rm.Wait(set.Objects, ssa.DefaultWaitOptions())
+			spin.Stop()
 			if err != nil {
 				return err
 			}
@@ -324,8 +325,9 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	if applyArgs.wait {
 		if len(deletedObjects) > 0 {
-			log.Info(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
+			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 			err = rm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
+			spin.Stop()
 			if err != nil {
 				return fmt.Errorf("wating for termination failed: %w", err)
 			}
