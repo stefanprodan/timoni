@@ -64,7 +64,7 @@ var (
 )
 
 func init() {
-	rootCmd.PersistentFlags().DurationVar(&rootArgs.timeout, "timeout", time.Minute,
+	rootCmd.PersistentFlags().DurationVar(&rootArgs.timeout, "timeout", 5*time.Minute,
 		"The length of time to wait before giving up on the current operation.")
 	rootCmd.PersistentFlags().BoolVar(&rootArgs.prettyLog, "log-pretty", true,
 		"Adds timestamps and colorized output to the logs.")
