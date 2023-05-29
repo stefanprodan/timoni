@@ -68,6 +68,8 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	ociURL := args[0]
 
+	log := LoggerFrom(cmd.Context())
+
 	version := pullModArgs.version.String()
 	if version == "" {
 		version = engine.LatestTag
@@ -97,11 +99,14 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if _, err := ociClient.Pull(ctx, url, pullModArgs.output); err != nil {
+	spin := StartSpinner("pulling module")
+	_, err = ociClient.Pull(ctx, url, pullModArgs.output)
+	spin.Stop()
+	if err != nil {
 		return err
 	}
 
-	logger.Println("module extracted to", pullModArgs.output)
+	log.Info(fmt.Sprintf("module extracted to %s", pullModArgs.output))
 
 	return nil
 }

@@ -17,10 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"os"
 	"time"
 
 	"github.com/fluxcd/pkg/oci"
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -36,40 +38,38 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Short:         "A package manager for Kubernetes powered by CUE.",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Initialize the console logger just before running
+		// a command only if one wasn't provided. This allows other
+		// callers (e.g. unit tests) to inject their own logger ahead of time.
+		if logger.IsZero() {
+			logger = NewConsoleLogger(rootArgs.prettyLog)
+		}
+
+		// Inject the logger in the command context.
+		ctx := logr.NewContext(context.Background(), logger)
+		cmd.SetContext(ctx)
+	},
 }
 
 type rootFlags struct {
-	timeout time.Duration
+	timeout   time.Duration
+	prettyLog bool
 }
 
 var (
-	rootArgs = rootFlags{}
-	logger   = stderrLogger{stderr: os.Stderr}
+	rootArgs       = rootFlags{}
+	logger         logr.Logger
+	kubeconfigArgs = genericclioptions.NewConfigFlags(false)
 )
-
-var kubeconfigArgs = genericclioptions.NewConfigFlags(false)
-
-// namespaceOrDefault returns the namespace from the current context or "default"
-// if no namespace is set.
-func namespaceOrDefault() string {
-	if ns, _, err := kubeconfigArgs.ToRawKubeConfigLoader().Namespace(); err == nil {
-		return ns
-	}
-	return "default"
-}
 
 func init() {
 	rootCmd.PersistentFlags().DurationVar(&rootArgs.timeout, "timeout", time.Minute,
 		"The length of time to wait before giving up on the current operation.")
+	rootCmd.PersistentFlags().BoolVar(&rootArgs.prettyLog, "log-pretty", true,
+		"Adds timestamps and colorized output to the logs.")
 
-	// Nil the following fields to ensure they are not added by AddFlags.
-	kubeconfigArgs.Timeout = nil
-	kubeconfigArgs.Namespace = nil
-	kubeconfigArgs.AddFlags(rootCmd.PersistentFlags())
-
-	namespace := namespaceOrDefault()
-	kubeconfigArgs.Namespace = &namespace
-	rootCmd.PersistentFlags().StringVarP(kubeconfigArgs.Namespace, "namespace", "n", *kubeconfigArgs.Namespace, "The instance namespace.")
+	addKubeConfigFlags(rootCmd)
 
 	rootCmd.DisableAutoGenTag = true
 	rootCmd.SetOut(os.Stdout)
@@ -81,7 +81,34 @@ func init() {
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		logger.Println(`✗`, err)
+		// Ensure a logger is initialized even if the rootCmd
+		// failed before running its hooks.
+		if logger.IsZero() {
+			logger = NewConsoleLogger(rootArgs.prettyLog)
+		}
+
+		// Set the logger err to nil to pretty print
+		// the error message on multiple lines.
+		logger.Error(nil, err.Error())
 		os.Exit(1)
 	}
+}
+
+// addKubeConfigFlags maps the kubectl config flags to the given persistent flags.
+// The default namespace is set to the value found in current kubeconfig context.
+func addKubeConfigFlags(cmd *cobra.Command) {
+	kubeconfigArgs.Timeout = nil
+	kubeconfigArgs.Namespace = nil
+	kubeconfigArgs.AddFlags(cmd.PersistentFlags())
+
+	namespace := "default"
+
+	// Try to read the default namespace from the current context.
+	if ns, _, err := kubeconfigArgs.ToRawKubeConfigLoader().Namespace(); err == nil {
+		namespace = ns
+	}
+
+	kubeconfigArgs.Namespace = &namespace
+
+	cmd.PersistentFlags().StringVarP(kubeconfigArgs.Namespace, "namespace", "n", *kubeconfigArgs.Namespace, "The instance namespace.")
 }

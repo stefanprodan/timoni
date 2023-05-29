@@ -59,7 +59,9 @@ func listModCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	ociURL := args[0]
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	spin := StartSpinner("fetching tags and digests")
+
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	fetcher := engine.NewFetcher(
@@ -71,6 +73,7 @@ func listModCmdRun(cmd *cobra.Command, args []string) error {
 	)
 
 	list, err := fetcher.GetVersions()
+	spin.Stop()
 	if err != nil {
 		return err
 	}

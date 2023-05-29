@@ -16,13 +16,16 @@ import (
 	"github.com/distribution/distribution/v3/registry"
 	_ "github.com/distribution/distribution/v3/registry/auth/htpasswd"
 	_ "github.com/distribution/distribution/v3/registry/storage/driver/inmemory"
+	"github.com/go-logr/zerologr"
 	"github.com/mattn/go-shellwords"
 	"github.com/phayes/freeport"
+	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	runtimeLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -98,7 +101,10 @@ func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 		rootCmd.SetIn(in)
 	}
 
-	logger.stderr = rootCmd.ErrOrStderr()
+	zlog := zerolog.ConsoleWriter{Out: buf, NoColor: true}
+	zl := zerolog.New(zlog)
+	logger = zerologr.New(&zl)
+	runtimeLog.SetLogger(logger)
 
 	_, err = rootCmd.ExecuteC()
 	result := buf.String()

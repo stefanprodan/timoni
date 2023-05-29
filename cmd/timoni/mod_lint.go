@@ -63,7 +63,8 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module not found at path %s", lintModArgs.path)
 	}
 
-	ctx := cuecontext.New()
+	log := LoggerFrom(cmd.Context())
+	cuectx := cuecontext.New()
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
@@ -87,7 +88,7 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	builder := engine.NewModuleBuilder(
-		ctx,
+		cuectx,
 		"default",
 		*kubeconfigArgs.Namespace,
 		fetcher.GetModuleRoot(),
@@ -130,7 +131,7 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("build failed, no objects to apply")
 	}
 
-	logger.Printf("%s linted", mod.Name)
+	log.Info(fmt.Sprintf("%s linted", mod.Name))
 
 	return nil
 }

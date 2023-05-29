@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -29,6 +28,7 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/oci"
 	"github.com/fluxcd/pkg/ssa"
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
@@ -134,15 +134,17 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	applyArgs.name = args[0]
 	applyArgs.module = args[1]
 
+	log := LoggerFrom(cmd.Context(), "instance", applyArgs.name)
+
 	version := applyArgs.version.String()
 	if version == "" {
 		version = engine.LatestTag
 	}
 
 	if strings.HasPrefix(applyArgs.module, oci.OCIRepositoryPrefix) {
-		logger.Printf("pulling %s:%s", applyArgs.module, version)
+		log.Info(fmt.Sprintf("pulling %s:%s", applyArgs.module, version))
 	} else {
-		logger.Println("building", applyArgs.module)
+		log.Info(fmt.Sprintf("building %s", applyArgs.module))
 	}
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
@@ -184,7 +186,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	logger.Printf("using module %s version %s", mod.Name, mod.Version)
+	log.Info(fmt.Sprintf("using module %s version %s", mod.Name, mod.Version))
 
 	if len(applyArgs.valuesFiles) > 0 {
 		valuesCue, err := convertToCue(cmd, applyArgs.valuesFiles)
@@ -224,7 +226,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	rm.SetOwnerLabels(objects, applyArgs.name, *kubeconfigArgs.Namespace)
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	exists := false
@@ -247,7 +249,10 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	if applyArgs.dryrun || applyArgs.diff {
-		return dryRun(ctx, rm, objects, nsExists, tmpDir)
+		if !nsExists {
+			log.Info(fmt.Sprintf("Namespace/%s created (server dry run)", *kubeconfigArgs.Namespace))
+		}
+		return instanceDryRun(logr.NewContext(ctx, log), rm, objects, nsExists, tmpDir, applyArgs.diff)
 	}
 
 	im := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, *mod)
@@ -257,24 +262,24 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	if !exists {
-		logger.Printf("installing %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace)
+		log.Info(fmt.Sprintf("installing %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
 
 		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
 			return fmt.Errorf("instance init failed: %w", err)
 		}
 
 		if !nsExists {
-			logger.Printf("Namespace/%s created", *kubeconfigArgs.Namespace)
+			log.Info(fmt.Sprintf("Namespace/%s created", *kubeconfigArgs.Namespace))
 		}
 	} else {
-		logger.Printf("upgrading %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace)
+		log.Info(fmt.Sprintf("upgrading %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
 	}
 
 	applyOpts := runtime.ApplyOptions(applyArgs.force, time.Minute)
 
 	for _, set := range applySets {
 		if len(applySets) > 1 {
-			logger.Println("applying", set.Name)
+			log.Info(fmt.Sprintf("applying %s", set.Name))
 		}
 
 		cs, err := rm.ApplyAllStaged(ctx, set.Objects, applyOpts)
@@ -282,16 +287,17 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		for _, change := range cs.Entries {
-			logger.Println(change.String())
+			log.Info(change.String())
 		}
 
 		if applyArgs.wait {
-			logger.Println(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
+			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
 			err = rm.Wait(set.Objects, ssa.DefaultWaitOptions())
+			spin.Stop()
 			if err != nil {
 				return err
 			}
-			logger.Println("resources are ready")
+			log.Info("resources are ready")
 		}
 	}
 
@@ -313,19 +319,20 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
 		for _, change := range changeSet.Entries {
-			logger.Println(change.String())
+			log.Info(change.String())
 		}
 	}
 
 	if applyArgs.wait {
 		if len(deletedObjects) > 0 {
-			logger.Printf("waiting for %v resource(s) to be finalized...", len(deletedObjects))
+			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 			err = rm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
+			spin.Stop()
 			if err != nil {
 				return fmt.Errorf("wating for termination failed: %w", err)
 			}
 
-			logger.Println("all resources are ready")
+			log.Info("all resources are ready")
 		}
 	}
 
@@ -339,29 +346,30 @@ func instanceOwnershipConflicts(instance apiv1.Instance) error {
 	return nil
 }
 
-func dryRun(ctx context.Context, rm *ssa.ResourceManager, objects []*unstructured.Unstructured, nsExists bool, tmpDir string) error {
+func instanceDryRun(ctx context.Context,
+	rm *ssa.ResourceManager,
+	objects []*unstructured.Unstructured,
+	nsExists bool,
+	tmpDir string,
+	withDiff bool) error {
+	log := LoggerFrom(ctx)
 	diffOpts := ssa.DefaultDiffOptions()
 	sort.Sort(ssa.SortableUnstructureds(objects))
 
-	if !nsExists {
-		logger.Printf("Namespace/%s created (server dry run)", *kubeconfigArgs.Namespace)
-	}
-
 	for _, r := range objects {
 		if !nsExists {
-			logger.Printf("%s created (server dry run)", ssa.FmtUnstructured(r))
+			log.Info(fmt.Sprintf("%s created (server dry run)", ssa.FmtUnstructured(r)))
 			continue
 		}
 
 		change, liveObject, mergedObject, err := rm.Diff(ctx, r, diffOpts)
 		if err != nil {
-			logger.Println(err)
+			log.Error(err, "diff failed")
 			continue
 		}
 
-		logger.Println(change.String(), "(server dry run)")
-
-		if applyArgs.diff && change.Action == ssa.ConfiguredAction {
+		log.Info(fmt.Sprintf("%s (server dry run)", change.String()))
+		if withDiff && change.Action == ssa.ConfiguredAction {
 			liveYAML, _ := yaml.Marshal(liveObject)
 			liveFile := filepath.Join(tmpDir, "live.yaml")
 			if err := os.WriteFile(liveFile, liveYAML, 0644); err != nil {
@@ -374,11 +382,8 @@ func dryRun(ctx context.Context, rm *ssa.ResourceManager, objects []*unstructure
 				return err
 			}
 
-			out, _ := exec.Command("diff", "-N", "-u", liveFile, mergedFile).Output()
-			for i, line := range strings.Split(string(out), "\n") {
-				if i > 1 && len(line) > 0 {
-					logger.Println(line)
-				}
+			if err := diffYAML(liveFile, mergedFile, rootCmd.OutOrStdout()); err != nil {
+				return err
 			}
 		}
 	}

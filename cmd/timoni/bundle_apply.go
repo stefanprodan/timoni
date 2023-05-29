@@ -26,6 +26,7 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/ssa"
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -113,8 +114,8 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	ctx := cuecontext.New()
-	bm := engine.NewBundleBuilder(ctx, files)
+	cuectx := cuecontext.New()
+	bm := engine.NewBundleBuilder(cuectx, files)
 
 	v, err := bm.Build()
 	if err != nil {
@@ -126,6 +127,8 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	log := LoggerFrom(cmd.Context(), "bundle", bundle.Name)
+
 	if !bundleApplyArgs.overwriteOwnership {
 		err = bundleInstancesOwnershipConflicts(bundle.Instances)
 		if err != nil {
@@ -133,17 +136,28 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
+	log.Info(fmt.Sprintf("applying %v instance(s)", len(bundle.Instances)))
+
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+	defer cancel()
+
 	for _, instance := range bundle.Instances {
-		logger.Printf("applying instance %s", instance.Name)
-		if err := applyBundleInstance(instance); err != nil {
+		log.Info(fmt.Sprintf("applying instance %s", instance.Name))
+		if err := applyBundleInstance(logr.NewContext(ctx, log), instance); err != nil {
 			return err
 		}
+	}
+
+	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
+		log.Info(fmt.Sprintf("applied %v instance(s) (server dry run)", len(bundle.Instances)))
+	} else {
+		log.Info("applied successfully")
 	}
 
 	return nil
 }
 
-func applyBundleInstance(instance engine.BundleInstance) error {
+func applyBundleInstance(ctx context.Context, instance engine.BundleInstance) error {
 	moduleVersion := instance.Module.Version
 	sourceURL := fmt.Sprintf("%s:%s", instance.Module.Repository, instance.Module.Version)
 
@@ -152,7 +166,8 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 		moduleVersion = "@" + instance.Module.Digest
 	}
 
-	logger.Printf("pulling %s", sourceURL)
+	log := LoggerFrom(ctx, "instance", instance.Name)
+	log.Info(fmt.Sprintf("pulling %s", sourceURL))
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
@@ -198,7 +213,7 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 		return err
 	}
 
-	logger.Printf("using module %s version %s", mod.Name, mod.Version)
+	log.Info(fmt.Sprintf("using module %s version %s", mod.Name, mod.Version))
 
 	err = builder.WriteValuesFile(instance.Values)
 	if err != nil {
@@ -232,9 +247,6 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 
 	rm.SetOwnerLabels(objects, instance.Name, instance.Namespace)
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
-
 	exists := false
 	sm := runtime.NewStorageManager(rm)
 	if _, err = sm.Get(ctx, instance.Name, instance.Namespace); err == nil {
@@ -247,11 +259,14 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 	}
 
 	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
-		if err := dryRun(ctx, rm, objects, nsExists, tmpDir); err != nil {
+		if !nsExists {
+			log.Info(fmt.Sprintf("Namespace/%s created (server dry run)", instance.Namespace))
+		}
+		if err := instanceDryRun(logr.NewContext(ctx, log), rm, objects, nsExists, tmpDir, bundleApplyArgs.diff); err != nil {
 			return err
 		}
 
-		logger.Println("bundle applied successfully (server dry run)")
+		log.Info("applied successfully (server dry run)")
 		return nil
 	}
 
@@ -267,24 +282,24 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 	}
 
 	if !exists {
-		logger.Printf("installing %s in namespace %s", instance.Name, instance.Namespace)
+		log.Info(fmt.Sprintf("installing %s in namespace %s", instance.Name, instance.Namespace))
 
 		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
 			return fmt.Errorf("instance init failed: %w", err)
 		}
 
 		if !nsExists {
-			logger.Printf("Namespace/%s created", instance.Namespace)
+			log.Info(fmt.Sprintf("Namespace/%s created", instance.Namespace))
 		}
 	} else {
-		logger.Printf("upgrading %s in namespace %s", instance.Name, instance.Namespace)
+		log.Info(fmt.Sprintf("upgrading %s in namespace %s", instance.Name, instance.Namespace))
 	}
 
 	bundleApplyOpts := runtime.ApplyOptions(bundleApplyArgs.force, time.Minute)
 
 	for _, set := range bundleApplySets {
 		if len(bundleApplySets) > 1 {
-			logger.Println("applying", set.Name)
+			log.Info(fmt.Sprintf("applying %s", set.Name))
 		}
 
 		cs, err := rm.ApplyAllStaged(ctx, set.Objects, bundleApplyOpts)
@@ -292,16 +307,17 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 			return err
 		}
 		for _, change := range cs.Entries {
-			logger.Println(change.String())
+			log.Info(change.String())
 		}
 
 		if bundleApplyArgs.wait {
-			logger.Println(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
+			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
 			err = rm.Wait(set.Objects, ssa.DefaultWaitOptions())
+			spin.Stop()
 			if err != nil {
 				return err
 			}
-			logger.Println("resources are ready")
+			log.Info("resources are ready")
 		}
 	}
 
@@ -323,19 +339,20 @@ func applyBundleInstance(instance engine.BundleInstance) error {
 		}
 		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
 		for _, change := range changeSet.Entries {
-			logger.Println(change.String())
+			log.Info(change.String())
 		}
 	}
 
 	if bundleApplyArgs.wait {
 		if len(deletedObjects) > 0 {
-			logger.Printf("waiting for %v resource(s) to be finalized...", len(deletedObjects))
+			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 			err = rm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
+			spin.Stop()
 			if err != nil {
 				return fmt.Errorf("wating for termination failed: %w", err)
 			}
 
-			logger.Println("all resources are ready")
+			log.Info("all resources are ready")
 		}
 	}
 
