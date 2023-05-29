@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
@@ -143,7 +144,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 
 	for _, instance := range bundle.Instances {
 		log.Info(fmt.Sprintf("applying instance %s", instance.Name))
-		if err := applyBundleInstance(logr.NewContext(ctx, log), instance); err != nil {
+		if err := applyBundleInstance(logr.NewContext(ctx, log), cuectx, instance); err != nil {
 			return err
 		}
 	}
@@ -157,7 +158,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func applyBundleInstance(ctx context.Context, instance engine.BundleInstance) error {
+func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engine.BundleInstance) error {
 	moduleVersion := instance.Module.Version
 	sourceURL := fmt.Sprintf("%s:%s", instance.Module.Repository, instance.Module.Version)
 
@@ -195,7 +196,6 @@ func applyBundleInstance(ctx context.Context, instance engine.BundleInstance) er
 			mod.Digest, instance.Module.Version, instance.Module.Digest)
 	}
 
-	cuectx := cuecontext.New()
 	builder := engine.NewModuleBuilder(
 		cuectx,
 		instance.Name,
@@ -215,7 +215,7 @@ func applyBundleInstance(ctx context.Context, instance engine.BundleInstance) er
 
 	log.Info(fmt.Sprintf("using module %s version %s", mod.Name, mod.Version))
 
-	err = builder.WriteValuesFile(instance.Values)
+	err = builder.WriteValuesFileWithDefaults(instance.Values)
 	if err != nil {
 		return err
 	}

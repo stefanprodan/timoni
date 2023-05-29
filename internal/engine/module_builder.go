@@ -95,6 +95,29 @@ func (b *ModuleBuilder) WriteValuesFile(val cue.Value) error {
 	return os.WriteFile(defaultFile, []byte(cueGen), 0644)
 }
 
+// WriteValuesFileWithDefaults merges the module's root values.cue with supplied ones.
+func (b *ModuleBuilder) WriteValuesFileWithDefaults(val cue.Value) error {
+	defaultFile := filepath.Join(b.pkgPath, defaultValuesFile)
+
+	baseVal, err := ExtractValueFromFile(b.ctx, defaultFile, apiv1.ValuesSelector.String())
+	if err != nil {
+		return fmt.Errorf("loading default values from module failed: %w", err)
+	}
+
+	finalVal, err := MergeValue(val, baseVal)
+	if err != nil {
+		return fmt.Errorf("merging values failed: %w", err)
+	}
+
+	cueGen := fmt.Sprintf("package %s\n%s: %v", b.pkgName, apiv1.ValuesSelector, finalVal)
+
+	// overwrite the values.cue file with the merged values
+	if err := os.MkdirAll(b.moduleRoot, os.ModePerm); err != nil {
+		return err
+	}
+	return os.WriteFile(defaultFile, []byte(cueGen), 0644)
+}
+
 // WriteSchemaFile generates the module's instance schema.
 func (b *ModuleBuilder) WriteSchemaFile() error {
 	if fs, err := os.Stat(b.pkgPath); err != nil || !fs.IsDir() {
