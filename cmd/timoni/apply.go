@@ -275,7 +275,11 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		log.Info(fmt.Sprintf("upgrading %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
 	}
 
-	applyOpts := runtime.ApplyOptions(applyArgs.force, time.Minute)
+	applyOpts := runtime.ApplyOptions(applyArgs.force, rootArgs.timeout)
+	waitOptions := ssa.WaitOptions{
+		Interval: 5 * time.Second,
+		Timeout:  rootArgs.timeout,
+	}
 
 	for _, set := range applySets {
 		if len(applySets) > 1 {
@@ -292,7 +296,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 		if applyArgs.wait {
 			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
-			err = rm.Wait(set.Objects, ssa.DefaultWaitOptions())
+			err = rm.Wait(set.Objects, waitOptions)
 			spin.Stop()
 			if err != nil {
 				return err
@@ -326,7 +330,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	if applyArgs.wait {
 		if len(deletedObjects) > 0 {
 			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
-			err = rm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
+			err = rm.WaitForTermination(deletedObjects, waitOptions)
 			spin.Stop()
 			if err != nil {
 				return fmt.Errorf("wating for termination failed: %w", err)
