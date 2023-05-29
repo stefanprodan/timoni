@@ -30,7 +30,10 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-var VERSION = "0.0.0-dev.0"
+var (
+	VERSION     = "0.0.0-dev.0"
+	CUE_VERSION = "0.5.0"
+)
 
 var rootCmd = &cobra.Command{
 	Use:           "timoni",

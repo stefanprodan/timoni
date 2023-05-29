@@ -48,6 +48,7 @@ func runVersionCmd(cmd *cobra.Command, args []string) error {
 	info := map[string]string{}
 	info["client"] = VERSION
 	info["api"] = apiv1.GroupVersion.String()
+	info["cue"] = CUE_VERSION
 
 	var marshalled []byte
 	var err error
