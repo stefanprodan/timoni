@@ -295,14 +295,18 @@ func applyBundleInstance(ctx context.Context, instance engine.BundleInstance) er
 		log.Info(fmt.Sprintf("upgrading %s in namespace %s", instance.Name, instance.Namespace))
 	}
 
-	bundleApplyOpts := runtime.ApplyOptions(bundleApplyArgs.force, time.Minute)
+	applyOpts := runtime.ApplyOptions(bundleApplyArgs.force, rootArgs.timeout)
+	waitOptions := ssa.WaitOptions{
+		Interval: 5 * time.Second,
+		Timeout:  rootArgs.timeout,
+	}
 
 	for _, set := range bundleApplySets {
 		if len(bundleApplySets) > 1 {
 			log.Info(fmt.Sprintf("applying %s", set.Name))
 		}
 
-		cs, err := rm.ApplyAllStaged(ctx, set.Objects, bundleApplyOpts)
+		cs, err := rm.ApplyAllStaged(ctx, set.Objects, applyOpts)
 		if err != nil {
 			return err
 		}
@@ -312,7 +316,7 @@ func applyBundleInstance(ctx context.Context, instance engine.BundleInstance) er
 
 		if bundleApplyArgs.wait {
 			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
-			err = rm.Wait(set.Objects, ssa.DefaultWaitOptions())
+			err = rm.Wait(set.Objects, waitOptions)
 			spin.Stop()
 			if err != nil {
 				return err
@@ -346,7 +350,7 @@ func applyBundleInstance(ctx context.Context, instance engine.BundleInstance) er
 	if bundleApplyArgs.wait {
 		if len(deletedObjects) > 0 {
 			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
-			err = rm.WaitForTermination(deletedObjects, ssa.DefaultWaitOptions())
+			err = rm.WaitForTermination(deletedObjects, waitOptions)
 			spin.Stop()
 			if err != nil {
 				return fmt.Errorf("wating for termination failed: %w", err)
