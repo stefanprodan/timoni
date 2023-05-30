@@ -47,10 +47,10 @@ nav:
   - Quickstart: quickstart.md
   - Topics:
       - Bundle files: bundles.md
-      - Module Structure: module.md
-      - Module Versioning: module-semver.md
+      - Module structure: module.md
+      - Module versioning: module-semver.md
       - Values files: values.md
-      - VS other tools: comparison.md
+      - Compared to other tools: comparison.md
   - Automation:
       - GitHub Actions: github-actions.md
       - GitOps with Flux: gitops-flux.md

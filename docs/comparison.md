@@ -1,4 +1,4 @@
-# Timoni vs other tools
+# Timoni compared to other tools
 
 ## Helm
 
