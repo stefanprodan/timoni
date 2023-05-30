@@ -27,7 +27,8 @@ To get started with Timoni please visit the documentation website at [timoni.sh]
 
 ## Concepts
 
-If you are familiar with Helm, a Timoni **module** is the equivalent of a **chart**,
+If you are familiar with Helm, a Timoni **[module](https://timoni.sh/module/)** is the equivalent of a **chart**,
+a Timoni **[bundle](https://timoni.sh/bundles/)** is the equivalent of an **umbrella chart**,
 and a Timoni **instance** is the equivalent of a Helm **release**.
 
 ### Timoni Modules

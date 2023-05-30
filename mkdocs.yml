@@ -50,6 +50,7 @@ nav:
       - Module Structure: module.md
       - Module Versioning: module-semver.md
       - Values files: values.md
+      - VS other tools: comparison.md
   - Automation:
       - GitHub Actions: github-actions.md
       - GitOps with Flux: gitops-flux.md
