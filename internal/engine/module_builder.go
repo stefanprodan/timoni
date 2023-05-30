@@ -82,20 +82,7 @@ func (b *ModuleBuilder) MergeValuesFile(overlays [][]byte) error {
 	return os.WriteFile(defaultFile, []byte(cueGen), 0644)
 }
 
-// WriteValuesFile overwrites the module's root values.cue.
-func (b *ModuleBuilder) WriteValuesFile(val cue.Value) error {
-	defaultFile := filepath.Join(b.pkgPath, defaultValuesFile)
-
-	cueGen := fmt.Sprintf("package %s\n%s: %v", b.pkgName, apiv1.ValuesSelector, val)
-
-	// overwrite the values.cue file with the merged values
-	if err := os.MkdirAll(b.moduleRoot, os.ModePerm); err != nil {
-		return err
-	}
-	return os.WriteFile(defaultFile, []byte(cueGen), 0644)
-}
-
-// WriteValuesFileWithDefaults merges the module's root values.cue with supplied ones.
+// WriteValuesFileWithDefaults merges the module's root values.cue with the supplied value.
 func (b *ModuleBuilder) WriteValuesFileWithDefaults(val cue.Value) error {
 	defaultFile := filepath.Join(b.pkgPath, defaultValuesFile)
 

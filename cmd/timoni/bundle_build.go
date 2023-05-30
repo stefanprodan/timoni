@@ -176,7 +176,7 @@ func buildBundleInstance(instance engine.BundleInstance) (string, error) {
 		return "", err
 	}
 
-	err = builder.WriteValuesFile(instance.Values)
+	err = builder.WriteValuesFileWithDefaults(instance.Values)
 	if err != nil {
 		return "", err
 	}
