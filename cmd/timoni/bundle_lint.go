@@ -60,23 +60,24 @@ func init() {
 
 func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 	log := LoggerFrom(cmd.Context())
+	files := bundleLintArgs.files
 
-	bundleSchema, err := os.CreateTemp("", "schema.*.cue")
+	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
 		return err
 	}
-	defer os.Remove(bundleSchema.Name())
-	if _, err := bundleSchema.WriteString(apiv1.BundleSchema); err != nil {
-		return err
-	}
-	files := append(bundleLintArgs.files, bundleSchema.Name())
+	defer os.RemoveAll(tmpDir)
 
 	ctx := cuecontext.New()
 	bm := engine.NewBundleBuilder(ctx, files)
 
+	if err := bm.InitWorkspace(tmpDir); err != nil {
+		return describeErr(tmpDir, "failed to parse bundle", err)
+	}
+
 	v, err := bm.Build()
 	if err != nil {
-		return err
+		return describeErr(tmpDir, "failed to build bundle", err)
 	}
 
 	bundle, err := bm.GetBundle(v)

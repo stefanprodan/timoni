@@ -108,7 +108,7 @@ func (in *Injector) injectFromEnv(tree *ast.File) (ast.Node, error) {
 				case "bool":
 					field.Value = ast.NewIdent(envVal)
 				default:
-					re = fmt.Errorf("failed to parse attribute '@%s(%s)', unkown type '%s' must be string, number or bool",
+					re = fmt.Errorf("failed to parse attribute '@%s(%s)', unknown type '%s' must be string, number or bool",
 						apiv1.FieldManager, body, envKind)
 					return false
 				}

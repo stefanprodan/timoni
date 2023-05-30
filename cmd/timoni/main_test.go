@@ -101,8 +101,12 @@ func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 		rootCmd.SetIn(in)
 	}
 
-	zlog := zerolog.ConsoleWriter{Out: buf, NoColor: true}
-	zl := zerolog.New(zlog)
+	zcfg := zerolog.ConsoleWriter{Out: buf, NoColor: true}
+	zcfg.PartsExclude = []string{
+		zerolog.TimestampFieldName,
+		zerolog.LevelFieldName,
+	}
+	zl := zerolog.New(zcfg)
 	logger = zerologr.New(&zl)
 	runtimeLog.SetLogger(logger)
 
