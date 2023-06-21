@@ -22,8 +22,10 @@ import (
 	"path/filepath"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/build"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
+	"cuelang.org/go/encoding/yaml"
 	cp "github.com/otiai10/copy"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -118,6 +120,15 @@ func (b *BundleBuilder) Build() (cue.Value, error) {
 	}
 
 	v := b.ctx.BuildInstance(inst)
+	for _, f := range inst.OrphanedFiles {
+		if f.Encoding == build.YAML {
+			a, err := yaml.Extract(f.Filename, f.Source)
+			if err != nil {
+				return value, err
+			}
+			v = v.Unify(b.ctx.BuildFile(a))
+		}
+	}
 	if v.Err() != nil {
 		return value, v.Err()
 	}
