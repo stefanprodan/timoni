@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"os"
 	"time"
 
@@ -42,8 +43,8 @@ func NewConsoleLogger(pretty bool) logr.Logger {
 
 	zlog := zerolog.New(zconfig).With().Timestamp().Logger()
 
-	// Set container registry client logger.
-	gcrLog.Warn.SetOutput(zlog)
+	// Discard the container registry client logger.
+	gcrLog.Warn.SetOutput(io.Discard)
 
 	// Create a logr.Logger using zerolog as sink.
 	zerologr.VerbosityFieldName = ""

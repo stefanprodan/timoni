@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Masterminds/semver/v3"
 	oci "github.com/fluxcd/pkg/oci/client"
@@ -116,16 +118,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module not found at path %s", pushModArgs.module)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
-
-	if pushModArgs.source == "" {
-		gitCmd := exec.CommandContext(ctx, "git", "config", "--get", "remote.origin.url")
-		gitCmd.Dir = pushModArgs.module
-		if repo, err := gitCmd.Output(); err == nil && len(repo) > 1 {
-			pushModArgs.source = strings.TrimSuffix(string(repo), "\n")
-		}
-	}
+	log := LoggerFrom(cmd.Context())
 
 	annotations := map[string]string{}
 	for _, annotation := range pushModArgs.annotations {
@@ -142,6 +135,30 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		Source:      pushModArgs.source,
 		Revision:    version,
 		Annotations: annotations,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	// Try to determine the Git origin URL
+	if pushModArgs.source == "" {
+		gitCmd := exec.CommandContext(ctx, "git", "config", "--get", "remote.origin.url")
+		gitCmd.Dir = pushModArgs.module
+		if repo, err := gitCmd.Output(); err == nil && len(repo) > 1 {
+			pushModArgs.source = strings.TrimSuffix(string(repo), "\n")
+			log.Info(fmt.Sprintf("Setting the module source to: %s", pushModArgs.source))
+		}
+	}
+
+	// Try to determine the last Git commit timestamp
+	gitCmd := exec.CommandContext(ctx, "git", "--no-pager", "log", "-1", `--format=%ct`)
+	gitCmd.Dir = pushModArgs.module
+	if ts, err := gitCmd.Output(); err == nil && len(ts) > 1 {
+		if i, err := strconv.ParseInt(strings.TrimSuffix(string(ts), "\n"), 10, 64); err == nil {
+			d := time.Unix(i, 0)
+			meta.Created = d.Format(time.RFC3339)
+			log.Info(fmt.Sprintf("Setting the module created timestamp to: %s", meta.Created))
+		}
 	}
 
 	if pushModArgs.creds != "" {
@@ -204,7 +221,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		}
 		cmd.OutOrStdout().Write(marshalled)
 	default:
-		cmd.OutOrStdout().Write([]byte(digestURL + "\n"))
+		log.Info(fmt.Sprintf("Module pushed to: %s", digestURL))
 	}
 
 	return nil
