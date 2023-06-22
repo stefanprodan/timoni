@@ -66,16 +66,7 @@ func init() {
 }
 
 func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
-	bundleSchema, err := os.CreateTemp("", "schema.*.cue")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(bundleSchema.Name())
-	if _, err := bundleSchema.WriteString(apiv1.BundleSchema); err != nil {
-		return err
-	}
-
-	files := append(bundleBuildArgs.files, bundleSchema.Name())
+	files := bundleBuildArgs.files
 	for i, file := range files {
 		if file == "-" {
 			path, err := saveReaderToFile(cmd.InOrStdin())
@@ -89,12 +80,22 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
+	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+
 	ctx := cuecontext.New()
 	bm := engine.NewBundleBuilder(ctx, files)
 
+	if err := bm.InitWorkspace(tmpDir); err != nil {
+		return describeErr(tmpDir, "failed to parse bundle", err)
+	}
+
 	v, err := bm.Build()
 	if err != nil {
-		return err
+		return describeErr(tmpDir, "failed to build bundle", err)
 	}
 
 	bundle, err := bm.GetBundle(v)
@@ -176,7 +177,7 @@ func buildBundleInstance(instance engine.BundleInstance) (string, error) {
 		return "", err
 	}
 
-	err = builder.WriteValuesFile(instance.Values)
+	err = builder.WriteValuesFileWithDefaults(instance.Values)
 	if err != nil {
 		return "", err
 	}

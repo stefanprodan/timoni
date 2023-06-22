@@ -138,9 +138,30 @@ bundle: {
 }
 `,
 		},
+		{
+			name:     "fails for invalid attribute",
+			matchErr: "unknown type",
+			bundle: `
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "test"
+	instances: {
+		test: {
+			namespace: "default"
+			module: {
+				url:     "oci://docker.io/test"
+				version: "latest" @timoni(env:strings:TEST_BLINT_VER)
+			}
+		}
+	}
+}
+`,
+		},
 	}
 
 	tmpDir := t.TempDir()
+	t.Setenv("TEST_BLINT_VER", "1.0.0")
+
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)

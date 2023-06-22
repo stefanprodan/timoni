@@ -92,16 +92,7 @@ func init() {
 }
 
 func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
-	bundleSchema, err := os.CreateTemp("", "schema.*.cue")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(bundleSchema.Name())
-	if _, err := bundleSchema.WriteString(apiv1.BundleSchema); err != nil {
-		return err
-	}
-
-	files := append(bundleApplyArgs.files, bundleSchema.Name())
+	files := bundleApplyArgs.files
 	for i, file := range files {
 		if file == "-" {
 			path, err := saveReaderToFile(cmd.InOrStdin())
@@ -115,12 +106,22 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
+	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+
 	cuectx := cuecontext.New()
 	bm := engine.NewBundleBuilder(cuectx, files)
 
+	if err := bm.InitWorkspace(tmpDir); err != nil {
+		return err
+	}
+
 	v, err := bm.Build()
 	if err != nil {
-		return err
+		return describeErr(tmpDir, "failed to build bundle", err)
 	}
 
 	bundle, err := bm.GetBundle(v)

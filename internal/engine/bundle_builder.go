@@ -18,19 +18,22 @@ package engine
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
+	cp "github.com/otiai10/copy"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 // BundleBuilder compiles CUE definitions to Go Bundle objects.
 type BundleBuilder struct {
-	ctx     *cue.Context
-	pkgPath string
-	files   []string
+	ctx      *cue.Context
+	files    []string
+	injector *Injector
 }
 
 type Bundle struct {
@@ -52,13 +55,51 @@ func NewBundleBuilder(ctx *cue.Context, files []string) *BundleBuilder {
 		ctx = cuecontext.New()
 	}
 	b := &BundleBuilder{
-		ctx:   ctx,
-		files: files,
+		ctx:      ctx,
+		files:    files,
+		injector: NewInjector(ctx),
 	}
 	return b
 }
 
+// InitWorkspace copies the bundle definitions to the specified workspace,
+// sets the bundle schema, and then it injects values based on @timoni() attributes.
+// A workspace must be initialised before calling Build.
+func (b *BundleBuilder) InitWorkspace(workspace string) error {
+	var files []string
+	for i, file := range b.files {
+		_, fn := filepath.Split(file)
+		dstFile := filepath.Join(workspace, fmt.Sprintf("%v.%s", i, fn))
+		files = append(files, dstFile)
+		if err := cp.Copy(file, dstFile); err != nil {
+			return err
+		}
+	}
+
+	for _, f := range files {
+		_, fn := filepath.Split(f)
+		data, err := b.injector.Inject(f)
+		if err != nil {
+			return fmt.Errorf("failed to inject %s: %w", fn, err)
+		}
+
+		if err := os.WriteFile(f, data, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to inject %s: %w", fn, err)
+		}
+	}
+
+	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.files)+1))
+	files = append(files, schemaFile)
+	if err := os.WriteFile(schemaFile, []byte(apiv1.BundleSchema), os.ModePerm); err != nil {
+		return err
+	}
+
+	b.files = files
+	return nil
+}
+
 // Build builds a CUE instance for the specified files and returns the CUE value.
+// A workspace must be initialised with InitWorkspace before calling this function.
 func (b *BundleBuilder) Build() (cue.Value, error) {
 	var value cue.Value
 	cfg := &load.Config{

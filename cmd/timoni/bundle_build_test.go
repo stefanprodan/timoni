@@ -32,17 +32,19 @@ func Test_BundleBuild(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	bundleData := fmt.Sprintf(`
+appName: string @timoni(env:string:TEST_BBUILD_NAME)
 bundle: {
 	apiVersion: "v1alpha1"
 	name: "%[1]s"
 	instances: {
-		frontend: {
+		"\(appName)": {
 			module: {
 				url:     "oci://%[2]s"
 				version: "%[3]s"
 			}
 			namespace: "%[4]s"
 			values: server: enabled: false
+			values: domain: string @timoni(env:string:TEST_BBUILD_HOST)
 		}
 		backend: {
 			module: {
@@ -50,7 +52,7 @@ bundle: {
 				version: "%[3]s"
 			}
 			namespace: "%[4]s"
-			values: client: enabled: false
+			values: client: enabled: bool @timoni(env:bool:TEST_BBUILD_ENABLED)
 		}
 	}
 }
@@ -59,6 +61,10 @@ bundle: {
 	bundlePath := filepath.Join(t.TempDir(), "bundle.cue")
 	err = os.WriteFile(bundlePath, []byte(bundleData), 0644)
 	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Setenv("TEST_BBUILD_NAME", "frontend")
+	t.Setenv("TEST_BBUILD_HOST", "my.host")
+	t.Setenv("TEST_BBUILD_ENABLED", "false")
 
 	t.Run("builds instances from bundle", func(t *testing.T) {
 		execCommands := map[string]func() (string, error){
@@ -89,10 +95,21 @@ bundle: {
 				g.Expect(frontendClientCm.GetKind()).To(BeEquivalentTo("ConfigMap"))
 				g.Expect(frontendClientCm.GetNamespace()).To(ContainSubstring(namespace))
 
+				server, found, err := unstructured.NestedString(frontendClientCm.Object, "data", "server")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(found).To(BeTrue())
+				g.Expect(server).To(ContainSubstring("my.host"))
+
 				backendClientCm, err := getObjectByName(objects, "backend-server")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(backendClientCm.GetKind()).To(BeEquivalentTo("ConfigMap"))
 				g.Expect(backendClientCm.GetNamespace()).To(ContainSubstring(namespace))
+
+				host, found, err := unstructured.NestedString(backendClientCm.Object, "data", "hostname")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(found).To(BeTrue())
+				g.Expect(host).To(ContainSubstring("example.internal"))
+
 			})
 		}
 	})
@@ -104,5 +121,5 @@ func getObjectByName(objs []*unstructured.Unstructured, name string) (*unstructu
 			return obj, nil
 		}
 	}
-	return nil, fmt.Errorf("Object with name '%s' does not exist.", name)
+	return nil, fmt.Errorf("object with name '%s' does not exist", name)
 }
