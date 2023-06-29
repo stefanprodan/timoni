@@ -17,20 +17,17 @@ limitations under the License.
 package engine
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"io"
 
 	"cuelang.org/go/cue"
-	"cuelang.org/go/cue/build"
+	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
+	"cuelang.org/go/cue/parser"
 	"cuelang.org/go/encoding/json"
 	"cuelang.org/go/encoding/yaml"
-	cp "github.com/otiai10/copy"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
@@ -75,23 +72,43 @@ func (b *BundleBuilder) InitWorkspace(workspace string) error {
 	var files []string
 	for i, file := range b.files {
 		_, fn := filepath.Split(file)
-		dstFile := filepath.Join(workspace, fmt.Sprintf("%v.%s", i, fn))
-		files = append(files, dstFile)
-		if err := cp.Copy(file, dstFile); err != nil {
-			return err
+		content, err := os.ReadFile(file)
+		if err != nil {
+			return fmt.Errorf("failed to read %s: %w", fn, err)
 		}
-	}
 
-	for _, f := range files {
-		_, fn := filepath.Split(f)
-		data, err := b.injector.Inject(f)
+		var parsefn func(string, []byte) (ast.Node, error)
+		switch ext := filepath.Ext(fn); ext {
+		case ".yaml", ".yml":
+			parsefn = func(filename string, src []byte) (ast.Node, error) { return yaml.Extract(filename, src) }
+		case ".json":
+			parsefn = func(filename string, src []byte) (ast.Node, error) { return json.Extract(filename, src) }
+		case ".cue":
+			parsefn = func(filename string, src []byte) (ast.Node, error) {
+				return parser.ParseFile(filename, src, parser.ParseComments)
+			}
+		default:
+			parsefn = func(filename string, src []byte) (ast.Node, error) {
+				return nil, fmt.Errorf("unsupported file extension: %s", ext)
+			}
+		}
+
+		node, err := parsefn(fn, content)
+		if err != nil {
+			return fmt.Errorf("failed to parse %s: %w", fn, err)
+		}
+
+		data, err := b.injector.InjectNode(node)
 		if err != nil {
 			return fmt.Errorf("failed to inject %s: %w", fn, err)
 		}
 
-		if err := os.WriteFile(f, data, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to inject %s: %w", fn, err)
+		dstFile := filepath.Join(workspace, fmt.Sprintf("%v.%s.cue", i, fn))
+		if err := os.WriteFile(dstFile, data, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to write %s: %w", fn, err)
 		}
+
+		files = append(files, dstFile)
 	}
 
 	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.files)+1))
@@ -124,26 +141,6 @@ func (b *BundleBuilder) Build() (cue.Value, error) {
 	}
 
 	v := b.ctx.BuildInstance(inst)
-	for _, f := range inst.OrphanedFiles {
-		switch f.Encoding {
-		case build.YAML:
-			a, err := yaml.Extract(f.Filename, f.Source)
-			if err != nil {
-				return value, err
-			}
-			v = v.Unify(b.ctx.BuildFile(a))
-		case build.JSON:
-			src, err := readSource(f.Filename, f.Source)
-			if err != nil {
-				return value, err
-			}
-			exp, err := json.Extract(f.Filename, src)
-			if err != nil {
-				return value, err
-			}
-			v = v.Unify(b.ctx.BuildExpr(exp))
-		}
-	}
 	if v.Err() != nil {
 		return value, v.Err()
 	}
@@ -153,30 +150,6 @@ func (b *BundleBuilder) Build() (cue.Value, error) {
 	}
 
 	return v, nil
-}
-
-func readSource(filename string, src interface{}) ([]byte, error) {
-	if src != nil {
-		switch s := src.(type) {
-		case string:
-			return []byte(s), nil
-		case []byte:
-			return s, nil
-		case *bytes.Buffer:
-			// is io.Reader, but src is already available in []byte form
-			if s != nil {
-				return s.Bytes(), nil
-			}
-		case io.Reader:
-			var buf bytes.Buffer
-			if _, err := io.Copy(&buf, s); err != nil {
-				return nil, err
-			}
-			return buf.Bytes(), nil
-		}
-		return nil, errors.New("invalid source")
-	}
-	return os.ReadFile(filename)
 }
 
 // GetBundle returns a Bundle from the bundle CUE value.
