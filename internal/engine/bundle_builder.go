@@ -17,14 +17,18 @@ limitations under the License.
 package engine
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"io"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/build"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
+	"cuelang.org/go/encoding/json"
 	"cuelang.org/go/encoding/yaml"
 	cp "github.com/otiai10/copy"
 
@@ -121,12 +125,23 @@ func (b *BundleBuilder) Build() (cue.Value, error) {
 
 	v := b.ctx.BuildInstance(inst)
 	for _, f := range inst.OrphanedFiles {
-		if f.Encoding == build.YAML {
+		switch f.Encoding {
+		case build.YAML:
 			a, err := yaml.Extract(f.Filename, f.Source)
 			if err != nil {
 				return value, err
 			}
 			v = v.Unify(b.ctx.BuildFile(a))
+		case build.JSON:
+			src, err := readSource(f.Filename, f.Source)
+			if err != nil {
+				return value, err
+			}
+			exp, err := json.Extract(f.Filename, src)
+			if err != nil {
+				return value, err
+			}
+			v = v.Unify(b.ctx.BuildExpr(exp))
 		}
 	}
 	if v.Err() != nil {
@@ -138,6 +153,30 @@ func (b *BundleBuilder) Build() (cue.Value, error) {
 	}
 
 	return v, nil
+}
+
+func readSource(filename string, src interface{}) ([]byte, error) {
+	if src != nil {
+		switch s := src.(type) {
+		case string:
+			return []byte(s), nil
+		case []byte:
+			return s, nil
+		case *bytes.Buffer:
+			// is io.Reader, but src is already available in []byte form
+			if s != nil {
+				return s.Bytes(), nil
+			}
+		case io.Reader:
+			var buf bytes.Buffer
+			if _, err := io.Copy(&buf, s); err != nil {
+				return nil, err
+			}
+			return buf.Bytes(), nil
+		}
+		return nil, errors.New("invalid source")
+	}
+	return os.ReadFile(filename)
 }
 
 // GetBundle returns a Bundle from the bundle CUE value.
