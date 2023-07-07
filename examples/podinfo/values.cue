@@ -3,6 +3,14 @@
 
 package main
 
+// Default image values
+// TODO: Implement env injection at build time
+values: image: {
+	repository: "ghcr.io/stefanprodan/podinfo"
+	digest:     "sha256:5b731f7f2662a5ebf0bed5a6d72ee5a79a4f520f199eebf6f7e927364409efd6" @timoni(env:string:image_digest)
+	tag:        "6.3.5"                                                                   @timoni(env:string:image_tag)
+}
+
 values: {
 	// Placeholder for user-supplied values
 }

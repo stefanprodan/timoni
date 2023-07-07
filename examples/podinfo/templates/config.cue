@@ -5,6 +5,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
+	timoniv1 "timoni.sh/core/v1alpha1"
 )
 
 // Config defines the schema and defaults for the Instance values.
@@ -33,12 +34,9 @@ import (
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
 	// Container
-	image: {
-		repository: *"ghcr.io/stefanprodan/podinfo" | string
-		tag:        *"6.3.6" | string
-		digest?:    string
-		pullPolicy: *"IfNotPresent" | string
-	}
+	image:           timoniv1.#Image
+	imagePullPolicy: *"IfNotPresent" | string
+
 	resources?:       corev1.#ResourceRequirements
 	securityContext?: corev1.#SecurityContext
 
