@@ -54,6 +54,10 @@ func (in *Injector) Inject(src string) ([]byte, error) {
 		return nil, err
 	}
 
+	return in.InjectNode(tree)
+}
+
+func (in *Injector) InjectNode(tree ast.Node) ([]byte, error) {
 	output, err := in.injectFromEnv(tree)
 	if err != nil {
 		return nil, err
@@ -67,7 +71,7 @@ func (in *Injector) Inject(src string) ([]byte, error) {
 	return data, nil
 }
 
-func (in *Injector) injectFromEnv(tree *ast.File) (ast.Node, error) {
+func (in *Injector) injectFromEnv(tree ast.Node) (ast.Node, error) {
 	var re error
 	f := func(c astutil.Cursor) bool {
 		n := c.Node()

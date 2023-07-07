@@ -31,36 +31,62 @@ func Test_BundleBuild(t *testing.T) {
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 
-	bundleData := fmt.Sprintf(`
+	bundleCue := fmt.Sprintf(`
 appName: string @timoni(env:string:TEST_BBUILD_NAME)
 bundle: {
 	apiVersion: "v1alpha1"
-	name: "%[1]s"
+	name: string
 	instances: {
 		"\(appName)": {
 			module: {
-				url:     "oci://%[2]s"
-				version: "%[3]s"
+				url:     "oci://%[1]s"
+				version: "%[2]s"
 			}
-			namespace: "%[4]s"
+			namespace: "%[3]s"
 			values: server: enabled: false
 			values: domain: string @timoni(env:string:TEST_BBUILD_HOST)
 		}
 		backend: {
 			module: {
-				url:     "oci://%[2]s"
-				version: "%[3]s"
+				url:     "oci://%[1]s"
+				version: "%[2]s"
 			}
-			namespace: "%[4]s"
+			namespace: string
 			values: client: enabled: bool @timoni(env:bool:TEST_BBUILD_ENABLED)
 		}
 	}
 }
-`, bundleName, modURL, modVer, namespace)
+`, modURL, modVer, namespace)
 
-	bundlePath := filepath.Join(t.TempDir(), "bundle.cue")
-	err = os.WriteFile(bundlePath, []byte(bundleData), 0644)
-	g.Expect(err).ToNot(HaveOccurred())
+	bundleData := bundleCue + fmt.Sprintf(`
+bundle: name: "%[1]s"
+bundle: instances: backend: namespace: "%[2]s"
+`, bundleName, namespace)
+
+	bundleJson := fmt.Sprintf(`
+{
+	"bundle": {
+		"name": "%[1]s"
+	}
+}
+`, bundleName)
+
+	bundleYaml := fmt.Sprintf(`
+bundle:
+  instances:
+    backend:
+      namespace: %[1]s
+`, namespace)
+
+	wd := t.TempDir()
+	cuePath := filepath.Join(wd, "bundle.cue")
+	g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
+
+	yamlPath := filepath.Join(wd, "bundle.yaml")
+	g.Expect(os.WriteFile(yamlPath, []byte(bundleYaml), 0644)).ToNot(HaveOccurred())
+
+	jsonPath := filepath.Join(wd, "bundle.json")
+	g.Expect(os.WriteFile(jsonPath, []byte(bundleJson), 0644)).ToNot(HaveOccurred())
 
 	t.Setenv("TEST_BBUILD_NAME", "frontend")
 	t.Setenv("TEST_BBUILD_HOST", "my.host")
@@ -68,10 +94,10 @@ bundle: {
 
 	t.Run("builds instances from bundle", func(t *testing.T) {
 		execCommands := map[string]func() (string, error){
-			"using a file": func() (string, error) {
+			"using files": func() (string, error) {
 				return executeCommand(fmt.Sprintf(
-					"bundle build -f %s -p main",
-					bundlePath,
+					"bundle build -f %s -f %s -f %s -p main",
+					cuePath, yamlPath, jsonPath,
 				))
 			},
 			"using stdin": func() (string, error) {
