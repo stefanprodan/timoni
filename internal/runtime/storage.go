@@ -171,6 +171,21 @@ func (s *StorageManager) GetStaleObjects(ctx context.Context, i *apiv1.Instance)
 	return objects, nil
 }
 
+func (s *StorageManager) ListNamespaces(ctx context.Context) ([]string, error) {
+	nsList := &corev1.NamespaceList{}
+	err := s.resManager.Client().List(ctx, nsList)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]string, len(nsList.Items))
+	for _, ns := range nsList.Items {
+		res = append(res, ns.Name)
+	}
+
+	return res, nil
+}
+
 // NamespaceExists returns false if the namespace is not found.
 func (s *StorageManager) NamespaceExists(ctx context.Context, name string) (bool, error) {
 	ns := &corev1.Namespace{

@@ -38,6 +38,14 @@ var statusCmd = &cobra.Command{
   timoni status -n apps app
 `,
 	RunE: runstatusCmd,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		switch len(args) {
+		case 0:
+			return completeInstanceList(cmd, args, toComplete)
+		default:
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+	},
 }
 
 type statusFlags struct {

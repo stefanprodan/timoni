@@ -114,4 +114,5 @@ func addKubeConfigFlags(cmd *cobra.Command) {
 	kubeconfigArgs.Namespace = &namespace
 
 	cmd.PersistentFlags().StringVarP(kubeconfigArgs.Namespace, "namespace", "n", *kubeconfigArgs.Namespace, "The instance namespace.")
+	cmd.RegisterFlagCompletionFunc("namespace", completeNamespaceList)
 }

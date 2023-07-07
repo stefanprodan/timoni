@@ -18,8 +18,9 @@ package main
 
 import (
 	"context"
-	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"io"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -60,22 +61,7 @@ func init() {
 }
 
 func runListCmd(cmd *cobra.Command, args []string) error {
-	sm, err := runtime.NewResourceManager(kubeconfigArgs)
-	if err != nil {
-		return err
-	}
-
-	iStorage := runtime.NewStorageManager(sm)
-
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
-
-	ns := *kubeconfigArgs.Namespace
-	if listArgs.allNamespaces {
-		ns = ""
-	}
-
-	instances, err := iStorage.List(ctx, ns, listArgs.bundleName)
+	instances, err := listInstancesFromFlags()
 	if err != nil {
 		return err
 	}
@@ -111,6 +97,25 @@ func runListCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func listInstancesFromFlags() ([]*apiv1.Instance, error) {
+	sm, err := runtime.NewResourceManager(kubeconfigArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	iStorage := runtime.NewStorageManager(sm)
+
+	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	ns := *kubeconfigArgs.Namespace
+	if listArgs.allNamespaces {
+		ns = ""
+	}
+
+	return iStorage.List(ctx, ns, listArgs.bundleName)
 }
 
 func printTable(writer io.Writer, header []string, rows [][]string) {

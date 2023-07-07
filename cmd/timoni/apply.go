@@ -86,6 +86,16 @@ The apply command performs the following steps:
   --values ./values-2.json
 `,
 	RunE: runApplyCmd,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		switch len(args) {
+		case 0:
+			return completeInstanceList(cmd, args, toComplete)
+		case 1:
+			return nil, cobra.ShellCompDirectiveFilterDirs
+		default:
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+	},
 }
 
 type applyFlags struct {
