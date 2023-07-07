@@ -687,7 +687,7 @@ Example:
 timoni bundle apply --overwrite-ownership -f bundle.cue
 ```
 
-#### Inject values from environment variables
+### Inject values from environment variables
 
 To inject values from environment variables, you can add CUE attributes next to fields
 in the format `@timoni(env:[string|number|bool]:[ENV_VAR_NAME])`.
@@ -740,6 +740,20 @@ Example:
 ```shell
 timoni bundle build -f bundle.cue
 ```
+
+### Use values from JSON and YAML files
+
+A bundle can be defined in multiple files of different formats:
+
+```shell
+timoni bundle build -f bundle.cue -f extras1.json -f extras2.yaml
+```
+
+Timoni extracts the CUE values from the JSON and YAML files,
+and unifies them with the bundle value. Note that setting the
+same field in multiple files is not supported.
+
+Timoni supports the following extensions: `.cue`, `.json`, `.yml`, `.yaml`.
 
 ### Uninstall
 
