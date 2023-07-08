@@ -11,6 +11,7 @@ jobs:
   goreleaser:
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
+      version: ${{ steps.hash.outputs.version }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -52,6 +53,7 @@ jobs:
             hashes=$(cat $checksum_file | base64 -w0)
           fi
           echo "hashes=$hashes" >> $GITHUB_OUTPUT
+          echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
   provenance:
     needs: [goreleaser]
@@ -61,5 +63,6 @@ jobs:
       contents: write # To add assets to a release.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.7.0
     with:
+      provenance-name: "timoni_${{ needs.goreleaser.outputs.version }}_provenance.intoto.jsonl"
       base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
       upload-assets: true # upload to a new release

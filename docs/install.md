@@ -117,20 +117,21 @@ Configure your shell to load timoni completions:
 
 ## SLSA Provenance & SBOMs
 
-Starting with v0.7, Timoni is compliant with [SLSA Level 3](https://slsa.dev/).
+The build, release and provenance portions of Timoni's supply chain meet the
+[SLSA Build Level 3](https://slsa.dev/spec/v1.0/levels) requirements.
+
 The release artifacts are produced on GitHub-hosted runners using
-[GoReleaser](https://goreleaser.com) and the provenance generation
-is handled by the official
+[GoReleaser](https://goreleaser.com) and the provenance generation is handled by the official
 [SLSA GitHub Generator](https://github.com/slsa-framework/slsa-github-generator).
 
-To verify a release artifact such as the Timoni binary,
+To verify a release artifact such as the Timoni binary tarball,
 you can use the [slsa-verifier](https://github.com/slsa-framework/slsa-verifier) tool:
 
 ```shell
-TIMONI_VER=0.7.1 && \
+TIMONI_VER=0.10.0 && \
 gh release download v${TIMONI_VER} -R=stefanprodan/timoni -p="*" && \
 slsa-verifier verify-artifact \
---provenance-path multiple.intoto.jsonl \
+--provenance-path timoni_${TIMONI_VER}_provenance.intoto.jsonl \
 --source-uri github.com/stefanprodan/timoni  \
 --source-tag v${TIMONI_VER} \
 timoni_${TIMONI_VER}_darwin_arm64.tar.gz
@@ -143,7 +144,7 @@ The SBOMs are generated on GitHub-hosted runners using
 To scan a release for vulnerabilities, you can use [Grype](https://github.com/anchore/grype):
 
 ```shell
-TIMONI_VER=0.7.1 && \
+TIMONI_VER=0.10.0 && \
 gh release download v${TIMONI_VER} -R=stefanprodan/timoni -p="*sbom.spdx.json" && \
 grype sbom:./timoni_${TIMONI_VER}_sbom.spdx.json
 ```
