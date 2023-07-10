@@ -259,18 +259,6 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 		return fmt.Errorf("instance init failed: %w", err)
 	}
 
-	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
-		if !nsExists {
-			log.Info(fmt.Sprintf("Namespace/%s created (server dry run)", instance.Namespace))
-		}
-		if err := instanceDryRun(logr.NewContext(ctx, log), rm, objects, nsExists, tmpDir, bundleApplyArgs.diff); err != nil {
-			return err
-		}
-
-		log.Info("applied successfully (server dry run)")
-		return nil
-	}
-
 	im := runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, *mod)
 
 	if im.Instance.Labels == nil {
@@ -280,6 +268,23 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 
 	if err := im.AddObjects(objects); err != nil {
 		return fmt.Errorf("adding objects to instance failed: %w", err)
+	}
+
+	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
+	if err != nil {
+		return fmt.Errorf("getting stale objects failed: %w", err)
+	}
+
+	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
+		if !nsExists {
+			log.Info(fmt.Sprintf("Namespace/%s created (server dry run)", instance.Namespace))
+		}
+		if err := instanceDryRunDiff(logr.NewContext(ctx, log), rm, objects, staleObjects, nsExists, tmpDir, bundleApplyArgs.diff); err != nil {
+			return err
+		}
+
+		log.Info("applied successfully (server dry run)")
+		return nil
 	}
 
 	if !exists {
@@ -324,11 +329,6 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 			}
 			log.Info("resources are ready")
 		}
-	}
-
-	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
-	if err != nil {
-		return fmt.Errorf("getting stale objects failed: %w", err)
 	}
 
 	if err := sm.Apply(ctx, &im.Instance, true); err != nil {

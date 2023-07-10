@@ -17,11 +17,18 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"sort"
 
+	"github.com/fluxcd/pkg/ssa"
 	"github.com/gonvenience/ytbx"
 	"github.com/homeport/dyff/pkg/dyff"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/yaml"
 )
 
 // DyffPrinter is a printer that prints dyff reports.
@@ -72,4 +79,54 @@ func diffYAML(liveFile, mergedFile string, output io.Writer) error {
 
 	printer := NewDyffPrinter()
 	return printer.Print(output, report)
+}
+
+func instanceDryRunDiff(ctx context.Context,
+	rm *ssa.ResourceManager,
+	objects []*unstructured.Unstructured,
+	staleObjects []*unstructured.Unstructured,
+	nsExists bool,
+	tmpDir string,
+	withDiff bool) error {
+	log := LoggerFrom(ctx)
+	diffOpts := ssa.DefaultDiffOptions()
+	sort.Sort(ssa.SortableUnstructureds(objects))
+
+	for _, r := range objects {
+		if !nsExists {
+			log.Info(fmt.Sprintf("%s created (server dry run)", ssa.FmtUnstructured(r)))
+			continue
+		}
+
+		change, liveObject, mergedObject, err := rm.Diff(ctx, r, diffOpts)
+		if err != nil {
+			log.Error(err, "diff failed")
+			continue
+		}
+
+		log.Info(fmt.Sprintf("%s (server dry run)", change.String()))
+		if withDiff && change.Action == ssa.ConfiguredAction {
+			liveYAML, _ := yaml.Marshal(liveObject)
+			liveFile := filepath.Join(tmpDir, "live.yaml")
+			if err := os.WriteFile(liveFile, liveYAML, 0644); err != nil {
+				return err
+			}
+
+			mergedYAML, _ := yaml.Marshal(mergedObject)
+			mergedFile := filepath.Join(tmpDir, "merged.yaml")
+			if err := os.WriteFile(mergedFile, mergedYAML, 0644); err != nil {
+				return err
+			}
+
+			if err := diffYAML(liveFile, mergedFile, rootCmd.OutOrStdout()); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, r := range staleObjects {
+		log.Info(fmt.Sprintf("%s deleted (server dry run)", ssa.FmtUnstructured(r)))
+	}
+
+	return nil
 }
