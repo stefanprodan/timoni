@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -31,7 +29,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/yaml"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
@@ -248,17 +245,22 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if applyArgs.dryrun || applyArgs.diff {
-		if !nsExists {
-			log.Info(fmt.Sprintf("Namespace/%s created (server dry run)", *kubeconfigArgs.Namespace))
-		}
-		return instanceDryRun(logr.NewContext(ctx, log), rm, objects, nsExists, tmpDir, applyArgs.diff)
-	}
-
 	im := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, *mod)
 
 	if err := im.AddObjects(objects); err != nil {
 		return fmt.Errorf("adding objects to instance failed: %w", err)
+	}
+
+	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
+	if err != nil {
+		return fmt.Errorf("getting stale objects failed: %w", err)
+	}
+
+	if applyArgs.dryrun || applyArgs.diff {
+		if !nsExists {
+			log.Info(fmt.Sprintf("Namespace/%s created (server dry run)", *kubeconfigArgs.Namespace))
+		}
+		return instanceDryRunDiff(logr.NewContext(ctx, log), rm, objects, staleObjects, nsExists, tmpDir, applyArgs.diff)
 	}
 
 	if !exists {
@@ -305,11 +307,6 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
-	if err != nil {
-		return fmt.Errorf("getting stale objects failed: %w", err)
-	}
-
 	if err := sm.Apply(ctx, &im.Instance, true); err != nil {
 		return fmt.Errorf("storing instance failed: %w", err)
 	}
@@ -346,50 +343,6 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 func instanceOwnershipConflicts(instance apiv1.Instance) error {
 	if currentOwnerBundle := instance.Labels[apiv1.BundleNameLabelKey]; currentOwnerBundle != "" {
 		return fmt.Errorf("instance ownership conflict encountered. Apply with \"--overwrite-ownership\" to gain instance ownership. Conflict: instance \"%s\" exists and is managed by bundle \"%s\"", instance.Name, currentOwnerBundle)
-	}
-	return nil
-}
-
-func instanceDryRun(ctx context.Context,
-	rm *ssa.ResourceManager,
-	objects []*unstructured.Unstructured,
-	nsExists bool,
-	tmpDir string,
-	withDiff bool) error {
-	log := LoggerFrom(ctx)
-	diffOpts := ssa.DefaultDiffOptions()
-	sort.Sort(ssa.SortableUnstructureds(objects))
-
-	for _, r := range objects {
-		if !nsExists {
-			log.Info(fmt.Sprintf("%s created (server dry run)", ssa.FmtUnstructured(r)))
-			continue
-		}
-
-		change, liveObject, mergedObject, err := rm.Diff(ctx, r, diffOpts)
-		if err != nil {
-			log.Error(err, "diff failed")
-			continue
-		}
-
-		log.Info(fmt.Sprintf("%s (server dry run)", change.String()))
-		if withDiff && change.Action == ssa.ConfiguredAction {
-			liveYAML, _ := yaml.Marshal(liveObject)
-			liveFile := filepath.Join(tmpDir, "live.yaml")
-			if err := os.WriteFile(liveFile, liveYAML, 0644); err != nil {
-				return err
-			}
-
-			mergedYAML, _ := yaml.Marshal(mergedObject)
-			mergedFile := filepath.Join(tmpDir, "merged.yaml")
-			if err := os.WriteFile(mergedFile, mergedYAML, 0644); err != nil {
-				return err
-			}
-
-			if err := diffYAML(liveFile, mergedFile, rootCmd.OutOrStdout()); err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }
