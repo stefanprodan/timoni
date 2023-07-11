@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -30,6 +31,7 @@ import (
 	"github.com/go-logr/zerologr"
 	gcrLog "github.com/google/go-containerregistry/pkg/logs"
 	"github.com/rs/zerolog"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	runtimeLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -61,6 +63,7 @@ func NewConsoleLogger() logr.Logger {
 }
 
 var (
+	colorDryRun       = color.New(color.FgHiBlack, color.Italic)
 	colorCallerPrefix = color.New(color.FgHiBlack)
 	colorBundle       = color.New(color.FgHiMagenta)
 	colorInstance     = color.New(color.FgHiMagenta)
@@ -74,18 +77,72 @@ var (
 	}
 )
 
+type dryRunType string
+
+const (
+	dryRunClient dryRunType = "(dry run)"
+	dryRunServer dryRunType = "(server dry run)"
+)
+
+func colorizeJoin(values ...any) string {
+	var sb strings.Builder
+	for i, v := range values {
+		if i > 0 {
+			sb.WriteByte(' ')
+		}
+		sb.WriteString(colorizeAny(v))
+	}
+	return sb.String()
+}
+
+func colorizeAny(v any) string {
+	switch v := v.(type) {
+	case *unstructured.Unstructured:
+		return colorizeUnstructured(v)
+	case dryRunType:
+		return colorizeDryRun(v)
+	case ssa.Action:
+		return colorizeAction(v)
+	case ssa.ChangeSetEntry:
+		return colorizeChangeSetEntry(v)
+	case *ssa.ChangeSetEntry:
+		return colorizeChangeSetEntry(*v)
+	case string:
+		return v
+	default:
+		return fmt.Sprint(v)
+	}
+}
+
+func colorizeSubject(subject string) string {
+	return color.CyanString(subject)
+}
+
+func colorizeNamespaceFromArgs() string {
+	return colorizeSubject("Namespace/" + *kubeconfigArgs.Namespace)
+}
+
+func colorizeUnstructured(object *unstructured.Unstructured) string {
+	return colorizeSubject(ssa.FmtUnstructured(object))
+}
+
+func colorizeAction(action ssa.Action) string {
+	if c, ok := colorPerAction[action]; ok {
+		return c.Sprint(action)
+	}
+	return action.String()
+}
+
+func colorizeChange(subject string, action ssa.Action) string {
+	return fmt.Sprintf("%s %s", colorizeSubject(subject), colorizeAction(action))
+}
+
 func colorizeChangeSetEntry(change ssa.ChangeSetEntry) string {
 	return colorizeChange(change.Subject, change.Action)
 }
 
-func colorizeChange(subject string, action ssa.Action) string {
-	var coloredAction string
-	if c, ok := colorPerAction[action]; ok {
-		coloredAction = c.Sprint(action)
-	} else {
-		coloredAction = action.String()
-	}
-	return fmt.Sprintf("%s %s", color.CyanString(subject), coloredAction)
+func colorizeDryRun(dryRun dryRunType) string {
+	return colorDryRun.Sprint(string(dryRun))
 }
 
 func colorizeBundle(bundle string) string {

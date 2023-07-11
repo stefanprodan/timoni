@@ -277,7 +277,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 
 	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
 		if !nsExists {
-			log.Info(fmt.Sprintf("%s (server dry run)", colorizeChange("Namespace/"+*kubeconfigArgs.Namespace, ssa.CreatedAction)))
+			log.Info(colorizeJoin(colorizeNamespaceFromArgs(), ssa.CreatedAction, dryRunServer))
 		}
 		if err := instanceDryRunDiff(logr.NewContext(ctx, log), rm, objects, staleObjects, nsExists, tmpDir, bundleApplyArgs.diff); err != nil {
 			return err
@@ -295,7 +295,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 		}
 
 		if !nsExists {
-			log.Info(colorizeChange("Namespace/"+*kubeconfigArgs.Namespace, ssa.CreatedAction))
+			log.Info(colorizeJoin(colorizeNamespaceFromArgs(), ssa.CreatedAction))
 		}
 	} else {
 		log.Info(fmt.Sprintf("upgrading %s in namespace %s", instance.Name, instance.Namespace))
@@ -317,7 +317,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 			return err
 		}
 		for _, change := range cs.Entries {
-			log.Info(colorizeChangeSetEntry(change))
+			log.Info(colorizeJoin(change))
 		}
 
 		if bundleApplyArgs.wait {
@@ -344,7 +344,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 		}
 		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
 		for _, change := range changeSet.Entries {
-			log.Info(colorizeChangeSetEntry(change))
+			log.Info(colorizeJoin(change))
 		}
 	}
 

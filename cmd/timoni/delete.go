@@ -97,8 +97,7 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 
 	if deleteArgs.dryrun {
 		for _, object := range objects {
-			subject := fmt.Sprintf("%s/%s/%s", object.GetKind(), object.GetNamespace(), object.GetName())
-			log.Info(fmt.Sprintf("%s (dry run)", colorizeChange(subject, ssa.DeletedAction)))
+			log.Info(colorizeJoin(object, ssa.DeletedAction, dryRunClient))
 		}
 		return nil
 	}
@@ -115,7 +114,7 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 			continue
 		}
 		cs.Add(*change)
-		log.Info(colorizeChangeSetEntry(*change))
+		log.Info(colorizeJoin(change))
 	}
 
 	if hasErrors {

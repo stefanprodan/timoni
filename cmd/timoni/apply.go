@@ -268,7 +268,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	if applyArgs.dryrun || applyArgs.diff {
 		if !nsExists {
-			log.Info(fmt.Sprintf("%s (server dry run)", colorizeChange("Namespace/"+*kubeconfigArgs.Namespace, ssa.CreatedAction)))
+			log.Info(colorizeJoin(colorizeNamespaceFromArgs(), ssa.CreatedAction, dryRunServer))
 		}
 		return instanceDryRunDiff(logr.NewContext(ctx, log), rm, objects, staleObjects, nsExists, tmpDir, applyArgs.diff)
 	}
@@ -281,7 +281,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		if !nsExists {
-			log.Info(colorizeChange("Namespace/"+*kubeconfigArgs.Namespace, ssa.CreatedAction))
+			log.Info(colorizeJoin(colorizeNamespaceFromArgs(), ssa.CreatedAction))
 		}
 	} else {
 		log.Info(fmt.Sprintf("upgrading %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
@@ -303,7 +303,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		for _, change := range cs.Entries {
-			log.Info(colorizeChangeSetEntry(change))
+			log.Info(colorizeJoin(change))
 		}
 
 		if applyArgs.wait {
@@ -330,7 +330,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
 		for _, change := range changeSet.Entries {
-			log.Info(colorizeChangeSetEntry(change))
+			log.Info(colorizeJoin(change))
 		}
 	}
 
