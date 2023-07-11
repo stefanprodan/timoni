@@ -94,7 +94,7 @@ func deleteBundleByName(ctx context.Context, bundle string) error {
 		return err
 	}
 
-	log := LoggerFrom(ctx, "bundle", bundle)
+	log := LoggerBundle(ctx, bundle)
 	iStorage := runtime.NewStorageManager(sm)
 
 	instances, err := iStorage.List(ctx, "", bundle)
@@ -153,7 +153,7 @@ func deleteBundleFromFile(ctx context.Context, cmd *cobra.Command) error {
 		return err
 	}
 
-	log := LoggerFrom(ctx, "bundle", bundle.Name)
+	log := LoggerBundle(ctx, bundle.Name)
 
 	if len(bundle.Instances) == 0 {
 		return fmt.Errorf("no instances found in bundle")
@@ -170,7 +170,7 @@ func deleteBundleFromFile(ctx context.Context, cmd *cobra.Command) error {
 }
 
 func deleteBundleInstance(ctx context.Context, instance engine.BundleInstance, wait bool, dryrun bool) error {
-	log := LoggerFrom(ctx, "bundle", instance.Bundle)
+	log := LoggerBundle(ctx, instance.Bundle)
 
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
@@ -196,9 +196,8 @@ func deleteBundleInstance(ctx context.Context, instance engine.BundleInstance, w
 
 	if dryrun {
 		for _, object := range objects {
-			log.Info(fmt.Sprintf(
-				"%s/%s/%s deleted (dry run)",
-				object.GetKind(), object.GetNamespace(), object.GetName()))
+			subject := fmt.Sprintf("%s/%s/%s", object.GetKind(), object.GetNamespace(), object.GetName())
+			log.Info(fmt.Sprintf("%s (dry run)", colorizeChange(subject, ssa.DeletedAction)))
 		}
 		return nil
 	}
@@ -215,7 +214,7 @@ func deleteBundleInstance(ctx context.Context, instance engine.BundleInstance, w
 			continue
 		}
 		cs.Add(*change)
-		log.Info(fmt.Sprintf(change.String()))
+		log.Info(colorizeChangeSetEntry(*change))
 	}
 
 	if hasErrors {

@@ -129,7 +129,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	log := LoggerFrom(cmd.Context(), "bundle", bundle.Name)
+	log := LoggerBundle(cmd.Context(), bundle.Name)
 
 	if !bundleApplyArgs.overwriteOwnership {
 		err = bundleInstancesOwnershipConflicts(bundle.Instances)
@@ -168,7 +168,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 		moduleVersion = "@" + instance.Module.Digest
 	}
 
-	log := LoggerFrom(ctx, "instance", instance.Name)
+	log := LoggerBundleInstance(ctx, instance.Bundle, instance.Name)
 	log.Info(fmt.Sprintf("pulling %s", sourceURL))
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
@@ -277,7 +277,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 
 	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
 		if !nsExists {
-			log.Info(fmt.Sprintf("Namespace/%s created (server dry run)", instance.Namespace))
+			log.Info(fmt.Sprintf("%s (server dry run)", colorizeChange("Namespace/"+*kubeconfigArgs.Namespace, ssa.CreatedAction)))
 		}
 		if err := instanceDryRunDiff(logr.NewContext(ctx, log), rm, objects, staleObjects, nsExists, tmpDir, bundleApplyArgs.diff); err != nil {
 			return err
@@ -295,7 +295,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 		}
 
 		if !nsExists {
-			log.Info(fmt.Sprintf("Namespace/%s created", instance.Namespace))
+			log.Info(colorizeChange("Namespace/"+*kubeconfigArgs.Namespace, ssa.CreatedAction))
 		}
 	} else {
 		log.Info(fmt.Sprintf("upgrading %s in namespace %s", instance.Name, instance.Namespace))
@@ -317,7 +317,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 			return err
 		}
 		for _, change := range cs.Entries {
-			log.Info(change.String())
+			log.Info(colorizeChangeSetEntry(change))
 		}
 
 		if bundleApplyArgs.wait {
@@ -340,11 +340,11 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 		deleteOpts := runtime.DeleteOptions(instance.Name, instance.Namespace)
 		changeSet, err := rm.DeleteAll(ctx, staleObjects, deleteOpts)
 		if err != nil {
-			return fmt.Errorf("prunning objects failed: %w", err)
+			return fmt.Errorf("pruning objects failed: %w", err)
 		}
 		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
 		for _, change := range changeSet.Entries {
-			log.Info(change.String())
+			log.Info(colorizeChangeSetEntry(change))
 		}
 	}
 

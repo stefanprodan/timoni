@@ -72,7 +72,7 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 
 	deleteArgs.name = args[0]
 
-	log := LoggerFrom(cmd.Context(), "instance", deleteArgs.name)
+	log := LoggerInstance(cmd.Context(), deleteArgs.name)
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
@@ -97,9 +97,8 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 
 	if deleteArgs.dryrun {
 		for _, object := range objects {
-			log.Info(fmt.Sprintf(
-				"%s/%s/%s deleted (dry run)",
-				object.GetKind(), object.GetNamespace(), object.GetName()))
+			subject := fmt.Sprintf("%s/%s/%s", object.GetKind(), object.GetNamespace(), object.GetName())
+			log.Info(fmt.Sprintf("%s (dry run)", colorizeChange(subject, ssa.DeletedAction)))
 		}
 		return nil
 	}
@@ -116,7 +115,7 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 			continue
 		}
 		cs.Add(*change)
-		log.Info(change.String())
+		log.Info(colorizeChangeSetEntry(*change))
 	}
 
 	if hasErrors {

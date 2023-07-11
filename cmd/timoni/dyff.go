@@ -94,7 +94,7 @@ func instanceDryRunDiff(ctx context.Context,
 
 	for _, r := range objects {
 		if !nsExists {
-			log.Info(fmt.Sprintf("%s created (server dry run)", ssa.FmtUnstructured(r)))
+			log.Info(fmt.Sprintf("%s (server dry run)", colorizeChange(ssa.FmtUnstructured(r), ssa.CreatedAction)))
 			continue
 		}
 
@@ -104,7 +104,7 @@ func instanceDryRunDiff(ctx context.Context,
 			continue
 		}
 
-		log.Info(fmt.Sprintf("%s (server dry run)", change.String()))
+		log.Info(fmt.Sprintf("%s (server dry run)", colorizeChangeSetEntry(*change)))
 		if withDiff && change.Action == ssa.ConfiguredAction {
 			liveYAML, _ := yaml.Marshal(liveObject)
 			liveFile := filepath.Join(tmpDir, "live.yaml")
@@ -125,7 +125,7 @@ func instanceDryRunDiff(ctx context.Context,
 	}
 
 	for _, r := range staleObjects {
-		log.Info(fmt.Sprintf("%s deleted (server dry run)", ssa.FmtUnstructured(r)))
+		log.Info(fmt.Sprintf("%s (server dry run)", colorizeChange(ssa.FmtUnstructured(r), ssa.DeletedAction)))
 	}
 
 	return nil

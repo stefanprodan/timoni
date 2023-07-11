@@ -141,7 +141,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	applyArgs.name = args[0]
 	applyArgs.module = args[1]
 
-	log := LoggerFrom(cmd.Context(), "instance", applyArgs.name)
+	log := LoggerInstance(cmd.Context(), applyArgs.name)
 
 	version := applyArgs.version.String()
 	if version == "" {
@@ -268,7 +268,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	if applyArgs.dryrun || applyArgs.diff {
 		if !nsExists {
-			log.Info(fmt.Sprintf("Namespace/%s created (server dry run)", *kubeconfigArgs.Namespace))
+			log.Info(fmt.Sprintf("%s (server dry run)", colorizeChange("Namespace/"+*kubeconfigArgs.Namespace, ssa.CreatedAction)))
 		}
 		return instanceDryRunDiff(logr.NewContext(ctx, log), rm, objects, staleObjects, nsExists, tmpDir, applyArgs.diff)
 	}
@@ -281,7 +281,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		if !nsExists {
-			log.Info(fmt.Sprintf("Namespace/%s created", *kubeconfigArgs.Namespace))
+			log.Info(colorizeChange("Namespace/"+*kubeconfigArgs.Namespace, ssa.CreatedAction))
 		}
 	} else {
 		log.Info(fmt.Sprintf("upgrading %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
@@ -303,7 +303,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		for _, change := range cs.Entries {
-			log.Info(change.String())
+			log.Info(colorizeChangeSetEntry(change))
 		}
 
 		if applyArgs.wait {
@@ -326,11 +326,11 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		deleteOpts := runtime.DeleteOptions(applyArgs.name, *kubeconfigArgs.Namespace)
 		changeSet, err := rm.DeleteAll(ctx, staleObjects, deleteOpts)
 		if err != nil {
-			return fmt.Errorf("prunning objects failed: %w", err)
+			return fmt.Errorf("pruning objects failed: %w", err)
 		}
 		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
 		for _, change := range changeSet.Entries {
-			log.Info(change.String())
+			log.Info(colorizeChangeSetEntry(change))
 		}
 	}
 
@@ -340,7 +340,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 			err = rm.WaitForTermination(deletedObjects, waitOptions)
 			spin.Stop()
 			if err != nil {
-				return fmt.Errorf("wating for termination failed: %w", err)
+				return fmt.Errorf("waiting for termination failed: %w", err)
 			}
 
 			log.Info("all resources are ready")

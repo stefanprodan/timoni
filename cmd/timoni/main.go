@@ -21,6 +21,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/fluxcd/pkg/oci"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -46,7 +47,7 @@ var rootCmd = &cobra.Command{
 		// a command only if one wasn't provided. This allows other
 		// callers (e.g. unit tests) to inject their own logger ahead of time.
 		if logger.IsZero() {
-			logger = NewConsoleLogger(rootArgs.prettyLog)
+			logger = NewConsoleLogger()
 		}
 
 		// Inject the logger in the command context.
@@ -56,21 +57,28 @@ var rootCmd = &cobra.Command{
 }
 
 type rootFlags struct {
-	timeout   time.Duration
-	prettyLog bool
+	timeout    time.Duration
+	prettyLog  bool
+	coloredLog bool
 }
 
 var (
-	rootArgs       = rootFlags{}
+	rootArgs = rootFlags{
+		prettyLog:  true,
+		coloredLog: !color.NoColor,
+		timeout:    5 * time.Minute,
+	}
 	logger         logr.Logger
 	kubeconfigArgs = genericclioptions.NewConfigFlags(false)
 )
 
 func init() {
-	rootCmd.PersistentFlags().DurationVar(&rootArgs.timeout, "timeout", 5*time.Minute,
+	rootCmd.PersistentFlags().DurationVar(&rootArgs.timeout, "timeout", rootArgs.timeout,
 		"The length of time to wait before giving up on the current operation.")
-	rootCmd.PersistentFlags().BoolVar(&rootArgs.prettyLog, "log-pretty", true,
-		"Adds timestamps and colorized output to the logs.")
+	rootCmd.PersistentFlags().BoolVar(&rootArgs.prettyLog, "log-pretty", rootArgs.prettyLog,
+		"Adds timestamps to the logs.")
+	rootCmd.PersistentFlags().BoolVar(&rootArgs.coloredLog, "log-color", rootArgs.coloredLog,
+		"Adds colorized output to the logs. (defaults to false when no tty)")
 
 	addKubeConfigFlags(rootCmd)
 
@@ -87,7 +95,7 @@ func main() {
 		// Ensure a logger is initialized even if the rootCmd
 		// failed before running its hooks.
 		if logger.IsZero() {
-			logger = NewConsoleLogger(rootArgs.prettyLog)
+			logger = NewConsoleLogger()
 		}
 
 		// Set the logger err to nil to pretty print

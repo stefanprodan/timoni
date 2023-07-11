@@ -7,6 +7,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/briandowns/spinner v1.23.0
 	github.com/distribution/distribution/v3 v3.0.0-20230621170613-87b280718d38
+	github.com/fatih/color v1.15.0
 	github.com/fluxcd/pkg/oci v0.28.0
 	github.com/fluxcd/pkg/sourceignore v0.3.4
 	github.com/fluxcd/pkg/ssa v0.28.2
@@ -80,7 +81,6 @@ require (
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
-	github.com/fatih/color v1.7.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fluxcd/pkg/tar v0.2.0 // indirect
 	github.com/fluxcd/pkg/version v0.2.2 // indirect

@@ -18,11 +18,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
+	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zerologr"
 	gcrLog "github.com/google/go-containerregistry/pkg/logs"
@@ -32,9 +35,10 @@ import (
 
 // NewConsoleLogger returns a human-friendly Logger.
 // Pretty print adds timestamp, log level and colorized output to the logs.
-func NewConsoleLogger(pretty bool) logr.Logger {
-	zconfig := zerolog.ConsoleWriter{Out: os.Stderr, NoColor: !pretty}
-	if !pretty {
+func NewConsoleLogger() logr.Logger {
+	color.NoColor = !rootArgs.coloredLog
+	zconfig := zerolog.ConsoleWriter{Out: os.Stderr, NoColor: !rootArgs.coloredLog}
+	if !rootArgs.prettyLog {
 		zconfig.PartsExclude = []string{
 			zerolog.TimestampFieldName,
 			zerolog.LevelFieldName,
@@ -54,6 +58,63 @@ func NewConsoleLogger(pretty bool) logr.Logger {
 	runtimeLog.SetLogger(log)
 
 	return log
+}
+
+var (
+	colorCallerPrefix = color.New(color.FgHiBlack)
+	colorBundle       = color.New(color.FgHiMagenta)
+	colorInstance     = color.New(color.FgHiMagenta)
+	colorPerAction    = map[ssa.Action]*color.Color{
+		ssa.CreatedAction:    color.New(color.FgHiGreen),
+		ssa.ConfiguredAction: color.New(color.FgHiCyan),
+		ssa.UnchangedAction:  color.New(color.FgHiBlack),
+		ssa.DeletedAction:    color.New(color.FgRed),
+		ssa.SkippedAction:    color.New(color.FgHiBlack),
+		ssa.UnknownAction:    color.New(color.FgYellow),
+	}
+)
+
+func colorizeChangeSetEntry(change ssa.ChangeSetEntry) string {
+	return colorizeChange(change.Subject, change.Action)
+}
+
+func colorizeChange(subject string, action ssa.Action) string {
+	var coloredAction string
+	if c, ok := colorPerAction[action]; ok {
+		coloredAction = c.Sprint(action)
+	} else {
+		coloredAction = action.String()
+	}
+	return fmt.Sprintf("%s %s", color.CyanString(subject), coloredAction)
+}
+
+func colorizeBundle(bundle string) string {
+	return colorCallerPrefix.Sprint("b:") + colorBundle.Sprint(bundle)
+}
+
+func colorizeInstance(instance string) string {
+	return colorCallerPrefix.Sprint("i:") + colorInstance.Sprint(instance)
+}
+
+func LoggerBundle(ctx context.Context, bundle string) logr.Logger {
+	if !rootArgs.prettyLog {
+		return LoggerFrom(ctx, "bundle", bundle)
+	}
+	return LoggerFrom(ctx, "caller", colorizeBundle(bundle))
+}
+
+func LoggerInstance(ctx context.Context, instance string) logr.Logger {
+	if !rootArgs.prettyLog {
+		return LoggerFrom(ctx, "instance", instance)
+	}
+	return LoggerFrom(ctx, "caller", colorizeInstance(instance))
+}
+
+func LoggerBundleInstance(ctx context.Context, bundle, instance string) logr.Logger {
+	if !rootArgs.prettyLog {
+		return LoggerFrom(ctx, "bundle", bundle, "instance", instance)
+	}
+	return LoggerFrom(ctx, "caller", fmt.Sprintf("%s %s %s", colorizeBundle(bundle), color.CyanString(">"), colorizeInstance(instance)))
 }
 
 // LoggerFrom returns a logr.Logger with predefined values from a context.Context.
