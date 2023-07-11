@@ -34,6 +34,14 @@ var inspectValuesCmd = &cobra.Command{
   timoni -n default inspect values app > values.cue
 `,
 	RunE: runInspectValuesCmd,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		switch len(args) {
+		case 0:
+			return completeInstanceList(cmd, args, toComplete)
+		default:
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+	},
 }
 
 type inspectValuesFlags struct {
