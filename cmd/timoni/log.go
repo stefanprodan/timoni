@@ -18,23 +18,29 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
+	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zerologr"
 	gcrLog "github.com/google/go-containerregistry/pkg/logs"
 	"github.com/rs/zerolog"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	runtimeLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // NewConsoleLogger returns a human-friendly Logger.
 // Pretty print adds timestamp, log level and colorized output to the logs.
-func NewConsoleLogger(pretty bool) logr.Logger {
-	zconfig := zerolog.ConsoleWriter{Out: os.Stderr, NoColor: !pretty}
-	if !pretty {
+func NewConsoleLogger() logr.Logger {
+	color.NoColor = !rootArgs.coloredLog
+	zconfig := zerolog.ConsoleWriter{Out: os.Stderr, NoColor: !rootArgs.coloredLog}
+	if !rootArgs.prettyLog {
 		zconfig.PartsExclude = []string{
 			zerolog.TimestampFieldName,
 			zerolog.LevelFieldName,
@@ -54,6 +60,118 @@ func NewConsoleLogger(pretty bool) logr.Logger {
 	runtimeLog.SetLogger(log)
 
 	return log
+}
+
+var (
+	colorDryRun       = color.New(color.FgHiBlack, color.Italic)
+	colorCallerPrefix = color.New(color.FgHiBlack)
+	colorBundle       = color.New(color.FgHiMagenta)
+	colorInstance     = color.New(color.FgHiMagenta)
+	colorPerAction    = map[ssa.Action]*color.Color{
+		ssa.CreatedAction:    color.New(color.FgHiGreen),
+		ssa.ConfiguredAction: color.New(color.FgHiCyan),
+		ssa.UnchangedAction:  color.New(color.FgHiBlack),
+		ssa.DeletedAction:    color.New(color.FgRed),
+		ssa.SkippedAction:    color.New(color.FgHiBlack),
+		ssa.UnknownAction:    color.New(color.FgYellow),
+	}
+)
+
+type dryRunType string
+
+const (
+	dryRunClient dryRunType = "(dry run)"
+	dryRunServer dryRunType = "(server dry run)"
+)
+
+func colorizeJoin(values ...any) string {
+	var sb strings.Builder
+	for i, v := range values {
+		if i > 0 {
+			sb.WriteByte(' ')
+		}
+		sb.WriteString(colorizeAny(v))
+	}
+	return sb.String()
+}
+
+func colorizeAny(v any) string {
+	switch v := v.(type) {
+	case *unstructured.Unstructured:
+		return colorizeUnstructured(v)
+	case dryRunType:
+		return colorizeDryRun(v)
+	case ssa.Action:
+		return colorizeAction(v)
+	case ssa.ChangeSetEntry:
+		return colorizeChangeSetEntry(v)
+	case *ssa.ChangeSetEntry:
+		return colorizeChangeSetEntry(*v)
+	case string:
+		return v
+	default:
+		return fmt.Sprint(v)
+	}
+}
+
+func colorizeSubject(subject string) string {
+	return color.CyanString(subject)
+}
+
+func colorizeNamespaceFromArgs() string {
+	return colorizeSubject("Namespace/" + *kubeconfigArgs.Namespace)
+}
+
+func colorizeUnstructured(object *unstructured.Unstructured) string {
+	return colorizeSubject(ssa.FmtUnstructured(object))
+}
+
+func colorizeAction(action ssa.Action) string {
+	if c, ok := colorPerAction[action]; ok {
+		return c.Sprint(action)
+	}
+	return action.String()
+}
+
+func colorizeChange(subject string, action ssa.Action) string {
+	return fmt.Sprintf("%s %s", colorizeSubject(subject), colorizeAction(action))
+}
+
+func colorizeChangeSetEntry(change ssa.ChangeSetEntry) string {
+	return colorizeChange(change.Subject, change.Action)
+}
+
+func colorizeDryRun(dryRun dryRunType) string {
+	return colorDryRun.Sprint(string(dryRun))
+}
+
+func colorizeBundle(bundle string) string {
+	return colorCallerPrefix.Sprint("b:") + colorBundle.Sprint(bundle)
+}
+
+func colorizeInstance(instance string) string {
+	return colorCallerPrefix.Sprint("i:") + colorInstance.Sprint(instance)
+}
+
+func LoggerBundle(ctx context.Context, bundle string) logr.Logger {
+	if !rootArgs.prettyLog {
+		return LoggerFrom(ctx, "bundle", bundle)
+	}
+	return LoggerFrom(ctx, "caller", colorizeBundle(bundle))
+}
+
+func LoggerInstance(ctx context.Context, instance string) logr.Logger {
+	if !rootArgs.prettyLog {
+		return LoggerFrom(ctx, "instance", instance)
+	}
+	return LoggerFrom(ctx, "caller", colorizeInstance(instance))
+}
+
+func LoggerBundleInstance(ctx context.Context, bundle, instance string) logr.Logger {
+	if !rootArgs.prettyLog {
+		return LoggerFrom(ctx, "bundle", bundle, "instance", instance)
+	}
+	return LoggerFrom(ctx, "caller", fmt.Sprintf("%s %s %s", colorizeBundle(bundle), color.CyanString(">"), colorizeInstance(instance)))
 }
 
 // LoggerFrom returns a logr.Logger with predefined values from a context.Context.
