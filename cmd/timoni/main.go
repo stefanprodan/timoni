@@ -83,7 +83,8 @@ func init() {
 	addKubeConfigFlags(rootCmd)
 
 	rootCmd.DisableAutoGenTag = true
-	rootCmd.SetOut(os.Stdout)
+	rootCmd.SetOut(color.Output)
+	rootCmd.SetErr(color.Error)
 
 	oci.UserAgent = apiv1.UserAgent
 	oci.CanonicalConfigMediaType = apiv1.ConfigMediaType

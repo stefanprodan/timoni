@@ -39,7 +39,7 @@ import (
 // Pretty print adds timestamp, log level and colorized output to the logs.
 func NewConsoleLogger() logr.Logger {
 	color.NoColor = !rootArgs.coloredLog
-	zconfig := zerolog.ConsoleWriter{Out: os.Stderr, NoColor: !rootArgs.coloredLog}
+	zconfig := zerolog.ConsoleWriter{Out: color.Error, NoColor: !rootArgs.coloredLog}
 	if !rootArgs.prettyLog {
 		zconfig.PartsExclude = []string{
 			zerolog.TimestampFieldName,
