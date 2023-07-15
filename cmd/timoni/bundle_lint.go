@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"cuelang.org/go/cue/cuecontext"
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -68,8 +69,8 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	ctx := cuecontext.New()
-	bm := engine.NewBundleBuilder(ctx, files)
+	cuectx := cuecontext.New()
+	bm := engine.NewBundleBuilder(cuectx, files)
 
 	if err := bm.InitWorkspace(tmpDir); err != nil {
 		return describeErr(tmpDir, "failed to parse bundle", err)
@@ -84,6 +85,7 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	log = LoggerBundle(logr.NewContext(cmd.Context(), log), bundle.Name)
 
 	if len(bundle.Instances) == 0 {
 		return fmt.Errorf("no instances found in bundle")
@@ -93,7 +95,8 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 		if i.Namespace == "" {
 			return fmt.Errorf("instance %s does not have a namespace", i.Name)
 		}
-		log.Info(fmt.Sprintf("instance %s is valid", i.Name))
+		log := LoggerBundleInstance(logr.NewContext(cmd.Context(), log), bundle.Name, i.Name)
+		log.Info("instance is valid")
 	}
 
 	log.Info("bundle is valid")
