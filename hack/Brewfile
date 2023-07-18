@@ -1,0 +1,16 @@
+# Kubernetes
+brew "kubectl"
+brew "kind"
+
+# Kubernetes tools
+brew "yq"
+brew "jq"
+brew "cue"
+
+# OCI tools
+brew "crane"
+brew "cosign"
+
+# Timoni
+tap "stefanprodan/tap"
+brew "stefanprodan/tap/timoni"
