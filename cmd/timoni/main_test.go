@@ -130,6 +130,7 @@ func resetCmdArgs() {
 	bundleApplyArgs = bundleApplyFlags{}
 	bundleLintArgs = bundleLintFlags{}
 	bundleDelArgs = bundleDelFlags{}
+	bundleBuildArgs = bundleBuildFlags{}
 }
 
 func rnd(prefix string, n int) string {
