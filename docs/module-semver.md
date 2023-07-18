@@ -76,10 +76,9 @@ Example:
 
 ```console
 $ timoni mod list oci://ghcr.io/stefanprodan/modules/redis
-VERSION DIGEST                                                                  
-latest  sha256:7fcb6f6918902c0dedc2ba4545fbdeca119a04644a53400af15b977e3921c600 
-7.0.10  sha256:7fcb6f6918902c0dedc2ba4545fbdeca119a04644a53400af15b977e3921c600 
-7.0.9   sha256:e9137d41b0d263bfaf2a43fc862648ad9dc3a976b4b0fc6e27617ea28ee27d45 
-7.0.8   sha256:9340d4651f15305e7932c2fd9abf131d88fe77be2f0f3b6a0c3ede9772c3f622 
-7.0.7   sha256:ba83770ce982fb6532a765009ed0429c4729bdeaa7421277618d4fb38c106be8 
+VERSION	DIGEST                                                                  
+latest 	sha256:b58f3af3ef7a8e588a77a2a2f37af0a9ffc408fb27ff3f6ecbd2db42cf2a4297	
+7.0.12 	sha256:b58f3af3ef7a8e588a77a2a2f37af0a9ffc408fb27ff3f6ecbd2db42cf2a4297	
+7.0.11 	sha256:0e0f40e7824ff8c59e309d9b8bf19e235c6e779c93aafeeeaa86cbca49989950	
+7.0.10 	sha256:7fcb6f6918902c0dedc2ba4545fbdeca119a04644a53400af15b977e3921c600	
 ```

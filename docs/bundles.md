@@ -19,7 +19,7 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.0.10"
+				version: "7.0.12"
 			}
 			namespace: "podinfo"
 			values: maxmemory: 256
@@ -66,8 +66,8 @@ Apply the Bundle on the cluster:
 
       ```text
       applying instance redis
-      pulling oci://ghcr.io/stefanprodan/modules/redis:7.0.10
-      using module timoni.sh/redis version 7.0.10
+      pulling oci://ghcr.io/stefanprodan/modules/redis:7.0.12
+      using module timoni.sh/redis version 7.0.12
       installing redis in namespace podinfo
       Namespace/podinfo created
       applying master
@@ -112,7 +112,7 @@ Build the Bundle and print the resulting Kubernetes resources for all of the Bun
       metadata:
       labels:
         app.kubernetes.io/part-of: redis
-        app.kubernetes.io/version: 7.0.10
+        app.kubernetes.io/version: 7.0.12
       name: redis
       namespace: podinfo
       ---
@@ -132,7 +132,7 @@ Build the Bundle and print the resulting Kubernetes resources for all of the Bun
       metadata:
       labels:
         app.kubernetes.io/part-of: redis
-        app.kubernetes.io/version: 7.0.10
+        app.kubernetes.io/version: 7.0.12
       name: redis
       namespace: podinfo
       ---
@@ -142,7 +142,7 @@ Build the Bundle and print the resulting Kubernetes resources for all of the Bun
       labels:
         app.kubernetes.io/name: redis-master
         app.kubernetes.io/part-of: redis
-        app.kubernetes.io/version: 7.0.10
+        app.kubernetes.io/version: 7.0.12
       name: redis
       namespace: podinfo
       spec:
@@ -161,7 +161,7 @@ Build the Bundle and print the resulting Kubernetes resources for all of the Bun
       labels:
         app.kubernetes.io/name: redis-replica
         app.kubernetes.io/part-of: redis
-        app.kubernetes.io/version: 7.0.10
+        app.kubernetes.io/version: 7.0.12
       name: redis-readonly
       namespace: podinfo
       spec:
@@ -180,7 +180,7 @@ Build the Bundle and print the resulting Kubernetes resources for all of the Bun
       labels:
         app.kubernetes.io/name: redis-master
         app.kubernetes.io/part-of: redis
-        app.kubernetes.io/version: 7.0.10
+        app.kubernetes.io/version: 7.0.12
       name: redis-master
       namespace: podinfo
       spec:
@@ -198,7 +198,7 @@ Build the Bundle and print the resulting Kubernetes resources for all of the Bun
           - command:
             - redis-server
             - /redis-master/redis.conf
-            image: cgr.dev/chainguard/redis:7.0.10
+            image: cgr.dev/chainguard/redis@sha256:9cdc90a57fa0cc23dce9a934313cc5412a3b8415a60e79797ee9cb4ca04a3968
             imagePullPolicy: IfNotPresent
             livenessProbe:
               initialDelaySeconds: 2
@@ -258,7 +258,7 @@ Build the Bundle and print the resulting Kubernetes resources for all of the Bun
       labels:
         app.kubernetes.io/name: redis-replica
         app.kubernetes.io/part-of: redis
-        app.kubernetes.io/version: 7.0.10
+        app.kubernetes.io/version: 7.0.12
       name: redis-replica
       namespace: podinfo
       spec:
@@ -281,7 +281,7 @@ Build the Bundle and print the resulting Kubernetes resources for all of the Bun
             - "6379"
             - --include
             - /redis-replica/redis.conf
-            image: cgr.dev/chainguard/redis:7.0.10
+            image: cgr.dev/chainguard/redis@sha256:9cdc90a57fa0cc23dce9a934313cc5412a3b8415a60e79797ee9cb4ca04a3968
             imagePullPolicy: IfNotPresent
             livenessProbe:
               initialDelaySeconds: 2
@@ -339,7 +339,7 @@ Build the Bundle and print the resulting Kubernetes resources for all of the Bun
       metadata:
       labels:
         app.kubernetes.io/part-of: redis
-        app.kubernetes.io/version: 7.0.10
+        app.kubernetes.io/version: 7.0.12
       name: redis-master
       namespace: podinfo
       spec:
@@ -433,8 +433,8 @@ List the instances in Bundle `podinfo` across all namespaces:
 
      ```text
      NAME    NAMESPACE         MODULE                                          VERSION LAST APPLIED          BUNDLE
-     podinfo podinfo           oci://ghcr.io/stefanprodan/modules/podinfo      6.3.5   2023-04-10T16:20:07Z  podinfo
-     redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        7.0.10  2023-04-10T16:20:00Z  podinfo
+     podinfo podinfo           oci://ghcr.io/stefanprodan/modules/podinfo      6.3.5   2023-07-10T16:20:07Z  podinfo
+     redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        7.0.12  2023-07-10T16:20:00Z  podinfo
      ```
 
 List the instance resources and their rollout status:
@@ -470,7 +470,7 @@ See an instance module reference and its digest:
      ```text
      name: timoni.sh/redis
      repository: oci://ghcr.io/stefanprodan/modules/redis
-     version: 7.0.10
+     version: 7.0.12
      digest: sha256:7fcb6f6918902c0dedc2ba4545fbdeca119a04644a53400af15b977e3921c600
      ```
 

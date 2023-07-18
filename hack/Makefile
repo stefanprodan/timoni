@@ -29,6 +29,14 @@ push: # Push the example modules to the local registry
 deploy: # Deploy a bundle using the modules from the local registry
 	timoni bundle apply -f $(REPOSITORY_ROOT)/hack/local/podinfo.bundle.cue
 
+.PHONY: redis-ver
+redis-ver: # Get latest redis version and digest
+	@$(REPOSITORY_ROOT)/hack/cgr/latest-digest.sh redis
+
+.PHONY: nginx-ver
+nginx-ver: # Get latest nginx version and digest
+	@$(REPOSITORY_ROOT)/hack/cgr/latest-digest.sh nginx
+
 .PHONY: help
 help:  ## Display this help menu
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
