@@ -33,7 +33,7 @@ The Redis cluster can be accessed using the following Kubernetes Services:
 To install a specific module version:
 
 ```shell
-timoni -n default apply redis oci://ghcr.io/stefanprodan/modules/redis -v 7.0.10
+timoni -n default apply redis oci://ghcr.io/stefanprodan/modules/redis -v 7.0.12
 ```
 
 To change the [default configuration](#configuration),
@@ -100,7 +100,7 @@ timoni -n default delete redis
 | Key                          | Type                                    | Default                    | Description                                                                                                                                  |
 |------------------------------|-----------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
 | `image: tag:`                | `string`                                | `<latest version>`         | Container image tag                                                                                                                          |
-| `image: digest:`             | `string`                                | `""`                       | Container image digest, takes precedence over `tag` when specified                                                                           |
+| `image: digest:`             | `string`                                | `<latest digest>`          | Container image digest, takes precedence over `tag` when specified                                                                           |
 | `image: repository:`         | `string`                                | `cgr.dev/chainguard/redis` | Container image repository                                                                                                                   |
 | `image: pullPolicy:`         | `string`                                | `IfNotPresent`             | [Kubernetes image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy)                                     |
 | `metadata: labels:`          | `{[ string]: string}`                   | `{}`                       | Common labels for all resources                                                                                                              |
