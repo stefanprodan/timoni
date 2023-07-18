@@ -26,7 +26,7 @@ jobs:
       - name: Generate cmd docs
         run: make docs
       - name: Run mkdocs
-        uses: mhausenblas/mkdocs-deploy-gh-pages@2833747909e0fab61db67a60e8d6e91a871f60aa # master
+        uses: mhausenblas/mkdocs-deploy-gh-pages@e55ecab6718b449a90ebd4313f1320f9327f1386 # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CUSTOM_DOMAIN: timoni.sh
