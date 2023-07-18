@@ -18,9 +18,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/cli-utils/pkg/kstatus/status"
@@ -65,7 +65,7 @@ func runstatusCmd(cmd *cobra.Command, args []string) error {
 
 	statusArgs.name = args[0]
 
-	log := LoggerFrom(cmd.Context())
+	log := LoggerInstance(cmd.Context(), statusArgs.name)
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
@@ -91,19 +91,19 @@ func runstatusCmd(cmd *cobra.Command, args []string) error {
 		err = rm.Client().Get(ctx, client.ObjectKeyFromObject(obj), obj)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Error(err, fmt.Sprintf("%s NotFound", ssa.FmtUnstructured(obj)))
+				log.Error(err, colorizeJoin(obj, errors.New("NotFound")))
 				continue
 			}
-			log.Error(err, fmt.Sprintf("%s query failed", ssa.FmtUnstructured(obj)))
+			log.Error(err, colorizeJoin(obj, errors.New("query failed")))
 			continue
 		}
 
 		res, err := status.Compute(obj)
 		if err != nil {
-			log.Error(err, fmt.Sprintf("%s status failed", ssa.FmtUnstructured(obj)))
+			log.Error(err, colorizeJoin(obj, errors.New("statusFailed failed")))
 			continue
 		}
-		log.Info(fmt.Sprintf("%s %s %s", ssa.FmtUnstructured(obj), res.Status, res.Message))
+		log.Info(colorizeJoin(obj, res.Status, "-", res.Message))
 	}
 
 	return nil

@@ -55,6 +55,9 @@ func completeNamespaceList(cmd *cobra.Command, args []string, toComplete string)
 	defer cancel()
 
 	namespaces, err := iStorage.ListNamespaces(ctx)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
 
 	var completions []string
 	for _, ns := range namespaces {

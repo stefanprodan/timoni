@@ -32,6 +32,7 @@ import (
 	gcrLog "github.com/google/go-containerregistry/pkg/logs"
 	"github.com/rs/zerolog"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/cli-utils/pkg/kstatus/status"
 	runtimeLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -39,7 +40,7 @@ import (
 // Pretty print adds timestamp, log level and colorized output to the logs.
 func NewConsoleLogger() logr.Logger {
 	color.NoColor = !rootArgs.coloredLog
-	zconfig := zerolog.ConsoleWriter{Out: os.Stderr, NoColor: !rootArgs.coloredLog}
+	zconfig := zerolog.ConsoleWriter{Out: color.Error, NoColor: !rootArgs.coloredLog}
 	if !rootArgs.prettyLog {
 		zconfig.PartsExclude = []string{
 			zerolog.TimestampFieldName,
@@ -64,6 +65,7 @@ func NewConsoleLogger() logr.Logger {
 
 var (
 	colorDryRun       = color.New(color.FgHiBlack, color.Italic)
+	colorError        = color.New(color.FgHiRed)
 	colorCallerPrefix = color.New(color.FgHiBlack)
 	colorBundle       = color.New(color.FgHiMagenta)
 	colorInstance     = color.New(color.FgHiMagenta)
@@ -73,7 +75,15 @@ var (
 		ssa.UnchangedAction:  color.New(color.FgHiBlack),
 		ssa.DeletedAction:    color.New(color.FgRed),
 		ssa.SkippedAction:    color.New(color.FgHiBlack),
-		ssa.UnknownAction:    color.New(color.FgYellow),
+		ssa.UnknownAction:    color.New(color.FgYellow, color.Italic),
+	}
+	colorPerStatus = map[status.Status]*color.Color{
+		status.InProgressStatus:  color.New(color.FgHiCyan, color.Italic),
+		status.FailedStatus:      color.New(color.FgHiRed),
+		status.CurrentStatus:     color.New(color.FgHiGreen),
+		status.TerminatingStatus: color.New(color.FgRed),
+		status.NotFoundStatus:    color.New(color.FgYellow, color.Italic),
+		status.UnknownStatus:     color.New(color.FgYellow, color.Italic),
 	}
 )
 
@@ -107,6 +117,10 @@ func colorizeAny(v any) string {
 		return colorizeChangeSetEntry(v)
 	case *ssa.ChangeSetEntry:
 		return colorizeChangeSetEntry(*v)
+	case status.Status:
+		return colorizeStatus(v)
+	case error:
+		return colorizeError(v)
 	case string:
 		return v
 	default:
@@ -143,6 +157,17 @@ func colorizeChangeSetEntry(change ssa.ChangeSetEntry) string {
 
 func colorizeDryRun(dryRun dryRunType) string {
 	return colorDryRun.Sprint(string(dryRun))
+}
+
+func colorizeError(err error) string {
+	return colorError.Sprint(err.Error())
+}
+
+func colorizeStatus(status status.Status) string {
+	if c, ok := colorPerStatus[status]; ok {
+		return c.Sprint(status)
+	}
+	return status.String()
 }
 
 func colorizeBundle(bundle string) string {

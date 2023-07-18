@@ -80,7 +80,7 @@ func runInspectResourcesCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, meta := range metas {
-		cmd.OutOrStdout().Write([]byte(fmt.Sprintf("%s\n", ssa.FmtObjMetadata(meta))))
+		fmt.Fprintln(cmd.OutOrStdout(), colorizeSubject(ssa.FmtObjMetadata(meta)))
 	}
 
 	return nil

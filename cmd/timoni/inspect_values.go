@@ -74,6 +74,6 @@ func runInspectValuesCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cmd.OutOrStdout().Write([]byte("values: " + inst.Values + "\n"))
+	fmt.Fprintln(cmd.OutOrStdout(), "values:", inst.Values)
 	return nil
 }
