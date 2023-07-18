@@ -51,9 +51,8 @@ func init() {
 }
 
 const (
-	modTemplateName      = "podinfo"
-	modTemplateURL       = "ghcr.io/stefanprodan/modules/podinfo"
-	modTemplateImageRepo = "ghcr.io/stefanprodan"
+	modTemplateName = "minimal"
+	modTemplateURL  = "ghcr.io/stefanprodan/modules/minimal"
 )
 
 func runInitModCmd(cmd *cobra.Command, args []string) error {
@@ -125,29 +124,15 @@ func copyModuleFile(mName, mTmpl, src, dst string) (err error) {
 		}
 	}()
 
-	if filepath.Base(in.Name()) == "README.md" {
-		_, err = io.Copy(out, in)
-		if err != nil {
-			return
-		}
-	} else {
-		data, err := io.ReadAll(in)
-		if err != nil {
-			return err
-		}
-		txt := strings.Replace(string(data), mTmpl, mName, -1)
+	data, err := io.ReadAll(in)
+	if err != nil {
+		return err
+	}
+	txt := strings.Replace(string(data), mTmpl, mName, -1)
 
-		// TODO: find a better way to preserve the container image original name
-		txt = strings.Replace(
-			txt,
-			fmt.Sprintf("%s/%s", modTemplateImageRepo, mName),
-			fmt.Sprintf("%s/%s", modTemplateImageRepo, mTmpl),
-			-1,
-		)
-		_, err = io.WriteString(out, txt)
-		if err != nil {
-			return err
-		}
+	_, err = io.WriteString(out, txt)
+	if err != nil {
+		return err
 	}
 
 	err = out.Sync()
