@@ -2,9 +2,9 @@ name: e2e
 
 on:
   pull_request:
-    branches: [main]
+    branches: [ main ]
   push:
-    branches: [main]
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -35,45 +35,26 @@ jobs:
           cluster_name: kind
       - name: Install
         run: make install
-      - name: Push
+      - name: Push module
         run: |
-          timoni mod push ./examples/podinfo oci://localhost:5000/podinfo \
-            --version 1.0.0 \
-            --latest
-      - name: Template
+          timoni mod push ./examples/minimal oci://localhost:5000/minimal -v 1.0.0 --latest
+      - name: Install module
         run: |
-          timoni template podinfo oci://localhost:5000/podinfo \
-            --values ./examples/podinfo-values/psp-values.cue \
-            --version 1.0.0
-      - name: Install
-        run: |
-          timoni install podinfo oci://localhost:5000/podinfo \
-            --namespace test \
-            --wait
-      - name: Upgrade (enable HPA)
-        run: |
-          timoni upgrade podinfo oci://localhost:5000/podinfo \
-            -f ./examples/podinfo-values/ha-values.cue \
-            --namespace test \
-            --wait
-      - name: Upgrade (disable HPA, enable ingress)
-        run: |
-          timoni apply podinfo oci://localhost:5000/podinfo \
-            -f ./examples/podinfo-values/psp-values.cue \
-            -f ./examples/podinfo-values/ingress-values.cue \
-            --namespace test \
-            --wait
-      - name: List
+          timoni -n test apply nginx oci://localhost:5000/minimal
+      - name: List modules
         run: |
           timoni list -A
-      - name: Inspect
+      - name: Upgrade module
         run: |
-          timoni inspect resources podinfo -n test
-          timoni inspect module podinfo -n test
-          timoni inspect values podinfo -n test
-      - name: Status
+          echo 'values: message: "e2e"' | timoni -n test apply nginx oci://localhost:5000/minimal -v 1.0.0 -f-
+      - name: Inspect module
         run: |
-          timoni status podinfo -n test
-      - name: Uninstall
+          timoni -n test inspect resources nginx
+          timoni -n test inspect module nginx
+          timoni -n test inspect values nginx
+      - name: Status module
         run: |
-          timoni uninstall podinfo -n test --wait
+          timoni -n test status nginx
+      - name: Uninstall module
+        run: |
+          timoni -n test delete nginx --wait
