@@ -37,20 +37,24 @@ import (
 						]
 						livenessProbe: {
 							httpGet: {
-								path: "/"
+								path: "/healthz"
 								port: "http"
 							}
 						}
 						readinessProbe: {
 							httpGet: {
-								path: "/"
+								path: "/healthz"
 								port: "http"
 							}
 						}
 						volumeMounts: [
 							{
-								mountPath: "/usr/share/nginx/html"
+								mountPath: "/etc/nginx/conf.d"
 								name:      "config"
+							},
+							{
+								mountPath: "/usr/share/nginx/html"
+								name:      "html"
 							},
 						]
 						if _config.resources != _|_ {
@@ -66,6 +70,20 @@ import (
 						name: "config"
 						configMap: {
 							name: _cmName
+							items: [{
+								key:  "nginx.default.conf"
+								path: key
+							}]
+						}
+					},
+					{
+						name: "html"
+						configMap: {
+							name: _cmName
+							items: [{
+								key:  "index.html"
+								path: key
+							}]
 						}
 					},
 				]

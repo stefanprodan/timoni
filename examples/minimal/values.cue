@@ -12,7 +12,3 @@ values: {
 		tag:        "1.25.1"
 	}
 }
-
-values: {
-	// Placeholder for user-supplied values
-}

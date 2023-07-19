@@ -12,21 +12,44 @@ import (
 	_config:    #Config
 	apiVersion: "v1"
 	kind:       "ConfigMap"
-	let _data_sha = strings.Split(uuid.SHA1(uuid.ns.DNS, yaml.Marshal(data)), "-")[0]
 	metadata: {
-		name:         "\(_config.metadata.name)-\(_data_sha)"
+		name:         "\(_config.metadata.name)-\(_checksum)"
 		namespace:    _config.metadata.namespace
 		labels:       _config.metadata.labels
 		annotations?: _config.metadata.annotations
 	}
 	immutable: true
-	data:
-		"index.html": """
+	let _checksum = strings.Split(uuid.SHA1(uuid.ns.DNS, yaml.Marshal(data)), "-")[0]
+	data: {
+		"nginx.default.conf": """
+			server {
+				listen       8080;
+				server_name  \(_config.metadata.name);
+
+				location / {
+			  	root   /usr/share/nginx/html;
+			  	index  index.html index.htm;
+				}
+
+				location /healthz {
+					access_log off;
+					default_type text/plain;
+					return 200 "OK";
+				}
+
+				error_page  404              /404.html;
+			  error_page   500 502 503 504  /50x.html;
+			  location = /50x.html {
+			    root   /usr/share/nginx/html;
+			  }
+			}
+			"""
+		"index.html":         """
 			<!doctype html>
 			<html lang="en">
 			<head>
 			 	<meta charset="utf-8">
-			 	<meta http-equiv="refresh" content="5" />
+			 	<meta http-equiv="refresh" content="10" />
 				<title>\(_config.metadata.name)</title>
 				<style>
 				html { color-scheme: light dark; }
@@ -40,4 +63,5 @@ import (
 			</body>
 			</html>
 			"""
+	}
 }
