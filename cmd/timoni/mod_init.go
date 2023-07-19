@@ -52,7 +52,7 @@ func init() {
 
 const (
 	modTemplateName = "minimal"
-	modTemplateURL  = "ghcr.io/stefanprodan/modules/minimal"
+	modTemplateURL  = "ghcr.io/stefanprodan/timoni/minimal"
 )
 
 func runInitModCmd(cmd *cobra.Command, args []string) error {

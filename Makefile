@@ -44,7 +44,7 @@ lint-samples: build
 
 MINIMAL_VER ?= "0.0.1"
 push-minimal: build
-	./bin/timoni mod push ./examples/minimal oci://ghcr.io/stefanprodan/modules/minimal -v $(MINIMAL_VER) --latest \
+	./bin/timoni mod push ./examples/minimal oci://ghcr.io/stefanprodan/timoni/minimal -v $(MINIMAL_VER) --latest \
 		--source https://github.com/stefanprodan/timoni/tree/main/examples/minimal  \
 		-a 'org.opencontainers.image.description=A minimal timoni.sh module example.' \
 		-a 'org.opencontainers.image.documentation=https://github.com/stefanprodan/timoni/blob/main/examples/minimal/README.md'
