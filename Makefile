@@ -34,11 +34,20 @@ vet: ## Vet Go code.
 	go vet ./...
 
 lint-samples: build
+	./bin/timoni mod lint ./examples/minimal
 	./bin/timoni mod lint ./examples/podinfo
+	./bin/timoni mod lint ./examples/redis
 	cue fmt ./examples/podinfo-values/
 	./bin/timoni mod lint ./cmd/timoni/testdata/module
 	./bin/timoni mod lint ./internal/engine/testdata/module
 	cue fmt ./internal/engine/testdata/module-values
+
+MINIMAL_VER ?= "0.0.1"
+push-minimal: build
+	./bin/timoni mod push ./examples/minimal oci://ghcr.io/stefanprodan/timoni/minimal -v $(MINIMAL_VER) --latest \
+		--source https://github.com/stefanprodan/timoni/tree/main/examples/minimal  \
+		-a 'org.opencontainers.image.description=A minimal timoni.sh module example.' \
+		-a 'org.opencontainers.image.documentation=https://github.com/stefanprodan/timoni/blob/main/examples/minimal/README.md'
 
 PODINFO_VER=$(shell cat ./examples/podinfo/templates/config.cue | awk '/tag:/ {print $$2}' | tr -d '*"')
 push-podinfo: build
