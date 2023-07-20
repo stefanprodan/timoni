@@ -40,6 +40,15 @@ bundle: {
             values: caching: {
                 enabled:  true
                 redisURL: "tcp://redis:6379"
+            },
+    	 }
+         podinfo: {
+            module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+            module: version: "6.3.5"
+            namespace: "podinfo"
+            values: caching: {
+                enabled:  true
+                redisURL: "tcp://redis:6379"
             }
         }
     }
@@ -49,7 +58,8 @@ bundle: {
 		builder := NewBundleBuilder(ctx, []string{})
 		b, err := builder.GetBundle(v)
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(b.Instances).To(HaveLen(1))
+		g.Expect(b.Instances).To(HaveLen(2))
 		g.Expect(b.Instances[0].Name).To(Equal("pod-info"))
+		g.Expect(b.Instances[1].Name).To(Equal("podinfo"))
 	})
 }
