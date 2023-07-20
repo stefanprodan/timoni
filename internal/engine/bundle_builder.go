@@ -172,7 +172,7 @@ func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
 	}
 
 	for iter.Next() {
-		name := iter.Selector().String()
+		name := iter.Selector().Unquoted()
 		expr := iter.Value()
 
 		vURL := expr.LookupPath(cue.ParsePath(apiv1.BundleModuleURLSelector.String()))
