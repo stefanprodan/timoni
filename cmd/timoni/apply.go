@@ -291,6 +291,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	waitOptions := ssa.WaitOptions{
 		Interval: 5 * time.Second,
 		Timeout:  rootArgs.timeout,
+		FailFast: true,
 	}
 
 	for _, set := range applySets {

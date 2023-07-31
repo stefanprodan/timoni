@@ -305,6 +305,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 	waitOptions := ssa.WaitOptions{
 		Interval: 5 * time.Second,
 		Timeout:  rootArgs.timeout,
+		FailFast: true,
 	}
 
 	for _, set := range bundleApplySets {
