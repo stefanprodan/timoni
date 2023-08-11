@@ -228,6 +228,27 @@ import (
 }
 ```
 
+### Controlling the apply behaviour
+
+Timoni allows module authors to change the default apply behaviour of Kubernetes resources
+using the following annotations:
+
+| Annotation                 | Values               |
+|----------------------------|----------------------|
+| `action.timoni.sh/force`   | `enabled`/`disabled` |
+| `action.timoni.sh/one-off` | `enabled`/`disabled` |
+| `action.timoni.sh/prune`   | `enabled`/`disabled` |
+
+To recreate immutable resources such as Kubernetes Jobs,
+these resources can be annotated with `action.timoni.sh/force: "enabled"`.
+
+To apply resources only if they don't exist on the cluster,
+these resources can be annotated with `action.timoni.sh/one-off: "enabled"`.
+
+To prevent Timoni's garbage collector from deleting certain
+resources such as Kubernetes Persistent Volumes,
+these resources can be annotated with `action.timoni.sh/prune: "disabled"`.
+
 ## Kubernetes types
 
 The `cue.mod` directory contains the Kubernetes types and their schema.
