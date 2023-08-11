@@ -18,11 +18,12 @@ package runtime
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"strings"
-	"time"
 
 	"github.com/fluxcd/pkg/ssa"
 	corev1 "k8s.io/api/core/v1"
@@ -92,6 +93,9 @@ func ApplyOptions(force bool, wait time.Duration) ssa.ApplyOptions {
 		Force: force,
 		ForceSelector: map[string]string{
 			apiv1.ForceAction: apiv1.EnabledValue,
+		},
+		IfNotPresentSelector: map[string]string{
+			apiv1.IfNotPresentAction: apiv1.EnabledValue,
 		},
 		WaitTimeout: wait,
 	}
