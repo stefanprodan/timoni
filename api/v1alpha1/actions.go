@@ -29,4 +29,8 @@ var (
 
 	// ForceAction is the annotation that defines if a Kubernetes resource should be recreated.
 	ForceAction = fmt.Sprintf("action.%s/force", GroupVersion.Group)
+
+	// IfNotPresentAction is the annotation that defines if a Kubernetes resource
+	// should be applied only if it doesn't exist on the cluster.
+	IfNotPresentAction = fmt.Sprintf("action.%s/one-off", GroupVersion.Group)
 )
