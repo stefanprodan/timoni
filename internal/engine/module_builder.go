@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
 
@@ -29,19 +30,22 @@ import (
 )
 
 const (
-	defaultPackage    = "main"
-	defaultValuesFile = "values.cue"
-	defaultSchemaFile = "timoni.schema.cue"
+	defaultPackage      = "main"
+	defaultValuesFile   = "values.cue"
+	defaultSchemaFile   = "timoni.schema.cue"
+	defaultDevelVersion = "0.0.0-devel"
 )
 
 // ModuleBuilder compiles CUE definitions to Kubernetes objects.
 type ModuleBuilder struct {
-	ctx        *cue.Context
-	moduleRoot string
-	pkgName    string
-	pkgPath    string
-	name       string
-	namespace  string
+	ctx           *cue.Context
+	moduleRoot    string
+	pkgName       string
+	pkgPath       string
+	name          string
+	namespace     string
+	moduleVersion string
+	kubeVersion   string
 }
 
 // NewModuleBuilder creates a ModuleBuilder for the given module and package.
@@ -50,12 +54,14 @@ func NewModuleBuilder(ctx *cue.Context, name, namespace, moduleRoot, pkgName str
 		ctx = cuecontext.New()
 	}
 	b := &ModuleBuilder{
-		ctx:        ctx,
-		moduleRoot: moduleRoot,
-		pkgName:    pkgName,
-		pkgPath:    moduleRoot,
-		name:       name,
-		namespace:  namespace,
+		ctx:           ctx,
+		moduleRoot:    moduleRoot,
+		pkgName:       pkgName,
+		pkgPath:       moduleRoot,
+		name:          name,
+		namespace:     namespace,
+		moduleVersion: defaultDevelVersion,
+		kubeVersion:   defaultDevelVersion,
 	}
 	if pkgName != defaultPackage {
 		b.pkgPath = filepath.Join(moduleRoot, pkgName)
@@ -116,6 +122,18 @@ func (b *ModuleBuilder) WriteSchemaFile() error {
 	return os.WriteFile(filepath.Join(b.pkgPath, defaultSchemaFile), []byte(cueGen), 0644)
 }
 
+// SetVersionInfo allows setting the Timoni module version and Kubernetes version,
+// which are injected at build time as optional CUE tags.
+func (b *ModuleBuilder) SetVersionInfo(moduleVersion, kubeVersion string) {
+	if moduleVersion != "" {
+		b.moduleVersion = moduleVersion
+	}
+
+	if kubeVersion != "" {
+		b.kubeVersion = kubeVersion
+	}
+}
+
 // Build builds a CUE instances for the specified package and returns the CUE value.
 func (b *ModuleBuilder) Build() (cue.Value, error) {
 	var value cue.Value
@@ -128,7 +146,18 @@ func (b *ModuleBuilder) Build() (cue.Value, error) {
 			"name=" + b.name,
 			"namespace=" + b.namespace,
 		},
-		TagVars: map[string]load.TagVar{},
+		TagVars: map[string]load.TagVar{
+			"moduleVersion": {
+				Func: func() (ast.Expr, error) {
+					return ast.NewString(b.moduleVersion), nil
+				},
+			},
+			"kubeVersion": {
+				Func: func() (ast.Expr, error) {
+					return ast.NewString(b.kubeVersion), nil
+				},
+			},
+		},
 	}
 
 	ix := load.Instances([]string{}, cfg)

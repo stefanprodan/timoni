@@ -18,6 +18,10 @@ import (
 	metadata: labels: "app.kubernetes.io/version": image.tag
 	metadata: annotations?: {[ string]:            string}
 
+	// Runtime version info
+	moduleVersion?: string
+	kubeVersion?:   string
+
 	// App settings
 	message: string
 

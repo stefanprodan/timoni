@@ -5,7 +5,9 @@ package templates
 		name:      *"test" | string
 		namespace: *"default" | string
 	}
-	hostname: *"default.internal" | string
+	hostname:      *"default.internal" | string
+	moduleVersion: string
+	kubeVersion:   string
 }
 
 #Instance: {

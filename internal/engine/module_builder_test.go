@@ -46,6 +46,8 @@ func TestModuleBuilder(t *testing.T) {
 	err = mb.MergeValuesFile([][]byte{mustReadFile(g, "testdata/module-values/overlay.cue")})
 	g.Expect(err).ToNot(HaveOccurred())
 
+	mb.SetVersionInfo("", "1.25.3")
+
 	val, err := mb.Build()
 	g.Expect(err).ToNot(HaveOccurred())
 
