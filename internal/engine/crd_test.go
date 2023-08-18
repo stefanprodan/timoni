@@ -81,14 +81,14 @@ func TestCRDYamlToCUE(t *testing.T) {
 	}
 }
 
-// NOTE - this printed output is created using the %#v format verb to print a a
-// cue.Value that points to a CUE definition (#-led label). In such cases, CUE's
-// formatter wraps the output in _#def: {}, because closedness is key to
-// express, but is not an internal property of a struct itself, but the label to
-// which its attached.
+// NOTE - this printed output is created via cue.Value.Syntax() and
+// format.Node() on an original cue.Value that was a definition (#-led label).
+// In such cases, CUE's formatter wraps the output in _#def: {}, because
+// closedness is key to express, but is not an internal property of a struct
+// itself, but the label to which its attached.
 //
-// However, this _#def is ephemeral, added only for printing - it does not
-// actually exist in the runtime graph.
+// However, this _#def is ephemerally added only during printing. It does not
+// exist at runtime in the graph; do not look for it with e.g. LookupPath().
 var goldenBucketFirstSchema = `import "strings"
 
 _#def
