@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/ast"
+	"cuelang.org/go/cue/ast/astutil"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/encoding/openapi"
 	"cuelang.org/go/encoding/yaml"
@@ -94,6 +96,8 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error decoding crd props into Go struct: %w", err)
 	}
+	// shorthand
+	kname := cc.Props.Spec.Names.Kind
 
 	vlist := crd.LookupPath(cue.ParsePath("spec.versions"))
 	if !vlist.Exists() {
@@ -105,16 +109,16 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 	}
 
 	ctx := crd.Context()
-	shell := ctx.CompileString(`
+	shell := ctx.CompileString(fmt.Sprintf(`
 		openapi: "3.0.0",
 		info: {
 			title: "dummy",
 			version: "1.0.0",
 		}
-		components: schemas: thedef: _
-	`)
-	schpath := cue.ParsePath("components.schemas.thedef")
-	defpath := cue.MakePath(cue.Def("thedef"))
+		components: schemas: %s: _
+	`, kname))
+	schpath := cue.ParsePath("components.schemas." + kname)
+	defpath := cue.MakePath(cue.Def(kname))
 
 	// The CUE stdlib openapi encoder expects a whole openapi document, and then
 	// operates on schema elements defined within #/components/schema. Each
@@ -133,11 +137,19 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		}
 		i++
 
+		doc := shell.FillPath(schpath, val.LookupPath(cue.ParsePath("schema.openAPIV3Schema")))
+		of, err := openapi.Extract(doc, &openapi.Config{})
+		if err != nil {
+			return nil, fmt.Errorf("could not convert schema for version %s to CUE: %w", ver, err)
+		}
+		// first, extract and get the schema handle itself
+		extracted := ctx.BuildFile(of)
+		// then unify with our desired base constraints
 		var ns string
 		if cc.Props.Spec.Scope != "Namespaced" {
 			ns = "?"
 		}
-		basev := ctx.CompileString(fmt.Sprintf(`
+		sch := extracted.FillPath(defpath, (ctx.CompileString(fmt.Sprintf(`
 			apiVersion: "%s/%s"
 			kind: "%s"
 
@@ -147,22 +159,84 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 				labels?:      [string]: string
 				annotations?: [string]: string
 			}
-		`, cc.Props.Spec.Group, ver, cc.Props.Spec.Names.Kind, ns))
+		`, cc.Props.Spec.Group, ver, kname, ns))))
+		// next, go back to an AST because it's easier to manipulate references there
+		schast := sch.Syntax(cue.All(), cue.Docs(true)).(*ast.File)
 
-		doc := shell.FillPath(schpath, val.LookupPath(cue.ParsePath("schema.openAPIV3Schema")))
-		of, err := openapi.Extract(doc, &openapi.Config{})
-		if err != nil {
-			return nil, fmt.Errorf("could not convert schema for version %s to CUE: %w", ver, err)
+		// First pass, remove all ellipses so we default to closedness, in
+		// keeping with the spirit of structural schema.
+		// TODO add handling for k8s permitted exceptions, like x-kubernetes-preserve-unknown-fields
+		ast.Walk(schast, func(n ast.Node) bool {
+			switch x := n.(type) {
+			case *ast.StructLit:
+				// Stuff could get weird with messing with node pointers while walking the tree,
+				// which is why
+				newlist := make([]ast.Decl, 0, len(x.Elts))
+				for _, elt := range x.Elts {
+					if _, is := elt.(*ast.Ellipsis); !is {
+						newlist = append(newlist, elt)
+					}
+				}
+				x.Elts = newlist
+			}
+			return true
+		}, nil)
+		specf, statusf := new(ast.Field), new(ast.Field)
+		astutil.Apply(schast, func(cursor astutil.Cursor) bool {
+			switch x := cursor.Node().(type) {
+			case *ast.Field:
+				if str, _, err := ast.LabelName(x.Label); err == nil {
+					switch str {
+					// Grab pointers to the spec and status fields, and replace with ref
+					case "spec":
+						*specf = *x
+						specref := &ast.Field{
+							Label: ast.NewIdent("spec"),
+							Value: ast.NewIdent("#" + kname + "Spec"),
+						}
+						astutil.CopyComments(specref, x)
+						cursor.Replace(specref)
+						return false
+					case "status":
+						*statusf = *x
+						statusref := &ast.Field{
+							Label: ast.NewIdent("status"),
+							Value: ast.NewIdent("#" + kname + "Status"),
+						}
+						astutil.CopyComments(statusref, x)
+						cursor.Replace(statusref)
+						return false
+					case "metadata":
+						// Avoid walking other known subtrees
+						return false
+					case "info":
+						cursor.Delete()
+					}
+				}
+			}
+			return true
+		}, nil)
+		specd := &ast.Field{
+			Label: ast.NewIdent("#" + kname + "Spec"),
+			Value: specf.Value,
 		}
-		sch := ctx.BuildFile(of)
+		astutil.CopyComments(specd, specf)
+		schast.Decls = append(schast.Decls, specd)
+
+		if statusf != nil {
+			statusd := &ast.Field{
+				Label: ast.NewIdent("#" + kname + "Status"),
+				Value: statusf.Value,
+			}
+			astutil.CopyComments(statusd, statusf)
+			schast.Decls = append(schast.Decls, statusd)
+		}
+
+		// Then build back to a cue.Value again for the return
 		cc.Schemas = append(cc.Schemas, VersionedSchema{
 			Version: ver,
-			Schema:  sch.LookupPath(defpath).Unify(basev),
+			Schema:  ctx.BuildFile(schast),
 		})
-
-		// Additional massaging of converted schemas should be done here. Lots
-		// could be done. One example: apiVersion field appears to be coming
-		// through conversion as optional.
 	}
 	return cc, nil
 }

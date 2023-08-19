@@ -74,7 +74,6 @@ func TestCRDYamlToCUE(t *testing.T) {
 	// committed to disk that shows what converted output looks like.
 	//
 	// TODO replace with a framework and a test suite that allows testing individual cases of valid constructs within CRD schemas
-	// g.Expect(string(n)).To(Equal(goldenBucketFirstSchema))
 	diff := cmp.Diff(string(n), goldenBucketFirstSchema)
 	if diff != "" {
 		t.Fatal(diff)
@@ -91,8 +90,8 @@ func TestCRDYamlToCUE(t *testing.T) {
 // exist at runtime in the graph; do not look for it with e.g. LookupPath().
 var goldenBucketFirstSchema = `import "strings"
 
-_#def
-_#def: {
+// Bucket is the Schema for the buckets API
+#Bucket: {
 	// APIVersion defines the versioned schema of this representation
 	// of an object. Servers should convert recognized schemas to the
 	// latest internal value, and may reject unrecognized values.
@@ -118,154 +117,146 @@ _#def: {
 	}
 
 	// BucketSpec defines the desired state of an S3 compatible bucket
-	spec?: {
-		// AccessFrom defines an Access Control List for allowing
-		// cross-namespace references to this object.
-		accessFrom?: {
-			// NamespaceSelectors is the list of namespace selectors to which
-			// this ACL applies. Items in this list are evaluated using a
-			// logical OR operation.
-			namespaceSelectors: [...{
-				// MatchLabels is a map of {key,value} pairs. A single {key,value}
-				// in the matchLabels map is equivalent to an element of
-				// matchExpressions, whose key field is "key", the operator is
-				// "In", and the values array contains only "value". The
-				// requirements are ANDed.
-				matchLabels?: {
-					[string]: string
-				}
-				...
-			}]
-			...
-		}
-
-		// The bucket name.
-		bucketName: string
-
-		// The bucket endpoint address.
-		endpoint: string
-
-		// Ignore overrides the set of excluded patterns in the
-		// .sourceignore format (which is the same as .gitignore). If not
-		// provided, a default will be used, consult the documentation
-		// for your version to find out what those are.
-		ignore?: string
-
-		// Insecure allows connecting to a non-TLS S3 HTTP endpoint.
-		insecure?: bool
-
-		// The interval at which to check for bucket updates.
-		interval: string
-
-		// The S3 compatible storage provider name, default ('generic').
-		provider?: "generic" | "aws" | "gcp" | *"generic"
-
-		// The bucket region.
-		region?: string
-
-		// The name of the secret containing authentication credentials
-		// for the Bucket.
-		secretRef?: {
-			// Name of the referent.
-			name: string
-			...
-		}
-
-		// This flag tells the controller to suspend the reconciliation of
-		// this source.
-		suspend?: bool
-
-		// The timeout for download operations, defaults to 60s.
-		timeout?: string | *"60s"
-		...
-	}
+	spec: #BucketSpec
 
 	// BucketStatus defines the observed state of a bucket
-	status?: {
-		// Artifact represents the output of the last successful Bucket
-		// sync.
-		artifact?: {
-			// Checksum is the SHA256 checksum of the artifact.
-			checksum?: string
+	status: #BucketStatus
+}
 
-			// LastUpdateTime is the timestamp corresponding to the last
-			// update of this artifact.
-			lastUpdateTime?: string
+// BucketSpec defines the desired state of an S3 compatible bucket
+#BucketSpec: {
+	accessFrom?: {
+		// NamespaceSelectors is the list of namespace selectors to which
+		// this ACL applies. Items in this list are evaluated using a
+		// logical OR operation.
+		namespaceSelectors: [...{
+			// MatchLabels is a map of {key,value} pairs. A single {key,value}
+			// in the matchLabels map is equivalent to an element of
+			// matchExpressions, whose key field is "key", the operator is
+			// "In", and the values array contains only "value". The
+			// requirements are ANDed.
+			matchLabels?: {
+				[string]: string
+			}
+		}]
+	}
 
-			// Path is the relative file path of this artifact.
-			path: string
+	// The bucket name.
+	bucketName: string
 
-			// Revision is a human readable identifier traceable in the origin
-			// source system. It can be a Git commit SHA, Git tag, a Helm
-			// index timestamp, a Helm chart version, etc.
-			revision?: string
+	// The bucket endpoint address.
+	endpoint: string
 
-			// URL is the HTTP address of this artifact.
-			url: string
-			...
+	// Ignore overrides the set of excluded patterns in the
+	// .sourceignore format (which is the same as .gitignore). If not
+	// provided, a default will be used, consult the documentation
+	// for your version to find out what those are.
+	ignore?: string
+
+	// Insecure allows connecting to a non-TLS S3 HTTP endpoint.
+	insecure?: bool
+
+	// The interval at which to check for bucket updates.
+	interval: string
+
+	// The S3 compatible storage provider name, default ('generic').
+	provider?: "generic" | "aws" | "gcp" | *"generic"
+
+	// The bucket region.
+	region?: string
+	secretRef?: {
+		// Name of the referent.
+		name: string
+	}
+
+	// This flag tells the controller to suspend the reconciliation of
+	// this source.
+	suspend?: bool
+
+	// The timeout for download operations, defaults to 60s.
+	timeout?: string | *"60s"
+}
+
+// BucketStatus defines the observed state of a bucket
+#BucketStatus: {
+	// Artifact represents the output of the last successful Bucket
+	// sync.
+	artifact?: {
+		// Checksum is the SHA256 checksum of the artifact.
+		checksum?: string
+
+		// LastUpdateTime is the timestamp corresponding to the last
+		// update of this artifact.
+		lastUpdateTime?: string
+
+		// Path is the relative file path of this artifact.
+		path: string
+
+		// Revision is a human readable identifier traceable in the origin
+		// source system. It can be a Git commit SHA, Git tag, a Helm
+		// index timestamp, a Helm chart version, etc.
+		revision?: string
+
+		// URL is the HTTP address of this artifact.
+		url: string
+	}
+
+	// Conditions holds the conditions for the Bucket.
+	conditions?: [...{
+		// lastTransitionTime is the last time the condition transitioned
+		// from one status to another. This should be when the underlying
+		// condition changed. If that is not known, then using the time
+		// when the API field changed is acceptable.
+		lastTransitionTime: string
+
+		// message is a human readable message indicating details about
+		// the transition. This may be an empty string.
+		message: strings.MaxRunes(32768)
+
+		// observedGeneration represents the .metadata.generation that the
+		// condition was set based upon. For instance, if
+		// .metadata.generation is currently 12, but the
+		// .status.conditions[x].observedGeneration is 9, the condition
+		// is out of date with respect to the current state of the
+		// instance.
+		observedGeneration?: >=0 & int
+
+		// reason contains a programmatic identifier indicating the reason
+		// for the condition's last transition. Producers of specific
+		// condition types may define expected values and meanings for
+		// this field, and whether the values are considered a guaranteed
+		// API. The value should be a CamelCase string. This field may
+		// not be empty.
+		reason: strings.MaxRunes(1024) & strings.MinRunes(1) & {
+			=~"^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$"
 		}
 
-		// Conditions holds the conditions for the Bucket.
-		conditions?: [...{
-			// lastTransitionTime is the last time the condition transitioned
-			// from one status to another. This should be when the underlying
-			// condition changed. If that is not known, then using the time
-			// when the API field changed is acceptable.
-			lastTransitionTime: string
+		// status of the condition, one of True, False, Unknown.
+		status: "True" | "False" | "Unknown"
 
-			// message is a human readable message indicating details about
-			// the transition. This may be an empty string.
-			message: strings.MaxRunes(32768)
+		// type of condition in CamelCase or in foo.example.com/CamelCase.
+		// --- Many .condition.type values are consistent across
+		// resources like Available, but because arbitrary conditions can
+		// be useful (see .node.status.conditions), the ability to
+		// deconflict is important. The regex it matches is
+		// (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+		type: strings.MaxRunes(316) & {
+			=~"^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
+		}
+	}]
 
-			// observedGeneration represents the .metadata.generation that the
-			// condition was set based upon. For instance, if
-			// .metadata.generation is currently 12, but the
-			// .status.conditions[x].observedGeneration is 9, the condition
-			// is out of date with respect to the current state of the
-			// instance.
-			observedGeneration?: >=0 & int
+	// LastHandledReconcileAt holds the value of the most recent
+	// reconcile request value, so a change of the annotation value
+	// can be detected.
+	lastHandledReconcileAt?: string
 
-			// reason contains a programmatic identifier indicating the reason
-			// for the condition's last transition. Producers of specific
-			// condition types may define expected values and meanings for
-			// this field, and whether the values are considered a guaranteed
-			// API. The value should be a CamelCase string. This field may
-			// not be empty.
-			reason: strings.MaxRunes(1024) & strings.MinRunes(1) & {
-				=~"^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$"
-			}
+	// ObservedGeneration is the last observed generation.
+	observedGeneration?: int
 
-			// status of the condition, one of True, False, Unknown.
-			status: "True" | "False" | "Unknown"
-
-			// type of condition in CamelCase or in foo.example.com/CamelCase.
-			// --- Many .condition.type values are consistent across
-			// resources like Available, but because arbitrary conditions can
-			// be useful (see .node.status.conditions), the ability to
-			// deconflict is important. The regex it matches is
-			// (dns1123SubdomainFmt/)?(qualifiedNameFmt)
-			type: strings.MaxRunes(316) & {
-				=~"^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
-			}
-			...
-		}]
-
-		// LastHandledReconcileAt holds the value of the most recent
-		// reconcile request value, so a change of the annotation value
-		// can be detected.
-		lastHandledReconcileAt?: string
-
-		// ObservedGeneration is the last observed generation.
-		observedGeneration?: int
-
-		// URL is the download link for the artifact output of the last
-		// Bucket sync.
-		url?: string
-		...
-	} | *{
-		observedGeneration: -1
-		...
-	}
-	...
+	// URL is the download link for the artifact output of the last
+	// Bucket sync.
+	url?: string
+} | *{
+	observedGeneration: -1
 }
 `
