@@ -84,8 +84,8 @@ func TestCRDYamlToCUE(t *testing.T) {
 // NOTE - this printed output is created via cue.Value.Syntax() and
 // format.Node() on an original cue.Value that was a definition (#-led label).
 // In such cases, CUE's formatter wraps the output in _#def: {}, because
-// closedness is key to express, but is not an internal property of a struct
-// itself, but the label to which its attached.
+// closedness is critical to capture, but is a property of the label,
+// rather than the struct value itself.
 //
 // However, this _#def is ephemerally added only during printing. It does not
 // exist at runtime in the graph; do not look for it with e.g. LookupPath().
@@ -98,16 +98,23 @@ _#def: {
 	// latest internal value, and may reject unrecognized values.
 	// More info:
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-	apiVersion?: string
+	apiVersion: "source.toolkit.fluxcd.io/v1beta1"
 
 	// Kind is a string value representing the REST resource this
 	// object represents. Servers may infer this from the endpoint
 	// the client submits requests to. Cannot be updated. In
 	// CamelCase. More info:
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-	kind?: string
-	metadata?: {
-		...
+	kind: "Bucket"
+	metadata: {
+		name:      string
+		namespace: string
+		labels?: {
+			[string]: string
+		}
+		annotations?: {
+			[string]: string
+		}
 	}
 
 	// BucketSpec defines the desired state of an S3 compatible bucket

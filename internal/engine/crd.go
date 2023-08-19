@@ -67,6 +67,7 @@ type IntermediateCRD struct {
 				Plural   string `json:"plural"`
 				Singular string `json:"singular"`
 			} `json:"names"`
+			Scope string `json:"scope"`
 		} `json:"spec"`
 	}
 
@@ -132,6 +133,22 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		}
 		i++
 
+		var ns string
+		if cc.Props.Spec.Scope != "Namespaced" {
+			ns = "?"
+		}
+		basev := ctx.CompileString(fmt.Sprintf(`
+			apiVersion: "%s/%s"
+			kind: "%s"
+
+			metadata: {
+				name:         string
+				namespace%s:  string
+				labels?:      [string]: string
+				annotations?: [string]: string
+			}
+		`, cc.Props.Spec.Group, ver, cc.Props.Spec.Names.Kind, ns))
+
 		doc := shell.FillPath(schpath, val.LookupPath(cue.ParsePath("schema.openAPIV3Schema")))
 		of, err := openapi.Extract(doc, &openapi.Config{})
 		if err != nil {
@@ -140,7 +157,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		sch := ctx.BuildFile(of)
 		cc.Schemas = append(cc.Schemas, VersionedSchema{
 			Version: ver,
-			Schema:  sch.LookupPath(defpath),
+			Schema:  sch.LookupPath(defpath).Unify(basev),
 		})
 
 		// Additional massaging of converted schemas should be done here. Lots
