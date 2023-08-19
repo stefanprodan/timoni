@@ -118,9 +118,6 @@ var goldenBucketFirstSchema = `import "strings"
 
 	// BucketSpec defines the desired state of an S3 compatible bucket
 	spec: #BucketSpec
-
-	// BucketStatus defines the observed state of a bucket
-	status: #BucketStatus
 }
 
 // BucketSpec defines the desired state of an S3 compatible bucket

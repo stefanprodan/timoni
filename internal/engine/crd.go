@@ -199,12 +199,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 						return false
 					case "status":
 						*statusf = *x
-						statusref := &ast.Field{
-							Label: ast.NewIdent("status"),
-							Value: ast.NewIdent("#" + kname + "Status"),
-						}
-						astutil.CopyComments(statusref, x)
-						cursor.Replace(statusref)
+						cursor.Delete()
 						return false
 					case "metadata":
 						// Avoid walking other known subtrees
