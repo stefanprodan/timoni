@@ -39,7 +39,7 @@ func YamlCRDToCueIR(ctx *cue.Context, b []byte) ([]*IntermediateCRD, error) {
 		return nil, fmt.Errorf("input does not appear to be one or multiple CRDs: %s", crdv)
 	}
 
-	// TODO should this validate that individual CRD inputs are valid?
+	// TODO should this check that individual CRD inputs are valid?
 	ret := make([]*IntermediateCRD, 0, len(all))
 	for _, crd := range all {
 		cc, err := convertCRD(crd)
@@ -122,8 +122,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 	// contain any kind of external references.
 	//
 	// So, for each schema.openAPIV3Schema, we wrap it in an openapi document
-	// structure, convert it to CUE, then merge it back into place at its
-	// original position.
+	// structure, convert it to CUE, then appends it into the [IntermediateCRD.Schemas] slice.
 	var i int
 	for iter.Next() {
 		val := iter.Value()
