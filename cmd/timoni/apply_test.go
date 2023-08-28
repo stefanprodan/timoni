@@ -25,11 +25,12 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 func TestApply(t *testing.T) {
@@ -61,6 +62,8 @@ func TestApply(t *testing.T) {
 
 		g.Expect(clientCM.GetLabels()).To(HaveKeyWithValue(tGroup+"/name", name))
 		g.Expect(clientCM.GetLabels()).To(HaveKeyWithValue(tGroup+"/namespace", namespace))
+		g.Expect(clientCM.GetLabels()).To(HaveKeyWithValue("app.kubernetes.io/version", "0.0.0-devel"))
+		g.Expect(clientCM.GetLabels()).To(HaveKey("app.kubernetes.io/kube"))
 	})
 
 	t.Run("updates instance with custom values", func(t *testing.T) {
