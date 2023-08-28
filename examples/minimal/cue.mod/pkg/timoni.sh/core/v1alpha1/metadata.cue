@@ -16,17 +16,17 @@ import "strings"
 	// Version should be in the strict semver format. Is required when creating resources.
 	version!: string & strings.MaxRunes(63)
 
-	// Map of string keys and values that can be used to organize and categorize
-	// (scope and select) objects.
-	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
-	labels?: {[string]: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)}
-
 	// Annotations is an unstructured key value map stored with a resource that may be
 	// set o store and retrieve arbitrary metadata.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations
 	annotations?: {[string]: string}
 
-	// Required Kubernetes labels.
+	// Map of string keys and values that can be used to organize and categorize
+	// (scope and select) objects.
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
+	labels: {[string]: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)}
+
+	// Standard Kubernetes labels: app name and version.
 	labels: {
 		"app.kubernetes.io/name":    name
 		"app.kubernetes.io/version": version
