@@ -19,7 +19,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
       - name: Unshallow
         run: git fetch --prune --unshallow
       - name: Setup Go
@@ -61,7 +61,7 @@ jobs:
       actions: read # To read the workflow path.
       id-token: write # To sign the provenance.
       contents: write # To add assets to a release.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.8.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
     with:
       provenance-name: "timoni_${{ needs.goreleaser.outputs.version }}_provenance.intoto.jsonl"
       base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
