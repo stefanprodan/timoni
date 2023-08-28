@@ -1,33 +1,25 @@
 package templates
 
 import (
-	"strings"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	timoniv1 "timoni.sh/core/v1alpha1"
 )
 
 // Config defines the schema and defaults for the Instance values.
 #Config: {
-	// Metadata (common to all resources)
-	metadata: metav1.#ObjectMeta
-	metadata: name:      string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)
-	metadata: namespace: string & strings.MaxRunes(63)
-	metadata: labels:    *selectorLabels | {[ string]: string}
-	metadata: labels: "app.kubernetes.io/version": image.tag
-	metadata: annotations?: {[ string]:            string}
-
 	// Runtime version info
-	moduleVersion?: string
-	kubeVersion?:   string
+	moduleVersion: string
+	kubeVersion:   string
+
+	// Metadata (common to all resources)
+	metadata: timoniv1.#Metadata
+	metadata: version: moduleVersion
 
 	// App settings
 	message: string
 
 	// Deployment
-	replicas:       *1 | int & >0
-	selectorLabels: *{"app.kubernetes.io/name": metadata.name} | {[ string]: string}
+	replicas: *1 | int & >0
 
 	// Pod
 	podAnnotations?: {[ string]: string}
