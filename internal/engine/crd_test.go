@@ -6,14 +6,21 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	. "github.com/onsi/gomega"
 )
+
+var multiline = cmpopts.AcyclicTransformer("multiline", func(s string) []string {
+	return strings.Split(s, "\n")
+})
 
 func TestCRDYamlToCUE(t *testing.T) {
 	ctx := cuecontext.New()
@@ -68,15 +75,257 @@ func TestCRDYamlToCUE(t *testing.T) {
 	})
 	// TODO does gomega have a better string differ? the output is useless when it fails
 	n, err := format.Node(oneoff.Schemas[0].Schema.Syntax(cue.All(), cue.Docs(true)))
+	// fmt.Println(string(n))
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// hacky one-off test, primarily intended to just let there be _something_
 	// committed to disk that shows what converted output looks like.
 	//
 	// TODO replace with a framework and a test suite that allows testing individual cases of valid constructs within CRD schemas
-	diff := cmp.Diff(string(n), goldenBucketFirstSchema)
+	diff := cmp.Diff(string(n), goldenBucketFirstSchema, multiline)
 	if diff != "" {
 		t.Fatal(diff)
+	}
+}
+
+func TestClosednessHandling(t *testing.T) {
+	ctx := cuecontext.New()
+	g := NewWithT(t)
+
+	wrapper := `{
+	apiVersion: "apiextensions.k8s.io/v1"
+	kind:       "CustomResourceDefinition"
+	metadata: {
+			name: "case.testing.timoni.sh"
+	}
+	spec: {
+			group: "testing.timoni.sh"
+			names: {
+					kind:     "Case"
+					listKind: "CaseList"
+					plural:   "cases"
+					singular: "case"
+			}
+			scope: "Namespaced"
+			versions: [{
+					name: "v1"
+					schema: {
+							openAPIV3Schema: {
+									properties: {
+										apiVersion: {
+												description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources"
+												type:        "string"
+										}
+										kind: {
+												description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+												type:        "string"
+										}
+										metadata: {
+												type: "object"
+										}
+										spec: { 
+											%s 
+										}
+									}
+							}
+					}
+			}]
+	}
+}`
+
+	skiplist := map[string]string{
+		"root-unspecified":        "CUE openapi encoder does not know about x-kubernetes-preserve-unknown-fields",
+		"nested-root-unspecified": "CUE openapi encoder does not know about x-kubernetes-preserve-unknown-fields",
+		"openness-propagation":    "CUE openapi encoder does not understand recursive openness/closedness rules of k8s structural schema",
+	}
+
+	table := []struct {
+		name         string
+		spec, status string
+		expect       string
+	}{
+		{
+			name: "root-unspecified",
+			spec: `type: "object"
+			properties: {
+				foo: {
+					type: "string"
+				}
+			}
+			required: ["foo"]
+			`,
+			expect: `{
+	foo: string
+}`,
+		},
+		{
+			name: "root-addlprops-false",
+			spec: `type: "object"
+			properties: {
+				foo: {
+					type: "string"
+				}
+			}
+			required: ["foo"]
+			additionalProperties: false`,
+			expect: `{
+	foo: string
+}`,
+		},
+		{
+			name: "root-xk-preserve",
+			spec: `type: "object"
+			properties: {
+				foo: {
+					type: "string"
+				}
+			}
+			"x-kubernetes-preserve-unknown-fields": true
+			required: ["foo"]
+			`,
+			expect: `{
+	foo: string
+	...
+}`,
+		},
+		{
+			name: "openness-propagation",
+			spec: `type: "object"
+			properties: {
+				foo: {
+					type: "string"
+				}
+				nest: {
+					type: "object"
+					properties: {
+						innerField: type: "string"
+						nestnest: {
+							type: "object"
+							properties: {
+								nestnestnest: {
+									type: "object"
+									properties: {
+										innermost: type: "string"
+									}
+								}
+							}
+							additionalProperties: false
+						}
+					}
+				}
+			}
+			"x-kubernetes-preserve-unknown-fields": true
+			required: ["foo", "nest"]
+			`,
+			expect: `{
+	foo: string
+	nest: {
+		innerField?: string
+		nestnest?: {
+			nestnestnest?: {
+				innermost?: string
+			}
+		}
+		...
+	}
+	...
+}`,
+		},
+		{
+			name: "nested-root-unspecified",
+			spec: `type: "object"
+			properties: {
+				foo: {
+					type: "string"
+				}
+				nest: {
+					type: "object"
+					properties: {
+						innerField: type: "string"
+					}
+				}
+			}
+			required: ["foo", "nest"]
+			`,
+			expect: `{
+	foo: string
+}`,
+		},
+		{
+			name: "nested-root-addlprops-false",
+			spec: `type: "object"
+			properties: {
+				foo: {
+					type: "string"
+				}
+				nest: {
+					type: "object"
+					properties: {
+						innerField: type: "string"
+					}
+					additionalProperties: false
+				}
+			}
+			required: ["foo", "nest"]
+			additionalProperties: false`,
+			expect: `{
+	foo: string
+	nest: {
+		innerField?: string
+	}
+}`,
+		},
+		{
+			name: "nested-root-xk-preserve",
+			spec: `type: "object"
+			properties: {
+				foo: {
+					type: "string"
+				}
+				nest: {
+					type: "object"
+					properties: {
+						innerField: type: "string"
+					}
+				}
+			}
+			"x-kubernetes-preserve-unknown-fields": true
+			required: ["foo", "nest"]
+			`,
+			expect: `{
+	foo: string
+	nest: {
+		innerField?: string
+		...
+	}
+	...
+}`,
+		},
+	}
+
+	for _, item := range table {
+		tt := item
+		t.Run(item.name, func(t *testing.T) {
+			if msg, has := skiplist[item.name]; has {
+				t.Skip(msg)
+			}
+			crd := ctx.CompileString(fmt.Sprintf(wrapper, tt.spec))
+			g.Expect(crd.Err()).ToNot(HaveOccurred())
+
+			ir, err := convertCRD(crd)
+			g.Expect(crd.Err()).ToNot(HaveOccurred())
+
+			g.Expect(err).ToNot(HaveOccurred())
+
+			n := ir.Schemas[0].Schema.LookupPath(cue.ParsePath("#Case.spec")).Syntax(cue.All(), cue.Docs(true))
+			// remove the _#def injected by CUE's syntax formatter
+			fn, err := format.Node(n.(*ast.StructLit).Elts[1].(*ast.Field).Value)
+			g.Expect(err).ToNot(HaveOccurred())
+			diff := cmp.Diff(tt.expect, string(fn), multiline)
+			if diff != "" {
+				t.Fatal(diff)
+			}
+		})
 	}
 }
 
@@ -114,14 +363,18 @@ var goldenBucketFirstSchema = `import "strings"
 		annotations?: {
 			[string]: string
 		}
+		...
 	}
 
 	// BucketSpec defines the desired state of an S3 compatible bucket
 	spec: #BucketSpec
+	...
 }
 
 // BucketSpec defines the desired state of an S3 compatible bucket
 #BucketSpec: {
+	// AccessFrom defines an Access Control List for allowing
+	// cross-namespace references to this object.
 	accessFrom?: {
 		// NamespaceSelectors is the list of namespace selectors to which
 		// this ACL applies. Items in this list are evaluated using a
@@ -135,7 +388,9 @@ var goldenBucketFirstSchema = `import "strings"
 			matchLabels?: {
 				[string]: string
 			}
+			...
 		}]
+		...
 	}
 
 	// The bucket name.
@@ -161,9 +416,13 @@ var goldenBucketFirstSchema = `import "strings"
 
 	// The bucket region.
 	region?: string
+
+	// The name of the secret containing authentication credentials
+	// for the Bucket.
 	secretRef?: {
 		// Name of the referent.
 		name: string
+		...
 	}
 
 	// This flag tells the controller to suspend the reconciliation of
@@ -172,6 +431,7 @@ var goldenBucketFirstSchema = `import "strings"
 
 	// The timeout for download operations, defaults to 60s.
 	timeout?: string | *"60s"
+	...
 }
 
 // BucketStatus defines the observed state of a bucket
@@ -196,6 +456,7 @@ var goldenBucketFirstSchema = `import "strings"
 
 		// URL is the HTTP address of this artifact.
 		url: string
+		...
 	}
 
 	// Conditions holds the conditions for the Bucket.
@@ -240,6 +501,7 @@ var goldenBucketFirstSchema = `import "strings"
 		type: strings.MaxRunes(316) & {
 			=~"^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
 		}
+		...
 	}]
 
 	// LastHandledReconcileAt holds the value of the most recent
@@ -253,7 +515,9 @@ var goldenBucketFirstSchema = `import "strings"
 	// URL is the download link for the artifact output of the last
 	// Bucket sync.
 	url?: string
+	...
 } | *{
 	observedGeneration: -1
+	...
 }
 `

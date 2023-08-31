@@ -142,6 +142,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not convert schema for version %s to CUE: %w", ver, err)
 		}
+
 		// first, extract and get the schema handle itself
 		extracted := ctx.BuildFile(of)
 		// then unify with our desired base constraints
@@ -160,28 +161,19 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 				annotations?: [string]: string
 			}
 		`, cc.Props.Spec.Group, ver, kname, ns))))
-		// next, go back to an AST because it's easier to manipulate references there
-		schast := sch.Syntax(cue.All(), cue.Docs(true)).(*ast.File)
 
-		// First pass, remove all ellipses so we default to closedness, in
-		// keeping with the spirit of structural schema.
-		// TODO add handling for k8s permitted exceptions, like x-kubernetes-preserve-unknown-fields
-		ast.Walk(schast, func(n ast.Node) bool {
-			switch x := n.(type) {
-			case *ast.StructLit:
-				// Stuff could get weird with messing with node pointers while walking the tree,
-				// which is why
-				newlist := make([]ast.Decl, 0, len(x.Elts))
-				for _, elt := range x.Elts {
-					if _, is := elt.(*ast.Ellipsis); !is {
-						newlist = append(newlist, elt)
-					}
-				}
-				x.Elts = newlist
-			}
-			return true
-		}, nil)
-		specf, statusf := new(ast.Field), new(ast.Field)
+		// now, go back to an AST because it's easier to manipulate references there
+		var schast *ast.File
+		switch x := sch.Syntax(cue.All(), cue.Docs(true)).(type) {
+		case *ast.File:
+			schast = x
+		case *ast.StructLit:
+			schast, _ = astutil.ToFile(x)
+		default:
+			panic("unreachable")
+		}
+		// walk over the AST and replace the spec and status fields with references to standalone defs
+		var specf, statusf *ast.Field
 		astutil.Apply(schast, func(cursor astutil.Cursor) bool {
 			switch x := cursor.Node().(type) {
 			case *ast.Field:
@@ -189,6 +181,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 					switch str {
 					// Grab pointers to the spec and status fields, and replace with ref
 					case "spec":
+						specf = new(ast.Field)
 						*specf = *x
 						specref := &ast.Field{
 							Label: ast.NewIdent("spec"),
@@ -198,6 +191,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 						cursor.Replace(specref)
 						return false
 					case "status":
+						statusf = new(ast.Field)
 						*statusf = *x
 						cursor.Delete()
 						return false
