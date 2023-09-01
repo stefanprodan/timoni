@@ -115,7 +115,10 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	cuectx := cuecontext.New()
 	bm := engine.NewBundleBuilder(cuectx, files)
 
-	if err := bm.InitWorkspace(tmpDir); err != nil {
+	runtimeValues := make(map[string]string)
+	runtimeValues = engine.GetEnv()
+
+	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {
 		return err
 	}
 

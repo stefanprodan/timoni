@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/parser"
 	. "github.com/onsi/gomega"
 )
 
@@ -38,14 +39,20 @@ mQSuBF9+HgMRDADKT8UBcSzpTi4JXt/ohhVW3x81AGFPrQvs6MYrcnNJfIkPTJD8
 	t.Setenv("AGE", "41")
 	t.Setenv("IS_ADMIN", "true")
 
-	vb := NewInjector(ctx)
+	input := `package test
 
-	base := "testdata/inject/env.cue"
+// these secret values are injected at apply time from OS ENV
+secrets: {
+	username: *"test" | string @timoni(env:string:USERNAME)
 
-	result, err := vb.Inject(base)
-	g.Expect(err).ToNot(HaveOccurred())
+	// The OpenPGP key will be injected as a multi-line string
+	key: string @timoni(env:string:PGP_PUB_KEY)
 
-	want := `package test
+	age:     int  @timoni(env:number:AGE)
+	isAdmin: bool @timoni(env:bool:IS_ADMIN)
+}
+`
+	output := `package test
 
 // these secret values are injected at apply time from OS ENV
 secrets: {
@@ -65,5 +72,12 @@ secrets: {
 	isAdmin: true @timoni(env:bool:IS_ADMIN)
 }
 `
-	g.Expect(string(result)).To(BeIdenticalTo(want))
+
+	f, err := parser.ParseFile("", []byte(input), parser.ParseComments)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	vb := NewInjector(ctx)
+	result, err := vb.Inject(f, GetEnv())
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(string(result)).To(BeIdenticalTo(output))
 }

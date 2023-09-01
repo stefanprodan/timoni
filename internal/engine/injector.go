@@ -18,7 +18,6 @@ package engine
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -27,7 +26,6 @@ import (
 	"cuelang.org/go/cue/ast/astutil"
 	"cuelang.org/go/cue/format"
 	"cuelang.org/go/cue/literal"
-	"cuelang.org/go/cue/parser"
 	"cuelang.org/go/cue/token"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -48,17 +46,8 @@ func NewInjector(ctx *cue.Context) *Injector {
 // and sets the CUE field value to the env var value.
 // If an env var is not found in the current environment,
 // the CUE field is left untouched.
-func (in *Injector) Inject(src string) ([]byte, error) {
-	tree, err := parser.ParseFile(src, nil, parser.ParseComments)
-	if err != nil {
-		return nil, err
-	}
-
-	return in.InjectNode(tree)
-}
-
-func (in *Injector) InjectNode(tree ast.Node) ([]byte, error) {
-	output, err := in.injectFromEnv(tree)
+func (in *Injector) Inject(tree ast.Node, vars map[string]string) ([]byte, error) {
+	output, err := in.inject(tree, vars)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +60,8 @@ func (in *Injector) InjectNode(tree ast.Node) ([]byte, error) {
 	return data, nil
 }
 
-func (in *Injector) injectFromEnv(tree ast.Node) (ast.Node, error) {
-	var re error
+func (in *Injector) inject(tree ast.Node, vars map[string]string) (ast.Node, error) {
+	var err error
 	f := func(c astutil.Cursor) bool {
 		n := c.Node()
 		switch n.(type) {
@@ -103,7 +92,7 @@ func (in *Injector) injectFromEnv(tree ast.Node) (ast.Node, error) {
 			envKind := parts[1]
 			envKey := parts[2]
 
-			if envVal, ok := os.LookupEnv(envKey); ok {
+			if envVal, ok := vars[envKey]; ok {
 				switch envKind {
 				case "string":
 					field.Value = ast.NewLit(token.STRING, in.quoteString(envVal))
@@ -112,7 +101,7 @@ func (in *Injector) injectFromEnv(tree ast.Node) (ast.Node, error) {
 				case "bool":
 					field.Value = ast.NewIdent(envVal)
 				default:
-					re = fmt.Errorf("failed to parse attribute '@%s(%s)', unknown type '%s' must be string, number or bool",
+					err = fmt.Errorf("failed to parse attribute '@%s(%s)', unknown type '%s' must be string, number or bool",
 						apiv1.FieldManager, body, envKind)
 					return false
 				}
@@ -122,7 +111,7 @@ func (in *Injector) injectFromEnv(tree ast.Node) (ast.Node, error) {
 		return true
 	}
 
-	return astutil.Apply(tree, f, nil), re
+	return astutil.Apply(tree, f, nil), err
 }
 
 func (in *Injector) quoteString(s string) string {

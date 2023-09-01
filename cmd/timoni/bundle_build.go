@@ -89,7 +89,10 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	ctx := cuecontext.New()
 	bm := engine.NewBundleBuilder(ctx, files)
 
-	if err := bm.InitWorkspace(tmpDir); err != nil {
+	runtimeValues := make(map[string]string)
+	runtimeValues = engine.GetEnv()
+
+	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {
 		return describeErr(tmpDir, "failed to parse bundle", err)
 	}
 

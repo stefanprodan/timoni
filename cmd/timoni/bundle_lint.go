@@ -72,7 +72,10 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 	cuectx := cuecontext.New()
 	bm := engine.NewBundleBuilder(cuectx, files)
 
-	if err := bm.InitWorkspace(tmpDir); err != nil {
+	runtimeValues := make(map[string]string)
+	runtimeValues = engine.GetEnv()
+
+	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {
 		return describeErr(tmpDir, "failed to parse bundle", err)
 	}
 

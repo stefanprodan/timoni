@@ -29,6 +29,17 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
+// GetEnv returns a map of all environment variables.
+func GetEnv() map[string]string {
+	vars := make(map[string]string)
+	for _, e := range os.Environ() {
+		if i := strings.Index(e, "="); i >= 0 {
+			vars[e[:i]] = e[i+1:]
+		}
+	}
+	return vars
+}
+
 // CopyModule copies the given module to the destination directory,
 // while excluding files that match the timoni.ignore patterns.
 func CopyModule(srcDir string, dstDir string) (err error) {
