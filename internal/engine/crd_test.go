@@ -96,7 +96,7 @@ func TestClosednessHandling(t *testing.T) {
 	apiVersion: "apiextensions.k8s.io/v1"
 	kind:       "CustomResourceDefinition"
 	metadata: {
-			name: "case.testing.timoni.sh"
+			name: "cases.testing.timoni.sh"
 	}
 	spec: {
 			group: "testing.timoni.sh"
@@ -109,8 +109,10 @@ func TestClosednessHandling(t *testing.T) {
 			scope: "Namespaced"
 			versions: [{
 					name: "v1"
+					storage: true
 					schema: {
 							openAPIV3Schema: {
+									type: "object"
 									properties: {
 										apiVersion: {
 												description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources"
@@ -249,6 +251,9 @@ func TestClosednessHandling(t *testing.T) {
 			`,
 			expect: `{
 	foo: string
+	nest: {
+		innerField?: string
+	}
 }`,
 		},
 		{
