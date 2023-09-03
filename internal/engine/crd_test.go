@@ -135,10 +135,11 @@ func TestClosednessHandling(t *testing.T) {
 	}
 }`
 
+	// put known broken test cases here. Case name as key, a summary of what needs fixing as value.
+	//
+	// see commented element as an example
 	skiplist := map[string]string{
-		"root-unspecified":        "CUE openapi encoder does not know about x-kubernetes-preserve-unknown-fields",
-		"nested-root-unspecified": "CUE openapi encoder does not know about x-kubernetes-preserve-unknown-fields",
-		"openness-propagation":    "CUE openapi encoder does not understand recursive openness/closedness rules of k8s structural schema",
+		// "root-unspecified":        "CUE openapi encoder does not know about x-kubernetes-preserve-unknown-fields",
 	}
 
 	table := []struct {
@@ -211,7 +212,7 @@ func TestClosednessHandling(t *testing.T) {
 									}
 								}
 							}
-							additionalProperties: false
+							"x-kubernetes-preserve-unknown-fields": true
 						}
 					}
 				}
@@ -227,8 +228,8 @@ func TestClosednessHandling(t *testing.T) {
 			nestnestnest?: {
 				innermost?: string
 			}
+			...
 		}
-		...
 	}
 	...
 }`,
@@ -301,7 +302,6 @@ func TestClosednessHandling(t *testing.T) {
 	foo: string
 	nest: {
 		innerField?: string
-		...
 	}
 	...
 }`,

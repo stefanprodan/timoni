@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
@@ -9,6 +10,7 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/encoding/openapi"
 	"cuelang.org/go/encoding/yaml"
+	"github.com/getkin/kin-openapi/openapi3"
 )
 
 // YamlCRDToCueIR converts a byte slice containing one or more YAML-encoded
@@ -172,6 +174,84 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		default:
 			panic("unreachable")
 		}
+
+		// construct a map of all the paths that have x-kubernetes-embedded-resource: true defined
+		yodoc, err := yaml.Encode(doc)
+		if err != nil {
+			return nil, fmt.Errorf("error encoding intermediate openapi doc to yaml bytes: %w", err)
+		}
+		odoc, err := openapi3.NewLoader().LoadFromData(yodoc)
+		if err != nil {
+			return nil, fmt.Errorf("could not load openapi3 document for version %s: %w", ver, err)
+		}
+		// TODO do we need to remove the info field?
+
+		preserve := make(map[string]bool)
+		var rootosch *openapi3.Schema
+		if rref, has := odoc.Components.Schemas[kname]; !has {
+			return nil, fmt.Errorf("could not find root schema for version %s at expected path components.schemas.%s", ver, kname)
+		} else {
+			rootosch = rref.Value
+		}
+
+		var walkfn func(path []cue.Selector, sch *openapi3.Schema) error
+		walkfn = func(path []cue.Selector, sch *openapi3.Schema) error {
+			_, has := sch.Extensions["x-kubernetes-preserve-unknown-fields"]
+			preserve[cue.MakePath(path...).String()] = has
+			for name, prop := range sch.Properties {
+				if err := walkfn(append(path, cue.Str(name)), prop.Value); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}
+
+		// Have to prepend with the defpath where the CUE CRD representation
+		// lives because the astutil walker to remove ellipses operates over the
+		// whole file, and therefore will be looking for full paths, extending
+		// all the way to the file root
+		err = walkfn(defpath.Selectors(), rootosch)
+
+		// First pass of astutil.Apply to remove ellipses for fields not marked with x-kubernetes-embedded-resource: true
+		// Note that this implementation is only correct for CUE inputs that do not contain references.
+		// It is safe to use in this context because CRDs already have that invariant.
+		var stack []ast.Node
+		var pathstack []cue.Selector
+		astutil.Apply(schast, func(c astutil.Cursor) bool {
+			// Skip the root
+			if c.Parent() == nil {
+				return true
+			}
+
+			switch x := c.Node().(type) {
+			case *ast.StructLit:
+				psel, pc := parentPath(c)
+				// Finding the parent-of-parent in this way is questionable.
+				// pathTo will hop up the tree a potentially large number of
+				// levels until it finds an *ast.Field or *ast.ListLit...but
+				// who knows what's between here and there?
+				_, ppc := parentPath(pc)
+				var i int
+				if ppc != nil {
+					for i = len(stack); i > 0 && stack[i-1] != ppc.Node(); i-- {
+					}
+				}
+				stack = append(stack[:i], pc.Node())
+				pathstack = append(pathstack[:i], psel)
+				if !preserve[cue.MakePath(pathstack...).String()] {
+					newlist := make([]ast.Decl, 0, len(x.Elts))
+					for _, elt := range x.Elts {
+						if _, is := elt.(*ast.Ellipsis); !is {
+							newlist = append(newlist, elt)
+						}
+					}
+					x.Elts = newlist
+				}
+			}
+			return true
+		}, nil)
+
 		// walk over the AST and replace the spec and status fields with references to standalone defs
 		var specf, statusf *ast.Field
 		astutil.Apply(schast, func(cursor astutil.Cursor) bool {
@@ -228,4 +308,44 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		})
 	}
 	return cc, nil
+}
+
+// parentPath walks up the AST via Cursor.Parent() to find the parent AST node
+// that is expected to be the anchor of a path element.
+//
+// Returns the cue.Selector that should navigate to the provided cursor's
+// corresponding cue.Value, and the cursor of that parent element.
+//
+// Returns nil, nil if no such parent node can be found.
+//
+// Node types considered candidates for path anchors:
+//   - *ast.ListLit (index is the path)
+//   - *ast.Field (label is the path)
+//
+// If the there exceptions for the above two items, or the list should properly
+// have more items, this func will be buggy
+func parentPath(c astutil.Cursor) (cue.Selector, astutil.Cursor) {
+	p, prior := c.Parent(), c
+	for p != nil {
+		switch x := p.Node().(type) {
+		case *ast.Field:
+			lab, _, _ := ast.LabelName(x.Label)
+			if strings.HasPrefix(lab, "#") {
+				return cue.Def(lab), p
+			}
+			return cue.Str(lab), p
+		case *ast.ListLit:
+			for i, v := range x.Elts {
+				if prior.Node() == v {
+					return cue.Index(i), p
+				}
+			}
+			break
+		default:
+			p = p.Parent()
+		}
+		prior = p
+	}
+
+	return cue.Selector{}, nil
 }
