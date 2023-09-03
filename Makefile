@@ -42,7 +42,7 @@ lint-samples: build
 	./bin/timoni mod lint ./internal/engine/testdata/module
 	cue fmt ./internal/engine/testdata/module-values
 
-MINIMAL_VER ?= "0.0.1"
+MINIMAL_VER ?= "0.1.0"
 push-minimal: build
 	./bin/timoni mod push ./examples/minimal oci://ghcr.io/stefanprodan/timoni/minimal -v $(MINIMAL_VER) --latest \
 		--source https://github.com/stefanprodan/timoni/tree/main/examples/minimal  \
