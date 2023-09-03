@@ -32,8 +32,8 @@ import (
 	// Container image
 	image: {
 		repository: *"cgr.dev/chainguard/redis" | string
-		tag:        *"7.0.12" | string
-		digest:     *"sha256:9cdc90a57fa0cc23dce9a934313cc5412a3b8415a60e79797ee9cb4ca04a3968" | string
+		tag:        *"7.2.0" | string
+		digest:     *"sha256:0c19ce07fa6952f872b15d5da4cb0681402775ad8f159cfcfb0c10b6e8c8bd37" | string
 		pullPolicy: *"IfNotPresent" | string
 	}
 	imagePullSecrets?: [...corev1.LocalObjectReference]
