@@ -8,5 +8,12 @@ import (
 	_config:    #Config
 	apiVersion: "v1"
 	kind:       "ServiceAccount"
-	metadata:   _config.metadata
+	metadata: {
+		name:      _config.metadata.name
+		namespace: _config.metadata.namespace
+		labels:    _config.metadata.labels
+		if _config.metadata.annotations != _|_ {
+			annotations: _config.metadata.annotations
+		}
+	}
 }

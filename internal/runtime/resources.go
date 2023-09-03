@@ -65,7 +65,12 @@ func NewResourceManager(rcg genericclioptions.RESTClientGetter) (*ssa.ResourceMa
 
 	kubePoller := polling.NewStatusPoller(kubeClient, restMapper, polling.Options{})
 
-	return ssa.NewResourceManager(kubeClient, kubePoller, ownerRef), nil
+	man := ssa.NewResourceManager(kubeClient, kubePoller, ownerRef)
+
+	// bump the server-side apply concurrency
+	man.SetConcurrency(4)
+
+	return man, nil
 }
 
 // SelectObjectsFromSet returns a list of Kubernetes objects from the given changeset filtered by action.

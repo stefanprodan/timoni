@@ -8,10 +8,17 @@ import (
 	_config:    #Config
 	apiVersion: "v1"
 	kind:       "Service"
-	metadata:   _config.metadata
-	spec:       corev1.#ServiceSpec & {
+	metadata: {
+		name:      _config.metadata.name
+		namespace: _config.metadata.namespace
+		labels:    _config.metadata.labels
+		if _config.metadata.annotations != _|_ {
+			annotations: _config.metadata.annotations
+		}
+	}
+	spec: corev1.#ServiceSpec & {
 		type:     corev1.#ServiceTypeClusterIP
-		selector: _config.selectorLabels
+		selector: _config.metadata.labelSelector
 		ports: [
 			{
 				name:       "http"

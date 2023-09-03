@@ -31,6 +31,10 @@ timoni: {
 			name:      string @tag(name)
 			namespace: string @tag(namespace)
 		}
+		config: {
+			moduleVersion: string @tag(mv, var=moduleVersion)
+			kubeVersion:   string @tag(kv, var=kubeVersion)
+		}
 	}
 
 	// Pass Kubernetes resources outputted by the instance

@@ -143,9 +143,14 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
+	kubeVersion, err := runtime.ServerVersion(kubeconfigArgs)
+	if err != nil {
+		return err
+	}
+
 	for _, instance := range bundle.Instances {
 		log.Info(fmt.Sprintf("applying instance %s", instance.Name))
-		if err := applyBundleInstance(logr.NewContext(ctx, log), cuectx, instance); err != nil {
+		if err := applyBundleInstance(logr.NewContext(ctx, log), cuectx, instance, kubeVersion); err != nil {
 			return err
 		}
 	}
@@ -159,7 +164,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engine.BundleInstance) error {
+func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engine.BundleInstance, kubeVersion string) error {
 	moduleVersion := instance.Module.Version
 	sourceURL := fmt.Sprintf("%s:%s", instance.Module.Repository, instance.Module.Version)
 
@@ -220,6 +225,8 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 	if err != nil {
 		return err
 	}
+
+	builder.SetVersionInfo(mod.Version, kubeVersion)
 
 	buildResult, err := builder.Build()
 	if err != nil {

@@ -76,7 +76,7 @@ func (f *Fetcher) Fetch() (*apiv1.ModuleReference, error) {
 
 	mr := apiv1.ModuleReference{
 		Repository: f.src,
-		Version:    "devel",
+		Version:    defaultDevelVersion,
 		Digest:     "unknown",
 	}
 

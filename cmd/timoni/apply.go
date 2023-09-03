@@ -206,6 +206,13 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	kubeVersion, err := runtime.ServerVersion(kubeconfigArgs)
+	if err != nil {
+		return err
+	}
+
+	builder.SetVersionInfo(mod.Version, kubeVersion)
+
 	buildResult, err := builder.Build()
 	if err != nil {
 		return describeErr(fetcher.GetModuleRoot(), "failed to build instance", err)

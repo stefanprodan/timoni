@@ -109,6 +109,8 @@ bundle: {
 
 				err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
 				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(clientCM.GetLabels()).To(HaveKeyWithValue("app.kubernetes.io/version", modVer))
+				g.Expect(clientCM.GetLabels()).To(HaveKey("app.kubernetes.io/kube"))
 
 				serverCM := &corev1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
