@@ -309,8 +309,10 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 	}
 
 	applyOpts := runtime.ApplyOptions(bundleApplyArgs.force, rootArgs.timeout)
+	applyOpts.WaitInterval = 5 * time.Second
+
 	waitOptions := ssa.WaitOptions{
-		Interval: 5 * time.Second,
+		Interval: applyOpts.WaitInterval,
 		Timeout:  rootArgs.timeout,
 		FailFast: true,
 	}

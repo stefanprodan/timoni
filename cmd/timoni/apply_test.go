@@ -42,7 +42,7 @@ func TestApply(t *testing.T) {
 	t.Run("creates instance with default values", func(t *testing.T) {
 		g := NewWithT(t)
 		output, err := executeCommand(fmt.Sprintf(
-			"apply -n %s %s %s -p main --wait",
+			"apply -n %s %s %s -p main --wait --timeout=10s",
 			namespace,
 			name,
 			modPath,
@@ -314,5 +314,43 @@ func TestApply_Actions(t *testing.T) {
 
 		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
 		g.Expect(err).ToNot(HaveOccurred())
+	})
+}
+
+func TestApply_GlobalResources(t *testing.T) {
+	modPath := "testdata/module"
+	name := rnd("my-instance", 5)
+	namespace := rnd("my-namespace", 5)
+	nsObj := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s-ns", name),
+		},
+	}
+
+	t.Run("creates instance with global objects", func(t *testing.T) {
+		g := NewWithT(t)
+		output, err := executeCommandWithIn(fmt.Sprintf(
+			"apply -n %s %s %s -f- -p main --wait --timeout=10s",
+			namespace,
+			name,
+			modPath,
+		), strings.NewReader("values: ns: enabled: true"))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		ns := nsObj.DeepCopy()
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(ns), ns)
+		g.Expect(err).ToNot(HaveOccurred())
+	})
+
+	t.Run("uninstalls instance", func(t *testing.T) {
+		g := NewWithT(t)
+		output, err := executeCommand(fmt.Sprintf(
+			"delete -n %s %s --wait=false",
+			namespace,
+			name,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
 	})
 }
