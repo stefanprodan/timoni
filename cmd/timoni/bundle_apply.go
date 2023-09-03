@@ -68,6 +68,7 @@ type bundleApplyFlags struct {
 	wait               bool
 	force              bool
 	overwriteOwnership bool
+	runtimeFromEnv     bool
 	creds              flags.Credentials
 }
 
@@ -87,6 +88,8 @@ func init() {
 		"Perform a server-side apply dry run and prints the diff.")
 	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.wait, "wait", true,
 		"Wait for the applied Kubernetes objects to become ready.")
+	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.runtimeFromEnv, "runtime-from-env", false,
+		"Inject runtime values from the environment.")
 	bundleApplyCmd.Flags().Var(&bundleApplyArgs.creds, bundleApplyArgs.creds.Type(), bundleApplyArgs.creds.Description())
 	bundleCmd.AddCommand(bundleApplyCmd)
 }
@@ -116,7 +119,10 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	bm := engine.NewBundleBuilder(cuectx, files)
 
 	runtimeValues := make(map[string]string)
-	runtimeValues = engine.GetEnv()
+
+	if bundleApplyArgs.runtimeFromEnv {
+		runtimeValues = engine.GetEnv()
+	}
 
 	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {
 		return err

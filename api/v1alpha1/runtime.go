@@ -24,6 +24,12 @@ import (
 )
 
 const (
+	// RuntimeKind is the name of the Timoni runtime CUE attributes.
+	RuntimeKind string = "runtime"
+
+	// RuntimeDelimiter is the delimiter used in Timoni runtime CUE attributes.
+	RuntimeDelimiter string = ":"
+
 	// RuntimePIVersionSelector is the CUE path for the Timoni's runtime API version.
 	RuntimePIVersionSelector Selector = "runtime.apiVersion"
 
@@ -50,6 +56,42 @@ import "strings"
 	values: [...#RuntimeValue]
 }
 `
+
+// RuntimeAttribute holds the runtime var name and type.
+type RuntimeAttribute struct {
+	Name string
+	Type string
+}
+
+// NewRuntimeAttribute returns a RuntimeAttribute from the given CUE attribute.
+// If the CUE attribute doesn't match the expected format
+// '@timoni(runtime:[TYPE]:[NAME])', an error is returned.
+func NewRuntimeAttribute(key, body string) (*RuntimeAttribute, error) {
+	if !IsRuntimeAttribute(key, body) {
+		return nil, fmt.Errorf("invalid format, must be @timoni(%s%s[TYPE]%s[NAME])",
+			RuntimeKind, RuntimeDelimiter, RuntimeDelimiter)
+	}
+	parts := strings.Split(body, RuntimeDelimiter)
+	return &RuntimeAttribute{
+		Type: parts[1],
+		Name: parts[2],
+	}, nil
+}
+
+// IsRuntimeAttribute returns true if the given
+// CUE attribute matches the expected format.
+func IsRuntimeAttribute(key, body string) bool {
+	if key != FieldManager {
+		return false
+	}
+
+	parts := strings.Split(body, RuntimeDelimiter)
+	if len(parts) == 3 && parts[0] == RuntimeKind {
+		return true
+	}
+
+	return false
+}
 
 // Runtime holds the list of in-cluster resources and the
 // CUE expressions for extracting specific fields values.
@@ -85,7 +127,7 @@ type RuntimeValue struct {
 
 // ToResourceRef converts the RuntimeValue to a RuntimeResourceRef by parsing the query data.
 func (rv *RuntimeValue) ToResourceRef() (*RuntimeResourceRef, error) {
-	parts := strings.Split(rv.Query, ":")
+	parts := strings.Split(rv.Query, RuntimeDelimiter)
 
 	if parts[0] != "k8s" {
 		return nil, fmt.Errorf("faild to parse '%s': query must start with k8s", rv.Query)

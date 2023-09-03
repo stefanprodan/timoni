@@ -36,7 +36,7 @@ import (
 type BundleBuilder struct {
 	ctx      *cue.Context
 	files    []string
-	injector *Injector
+	injector *RuntimeInjector
 }
 
 type Bundle struct {
@@ -60,15 +60,15 @@ func NewBundleBuilder(ctx *cue.Context, files []string) *BundleBuilder {
 	b := &BundleBuilder{
 		ctx:      ctx,
 		files:    files,
-		injector: NewInjector(ctx),
+		injector: NewRuntimeInjector(ctx),
 	}
 	return b
 }
 
 // InitWorkspace copies the bundle definitions to the specified workspace,
-// sets the bundle schema, and then it injects values based on @timoni() attributes.
+// sets the bundle schema, and then it injects the runtime values based on @timoni() attributes.
 // A workspace must be initialised before calling Build.
-func (b *BundleBuilder) InitWorkspace(workspace string, runtimeVars map[string]string) error {
+func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string]string) error {
 	var files []string
 	for i, file := range b.files {
 		_, fn := filepath.Split(file)
@@ -98,7 +98,7 @@ func (b *BundleBuilder) InitWorkspace(workspace string, runtimeVars map[string]s
 			return fmt.Errorf("failed to parse %s: %w", fn, err)
 		}
 
-		data, err := b.injector.Inject(node, runtimeVars)
+		data, err := b.injector.Inject(node, runtimeValues)
 		if err != nil {
 			return fmt.Errorf("failed to inject %s: %w", fn, err)
 		}

@@ -150,7 +150,26 @@ bundle: {
 			namespace: "default"
 			module: {
 				url:     "oci://docker.io/test"
-				version: "latest" @timoni(env:strings:TEST_BLINT_VER)
+				version: "latest" @timoni(runtime:strings:TEST_BLINT_VER)
+			}
+		}
+	}
+}
+`,
+		},
+		{
+			name:     "fails for missing type",
+			matchErr: "expected operand",
+			bundle: `
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "test"
+	instances: {
+		test: {
+			namespace: "default"
+			module: {
+				url:      "oci://docker.io/test"
+				version!: @timoni(runtime:string:TEST_BLINT_VER)
 			}
 		}
 	}
@@ -170,7 +189,7 @@ bundle: {
 			g.Expect(err).ToNot(HaveOccurred())
 
 			_, err = executeCommand(fmt.Sprintf(
-				"bundle lint -f %s",
+				"bundle lint -f %s --runtime-from-env",
 				bundlePath,
 			))
 

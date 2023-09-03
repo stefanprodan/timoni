@@ -46,8 +46,9 @@ var bundleLintCmd = &cobra.Command{
 }
 
 type bundleLintFlags struct {
-	pkg   flags.Package
-	files []string
+	pkg            flags.Package
+	files          []string
+	runtimeFromEnv bool
 }
 
 var bundleLintArgs bundleLintFlags
@@ -56,6 +57,8 @@ func init() {
 	bundleLintCmd.Flags().VarP(&bundleLintArgs.pkg, bundleLintArgs.pkg.Type(), bundleLintArgs.pkg.Shorthand(), bundleLintArgs.pkg.Description())
 	bundleLintCmd.Flags().StringSliceVarP(&bundleLintArgs.files, "file", "f", nil,
 		"The local path to bundle.cue files.")
+	bundleLintCmd.Flags().BoolVar(&bundleLintArgs.runtimeFromEnv, "runtime-from-env", false,
+		"Inject runtime values from the environment.")
 	bundleCmd.AddCommand(bundleLintCmd)
 }
 
@@ -73,7 +76,10 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 	bm := engine.NewBundleBuilder(cuectx, files)
 
 	runtimeValues := make(map[string]string)
-	runtimeValues = engine.GetEnv()
+
+	if bundleLintArgs.runtimeFromEnv {
+		runtimeValues = engine.GetEnv()
+	}
 
 	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {
 		return describeErr(tmpDir, "failed to parse bundle", err)

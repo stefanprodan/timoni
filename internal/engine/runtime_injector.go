@@ -19,7 +19,6 @@ package engine
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
@@ -31,23 +30,22 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-// Injector injects field values in CUE files based on @timoni() attributes.
-type Injector struct {
+// RuntimeInjector injects field values in CUE files based on @timoni() attributes.
+type RuntimeInjector struct {
 	ctx *cue.Context
 }
 
-// NewInjector creates an Injector for the given context.
-func NewInjector(ctx *cue.Context) *Injector {
-	return &Injector{ctx: ctx}
+// NewRuntimeInjector creates an RuntimeInjector for the given context.
+func NewRuntimeInjector(ctx *cue.Context) *RuntimeInjector {
+	return &RuntimeInjector{ctx: ctx}
 }
 
-// Inject searches for attributes in the format
-// '@timoni(env:[string|number|bool]:[ENV_VAR_NAME])'
-// and sets the CUE field value to the env var value.
-// If an env var is not found in the current environment,
+// Inject searches for Timoni's attributes and
+// sets the CUE field value to the runtime value.
+// If an attribute does not match any runtime value,
 // the CUE field is left untouched.
-func (in *Injector) Inject(tree ast.Node, vars map[string]string) ([]byte, error) {
-	output, err := in.inject(tree, vars)
+func (in *RuntimeInjector) Inject(node ast.Node, vars map[string]string) ([]byte, error) {
+	output, err := in.inject(node, vars)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +58,25 @@ func (in *Injector) Inject(tree ast.Node, vars map[string]string) ([]byte, error
 	return data, nil
 }
 
-func (in *Injector) inject(tree ast.Node, vars map[string]string) (ast.Node, error) {
+func (in *RuntimeInjector) ListAttributes(f *ast.File) map[string]string {
+	attrs := make(map[string]string)
+
+	ast.Walk(f, nil, func(n ast.Node) {
+		switch x := n.(type) {
+		case *ast.Field:
+			for _, a := range x.Attrs {
+				if apiv1.IsRuntimeAttribute(a.Split()) {
+					ra, _ := apiv1.NewRuntimeAttribute(a.Split())
+					attrs[ra.Name] = ra.Type
+				}
+			}
+		}
+	})
+
+	return attrs
+}
+
+func (in *RuntimeInjector) inject(node ast.Node, vars map[string]string) (ast.Node, error) {
 	var err error
 	f := func(c astutil.Cursor) bool {
 		n := c.Node()
@@ -79,21 +95,14 @@ func (in *Injector) inject(tree ast.Node, vars map[string]string) (ast.Node, err
 				}
 			}
 
-			if key == "" {
+			if !apiv1.IsRuntimeAttribute(key, body) {
 				return true
 			}
 
-			parts := strings.Split(body, ":")
+			ra, _ := apiv1.NewRuntimeAttribute(key, body)
 
-			if len(parts) != 3 || parts[0] != "env" {
-				return true
-			}
-
-			envKind := parts[1]
-			envKey := parts[2]
-
-			if envVal, ok := vars[envKey]; ok {
-				switch envKind {
+			if envVal, ok := vars[ra.Name]; ok {
+				switch ra.Type {
 				case "string":
 					field.Value = ast.NewLit(token.STRING, in.quoteString(envVal))
 				case "number":
@@ -102,7 +111,7 @@ func (in *Injector) inject(tree ast.Node, vars map[string]string) (ast.Node, err
 					field.Value = ast.NewIdent(envVal)
 				default:
 					err = fmt.Errorf("failed to parse attribute '@%s(%s)', unknown type '%s' must be string, number or bool",
-						apiv1.FieldManager, body, envKind)
+						apiv1.FieldManager, body, ra.Type)
 					return false
 				}
 				c.Replace(field)
@@ -111,10 +120,10 @@ func (in *Injector) inject(tree ast.Node, vars map[string]string) (ast.Node, err
 		return true
 	}
 
-	return astutil.Apply(tree, f, nil), err
+	return astutil.Apply(node, f, nil), err
 }
 
-func (in *Injector) quoteString(s string) string {
+func (in *RuntimeInjector) quoteString(s string) string {
 	lines := []string{}
 	last := 0
 	for i, c := range s {

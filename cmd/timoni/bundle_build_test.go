@@ -32,7 +32,7 @@ func Test_BundleBuild(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	bundleCue := fmt.Sprintf(`
-appName: string @timoni(env:string:TEST_BBUILD_NAME)
+appName: string @timoni(runtime:string:TEST_BBUILD_NAME)
 bundle: {
 	apiVersion: "v1alpha1"
 	name: string
@@ -44,7 +44,7 @@ bundle: {
 			}
 			namespace: "%[3]s"
 			values: server: enabled: false
-			values: domain: string @timoni(env:string:TEST_BBUILD_HOST)
+			values: domain: string @timoni(runtime:string:TEST_BBUILD_HOST)
 		}
 		backend: {
 			module: {
@@ -52,7 +52,7 @@ bundle: {
 				version: "%[2]s"
 			}
 			namespace: string
-			values: client: enabled: bool @timoni(env:bool:TEST_BBUILD_ENABLED)
+			values: client: enabled: bool @timoni(runtime:bool:TEST_BBUILD_ENABLED)
 		}
 	}
 }
@@ -96,13 +96,13 @@ bundle:
 		execCommands := map[string]func() (string, error){
 			"using files": func() (string, error) {
 				return executeCommand(fmt.Sprintf(
-					"bundle build -f %s -f %s -f %s -p main",
+					"bundle build -f %s -f %s -f %s -p main --runtime-from-env",
 					cuePath, yamlPath, jsonPath,
 				))
 			},
 			"using stdin": func() (string, error) {
 				r := strings.NewReader(bundleData)
-				return executeCommandWithIn("bundle build -f - -p main", r)
+				return executeCommandWithIn("bundle build -f - -p main --runtime-from-env", r)
 			},
 		}
 
