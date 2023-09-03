@@ -18,6 +18,8 @@ package templates
 	client: enabled: *true | bool
 	server: enabled: *true | bool
 	domain: *"example.internal" | string
+
+	ns: enabled: *false | bool
 }
 
 #Instance: {
@@ -30,6 +32,10 @@ package templates
 
 		if config.server.enabled {
 			"\(config.metadata.name)-server": #ServerConfig & {_config: config}
+		}
+
+		if config.ns.enabled {
+			"\(config.metadata.name)-ns": #Namespace & {_config: config}
 		}
 	}
 }

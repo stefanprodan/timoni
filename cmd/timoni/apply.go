@@ -295,8 +295,10 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	applyOpts := runtime.ApplyOptions(applyArgs.force, rootArgs.timeout)
+	applyOpts.WaitInterval = 5 * time.Second
+
 	waitOptions := ssa.WaitOptions{
-		Interval: 5 * time.Second,
+		Interval: applyOpts.WaitInterval,
 		Timeout:  rootArgs.timeout,
 		FailFast: true,
 	}
