@@ -75,7 +75,6 @@ func TestCRDYamlToCUE(t *testing.T) {
 	})
 	// TODO does gomega have a better string differ? the output is useless when it fails
 	n, err := format.Node(oneoff.Schemas[0].Schema.Syntax(cue.All(), cue.Docs(true)))
-	// fmt.Println(string(n))
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// hacky one-off test, primarily intended to just let there be _something_
@@ -368,18 +367,14 @@ var goldenBucketFirstSchema = `import "strings"
 		annotations?: {
 			[string]: string
 		}
-		...
 	}
 
 	// BucketSpec defines the desired state of an S3 compatible bucket
 	spec: #BucketSpec
-	...
 }
 
 // BucketSpec defines the desired state of an S3 compatible bucket
 #BucketSpec: {
-	// AccessFrom defines an Access Control List for allowing
-	// cross-namespace references to this object.
 	accessFrom?: {
 		// NamespaceSelectors is the list of namespace selectors to which
 		// this ACL applies. Items in this list are evaluated using a
@@ -393,9 +388,7 @@ var goldenBucketFirstSchema = `import "strings"
 			matchLabels?: {
 				[string]: string
 			}
-			...
 		}]
-		...
 	}
 
 	// The bucket name.
@@ -421,13 +414,9 @@ var goldenBucketFirstSchema = `import "strings"
 
 	// The bucket region.
 	region?: string
-
-	// The name of the secret containing authentication credentials
-	// for the Bucket.
 	secretRef?: {
 		// Name of the referent.
 		name: string
-		...
 	}
 
 	// This flag tells the controller to suspend the reconciliation of
@@ -436,7 +425,6 @@ var goldenBucketFirstSchema = `import "strings"
 
 	// The timeout for download operations, defaults to 60s.
 	timeout?: string | *"60s"
-	...
 }
 
 // BucketStatus defines the observed state of a bucket
@@ -461,7 +449,6 @@ var goldenBucketFirstSchema = `import "strings"
 
 		// URL is the HTTP address of this artifact.
 		url: string
-		...
 	}
 
 	// Conditions holds the conditions for the Bucket.
@@ -506,7 +493,6 @@ var goldenBucketFirstSchema = `import "strings"
 		type: strings.MaxRunes(316) & {
 			=~"^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
 		}
-		...
 	}]
 
 	// LastHandledReconcileAt holds the value of the most recent
@@ -520,9 +506,7 @@ var goldenBucketFirstSchema = `import "strings"
 	// URL is the download link for the artifact output of the last
 	// Bucket sync.
 	url?: string
-	...
 } | *{
 	observedGeneration: -1
-	...
 }
 `

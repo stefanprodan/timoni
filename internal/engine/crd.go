@@ -340,11 +340,9 @@ func parentPath(c astutil.Cursor) (cue.Selector, astutil.Cursor) {
 					return cue.Index(i), p
 				}
 			}
-			break
-		default:
-			p = p.Parent()
 		}
 		prior = p
+		p = p.Parent()
 	}
 
 	return cue.Selector{}, nil
