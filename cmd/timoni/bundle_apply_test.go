@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -406,5 +407,155 @@ bundle: {
 		output, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(output).To(ContainSubstring(modVer1))
+	})
+}
+
+func Test_BundleApply_Runtime(t *testing.T) {
+	g := NewWithT(t)
+
+	bundleName := "my-bundle"
+	secretName := rnd("my-data", 5)
+	modPath := "testdata/module"
+	namespace := rnd("my-ns", 5)
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+	modVer := "1.0.0"
+
+	// Push the module to registry
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s",
+		modPath,
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	bundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		app: {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+			values: client: enabled: true @timoni(runtime:bool:CLIENT)
+			values: server: enabled: false @timoni(runtime:bool:ENABLED)
+			values: domain: string @timoni(runtime:string:DOMAIN)
+		}
+	}
+}
+`, bundleName, modURL, modVer, namespace)
+
+	runtimeData := fmt.Sprintf(`
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "test"
+	values: [
+		{
+			query: "k8s:v1:Secret:%[1]s:%[2]s"
+			for: {
+				"DOMAIN":   "obj.data.domain"
+				"ENABLED":  "obj.data.enabled"
+			}
+			optional: false
+		}
+	]
+}
+`, "kube-system", secretName)
+
+	runtimePath := filepath.Join(t.TempDir(), "runtime.cue")
+	err = os.WriteFile(runtimePath, []byte(runtimeData), 0644)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	sc := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: "kube-system",
+		},
+		StringData: map[string]string{
+			"domain":  "test.local",
+			"enabled": "true",
+		},
+	}
+
+	err = envTestClient.Create(context.Background(), sc, &client.CreateOptions{
+		FieldManager: "timoni",
+	})
+	g.Expect(err).ToNot(HaveOccurred())
+
+	clientCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-client", "app"),
+			Namespace: namespace,
+		},
+	}
+
+	serverCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-server", "app"),
+			Namespace: namespace,
+		},
+	}
+
+	t.Run("creates instances from bundle and runtime", func(t *testing.T) {
+		g := NewWithT(t)
+
+		cmd := fmt.Sprintf("bundle apply -p main --wait -f- -r=%s --runtime-from-env",
+			runtimePath,
+		)
+
+		output, err := executeCommandWithIn(cmd, strings.NewReader(bundleData))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		ccm := clientCM.DeepCopy()
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(ccm), ccm)
+		g.Expect(err).ToNot(HaveOccurred())
+
+		scm := serverCM.DeepCopy()
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(scm), scm)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(scm.Data["hostname"]).To(BeEquivalentTo("test.local"))
+	})
+
+	t.Run("overrides env vars", func(t *testing.T) {
+		g := NewWithT(t)
+
+		t.Setenv("DOMAIN", "not.set")
+
+		cmd := fmt.Sprintf("bundle apply -p main --wait -f- -r=%s --runtime-from-env",
+			runtimePath,
+		)
+
+		output, err := executeCommandWithIn(cmd, strings.NewReader(bundleData))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		scm := serverCM.DeepCopy()
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(scm), scm)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(scm.Data["hostname"]).To(BeEquivalentTo("test.local"))
+	})
+
+	t.Run("merges env vars", func(t *testing.T) {
+		g := NewWithT(t)
+
+		t.Setenv("CLIENT", "false")
+
+		cmd := fmt.Sprintf("bundle apply -p main --wait -f- -r=%s --runtime-from-env",
+			runtimePath,
+		)
+
+		output, err := executeCommandWithIn(cmd, strings.NewReader(bundleData))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		ccm := clientCM.DeepCopy()
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(ccm), ccm)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	})
 }
