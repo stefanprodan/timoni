@@ -18,6 +18,7 @@ package runtime
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	"cuelang.org/go/cue"
@@ -117,6 +118,13 @@ func (r *ResourceReader) getValues(ctx *cue.Context, obj *unstructured.Unstructu
 			return result, fmt.Errorf("unsupported type retuned by '%s'", exp)
 		default:
 			result[key] = fmt.Sprintf("%v", res)
+		}
+
+		// Decode Secret data from base64
+		if obj.GetAPIVersion() == "v1" && obj.GetKind() == "Secret" {
+			if data, err := base64.StdEncoding.DecodeString(result[key]); err == nil {
+				result[key] = string(data)
+			}
 		}
 	}
 
