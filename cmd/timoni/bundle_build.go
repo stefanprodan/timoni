@@ -26,12 +26,14 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
 var bundleBuildCmd = &cobra.Command{
@@ -54,6 +56,7 @@ type bundleBuildFlags struct {
 	files          []string
 	creds          flags.Credentials
 	runtimeFromEnv bool
+	runtimeFiles   []string
 }
 
 var bundleBuildArgs bundleBuildFlags
@@ -64,6 +67,8 @@ func init() {
 		"The local path to bundle.cue files.")
 	bundleBuildCmd.Flags().BoolVar(&bundleBuildArgs.runtimeFromEnv, "runtime-from-env", false,
 		"Inject runtime values from the environment.")
+	bundleBuildCmd.Flags().StringSliceVarP(&bundleBuildArgs.runtimeFiles, "runtime", "r", nil,
+		"The local path to runtime.cue files.")
 	bundleBuildCmd.Flags().Var(&bundleBuildArgs.creds, bundleBuildArgs.creds.Type(), bundleBuildArgs.creds.Description())
 	bundleCmd.AddCommand(bundleBuildCmd)
 }
@@ -95,7 +100,30 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	runtimeValues := make(map[string]string)
 
 	if bundleBuildArgs.runtimeFromEnv {
-		runtimeValues = engine.GetEnv()
+		maps.Copy(runtimeValues, engine.GetEnv())
+	}
+
+	if len(bundleBuildArgs.runtimeFiles) > 0 {
+		kctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+		defer cancel()
+
+		rt, err := buildRuntime(bundleBuildArgs.runtimeFiles)
+		if err != nil {
+			return err
+		}
+
+		rm, err := runtime.NewResourceManager(kubeconfigArgs)
+		if err != nil {
+			return err
+		}
+
+		reader := runtime.NewResourceReader(rm)
+		rv, err := reader.Read(kctx, rt.Refs)
+		if err != nil {
+			return err
+		}
+
+		maps.Copy(runtimeValues, rv)
 	}
 
 	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {

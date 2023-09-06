@@ -54,32 +54,14 @@ func init() {
 func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	files := runtimeBuildArgs.files
 
-	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tmpDir)
-
-	ctx := cuecontext.New()
-	rb := engine.NewRuntimeBuilder(ctx, files)
-
-	if err := rb.InitWorkspace(tmpDir); err != nil {
-		return describeErr(tmpDir, "failed to init runtime", err)
-	}
-
-	v, err := rb.Build()
-	if err != nil {
-		return describeErr(tmpDir, "failed to parse runtime", err)
-	}
-
-	rt, err := rb.GetRuntime(v)
+	rt, err := buildRuntime(files)
 	if err != nil {
 		return err
 	}
 
 	log := LoggerRuntime(cmd.Context(), rt.Name)
 
-	kctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
@@ -89,7 +71,7 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 
 	reader := runtime.NewResourceReader(rm)
 
-	values, err := reader.Read(kctx, rt.Refs)
+	values, err := reader.Read(ctx, rt.Refs)
 	if err != nil {
 		return err
 	}
@@ -106,4 +88,26 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func buildRuntime(files []string) (*apiv1.Runtime, error) {
+	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	ctx := cuecontext.New()
+	rb := engine.NewRuntimeBuilder(ctx, files)
+
+	if err := rb.InitWorkspace(tmpDir); err != nil {
+		return nil, describeErr(tmpDir, "failed to init runtime", err)
+	}
+
+	v, err := rb.Build()
+	if err != nil {
+		return nil, describeErr(tmpDir, "failed to parse runtime", err)
+	}
+
+	return rb.GetRuntime(v)
 }
