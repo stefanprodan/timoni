@@ -598,10 +598,10 @@ The `instance.values` is an optional field that specifies custom values used to 
 At apply time, Timoni merges the custom values with the defaults,
 validates the final values against the config schema and creates the instance.
 
-#### Values from environment variables
+#### Values from runtime
 
 The `@timoni(runtime:[string|number|bool]:[VAR_NAME])` CUE attribute can be placed next
-to a field to set its value from the environment.
+to a field to set its value from the [Runtime](bundle-runtime.md).
 
 ```cue
 values: {
@@ -611,7 +611,7 @@ values: {
 }
 ```
 
-To make an environment variable required, the field value can be set to its type:
+To make an Runtime attribute required, the field value can be set to its type:
 
 ```cue
 values: {
@@ -621,9 +621,8 @@ values: {
 }
 ```
 
-At apply time, Timoni injects the fields values from the environment,
-if a specified env var is not found and if a default is not provided,
-the build operation with fail with an `incomplete value` error.
+The Runtime values can come from Kubernetes API and/or from the environment variables,
+for more details please see the [Bundle Runtime documentation](bundle-runtime.md).
 
 ## Working with Bundles
 
@@ -685,49 +684,6 @@ Example:
 
 ```shell
 timoni bundle apply --overwrite-ownership -f bundle.cue
-```
-
-### Inject values from environment variables
-
-To inject values from environment variables, you can add CUE attributes next to fields
-in the format `@timoni(runtime:[string|number|bool]:[ENV_VAR_NAME])`.
-
-Example:
-
-```cue
-registry: "my-registry.com/my-org" @timoni(runtime:string:APP_REGISTRY)
-
-bundle: {
-	apiVersion: "v1alpha1"
-	name:       "my-apps"
-	instances: {
-		"app": {
-			module: {
-				url:     "oci://\(registry)/modules/app"
-				version: "1.0.0" @timoni(runtime:string:APP_VER)
-			}
-			values: {
-				// required string (can be multi-line)
-				sshKey: string @timoni(runtime:string:SSH_KEY)
-				// optional boolean (defaults to false)
-				isAdmin: false @timoni(runtime:bool:IS_ADMIN)
-				// required number
-				age: int @timoni(runtime:number:AGE)
-			}
-		}
-	}
-}
-```
-
-Export the env vars and run the `timoni bundle apply --runtime-from-env` command.
-
-```shell
-EXPORT APP_REGISTRY="localhost:5050"
-EXPORT SSH_KEY=$(cat .ssh/id_ecdsa.pub)
-EXPORT IS_ADMIN="true"
-EXPORT AGE="41"
-
-timoni bundle apply -f bundle.cue --runtime-from-env
 ```
 
 ### Build

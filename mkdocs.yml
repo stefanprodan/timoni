@@ -47,6 +47,7 @@ nav:
   - Quickstart: quickstart.md
   - Topics:
       - Bundle files: bundles.md
+      - Bundle runtime: bundle-runtime.md
       - Module structure: module.md
       - Module versioning: module-semver.md
       - Values files: values.md
