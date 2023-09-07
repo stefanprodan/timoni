@@ -35,6 +35,7 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/signutil"
 )
 
 var pushModCmd = &cobra.Command{
@@ -78,6 +79,8 @@ type pushModFlags struct {
 	ignorePaths []string
 	output      string
 	annotations []string
+	sign        bool
+	cosignKey   string
 }
 
 var pushModArgs pushModFlags
@@ -93,6 +96,10 @@ func init() {
 		"Set custom OCI annotations in the format '<key>=<value>'.")
 	pushModCmd.Flags().StringVarP(&pushModArgs.output, "output", "o", "",
 		"The format in which the artifact digest should be printed, can be 'yaml' or 'json'.")
+	pushModCmd.Flags().BoolVar(&pushModArgs.sign, "sign", false,
+		"Signs the module with Cosign")
+	pushModCmd.Flags().StringVar(&pushModArgs.cosignKey, "cosign-key", "",
+		"The Cosign private key for signing the module")
 
 	modCmd.AddCommand(pushModCmd)
 }
@@ -192,6 +199,13 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	tag, err := gcr.NewTag(url)
 	if err != nil {
 		return fmt.Errorf("artifact tag parsing failed: %w", err)
+	}
+
+	if pushModArgs.sign {
+		err = signutil.Sign(log, digestURL, pushModArgs.cosignKey)
+		if err != nil {
+			return err
+		}
 	}
 
 	info := struct {
