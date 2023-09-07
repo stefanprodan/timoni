@@ -97,9 +97,9 @@ func init() {
 	pushModCmd.Flags().StringVarP(&pushModArgs.output, "output", "o", "",
 		"The format in which the artifact digest should be printed, can be 'yaml' or 'json'.")
 	pushModCmd.Flags().BoolVar(&pushModArgs.sign, "sign", false,
-		"Signs the module with Cosign")
+		"Signs the module with Cosign.")
 	pushModCmd.Flags().StringVar(&pushModArgs.cosignKey, "cosign-key", "",
-		"The Cosign private key for signing the module")
+		"The Cosign private key for signing the module.")
 
 	modCmd.AddCommand(pushModCmd)
 }
