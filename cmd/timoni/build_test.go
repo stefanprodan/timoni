@@ -211,4 +211,20 @@ func TestBuild(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("unknown values file format"))
 	})
+
+	t.Run("fails to build with kube version", func(t *testing.T) {
+		g := NewWithT(t)
+		t.Setenv("TIMONI_KUBE_VERSION", "1.19.0")
+		name := rnd("my-instance", 5)
+		namespace := rnd("my-namespace", 5)
+		output, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s %s -p main -o yaml",
+			namespace,
+			name,
+			modPath,
+		))
+		g.Expect(output).To(BeEmpty())
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("timoni.kubeMinorVersion: invalid value"))
+	})
 }

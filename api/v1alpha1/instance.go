@@ -35,6 +35,7 @@ const InstanceSchema = `
 	apiVersion: string & =~"^v1alpha1$"
 	instance: {...}
 	apply: [string]: [...]
+	kubeMinorVersion?: int
 }
 
 timoni: #Timoni

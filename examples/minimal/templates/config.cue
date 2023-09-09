@@ -8,8 +8,8 @@ import (
 // Config defines the schema and defaults for the Instance values.
 #Config: {
 	// Runtime version info
-	moduleVersion: string
-	kubeVersion:   string
+	moduleVersion!: string
+	kubeVersion!:   string
 
 	// Metadata (common to all resources)
 	metadata: timoniv1.#Metadata
