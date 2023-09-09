@@ -5,6 +5,9 @@
 package main
 
 import (
+	"strconv"
+	"strings"
+
 	templates "timoni.sh/minimal/templates"
 )
 
@@ -25,18 +28,20 @@ timoni: {
 		// The user-supplied values are merged with the
 		// default values at runtime by Timoni.
 		config: values
-		// The instance name and namespace tag values
-		// are injected at runtime by Timoni.
-		config: metadata: {
-			name:      string @tag(name)
-			namespace: string @tag(namespace)
-		}
-		// Optional runtime version info.
+		// These values are injected at runtime by Timoni.
 		config: {
+			metadata: {
+				name:      string @tag(name)
+				namespace: string @tag(namespace)
+			}
 			moduleVersion: string @tag(mv, var=moduleVersion)
 			kubeVersion:   string @tag(kv, var=kubeVersion)
 		}
 	}
+
+	// Enforce minimum Kubernetes version.
+	kubeMinorVersion: int & >=20
+	kubeMinorVersion: strconv.Atoi(strings.Split(instance.config.kubeVersion, ".")[1])
 
 	// Pass Kubernetes resources outputted by the instance
 	// to Timoni's multi-step apply.

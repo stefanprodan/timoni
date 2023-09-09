@@ -34,6 +34,9 @@ const (
 	defaultValuesFile   = "values.cue"
 	defaultSchemaFile   = "timoni.schema.cue"
 	defaultDevelVersion = "0.0.0-devel"
+
+	// The default Kubernetes version must be kept in sync with go.mod.
+	defaultKubeVersion = "1.27.5"
 )
 
 // ModuleBuilder compiles CUE definitions to Kubernetes objects.
@@ -61,8 +64,13 @@ func NewModuleBuilder(ctx *cue.Context, name, namespace, moduleRoot, pkgName str
 		name:          name,
 		namespace:     namespace,
 		moduleVersion: defaultDevelVersion,
-		kubeVersion:   defaultDevelVersion,
+		kubeVersion:   defaultKubeVersion,
 	}
+
+	if kv := os.Getenv("TIMONI_KUBE_VERSION"); kv != "" {
+		b.kubeVersion = kv
+	}
+
 	if pkgName != defaultPackage {
 		b.pkgPath = filepath.Join(moduleRoot, pkgName)
 	}
