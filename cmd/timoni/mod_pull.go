@@ -50,7 +50,7 @@ type pullModFlags struct {
 	version                     flags.Version
 	output                      string
 	creds                       flags.Credentials
-	verify                      bool
+	verify                      string
 	cosignKey                   string
 	certificateIdentity         string
 	certificateIdentityRegexp   string
@@ -65,8 +65,8 @@ func init() {
 	pullModCmd.Flags().StringVarP(&pullModArgs.output, "output", "o", "",
 		"The directory path where the module content should be extracted.")
 	pullModCmd.Flags().Var(&pullModArgs.creds, pullModArgs.creds.Type(), pullModArgs.creds.Description())
-	pullModCmd.Flags().BoolVar(&pullModArgs.verify, "verify", false,
-		"Verifies the signed module with Cosign.")
+	pullModCmd.Flags().StringVar(&pullModArgs.verify, "verify", "",
+		"Verifies the signed module with the specified provvider.")
 	pullModCmd.Flags().StringVar(&pullModArgs.cosignKey, "cosign-key", "",
 		"The Cosign public key for verifying the module.")
 	pullModCmd.Flags().StringVar(&pullModArgs.certificateIdentity, "certificate-identity", "",
@@ -126,9 +126,9 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if pullModArgs.verify {
-		err = signutil.Verify(log, url, pullModArgs.cosignKey, pullModArgs.certificateIdentity, pullModArgs.certificateIdentityRegexp,
-			pullModArgs.certificateOidcIssuer, pullModArgs.certificateOidcIssuerRegexp)
+	if pullModArgs.verify != "" {
+		err = signutil.Verify(log, pullModArgs.verify, url, pullModArgs.cosignKey, pullModArgs.certificateIdentity,
+			pullModArgs.certificateIdentityRegexp, pullModArgs.certificateOidcIssuer, pullModArgs.certificateOidcIssuerRegexp)
 		if err != nil {
 			return err
 		}
