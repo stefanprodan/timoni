@@ -37,11 +37,9 @@ func Sign(log logr.Logger, imageRef string, keyRef string) error {
 	cosignCmd := exec.Command(cosignExecutable, []string{"sign"}...)
 	cosignCmd.Env = os.Environ()
 
-	// if key is empty, use keyless mode(experimental)
+	// if key is empty, use keyless mode
 	if keyRef != "" {
 		cosignCmd.Args = append(cosignCmd.Args, "--key", keyRef)
-	} else {
-		cosignCmd.Env = append(cosignCmd.Env, "COSIGN_EXPERIMENTAL=true")
 	}
 
 	cosignCmd.Args = append(cosignCmd.Args, "--yes")
@@ -67,7 +65,7 @@ func Verify(log logr.Logger, imageRef string, keyRef string,
 	cosignCmd := exec.Command(cosignExecutable, []string{"verify"}...)
 	cosignCmd.Env = os.Environ()
 
-	// if key is empty, use keyless mode(experimental)
+	// if key is empty, use keyless mode
 	if keyRef != "" {
 		cosignCmd.Args = append(cosignCmd.Args, "--key", keyRef)
 	} else {
@@ -89,7 +87,6 @@ func Verify(log logr.Logger, imageRef string, keyRef string,
 		if certOidcIssuerRegexp != "" {
 			cosignCmd.Args = append(cosignCmd.Args, "--certificate-oidc-issuer-regexp", certOidcIssuerRegexp)
 		}
-		cosignCmd.Env = append(cosignCmd.Env, "COSIGN_EXPERIMENTAL=true")
 	}
 
 	cosignCmd.Args = append(cosignCmd.Args, imageRef)
