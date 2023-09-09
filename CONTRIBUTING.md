@@ -15,17 +15,24 @@ Origin ([DCO](DCO)). This document was created by the Linux Kernel community and
 simple statement that you, as a contributor, have the legal right to make the
 contribution.
 
-### How to run the test suite
+## How to run the test suite
 
 Prerequisites:
 
-* go >= 1.19
-* cue >= 0.4
+* go >= 1.21
+* cue >= 0.6
+* make >= 4.4
 
 Run the test suite with:
 
-```bash
-make test
+```shell
+make
+```
+
+Run manual tests using the locally built binary:
+
+```shell
+./bin/timoni <command>
 ```
 
 ## Acceptance policy

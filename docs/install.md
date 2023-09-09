@@ -25,7 +25,7 @@ The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://gi
 
 === "Install from source"
 
-    Using Go >= 1.20:
+    Using Go >= 1.21:
     
     ```shell
     go install github.com/stefanprodan/timoni/cmd/timoni@latest
