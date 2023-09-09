@@ -24,6 +24,7 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/format"
 	"cuelang.org/go/cue/load"
 	"cuelang.org/go/cue/parser"
 	"cuelang.org/go/encoding/json"
@@ -32,43 +33,27 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-// BundleBuilder compiles CUE definitions to Go Bundle objects.
-type BundleBuilder struct {
-	ctx      *cue.Context
-	files    []string
-	injector *RuntimeInjector
+// RuntimeBuilder compiles CUE definitions to Go Runtime objects.
+type RuntimeBuilder struct {
+	ctx   *cue.Context
+	files []string
 }
 
-type Bundle struct {
-	Name      string
-	Instances []BundleInstance
-}
-
-type BundleInstance struct {
-	Bundle    string
-	Name      string
-	Namespace string
-	Module    apiv1.ModuleReference
-	Values    cue.Value
-}
-
-// NewBundleBuilder creates a BundleBuilder for the given module and package.
-func NewBundleBuilder(ctx *cue.Context, files []string) *BundleBuilder {
+// NewRuntimeBuilder creates a RuntimeBuilder for the given module and package.
+func NewRuntimeBuilder(ctx *cue.Context, files []string) *RuntimeBuilder {
 	if ctx == nil {
 		ctx = cuecontext.New()
 	}
-	b := &BundleBuilder{
-		ctx:      ctx,
-		files:    files,
-		injector: NewRuntimeInjector(ctx),
+	b := &RuntimeBuilder{
+		ctx:   ctx,
+		files: files,
 	}
 	return b
 }
 
-// InitWorkspace copies the bundle definitions to the specified workspace,
-// sets the bundle schema, and then it injects the runtime values based on @timoni() attributes.
+// InitWorkspace extracts the runtime definitions to the specified workspace.
 // A workspace must be initialised before calling Build.
-func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string]string) error {
+func (b *RuntimeBuilder) InitWorkspace(workspace string) error {
 	var files []string
 	for i, file := range b.files {
 		_, fn := filepath.Split(file)
@@ -98,9 +83,9 @@ func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string
 			return fmt.Errorf("failed to parse %s: %w", fn, err)
 		}
 
-		data, err := b.injector.Inject(node, runtimeValues)
+		data, err := format.Node(node)
 		if err != nil {
-			return fmt.Errorf("failed to inject %s: %w", fn, err)
+			return fmt.Errorf("failed to format node %s: %w", fn, err)
 		}
 
 		dstFile := filepath.Join(workspace, fmt.Sprintf("%v.%s.cue", i, fn))
@@ -113,7 +98,7 @@ func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string
 
 	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.files)+1))
 	files = append(files, schemaFile)
-	if err := os.WriteFile(schemaFile, []byte(apiv1.BundleSchema), os.ModePerm); err != nil {
+	if err := os.WriteFile(schemaFile, []byte(apiv1.RuntimeSchema), os.ModePerm); err != nil {
 		return err
 	}
 
@@ -123,7 +108,7 @@ func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string
 
 // Build builds a CUE instance for the specified files and returns the CUE value.
 // A workspace must be initialised with InitWorkspace before calling this function.
-func (b *BundleBuilder) Build() (cue.Value, error) {
+func (b *RuntimeBuilder) Build() (cue.Value, error) {
 	var value cue.Value
 	cfg := &load.Config{
 		Package:   "_",
@@ -152,58 +137,39 @@ func (b *BundleBuilder) Build() (cue.Value, error) {
 	return v, nil
 }
 
-// GetBundle returns a Bundle from the bundle CUE value.
-func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
-	bundleNameValue := v.LookupPath(cue.ParsePath(apiv1.BundleName.String()))
-	bundleName, err := bundleNameValue.String()
+// GetRuntime returns a Runtime from the specified CUE value.
+func (b *RuntimeBuilder) GetRuntime(v cue.Value) (*apiv1.Runtime, error) {
+	runtimeNameValue := v.LookupPath(cue.ParsePath(apiv1.RuntimeName.String()))
+	runtimeName, err := runtimeNameValue.String()
 	if err != nil {
-		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.BundleName.String(), bundleNameValue.Err())
+		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.RuntimeName.String(), runtimeNameValue.Err())
 	}
 
-	instances := v.LookupPath(cue.ParsePath(apiv1.BundleInstancesSelector.String()))
-	if instances.Err() != nil {
-		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.BundleInstancesSelector.String(), instances.Err())
+	runtimeValuesCue := v.LookupPath(cue.ParsePath(apiv1.RuntimeValuesSelector.String()))
+	if runtimeValuesCue.Err() != nil {
+		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.RuntimeValuesSelector.String(), runtimeValuesCue.Err())
 	}
 
-	var list []BundleInstance
-	iter, err := instances.Fields(cue.Concrete(true))
+	runtimeValues := []apiv1.RuntimeValue{}
+
+	err = runtimeValuesCue.Decode(&runtimeValues)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("values decoding failed: %w", err)
 	}
 
-	for iter.Next() {
-		name := iter.Selector().Unquoted()
-		expr := iter.Value()
+	var refs []apiv1.RuntimeResourceRef
 
-		vURL := expr.LookupPath(cue.ParsePath(apiv1.BundleModuleURLSelector.String()))
-		url, _ := vURL.String()
+	for _, rv := range runtimeValues {
+		ref, err := rv.ToResourceRef()
+		if err != nil {
+			return nil, fmt.Errorf("value decoding failed: %w", err)
+		}
 
-		vDigest := expr.LookupPath(cue.ParsePath(apiv1.BundleModuleDigestSelector.String()))
-		digest, _ := vDigest.String()
-
-		vVersion := expr.LookupPath(cue.ParsePath(apiv1.BundleModuleVersionSelector.String()))
-		version, _ := vVersion.String()
-
-		vNamespace := expr.LookupPath(cue.ParsePath(apiv1.BundleNamespaceSelector.String()))
-		namespace, _ := vNamespace.String()
-
-		values := expr.LookupPath(cue.ParsePath(apiv1.BundleValuesSelector.String()))
-
-		list = append(list, BundleInstance{
-			Bundle:    bundleName,
-			Name:      name,
-			Namespace: namespace,
-			Module: apiv1.ModuleReference{
-				Repository: url,
-				Version:    version,
-				Digest:     digest,
-			},
-			Values: values,
-		})
+		refs = append(refs, *ref)
 	}
 
-	return &Bundle{
-		Name:      bundleName,
-		Instances: list,
+	return &apiv1.Runtime{
+		Name: runtimeName,
+		Refs: refs,
 	}, nil
 }

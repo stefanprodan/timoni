@@ -17,16 +17,19 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
 var bundleLintCmd = &cobra.Command{
@@ -46,8 +49,10 @@ var bundleLintCmd = &cobra.Command{
 }
 
 type bundleLintFlags struct {
-	pkg   flags.Package
-	files []string
+	pkg            flags.Package
+	files          []string
+	runtimeFromEnv bool
+	runtimeFiles   []string
 }
 
 var bundleLintArgs bundleLintFlags
@@ -56,6 +61,10 @@ func init() {
 	bundleLintCmd.Flags().VarP(&bundleLintArgs.pkg, bundleLintArgs.pkg.Type(), bundleLintArgs.pkg.Shorthand(), bundleLintArgs.pkg.Description())
 	bundleLintCmd.Flags().StringSliceVarP(&bundleLintArgs.files, "file", "f", nil,
 		"The local path to bundle.cue files.")
+	bundleLintCmd.Flags().BoolVar(&bundleLintArgs.runtimeFromEnv, "runtime-from-env", false,
+		"Inject runtime values from the environment.")
+	bundleLintCmd.Flags().StringSliceVarP(&bundleLintArgs.runtimeFiles, "runtime", "r", nil,
+		"The local path to runtime.cue files.")
 	bundleCmd.AddCommand(bundleLintCmd)
 }
 
@@ -72,7 +81,36 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 	cuectx := cuecontext.New()
 	bm := engine.NewBundleBuilder(cuectx, files)
 
-	if err := bm.InitWorkspace(tmpDir); err != nil {
+	runtimeValues := make(map[string]string)
+
+	if bundleLintArgs.runtimeFromEnv {
+		maps.Copy(runtimeValues, engine.GetEnv())
+	}
+
+	if len(bundleLintArgs.runtimeFiles) > 0 {
+		kctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+		defer cancel()
+
+		rt, err := buildRuntime(bundleLintArgs.runtimeFiles)
+		if err != nil {
+			return err
+		}
+
+		rm, err := runtime.NewResourceManager(kubeconfigArgs)
+		if err != nil {
+			return err
+		}
+
+		reader := runtime.NewResourceReader(rm)
+		rv, err := reader.Read(kctx, rt.Refs)
+		if err != nil {
+			return err
+		}
+
+		maps.Copy(runtimeValues, rv)
+	}
+
+	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {
 		return describeErr(tmpDir, "failed to parse bundle", err)
 	}
 

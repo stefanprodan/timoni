@@ -598,32 +598,31 @@ The `instance.values` is an optional field that specifies custom values used to 
 At apply time, Timoni merges the custom values with the defaults,
 validates the final values against the config schema and creates the instance.
 
-#### Values from environment variables
+#### Values from runtime
 
-The `@timoni(env:[string|number|bool]:[ENV_VAR_NAME])` CUE attribute can be placed next
-to a field to set its value from the environment.
-
-```cue
-values: {
-	host:    "example.com" @timoni(env:string:MY_HOST)
-	enabled: true          @timoni(env:bool:MY_ENABLED)
-	score:   1             @timoni(env:number:MY_SCORE)
-}
-```
-
-To make an environment variable required, the field value can be set to its type:
+The `@timoni(runtime:[string|number|bool]:[VAR_NAME])` CUE attribute can be placed next
+to a field to set its value from the [Runtime](bundle-runtime.md).
 
 ```cue
 values: {
-	host:    string @timoni(env:string:MY_HOST)
-	enabled: bool   @timoni(env:bool:MY_ENABLED)
-	score:   int    @timoni(env:number:MY_SCORE)
+	host:    "example.com" @timoni(runtime:string:MY_HOST)
+	enabled: true          @timoni(runtime:bool:MY_ENABLED)
+	score:   1             @timoni(runtime:number:MY_SCORE)
 }
 ```
 
-At apply time, Timoni injects the fields values from the environment,
-if a specified env var is not found and if a default is not provided,
-the build operation with fail with an `incomplete value` error.
+To make an Runtime attribute required, the field value can be set to its type:
+
+```cue
+values: {
+	host:    string @timoni(runtime:string:MY_HOST)
+	enabled: bool   @timoni(runtime:bool:MY_ENABLED)
+	score:   int    @timoni(runtime:number:MY_SCORE)
+}
+```
+
+The Runtime values can come from Kubernetes API and/or from the environment variables,
+for more details please see the [Bundle Runtime documentation](bundle-runtime.md).
 
 ## Working with Bundles
 
@@ -685,49 +684,6 @@ Example:
 
 ```shell
 timoni bundle apply --overwrite-ownership -f bundle.cue
-```
-
-### Inject values from environment variables
-
-To inject values from environment variables, you can add CUE attributes next to fields
-in the format `@timoni(env:[string|number|bool]:[ENV_VAR_NAME])`.
-
-Example:
-
-```cue
-registry: "my-registry.com/my-org" @timoni(env:string:APP_REGISTRY)
-
-bundle: {
-	apiVersion: "v1alpha1"
-	name:       "my-apps"
-	instances: {
-		"app": {
-			module: {
-				url:     "oci://\(registry)/modules/app"
-				version: "1.0.0" @timoni(env:string:APP_VER)
-			}
-			values: {
-				// required string (can be multi-line)
-				sshKey: string @timoni(env:string:SSH_KEY)
-				// optional boolean (defaults to false)
-				isAdmin: false @timoni(env:bool:IS_ADMIN)
-				// required number
-				age: int @timoni(env:number:AGE)
-			}
-		}
-	}
-}
-```
-
-Export the env vars and run the `timoni bundle apply` command.
-
-```shell
-EXPORT APP_REGISTRY="localhost:5050"
-EXPORT SSH_KEY=$(cat .ssh/id_ecdsa.pub)
-EXPORT IS_ADMIN="true"
-EXPORT AGE="41"
-
-timoni bundle apply -f bundle.cue
 ```
 
 ### Build

@@ -29,6 +29,7 @@ import (
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -68,6 +69,8 @@ type bundleApplyFlags struct {
 	wait               bool
 	force              bool
 	overwriteOwnership bool
+	runtimeFromEnv     bool
+	runtimeFiles       []string
 	creds              flags.Credentials
 }
 
@@ -87,6 +90,10 @@ func init() {
 		"Perform a server-side apply dry run and prints the diff.")
 	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.wait, "wait", true,
 		"Wait for the applied Kubernetes objects to become ready.")
+	bundleApplyCmd.Flags().StringSliceVarP(&bundleApplyArgs.runtimeFiles, "runtime", "r", nil,
+		"The local path to runtime.cue files.")
+	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.runtimeFromEnv, "runtime-from-env", false,
+		"Inject runtime values from the environment.")
 	bundleApplyCmd.Flags().Var(&bundleApplyArgs.creds, bundleApplyArgs.creds.Type(), bundleApplyArgs.creds.Description())
 	bundleCmd.AddCommand(bundleApplyCmd)
 }
@@ -112,10 +119,39 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+	defer cancel()
+
 	cuectx := cuecontext.New()
 	bm := engine.NewBundleBuilder(cuectx, files)
 
-	if err := bm.InitWorkspace(tmpDir); err != nil {
+	runtimeValues := make(map[string]string)
+
+	if bundleApplyArgs.runtimeFromEnv {
+		maps.Copy(runtimeValues, engine.GetEnv())
+	}
+
+	if len(bundleApplyArgs.runtimeFiles) > 0 {
+		rt, err := buildRuntime(bundleApplyArgs.runtimeFiles)
+		if err != nil {
+			return err
+		}
+
+		rm, err := runtime.NewResourceManager(kubeconfigArgs)
+		if err != nil {
+			return err
+		}
+
+		reader := runtime.NewResourceReader(rm)
+		rv, err := reader.Read(ctx, rt.Refs)
+		if err != nil {
+			return err
+		}
+
+		maps.Copy(runtimeValues, rv)
+	}
+
+	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {
 		return err
 	}
 
@@ -139,9 +175,6 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	}
 
 	log.Info(fmt.Sprintf("applying %v instance(s)", len(bundle.Instances)))
-
-	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
-	defer cancel()
 
 	kubeVersion, err := runtime.ServerVersion(kubeconfigArgs)
 	if err != nil {
