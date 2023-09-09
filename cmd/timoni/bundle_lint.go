@@ -19,12 +19,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"

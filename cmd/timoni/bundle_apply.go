@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"strings"
 	"time"
@@ -29,7 +30,6 @@ import (
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
