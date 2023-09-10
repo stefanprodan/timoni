@@ -1,6 +1,7 @@
 name: docs
 
 on:
+  workflow_dispatch:
   push:
     branches: [ 'docs*' ]
     tags: [ 'v*' ]
