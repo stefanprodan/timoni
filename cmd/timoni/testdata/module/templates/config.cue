@@ -1,6 +1,8 @@
 package templates
 
 #Config: {
+	team!: string
+
 	metadata: {
 		name:      *"test" | string
 		namespace: *"default" | string
@@ -8,6 +10,7 @@ package templates
 				"app.kubernetes.io/name":    metadata.name
 				"app.kubernetes.io/version": moduleVersion
 				"app.kubernetes.io/kube":    kubeVersion
+				"app.kubernetes.io/team":    team
 		} | {[ string]: string}
 		annotations?: {[ string]: string}
 	}

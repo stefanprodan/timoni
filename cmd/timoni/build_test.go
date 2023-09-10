@@ -143,6 +143,7 @@ func TestBuild(t *testing.T) {
 		g.Expect(len(objects)).To(BeEquivalentTo(1))
 		g.Expect(objects[0].GetName()).To(BeEquivalentTo(name + "-client"))
 		g.Expect(objects[0].GetAnnotations()).To(HaveKeyWithValue("scope", "external"))
+		g.Expect(objects[0].GetLabels()).To(HaveKeyWithValue("app.kubernetes.io/team", "test"))
 
 		val, _, err := unstructured.NestedString(objects[0].Object, "data", "server")
 		g.Expect(err).ToNot(HaveOccurred())

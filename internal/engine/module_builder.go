@@ -98,16 +98,14 @@ func (b *ModuleBuilder) MergeValuesFile(overlays [][]byte) error {
 
 // WriteValuesFileWithDefaults merges the module's root values.cue with the supplied value.
 func (b *ModuleBuilder) WriteValuesFileWithDefaults(val cue.Value) error {
+	valData := []byte(fmt.Sprintf("%s: %v", apiv1.ValuesSelector.String(), val))
+
+	vb := NewValuesBuilder(b.ctx)
 	defaultFile := filepath.Join(b.pkgPath, defaultValuesFile)
 
-	baseVal, err := ExtractValueFromFile(b.ctx, defaultFile, apiv1.ValuesSelector.String())
+	finalVal, err := vb.MergeValues([][]byte{valData}, defaultFile)
 	if err != nil {
-		return fmt.Errorf("loading default values from module failed: %w", err)
-	}
-
-	finalVal, err := MergeValue(val, baseVal)
-	if err != nil {
-		return fmt.Errorf("merging values failed: %w", err)
+		return err
 	}
 
 	cueGen := fmt.Sprintf("package %s\n%s: %v", b.pkgName, apiv1.ValuesSelector, finalVal)
