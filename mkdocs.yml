@@ -50,6 +50,7 @@ nav:
       - Bundle runtime: bundle-runtime.md
       - Module structure: module.md
       - Module versioning: module-semver.md
+      - Module signing: module-sign.md
       - Values files: values.md
       - Compared to other tools: comparison.md
   - Automation:

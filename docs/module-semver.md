@@ -65,6 +65,8 @@ then it will tag the version as `latest` in the container registry.
 
 To automate the publishing of module versions, please see the [Timoni GitHub Actions](github-actions.md).
 
+To cryptographically sign a module version, please see the [Timoni module signing and verification doc](module-sign.md).
+
 ## Listing module versions
 
 Timoni offer a command for listing all the versions available in a container registry for a particular module.
