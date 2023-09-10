@@ -66,6 +66,11 @@ container registry using the version as the image tag.`,
 	--annotations='org.opencontainers.image.licenses=Apache-2.0' \
 	--annotations='org.opencontainers.image.documentation=https://app.org/docs' \
 	--annotations='org.opencontainers.image.description=A timoni.sh module for my app.'
+
+  # Push a module and sign it with Cosign Keyless (the cosign binary must be present in PATH)
+  timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
+	--version=1.0.0 \
+	--sign=cosign
 `,
 	RunE: pushModCmdRun,
 }
