@@ -9,7 +9,7 @@ a Kubernetes Secret in-cluster. When installing the application with Timoni,
 you may want to fetch the token from the Kubernetes Secret and use it as a config value.
 
 Timoni Runtime API offers a way to define values which are fetched from the Kubernetes API
-and mapped to a fields inside a Bundle.
+and mapped to fields inside a Bundle.
 
 ## Example
 
