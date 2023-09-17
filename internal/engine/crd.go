@@ -8,6 +8,7 @@ import (
 	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/ast/astutil"
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/token"
 	"cuelang.org/go/encoding/openapi"
 	"cuelang.org/go/encoding/yaml"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -148,21 +149,23 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		// first, extract and get the schema handle itself
 		extracted := ctx.BuildFile(of)
 		// then unify with our desired base constraints
-		var ns string
+		nsConstraint := "!"
 		if cc.Props.Spec.Scope != "Namespaced" {
-			ns = "?"
+			nsConstraint = "?"
 		}
-		sch := extracted.FillPath(defpath, (ctx.CompileString(fmt.Sprintf(`
-			apiVersion: "%s/%s"
-			kind: "%s"
+		sch := extracted.FillPath(defpath, ctx.CompileString(fmt.Sprintf(`
+					import "strings"
 
-			metadata: {
-				name:         string
-				namespace%s:  string
-				labels?:      [string]: string
-				annotations?: [string]: string
-			}
-		`, cc.Props.Spec.Group, ver, kname, ns))))
+					apiVersion: "%s/%s"
+					kind: "%s"
+		
+					metadata!: {
+						name!:        string & strings.MaxRunes(253) & strings.MinRunes(1)
+						namespace%s:  string & strings.MaxRunes(63) & strings.MinRunes(1)
+						labels?:      [string]: string
+						annotations?: [string]: string
+					}
+				`, cc.Props.Spec.Group, ver, kname, nsConstraint)))
 
 		// now, go back to an AST because it's easier to manipulate references there
 		var schast *ast.File
@@ -184,7 +187,6 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not load openapi3 document for version %s: %w", ver, err)
 		}
-		// TODO do we need to remove the info field?
 
 		preserve := make(map[string]bool)
 		var rootosch *openapi3.Schema
@@ -267,12 +269,14 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 							Label: ast.NewIdent("spec"),
 							Value: ast.NewIdent("#" + kname + "Spec"),
 						}
+						specref.Constraint = token.NOT
 						astutil.CopyComments(specref, x)
 						cursor.Replace(specref)
 						return false
 					case "status":
-						statusf = new(ast.Field)
-						*statusf = *x
+						//TODO: decide if status should be included
+						//statusf = new(ast.Field)
+						//*statusf = *x
 						cursor.Delete()
 						return false
 					case "metadata":
