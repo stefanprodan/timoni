@@ -93,7 +93,7 @@ func runImportCrdCmd(cmd *cobra.Command, args []string) error {
 	for _, crd := range crds {
 		gvDir := path.Join(crd.Props.Spec.Group, crd.Props.Spec.Names.Singular)
 		for _, crdVersion := range crd.Schemas {
-			gvkDir := path.Join(cueModDir, gvDir, crdVersion.Version)
+			gvkDir := path.Join(cueModDir, "gen", gvDir, crdVersion.Version)
 			log.Info(fmt.Sprintf("generating definition to %s", gvkDir))
 
 			def, err := format.Node(crdVersion.Schema.Syntax(cue.All(), cue.Docs(true)))

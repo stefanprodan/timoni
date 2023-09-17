@@ -131,6 +131,7 @@ func resetCmdArgs() {
 	bundleLintArgs = bundleLintFlags{}
 	bundleDelArgs = bundleDelFlags{}
 	bundleBuildArgs = bundleBuildFlags{}
+	importCrdArgs = importCrdFlags{}
 }
 
 func rnd(prefix string, n int) string {
