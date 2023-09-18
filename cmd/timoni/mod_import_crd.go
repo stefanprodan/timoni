@@ -17,15 +17,18 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"path"
+	"sort"
+	"strings"
 
-	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"cuelang.org/go/cue/format"
+	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 
 	"github.com/stefanprodan/timoni/internal/engine"
 )
@@ -65,14 +68,16 @@ func runImportCrdCmd(cmd *cobra.Command, args []string) error {
 	log := LoggerFrom(cmd.Context())
 	cuectx := cuecontext.New()
 
-	if fs, err := os.Stat(importCrdArgs.crdFile); err != nil || !fs.Mode().IsRegular() {
-		return fmt.Errorf("path not found: %s", importCrdArgs.crdFile)
-	}
-
+	// Make sure we're importing into a CUE module.
 	cueModDir := path.Join(importCrdArgs.modRoot, "cue.mod")
-
 	if fs, err := os.Stat(cueModDir); err != nil || !fs.IsDir() {
 		return fmt.Errorf("cue.mod not found in the module path %s", importCrdArgs.modRoot)
+	}
+
+	// Load the YAML file into memory.
+	var crdData []byte
+	if fs, err := os.Stat(importCrdArgs.crdFile); err != nil || !fs.Mode().IsRegular() {
+		return fmt.Errorf("path not found: %s", importCrdArgs.crdFile)
 	}
 
 	f, err := os.Open(importCrdArgs.crdFile)
@@ -80,36 +85,53 @@ func runImportCrdCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	b, err := io.ReadAll(f)
+	crdData, err = io.ReadAll(f)
 	if err != nil {
 		return err
 	}
 
-	crds, err := engine.YamlCRDToCueIR(cuectx, b)
+	// Extract the Kubernetes CRDs from the multi-doc YAML.
+	var builder strings.Builder
+	objects, err := ssa.ReadObjects(bytes.NewReader(crdData))
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing CRDs failed: %w", err)
 	}
-
-	for _, crd := range crds {
-		gvDir := path.Join(crd.Props.Spec.Group, crd.Props.Spec.Names.Singular)
-		for _, crdVersion := range crd.Schemas {
-			gvkDir := path.Join(cueModDir, "gen", gvDir, crdVersion.Version)
-			log.Info(fmt.Sprintf("generating definition to %s", gvkDir))
-
-			def, err := format.Node(crdVersion.Schema.Syntax(cue.All(), cue.Docs(true)))
+	for _, object := range objects {
+		if object.GetKind() == "CustomResourceDefinition" {
+			builder.WriteString("---\n")
+			data, err := yaml.Marshal(object)
 			if err != nil {
-				return err
+				return fmt.Errorf("marshaling CRD failed: %w", err)
 			}
+			builder.Write(data)
+		}
+	}
 
-			cueGen := fmt.Sprintf("%s%s\n\npackage %s\n\n%s", header, importCrdArgs.crdFile, crdVersion.Version, string(def))
+	// Generate the CUE definitions from the given CRD YAML.
+	imp := engine.NewImporter(cuectx, fmt.Sprintf("%s%s", header, importCrdArgs.crdFile))
+	crds, err := imp.Generate([]byte(builder.String()))
+	if err != nil {
+		return err
+	}
 
-			if err := os.MkdirAll(gvkDir, os.ModePerm); err != nil {
-				return err
-			}
+	// Sort the resulting definitions based on file names.
+	keys := make([]string, 0, len(crds))
+	for k := range crds {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 
-			if err := os.WriteFile(path.Join(gvkDir, "types_gen.cue"), []byte(cueGen), 0644); err != nil {
-				return err
-			}
+	// Write the definitions to the module's 'cue.mod/gen' dir.
+	for _, k := range keys {
+		log.Info(fmt.Sprintf("generating: %s", colorizeSubject(k)))
+
+		dstDir := path.Join(cueModDir, "gen", k)
+		if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(path.Join(dstDir, "types_gen.cue"), crds[k], 0644); err != nil {
+			return err
 		}
 	}
 
