@@ -18,8 +18,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"sort"
@@ -27,6 +29,7 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/ssa"
+	"github.com/hashicorp/go-cleanhttp"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
@@ -36,8 +39,11 @@ import (
 var importCrdCmd = &cobra.Command{
 	Use:   "crd [MODULE PATH]",
 	Short: "Generate CUE definitions from Kubernetes CRDs",
-	Example: `  # generate CUE definitions from a local YAML file
+	Example: `  # Generate CUE definitions from a local YAML file
   timoni mod import crd -f crds.yaml
+
+  # Generate CUE definitions from CRDs included in a remote YAML file
+  timoni mod import crd -f https://github.com/fluxcd/flux2/releases/latest/download/install.yaml
 `,
 	RunE: runImportCrdCmd,
 }
@@ -74,20 +80,45 @@ func runImportCrdCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cue.mod not found in the module path %s", importCrdArgs.modRoot)
 	}
 
-	// Load the YAML file into memory.
+	// Load the YAML manifest into memory either from disk or by fetching the file over HTTPS.
 	var crdData []byte
-	if fs, err := os.Stat(importCrdArgs.crdFile); err != nil || !fs.Mode().IsRegular() {
-		return fmt.Errorf("path not found: %s", importCrdArgs.crdFile)
-	}
+	if strings.HasPrefix(importCrdArgs.crdFile, "https://") {
+		req, err := http.NewRequest("GET", importCrdArgs.crdFile, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create HTTP request for %s, error: %w", importCrdArgs.crdFile, err)
+		}
 
-	f, err := os.Open(importCrdArgs.crdFile)
-	if err != nil {
-		return err
-	}
+		hctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+		defer cancel()
 
-	crdData, err = io.ReadAll(f)
-	if err != nil {
-		return err
+		resp, err := cleanhttp.DefaultClient().Do(req.WithContext(hctx))
+		if err != nil {
+			return fmt.Errorf("failed to download manifest from %s, error: %w", importCrdArgs.crdFile, err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("failed to download manifest from %s, status: %s", importCrdArgs.crdFile, resp.Status)
+		}
+
+		crdData, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("failed to download manifest from %s, error: %w", importCrdArgs.crdFile, err)
+		}
+	} else {
+		if fs, err := os.Stat(importCrdArgs.crdFile); err != nil || !fs.Mode().IsRegular() {
+			return fmt.Errorf("path not found: %s", importCrdArgs.crdFile)
+		}
+
+		f, err := os.Open(importCrdArgs.crdFile)
+		if err != nil {
+			return err
+		}
+
+		crdData, err = io.ReadAll(f)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Extract the Kubernetes CRDs from the multi-doc YAML.
