@@ -2,34 +2,71 @@ package engine
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/ast/astutil"
-	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/format"
 	"cuelang.org/go/cue/token"
 	"cuelang.org/go/encoding/openapi"
 	"cuelang.org/go/encoding/yaml"
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-// YamlCRDToCueIR converts a byte slice containing one or more YAML-encoded
+// Importer generates CUE definitions from Kubernetes CRDs using the OpenAPI v3 spec.
+type Importer struct {
+	ctx    *cue.Context
+	header string
+}
+
+// NewImporter creates an Importer for the given CUE context.
+func NewImporter(ctx *cue.Context, header string) *Importer {
+	return &Importer{
+		ctx:    ctx,
+		header: header,
+	}
+}
+
+// Generate takes a multi-doc YAML containing Kubernetes CRDs and returns the CUE definitions
+// generated from the OpenAPI spec. The resulting key value pairs, contain a unique identifier
+// in the format `<group>/<kind>/<version>` and the contents of the CUE definition.
+func (imp *Importer) Generate(crdData []byte) (map[string][]byte, error) {
+	result := make(map[string][]byte)
+
+	crds, err := imp.fromYAML(crdData)
+	if err != nil {
+		return result, err
+	}
+
+	for _, crd := range crds {
+		for _, crdVersion := range crd.Schemas {
+			def, err := format.Node(crdVersion.Schema.Syntax(cue.All(), cue.Docs(true)))
+			if err != nil {
+				return result, err
+			}
+			name := path.Join(crd.Props.Spec.Group, crd.Props.Spec.Names.Singular, crdVersion.Version)
+			result[name] = []byte(fmt.Sprintf("%s\n\npackage %s\n\n%s", imp.header, crdVersion.Version, string(def)))
+		}
+	}
+
+	return result, nil
+}
+
+// fromYAML converts a byte slice containing one or more YAML-encoded
 // CustomResourceDefinitions into a slice of [IntermediateCRD].
 //
 // This function preserves the ordering of schemas declared in the input YAML in
 // the resulting [IntermediateCRD.Schemas] field.
-func YamlCRDToCueIR(ctx *cue.Context, b []byte) ([]*IntermediateCRD, error) {
-	if ctx == nil {
-		ctx = cuecontext.New()
-	}
+func (imp *Importer) fromYAML(b []byte) ([]*IntermediateCRD, error) {
 
 	// The filename provided here is only used in error messages
 	yf, err := yaml.Extract("crd.yaml", b)
 	if err != nil {
 		return nil, fmt.Errorf("input is not valid yaml: %w", err)
 	}
-	crdv := ctx.BuildFile(yf)
+	crdv := imp.ctx.BuildFile(yf)
 
 	var all []cue.Value
 	switch crdv.IncompleteKind() {
@@ -44,7 +81,6 @@ func YamlCRDToCueIR(ctx *cue.Context, b []byte) ([]*IntermediateCRD, error) {
 		return nil, fmt.Errorf("input does not appear to be one or multiple CRDs: %s", crdv)
 	}
 
-	// TODO should this check that individual CRD inputs are valid?
 	ret := make([]*IntermediateCRD, 0, len(all))
 	for _, crd := range all {
 		cc, err := convertCRD(crd)

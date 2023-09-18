@@ -18,7 +18,7 @@ var multiline = cmpopts.AcyclicTransformer("multiline", func(s string) []string 
 	return strings.Split(s, "\n")
 })
 
-func TestCRDYamlToCUE(t *testing.T) {
+func TestConvertCRD(t *testing.T) {
 	ctx := cuecontext.New()
 	g := NewWithT(t)
 
