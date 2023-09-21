@@ -17,6 +17,7 @@ require (
 	github.com/gonvenience/ytbx v1.4.4
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-containerregistry v0.16.1
+	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/homeport/dyff v1.5.8
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/olekukonko/tablewriter v0.0.5
