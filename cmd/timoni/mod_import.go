@@ -22,7 +22,7 @@ import (
 
 var modImportCmd = &cobra.Command{
 	Use:   "import",
-	Short: "Commands for importing CUE definitions",
+	Short: "Commands for importing CUE schemas",
 }
 
 func init() {

@@ -38,11 +38,11 @@ import (
 
 var importCrdCmd = &cobra.Command{
 	Use:   "crd [MODULE PATH]",
-	Short: "Generate CUE definitions from Kubernetes CRDs",
-	Example: `  # Generate CUE definitions from a local YAML file
+	Short: "Import Kubernetes CRD CUE schemas",
+	Example: `  # Import CUE schemas from Kubernetes CRDs included in a local YAML file
   timoni mod import crd -f crds.yaml
 
-  # Generate CUE definitions from CRDs included in a remote YAML file
+  # Import CUE schemas from Kubernetes CRDs included in a remote YAML file
   timoni mod import crd -f https://github.com/fluxcd/flux2/releases/latest/download/install.yaml
 `,
 	RunE: runImportCrdCmd,
@@ -79,6 +79,9 @@ func runImportCrdCmd(cmd *cobra.Command, args []string) error {
 	if fs, err := os.Stat(cueModDir); err != nil || !fs.IsDir() {
 		return fmt.Errorf("cue.mod not found in the module path %s", importCrdArgs.modRoot)
 	}
+
+	spin := StartSpinner("importing schemas")
+	defer spin.Stop()
 
 	// Load the YAML manifest into memory either from disk or by fetching the file over HTTPS.
 	var crdData []byte
@@ -152,9 +155,11 @@ func runImportCrdCmd(cmd *cobra.Command, args []string) error {
 	}
 	sort.Strings(keys)
 
+	spin.Stop()
+
 	// Write the definitions to the module's 'cue.mod/gen' dir.
 	for _, k := range keys {
-		log.Info(fmt.Sprintf("generating: %s", colorizeSubject(k)))
+		log.Info(fmt.Sprintf("schemas imported: %s", colorizeSubject(k)))
 
 		dstDir := path.Join(cueModDir, "gen", k)
 		if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
