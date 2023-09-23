@@ -40,8 +40,8 @@ Module structure:
 
 !!! tip "Module example"
 
-    An example module can be found in Timoni's repository at
-    [examples/podinfo](https://github.com/stefanprodan/timoni/tree/main/examples/podinfo).
+    An example module can be found at
+    [stefanprodan/podinfo](https://github.com/stefanprodan/podinfo/tree/master/timoni/podinfo).
     The example module is published to GitHub Container Registry and is publicly available at
     [ghcr.io/stefanprodan/modules/podinfo](https://github.com/stefanprodan/podinfo/pkgs/container/modules%2Fpodinfo).
 

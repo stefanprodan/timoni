@@ -35,9 +35,7 @@ vet: ## Vet Go code.
 
 lint-samples: build
 	./bin/timoni mod lint ./examples/minimal
-	./bin/timoni mod lint ./examples/podinfo
 	./bin/timoni mod lint ./examples/redis
-	cue fmt ./examples/podinfo-values/
 	./bin/timoni mod lint ./cmd/timoni/testdata/module
 	./bin/timoni mod lint ./internal/engine/testdata/module
 	cue fmt ./internal/engine/testdata/module-values
@@ -48,13 +46,6 @@ push-minimal: build
 		--source https://github.com/stefanprodan/timoni/tree/main/examples/minimal  \
 		-a 'org.opencontainers.image.description=A minimal timoni.sh module example.' \
 		-a 'org.opencontainers.image.documentation=https://github.com/stefanprodan/timoni/blob/main/examples/minimal/README.md'
-
-PODINFO_VER=$(shell cat ./examples/podinfo/templates/config.cue | awk '/tag:/ {print $$2}' | tr -d '*"')
-push-podinfo: build
-	./bin/timoni mod push ./examples/podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v $(PODINFO_VER) --latest \
-		--source https://github.com/stefanprodan/podinfo \
-		-a 'org.opencontainers.image.description=A timoni.sh module for deploying Podinfo.' \
-		-a 'org.opencontainers.image.documentation=https://github.com/stefanprodan/timoni/blob/main/examples/podinfo/README.md'
 
 REDIS_VER=$(shell cat ./examples/redis/templates/config.cue | awk '/tag:/ {print $$2}' | tr -d '*"')
 push-redis: build

@@ -60,7 +60,7 @@ import (
 							timeoutSeconds:      2
 						}
 						readinessProbe: {
-							exec: command: ["redis-cli", "ping"]
+							exec: command: ["/usr/bin/redis-cli", "ping"]
 							initialDelaySeconds: 2
 							timeoutSeconds:      5
 						}
