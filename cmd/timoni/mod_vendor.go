@@ -20,11 +20,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var modImportCmd = &cobra.Command{
-	Use:   "import",
-	Short: "Commands for importing CUE schemas",
+var modVendorCmd = &cobra.Command{
+	Use:   "vendor",
+	Short: "Commands for vendoring CUE schemas",
 }
 
 func init() {
-	modCmd.AddCommand(modImportCmd)
+	modCmd.AddCommand(modVendorCmd)
 }

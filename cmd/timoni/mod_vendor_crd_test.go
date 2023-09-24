@@ -27,11 +27,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestImportCrd(t *testing.T) {
+func TestVendorCrd(t *testing.T) {
 	// To regenerate the golden files:
 	// make install
 	// cd cmd/timoni/
-	// timoni mod import crd testdata/crd/golden/ -f testdata/crd/source/cert-manager.crds.yaml
+	// timoni mod vendor crd testdata/crd/golden/ -f testdata/crd/source/cert-manager.crds.yaml
 	goldenPath := "testdata/crd/golden/cue.mod/"
 	crdPath := "testdata/crd/source/cert-manager.crds.yaml"
 
@@ -43,7 +43,7 @@ func TestImportCrd(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	output, err := executeCommand(fmt.Sprintf(
-		"mod import crd %s -f %s",
+		"mod vendor crd %s -f %s",
 		tmpDir,
 		crdPath,
 	))
