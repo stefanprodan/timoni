@@ -77,10 +77,10 @@ and the OCI digest corresponding to each version.
 Example:
 
 ```console
-$ timoni mod list oci://ghcr.io/stefanprodan/modules/redis
+$ timoni mod list oci://ghcr.io/stefanprodan/modules/podinfo
 VERSION	DIGEST                                                                  
-latest 	sha256:b58f3af3ef7a8e588a77a2a2f37af0a9ffc408fb27ff3f6ecbd2db42cf2a4297	
-7.0.12 	sha256:b58f3af3ef7a8e588a77a2a2f37af0a9ffc408fb27ff3f6ecbd2db42cf2a4297	
-7.0.11 	sha256:0e0f40e7824ff8c59e309d9b8bf19e235c6e779c93aafeeeaa86cbca49989950	
-7.0.10 	sha256:7fcb6f6918902c0dedc2ba4545fbdeca119a04644a53400af15b977e3921c600	
+latest  sha256:d5cb5a8c625045ee1da01d629a2d46cd361f2b6472b8bd07bcabbd0012bc574b 
+6.5.0   sha256:d5cb5a8c625045ee1da01d629a2d46cd361f2b6472b8bd07bcabbd0012bc574b 
+6.4.1   sha256:b3ef5d3ce9f0246e2c596db62f2d0830f58aa2b7f07199fe002c913d991e9d0c 
+6.4.0   sha256:f2d85995c0936221eb58a16ead23125d81154ab2cd25a31b2b6314f1f584ee0b 
 ```

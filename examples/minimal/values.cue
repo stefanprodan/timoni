@@ -8,7 +8,7 @@ values: {
 	message: "Hello World"
 	image: {
 		repository: "cgr.dev/chainguard/nginx"
-		digest:     "sha256:d2b0e52d7c2e5dd9fe5266b163e14d41ed97fd380deb55a36ff17efd145549cd"
-		tag:        "1.25.1"
+		digest:     "sha256:015b0c4d993d85846a15505e66c25ff717261f292d7168c70ab18ac5efbc4f00"
+		tag:        "1.25.2"
 	}
 }

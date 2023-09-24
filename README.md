@@ -52,7 +52,7 @@ Module structure:
 └── values.cue # Timoni values placeholder
 ```
 
-Module examples can be found at [examples/podinfo](examples/podinfo) and [examples/redis](examples/redis).
+Module examples can be found at [examples/minimal](examples/minimal) and [examples/redis](examples/redis).
 
 Commands for working with local modules:
 
@@ -116,14 +116,14 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.0.12"
+				version: "7.2.1"
 			}
 			namespace: "podinfo"
 			values: maxmemory: 256
 		}
 		podinfo: {
 			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-			module: version: "6.3.5"
+			module: version: "6.5.0"
 			namespace: "podinfo"
 			values: caching: {
 				enabled:  true
@@ -140,9 +140,9 @@ string interpolation and everything else that CUE std lib supports.
 Commands for working with bundles:
 
 - `timoni bundle lint -f bundle.cue`
-- `timoni bundle apply -f bundle.cue -f bundle_extras.cue --dry-run --diff`
-- `timoni bundle delete -f bundle.cue -f bundle_extras.cue`
-- `timoni bundle build -f bundle.cue -f bundle_extras.cue`
+- `timoni bundle build -f bundle.cue`
+- `timoni bundle apply -f bundle.cue`
+- `timoni bundle delete -f bundle.cue`
 
 To learn more about bundles, please see the [Bundle API documentation](https://timoni.sh/bundles/).
 

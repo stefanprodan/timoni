@@ -10,7 +10,7 @@ to the `timoni apply <instance-name> [--values <path/to/values>]` command.
 
 Given the config definition:
 
-```go
+```cue
 #Config: {
 	image: {
 		repository: *"docker.io/stefanprodan/podinfo" | string
@@ -24,7 +24,7 @@ Given the config definition:
 
 A values file can override default values such as an image repository:
 
-```go
+```cue
 values: {
 	image: repository: "ghcr.io/stefanprodan/podinfo"
 }
@@ -32,7 +32,7 @@ values: {
 
 And set optional values such as resources limits:
 
-```go
+```cue
 values: {
 	resources: limits: {
 		cpu:    "100m"
@@ -67,7 +67,7 @@ string interpolation and everything else that CUE std lib supports.
 
 For example, to set the resources limits to 2x requests:
 
-```go
+```cue
 values: {
 	_mcpu: 500
 	_mem:  256

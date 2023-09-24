@@ -10,8 +10,8 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.0.12"
-				digest:  "sha256:b58f3af3ef7a8e588a77a2a2f37af0a9ffc408fb27ff3f6ecbd2db42cf2a4297"
+				version: "7.2.1"
+				digest:  "sha256:9935e0b63db8a56c279d7722ced7683d5692a50815f715e336663509889b7e21"
 			}
 			namespace: "podinfo"
 			values: {
@@ -23,8 +23,8 @@ bundle: {
 		podinfo: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-				version: "6.3.6"
-				digest:  "sha256:b317bc7e4736287af10cbf52f9c0f1e8cd1f8c180bba29bc563fe697bfa2dd3d"
+				version: "6.5.0"
+				digest:  "sha256:d5cb5a8c625045ee1da01d629a2d46cd361f2b6472b8bd07bcabbd0012bc574b"
 			}
 			namespace: "podinfo"
 			values: caching: {
