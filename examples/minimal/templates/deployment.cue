@@ -10,20 +10,13 @@ import (
 	_cmName:    string
 	apiVersion: "apps/v1"
 	kind:       "Deployment"
-	metadata: {
-		name:      _config.metadata.name
-		namespace: _config.metadata.namespace
-		labels:    _config.metadata.labels
-		if _config.metadata.annotations != _|_ {
-			annotations: _config.metadata.annotations
-		}
-	}
-	spec: appsv1.#DeploymentSpec & {
+	metadata:   _config.metadata
+	spec:       appsv1.#DeploymentSpec & {
 		replicas: _config.replicas
-		selector: matchLabels: _config.metadata.labelSelector
+		selector: matchLabels: _config.selector.labels
 		template: {
 			metadata: {
-				labels: _config.metadata.labelSelector
+				labels: _config.selector.labels
 				if _config.podAnnotations != _|_ {
 					annotations: _config.podAnnotations
 				}
