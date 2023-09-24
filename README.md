@@ -41,14 +41,17 @@ and outputs a set of Kubernetes objects that Timoni deploys on Kubernetes.
 
 Module structure:
 ```sh
+├── README.md
 ├── cue.mod
-│   ├── gen # Kubernetes types
+│   ├── gen # Kubernetes APIs and CRDs schemas
+│   ├── pkg # Timoni APIs schemas
 │   └── module.cue # Module metadata
 ├── templates
 │   ├── config.cue # Config schema and default values
 │   ├── deployment.cue # Kubernetes Deployment template
 │   └── service.cue # Kubernetes Service template
 ├── timoni.cue # Timoni entry point
+├── timoni.ignore # Timoni ignore rules
 └── values.cue # Timoni values placeholder
 ```
 
@@ -60,6 +63,11 @@ Commands for working with local modules:
 - `timoni mod lint <path/to/module>`
 - `timoni build <name> <path/to/module> -n <namespace>`
 - `timoni apply <name> <path/to/module> -f <path/to/values.cue> --dry-run --diff`
+
+Commands for vendoring Kubernetes APIs and CRDs:
+
+- `timoni mod vendor k8s --version latest`
+- `timoni mod vendor crds -f <path/to/crds.yaml>`
 
 Timoni modules are distributed as OCI artifacts and can be stored in container registries.
 
