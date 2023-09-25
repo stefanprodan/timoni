@@ -31,8 +31,6 @@ go.sum
 
 # CUE
 *_tool.cue
-
-# Timoni
-timoni.ignore
+debug_values.cue
 `
 )

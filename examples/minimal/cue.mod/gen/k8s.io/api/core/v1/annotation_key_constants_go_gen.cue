@@ -42,10 +42,10 @@ package v1
 // AppArmorBetaContainerAnnotationKeyPrefix is the prefix to an annotation key specifying a container's apparmor profile.
 #AppArmorBetaContainerAnnotationKeyPrefix: "container.apparmor.security.beta.kubernetes.io/"
 
-// AppArmorBetaDefaultProfileAnnotatoinKey is the annotation key specifying the default AppArmor profile.
+// AppArmorBetaDefaultProfileAnnotationKey is the annotation key specifying the default AppArmor profile.
 #AppArmorBetaDefaultProfileAnnotationKey: "apparmor.security.beta.kubernetes.io/defaultProfileName"
 
-// AppArmorBetaAllowedProfileAnnotationKey is the annotation key specifying the allowed AppArmor profiles.
+// AppArmorBetaAllowedProfilesAnnotationKey is the annotation key specifying the allowed AppArmor profiles.
 #AppArmorBetaAllowedProfilesAnnotationKey: "apparmor.security.beta.kubernetes.io/allowedProfileNames"
 
 // AppArmorBetaProfileRuntimeDefault is the profile specifying the runtime default.
@@ -65,7 +65,7 @@ package v1
 // in the Annotations of a Node.
 #PreferAvoidPodsAnnotationKey: "scheduler.alpha.kubernetes.io/preferAvoidPods"
 
-// ObjectTTLAnnotations represents a suggestion for kubelet for how long it can cache
+// ObjectTTLAnnotationKey represents a suggestion for kubelet for how long it can cache
 // an object (e.g. secret, config map) before fetching it again from apiserver.
 // This annotation can be attached to node.
 #ObjectTTLAnnotationKey: "node.alpha.kubernetes.io/ttl"

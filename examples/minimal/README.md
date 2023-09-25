@@ -1,6 +1,6 @@
 # minimal
 
-<!--- description -->
+A [timoni.sh](http://timoni.sh) module for deploying minimal to Kubernetes clusters.
 
 ## Install
 
@@ -27,7 +27,7 @@ values: {
 And apply the values with:
 
 ```shell
-timoni -n default apply minimal oci://ghcr.io/<container-registry-url> \
+timoni -n default apply minimal oci://<container-registry-url> \
 --values ./my-values.cue
 ```
 
@@ -62,8 +62,7 @@ timoni -n default delete minimal
 
 #### Recommended values
 
-Comply with the
-restricted [Kubernetes pod security standard](https://kubernetes.io/docs/concepts/security/pod-security-standards/):
+Comply with the restricted [Kubernetes pod security standard](https://kubernetes.io/docs/concepts/security/pod-security-standards/):
 
 ```cue
 values: {
