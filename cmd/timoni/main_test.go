@@ -133,6 +133,7 @@ func resetCmdArgs() {
 	bundleBuildArgs = bundleBuildFlags{}
 	vendorCrdArgs = vendorCrdFlags{}
 	vendorK8sArgs = vendorK8sFlags{}
+	pushArtifactArgs = pushArtifactFlags{}
 }
 
 func rnd(prefix string, n int) string {

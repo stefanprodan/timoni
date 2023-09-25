@@ -14,18 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package main
 
-const (
-	// UserAgent is the agent name used for OCI operations.
-	UserAgent = "timoni/v1"
-
-	// ConfigMediaType is the OCI media type for the config layer.
-	ConfigMediaType = "application/vnd.timoni.config.v1+json"
-
-	// ContentMediaType is the OCI media type for the content layer.
-	ContentMediaType = "application/vnd.timoni.content.v1.tar+gzip"
-
-	// GenericContentMediaType is the OCI media type for the generic content layer.
-	GenericContentMediaType = "application/vnd.timoni.generic.content.v1.tar+gzip"
+import (
+	"github.com/spf13/cobra"
 )
+
+var artifactCmd = &cobra.Command{
+	Use:   "artifact",
+	Short: "Commands for managing Open Container Initiative (OCI) artifacts",
+}
+
+func init() {
+	rootCmd.AddCommand(artifactCmd)
+}
