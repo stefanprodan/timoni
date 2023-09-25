@@ -122,9 +122,6 @@ go.sum
 
 # CUE
 *_tool.cue
-
-# Timoni
-timoni.ignore
 ```
 
 ## Values
