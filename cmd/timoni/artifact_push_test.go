@@ -66,5 +66,6 @@ func Test_PushArtifact(t *testing.T) {
 	g.Expect(manifest.MediaType).To(Equal(types.OCIManifestSchema1))
 	g.Expect(manifest.Config.MediaType).To(BeEquivalentTo(apiv1.ConfigMediaType))
 	g.Expect(len(manifest.Layers)).To(BeEquivalentTo(1))
-	g.Expect(manifest.Layers[0].MediaType).To(BeEquivalentTo(apiv1.GenericContentMediaType))
+	g.Expect(manifest.Layers[0].MediaType).To(BeEquivalentTo(apiv1.ContentMediaType))
+	g.Expect(manifest.Layers[0].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo("generic"))
 }

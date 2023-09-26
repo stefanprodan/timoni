@@ -50,20 +50,21 @@ and pushes it to the container registry. If the directory contains a timoni.igno
 the ignore rules will be used to exclude files from the artifact.`,
 	Example: `  # Push the current dir contents to Docker Hub using the credentials from '~/.docker/config.json'
   echo $DOCKER_PAT | docker login --username timoni --password-stdin
-  timoni artifact push oci://docker.io/org/app -f . \
-	--tag=1.0.0 \
-	--tag=latest
+  timoni artifact push oci://docker.io/org/app -t latest -f .
 
  # Push a dir contents to GitHub Container Registry using a GitHub token
-  timoni artifact push oci://ghcr.io/org/schemas/app -f ./path/to/schemas \
+  timoni artifact push oci://ghcr.io/org/schemas/app -f ./path/to/bundles \
 	--creds=timoni:$GITHUB_TOKEN \
 	--tag="$(git rev-parse --short HEAD)" \
+	--tag=latest \
 	--annotation="org.opencontainers.image.source=$(git config --get remote.origin.url)" \
-	--annotation="org.opencontainers.image.revision=$(git rev-parse HEAD)'
+	--annotation="org.opencontainers.image.revision=$(git rev-parse HEAD)' \
+	--content-type="timoni.sh/bundles"
 
   # Push and sign with Cosign (the cosign binary must be present in PATH)
   export COSIGN_PASSWORD=password
-  timoni artifact push oci://ghcr.io/org/schemas/app -f ./path/to/schemas \
+  timoni artifact push oci://ghcr.io/org/schemas/app \
+	-f=/path/to/schemas \
 	--tag=1.0.0 \
 	--sign=cosign \
 	--cosign-key=/path/to/cosign.key
@@ -77,6 +78,7 @@ type pushArtifactFlags struct {
 	ignorePaths []string
 	tags        []string
 	annotations []string
+	contentType string
 	sign        string
 	cosignKey   string
 }
@@ -91,6 +93,8 @@ func init() {
 		"Tag of the artifact.")
 	pushArtifactCmd.Flags().StringArrayVarP(&pushArtifactArgs.annotations, "annotation", "a", nil,
 		"Annotation in the format '<key>=<value>'.")
+	pushArtifactCmd.Flags().StringVar(&pushArtifactArgs.contentType, "content-type", "generic",
+		"The content type of this artifact.")
 	pushArtifactCmd.Flags().StringVar(&pushArtifactArgs.sign, "sign", "",
 		"Signs the module with the specified provider.")
 	pushArtifactCmd.Flags().StringVar(&pushArtifactArgs.cosignKey, "cosign-key", "",
@@ -101,7 +105,7 @@ func init() {
 
 func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("repository URL are required")
+		return fmt.Errorf("repository URL is required")
 	}
 
 	ociURL, err := oci.ParseRepositoryURL(args[0])
@@ -118,6 +122,11 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("file path not found %s", pushArtifactArgs.path)
 	}
 	path := pushArtifactArgs.path
+
+	contentType := pushArtifactArgs.contentType
+	if contentType == "" {
+		return fmt.Errorf("content type is required")
+	}
 
 	if fi.IsDir() {
 		ps, err := engine.ReadIgnoreFile(path)
@@ -182,12 +191,17 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	img = mutate.ConfigMediaType(img, apiv1.ConfigMediaType)
 	img = mutate.Annotations(img, annotations).(gcrv1.Image)
 
-	layer, err := tarball.LayerFromFile(tmpFile, tarball.WithMediaType(apiv1.GenericContentMediaType))
+	layer, err := tarball.LayerFromFile(tmpFile, tarball.WithMediaType(apiv1.ContentMediaType))
 	if err != nil {
 		return fmt.Errorf("creating content layer failed: %w", err)
 	}
 
-	img, err = mutate.Append(img, mutate.Addendum{Layer: layer})
+	img, err = mutate.Append(img, mutate.Addendum{
+		Layer: layer,
+		Annotations: map[string]string{
+			apiv1.ContentTypeAnnotation: contentType,
+		},
+	})
 	if err != nil {
 		return fmt.Errorf("appending content to artifact failed: %w", err)
 	}

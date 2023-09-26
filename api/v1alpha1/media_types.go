@@ -26,6 +26,6 @@ const (
 	// ContentMediaType is the OCI media type for the content layer.
 	ContentMediaType = "application/vnd.timoni.content.v1.tar+gzip"
 
-	// GenericContentMediaType is the OCI media type for the generic content layer.
-	GenericContentMediaType = "application/vnd.timoni.generic.content.v1.tar+gzip"
+	// ContentTypeAnnotation is the annotation key for OCI content layer.
+	ContentTypeAnnotation = "sh.timoni.content.type"
 )
