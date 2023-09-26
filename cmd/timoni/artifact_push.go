@@ -45,8 +45,8 @@ import (
 var pushArtifactCmd = &cobra.Command{
 	Use:   "push [REPOSITORY URL]",
 	Short: "Push a directory contents to a container registry",
-	Long: `The push command packages a directory contents as an OCI artifact
-and pushes it to the container registry. If the directory contains a timoni.ignore file,
+	Long: `The push command packages a directory contents as an OCI artifact and pushes
+it to the container registry. If the directory contains a timoni.ignore file,
 the ignore rules will be used to exclude files from the artifact.`,
 	Example: `  # Push the current dir contents to Docker Hub using the credentials from '~/.docker/config.json'
   echo $DOCKER_PAT | docker login --username timoni --password-stdin

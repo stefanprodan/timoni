@@ -39,7 +39,7 @@ func Test_PushArtifact(t *testing.T) {
 
 	// Push the artifact to registry
 	output, err := executeCommand(fmt.Sprintf(
-		"artifact push oci://%s -f %s -t %s -a '%s' -a '%s'",
+		"artifact push oci://%s -f %s -t %s -a '%s' -a '%s' --content-type=generic",
 		aURL,
 		aPath,
 		aTag,

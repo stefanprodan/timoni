@@ -36,8 +36,8 @@ import (
 var pullArtifactCmd = &cobra.Command{
 	Use:   "pull [URL]",
 	Short: "Pull an artifact from a container registry",
-	Long: `The pull command downloads the module from a container registry and
-extract its contents the specified directory.`,
+	Long: `The pull command downloads an artifact with the application/vnd.timoni media type
+from a container registry and extract the selected layers to the specified directory.`,
 	Example: `  # Pull latest artifact and extract its contents to the current directory
   timoni artifact pull oci://docker.io/org/app:latest
 
