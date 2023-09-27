@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/stefanprodan/timoni/internal/engine"
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 func Test_ListMod(t *testing.T) {
@@ -47,7 +47,7 @@ func Test_ListMod(t *testing.T) {
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 
-	g.Expect(output).To(ContainSubstring(engine.LatestTag))
+	g.Expect(output).To(ContainSubstring(apiv1.LatestVersion))
 	for _, v := range modVers {
 		g.Expect(output).To(ContainSubstring(v))
 	}

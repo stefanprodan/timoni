@@ -21,12 +21,11 @@ import (
 	"fmt"
 	"os"
 
-	oci "github.com/fluxcd/pkg/oci/client"
 	"github.com/spf13/cobra"
 
-	"github.com/stefanprodan/timoni/internal/engine"
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/flags"
-	"github.com/stefanprodan/timoni/internal/signutil"
+	"github.com/stefanprodan/timoni/internal/oci"
 )
 
 var pullModCmd = &cobra.Command{
@@ -93,14 +92,12 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("module URL is required")
 	}
-	ociURL := args[0]
-
-	log := LoggerFrom(cmd.Context())
 
 	version := pullModArgs.version.String()
 	if version == "" {
-		version = engine.LatestTag
+		version = apiv1.LatestVersion
 	}
+	ociURL := fmt.Sprintf("%s:%s", args[0], version)
 
 	if pullModArgs.output == "" {
 		return fmt.Errorf("invalid output path %s", pullModArgs.output)
@@ -110,37 +107,39 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid output path %s", pullModArgs.output)
 	}
 
-	url, err := oci.ParseArtifactURL(ociURL + ":" + version)
-	if err != nil {
-		return err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
-
-	ociClient := oci.NewClient(nil)
-
-	if pullModArgs.creds != "" {
-		if err := ociClient.LoginWithCredentials(pullModArgs.creds.String()); err != nil {
-			return fmt.Errorf("could not login with credentials: %w", err)
-		}
-	}
+	log := LoggerFrom(cmd.Context())
 
 	if pullModArgs.verify != "" {
-		err = signutil.Verify(log, pullModArgs.verify, url, pullModArgs.cosignKey, pullModArgs.certificateIdentity,
-			pullModArgs.certificateIdentityRegexp, pullModArgs.certificateOidcIssuer, pullModArgs.certificateOidcIssuerRegexp)
+		imgURL, err := oci.ParseArtifactURL(ociURL)
+		if err != nil {
+			return err
+		}
+		err = oci.VerifyArtifact(log,
+			pullModArgs.verify,
+			imgURL,
+			pullModArgs.cosignKey,
+			pullModArgs.certificateIdentity,
+			pullModArgs.certificateIdentityRegexp,
+			pullModArgs.certificateOidcIssuer,
+			pullModArgs.certificateOidcIssuerRegexp)
 		if err != nil {
 			return err
 		}
 	}
 
 	spin := StartSpinner("pulling module")
-	_, err = ociClient.Pull(ctx, url, pullModArgs.output)
-	spin.Stop()
+	defer spin.Stop()
+
+	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	opts := oci.Options(ctx, pullModArgs.creds.String())
+	err := oci.PullArtifact(ociURL, pullModArgs.output, apiv1.AnyContentType, opts)
 	if err != nil {
 		return err
 	}
 
+	spin.Stop()
 	log.Info(fmt.Sprintf("module extracted to %s", pullModArgs.output))
 
 	return nil

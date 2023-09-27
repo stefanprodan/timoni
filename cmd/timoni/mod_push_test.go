@@ -20,13 +20,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/fluxcd/pkg/oci"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/gomega"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
-	"github.com/stefanprodan/timoni/internal/engine"
 )
 
 func Test_PushMod(t *testing.T) {
@@ -59,8 +57,8 @@ func Test_PushMod(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// Verify that annotations exist in manifest
-	g.Expect(manifest.Annotations[oci.CreatedAnnotation]).ToNot(BeEmpty())
-	g.Expect(manifest.Annotations[oci.RevisionAnnotation]).To(BeEquivalentTo(modVer))
+	g.Expect(manifest.Annotations[apiv1.CreatedAnnotation]).ToNot(BeEmpty())
+	g.Expect(manifest.Annotations[apiv1.RevisionAnnotation]).To(BeEquivalentTo(modVer))
 	g.Expect(manifest.Annotations["org.opencontainers.image.licenses"]).To(BeEquivalentTo("Apache-2.0"))
 	g.Expect(manifest.Annotations["org.opencontainers.image.description"]).To(BeEquivalentTo("My, test."))
 
@@ -81,9 +79,9 @@ func Test_PushMod(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// Verify latest version
-	image, err = crane.Pull(fmt.Sprintf("%s:%s", modURL, engine.LatestTag))
+	image, err = crane.Pull(fmt.Sprintf("%s:%s", modURL, apiv1.LatestVersion))
 	g.Expect(err).ToNot(HaveOccurred())
 	manifest, err = image.Manifest()
 	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(manifest.Annotations[oci.RevisionAnnotation]).To(BeEquivalentTo(newVer))
+	g.Expect(manifest.Annotations[apiv1.RevisionAnnotation]).To(BeEquivalentTo(newVer))
 }

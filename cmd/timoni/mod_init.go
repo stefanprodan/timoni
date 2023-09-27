@@ -24,10 +24,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	oci "github.com/fluxcd/pkg/oci/client"
 	"github.com/spf13/cobra"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/oci"
 )
 
 var initModCmd = &cobra.Command{
@@ -52,7 +52,7 @@ func init() {
 
 const (
 	modTemplateName = "minimal"
-	modTemplateURL  = "ghcr.io/stefanprodan/timoni/minimal"
+	modTemplateURL  = "oci://ghcr.io/stefanprodan/timoni/minimal"
 )
 
 func runInitModCmd(cmd *cobra.Command, args []string) error {
@@ -78,11 +78,11 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	ociClient := oci.NewClient(nil)
-
 	spin := StartSpinner(fmt.Sprintf("pulling template from %s", modTemplateURL))
-	_, err = ociClient.Pull(ctx, modTemplateURL, tmpDir)
-	spin.Stop()
+	defer spin.Stop()
+
+	opts := oci.Options(ctx, "")
+	err = oci.PullArtifact(modTemplateURL, tmpDir, apiv1.AnyContentType, opts)
 	if err != nil {
 		return err
 	}
@@ -103,6 +103,7 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	spin.Stop()
 	log.Info(fmt.Sprintf("module initialized at %s", dst))
 	return nil
 }

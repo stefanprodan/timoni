@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/oci"
 )
 
 var listModCmd = &cobra.Command{
@@ -31,8 +31,11 @@ var listModCmd = &cobra.Command{
 	Aliases: []string{"ls"},
 	Short:   "List the versions of a module",
 	Long:    `The list command prints a table with the module versions and their digests.`,
-	Example: `  # Print the versions of a module
+	Example: `  # Print the versions and digests of a module
   timoni mod list oci://docker.io/org/app 
+
+  # Print the versions without digests
+  timoni mod list oci://docker.io/org/app --with-digest=false
 
   # Print the versions of a module from GitHub Container Registry
   timoni mod list oci://ghcr.io/org/manifests/app \
@@ -42,14 +45,16 @@ var listModCmd = &cobra.Command{
 }
 
 type listModFlags struct {
-	creds flags.Credentials
+	creds      flags.Credentials
+	withDigest bool
 }
 
 var listModArgs listModFlags
 
 func init() {
 	listModCmd.Flags().Var(&listModArgs.creds, listModArgs.creds.Type(), listModArgs.creds.Description())
-
+	listModCmd.Flags().BoolVar(&listModArgs.withDigest, "with-digest", true,
+		"Resolve the digest of each version.")
 	modCmd.AddCommand(listModCmd)
 }
 
@@ -60,28 +65,22 @@ func listModCmdRun(cmd *cobra.Command, args []string) error {
 	ociURL := args[0]
 
 	spin := StartSpinner("fetching tags and digests")
+	defer spin.Stop()
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
-	fetcher := engine.NewFetcher(
-		ctx,
-		ociURL,
-		"",
-		"",
-		listModArgs.creds.String(),
-	)
-
-	list, err := fetcher.GetVersions()
-	spin.Stop()
+	opts := oci.Options(ctx, listModArgs.creds.String())
+	list, err := oci.ListModuleVersions(ociURL, listModArgs.withDigest, opts)
 	if err != nil {
 		return err
 	}
 
+	spin.Stop()
 	var rows [][]string
 	for _, v := range list {
 		row := []string{
-			v.Number,
+			v.Version,
 			v.Digest,
 		}
 		rows = append(rows, row)

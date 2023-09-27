@@ -16,6 +16,10 @@ limitations under the License.
 
 package v1alpha1
 
+// LatestVersion is the tag name that
+// denotes the latest stable version of a module.
+const LatestVersion = "latest"
+
 // ModuleReference contains the information necessary to locate
 // a module's OCI artifact in the registry.
 type ModuleReference struct {

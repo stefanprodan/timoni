@@ -17,24 +17,18 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
 
-	oci "github.com/fluxcd/pkg/oci/client"
-	"github.com/fluxcd/pkg/tar"
-	"github.com/google/go-containerregistry/pkg/crane"
-	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/spf13/cobra"
 
-	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/flags"
-	"github.com/stefanprodan/timoni/internal/signutil"
+	"github.com/stefanprodan/timoni/internal/oci"
 )
 
 var pullArtifactCmd = &cobra.Command{
-	Use:   "pull [URL]",
+	Use:   "pull [ARTIFACT URL]",
 	Short: "Pull an artifact from a container registry",
 	Long: `The pull command downloads an artifact with the application/vnd.timoni media type
 from a container registry and extract the selected layers to the specified directory.`,
@@ -46,12 +40,12 @@ from a container registry and extract the selected layers to the specified direc
 	--creds=timoni:$GITHUB_TOKEN \
 	--output=./modules/my-app/cue.mod/pkg
 
-  # Verify the Cosign signature and pull (the cosign binary must be present in PATH)
+  # VerifyArtifact the Cosign signature and pull (the cosign binary must be present in PATH)
   timoni artifact pull oci://docker.io/org/app:latest \
 	--verify=cosign \
 	--cosign-key=/path/to/cosign.pub
 
-  # Verify the Cosign keyless signature and pull (the cosign binary must be present in PATH)
+  # VerifyArtifact the Cosign keyless signature and pull (the cosign binary must be present in PATH)
   timoni artifact pull oci://ghcr.io/org/schemas/app:1.0.0 \
 	--verify=cosign \
 	--certificate-identity-regexp="^https://github.com/org/.*$" \
@@ -110,7 +104,6 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("URL is required")
 	}
 	ociURL := args[0]
-	contentType := pullArtifactArgs.contentType
 
 	log := LoggerFrom(cmd.Context())
 
@@ -118,30 +111,19 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid output path %s", pullArtifactArgs.output)
 	}
 
-	url, err := oci.ParseArtifactURL(ociURL)
-	if err != nil {
-		return err
-	}
-
-	repoURL, err := oci.ParseRepositoryURL(ociURL)
-	if err != nil {
-		return err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
-
-	ociClient := oci.NewClient(nil)
-
-	if pullArtifactArgs.creds != "" {
-		if err := ociClient.LoginWithCredentials(pullArtifactArgs.creds.String()); err != nil {
-			return fmt.Errorf("could not login with credentials: %w", err)
-		}
-	}
-
 	if pullArtifactArgs.verify != "" {
-		err = signutil.Verify(log, pullArtifactArgs.verify, url, pullArtifactArgs.cosignKey, pullArtifactArgs.certificateIdentity,
-			pullArtifactArgs.certificateIdentityRegexp, pullArtifactArgs.certificateOidcIssuer, pullArtifactArgs.certificateOidcIssuerRegexp)
+		imgURL, err := oci.ParseArtifactURL(ociURL)
+		if err != nil {
+			return err
+		}
+		err = oci.VerifyArtifact(log,
+			pullArtifactArgs.verify,
+			imgURL,
+			pullArtifactArgs.cosignKey,
+			pullArtifactArgs.certificateIdentity,
+			pullArtifactArgs.certificateIdentityRegexp,
+			pullArtifactArgs.certificateOidcIssuer,
+			pullArtifactArgs.certificateOidcIssuerRegexp)
 		if err != nil {
 			return err
 		}
@@ -150,49 +132,13 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	spin := StartSpinner("pulling artifact")
 	defer spin.Stop()
 
-	opts := append(ociClient.GetOptions(), crane.WithContext(ctx))
-	manifestJSON, err := crane.Manifest(url, opts...)
+	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	opts := oci.Options(ctx, pullArtifactArgs.creds.String())
+	err := oci.PullArtifact(ociURL, pullArtifactArgs.output, pullArtifactArgs.contentType, opts)
 	if err != nil {
-		return fmt.Errorf("pulling artifact manifest failed: %w", err)
-	}
-
-	manifest, err := gcrv1.ParseManifest(bytes.NewReader(manifestJSON))
-	if err != nil {
-		return fmt.Errorf("parsing artifact manifest failed: %w", err)
-	}
-
-	if manifest.Config.MediaType != apiv1.ConfigMediaType {
-		return fmt.Errorf("unsupported artifact type '%s', must be '%s'",
-			manifest.Config.MediaType, apiv1.ConfigMediaType)
-	}
-
-	var found bool
-	for _, layer := range manifest.Layers {
-		if layer.MediaType == apiv1.ContentMediaType {
-			if contentType != "" && layer.Annotations[apiv1.ContentTypeAnnotation] != contentType {
-				continue
-			}
-			found = true
-			layerDigest := layer.Digest.String()
-			blobURL := fmt.Sprintf("%s@%s", repoURL, layerDigest)
-			layer, err := crane.PullLayer(blobURL, opts...)
-			if err != nil {
-				return fmt.Errorf("pulling artifact layer %s failed: %w", layerDigest, err)
-			}
-
-			blob, err := layer.Compressed()
-			if err != nil {
-				return fmt.Errorf("extracting artifact layer %s failed: %w", layerDigest, err)
-			}
-
-			if err = tar.Untar(blob, pullArtifactArgs.output, tar.WithMaxUntarSize(-1)); err != nil {
-				return fmt.Errorf("extracting artifact layer %s failed: %w", layerDigest, err)
-			}
-		}
-	}
-
-	if !found {
-		return fmt.Errorf("no layer found in artifact")
+		return err
 	}
 
 	spin.Stop()

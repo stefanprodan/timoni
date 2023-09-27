@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/fluxcd/pkg/oci"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/gomega"
@@ -58,8 +57,8 @@ func Test_PushArtifact(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// Verify that annotations exist in manifest
-	g.Expect(manifest.Annotations[oci.CreatedAnnotation]).ToNot(BeEmpty())
-	g.Expect(manifest.Annotations[oci.RevisionAnnotation]).To(BeEquivalentTo(aTag))
+	g.Expect(manifest.Annotations[apiv1.CreatedAnnotation]).ToNot(BeEmpty())
+	g.Expect(manifest.Annotations[apiv1.RevisionAnnotation]).To(BeEquivalentTo(aTag))
 	g.Expect(manifest.Annotations["org.opencontainers.image.licenses"]).To(BeEquivalentTo("Apache-2.0"))
 
 	// Verify media types

@@ -22,12 +22,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/Masterminds/semver/v3"
-	oci "github.com/fluxcd/pkg/oci/client"
 	gcr "github.com/google/go-containerregistry/pkg/name"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -35,7 +32,7 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
-	"github.com/stefanprodan/timoni/internal/signutil"
+	"github.com/stefanprodan/timoni/internal/oci"
 )
 
 var pushModCmd = &cobra.Command{
@@ -114,17 +111,13 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module and URL are required")
 	}
 	pushModArgs.module = args[0]
-	ociURL := args[1]
-	version := pushModArgs.version.String()
 
+	version := pushModArgs.version.String()
 	if _, err := semver.StrictNewVersion(version); err != nil {
 		return fmt.Errorf("version is not in semver format: %w", err)
 	}
 
-	url, err := oci.ParseArtifactURL(ociURL + ":" + version)
-	if err != nil {
-		return err
-	}
+	ociURL := fmt.Sprintf("%s:%s", args[1], version)
 
 	if fs, err := os.Stat(pushModArgs.module); err != nil || !fs.IsDir() {
 		return fmt.Errorf("module not found at path %s", pushModArgs.module)
@@ -132,25 +125,15 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 
 	log := LoggerFrom(cmd.Context())
 
-	annotations := map[string]string{}
-	for _, annotation := range pushModArgs.annotations {
-		kv := strings.Split(annotation, "=")
-		if len(kv) != 2 {
-			return fmt.Errorf("invalid annotation %s, must be in the format key=value", annotation)
-		}
-		annotations[kv[0]] = kv[1]
-	}
-
-	ociClient := oci.NewClient(nil)
-	path := pushModArgs.module
-	meta := oci.Metadata{
-		Source:      pushModArgs.source,
-		Revision:    version,
-		Annotations: annotations,
+	annotations, err := oci.ParseAnnotations(pushModArgs.annotations)
+	if err != nil {
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
+
+	oci.AppendCreated(ctx, pushModArgs.module, annotations)
 
 	// Try to determine the Git origin URL
 	if pushModArgs.source == "" {
@@ -161,37 +144,22 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 			log.Info(fmt.Sprintf("Setting the module source to: %s", pushModArgs.source))
 		}
 	}
+	oci.AppendSource(pushModArgs.source, version, annotations)
 
-	// Try to determine the last Git commit timestamp
-	gitCmd := exec.CommandContext(ctx, "git", "--no-pager", "log", "-1", `--format=%ct`)
-	gitCmd.Dir = pushModArgs.module
-	if ts, err := gitCmd.Output(); err == nil && len(ts) > 1 {
-		if i, err := strconv.ParseInt(strings.TrimSuffix(string(ts), "\n"), 10, 64); err == nil {
-			d := time.Unix(i, 0)
-			meta.Created = d.Format(time.RFC3339)
-			log.Info(fmt.Sprintf("Setting the module created timestamp to: %s", meta.Created))
-		}
-	}
-
-	if pushModArgs.creds != "" {
-		if err := ociClient.LoginWithCredentials(pushModArgs.creds.String()); err != nil {
-			return fmt.Errorf("could not login with credentials: %w", err)
-		}
-	}
-
-	ps, err := engine.ReadIgnoreFile(path)
+	ps, err := engine.ReadIgnoreFile(pushModArgs.module)
 	if err != nil {
 		return fmt.Errorf("reading %s failed: %w", apiv1.IgnoreFile, err)
 	}
 	pushModArgs.ignorePaths = append(pushModArgs.ignorePaths, ps...)
 
-	digestURL, err := ociClient.Push(ctx, url, path, meta, pushModArgs.ignorePaths)
+	opts := oci.Options(ctx, pushModArgs.creds.String())
+	digestURL, err := oci.PushArtifact(ociURL, pushModArgs.module, pushModArgs.ignorePaths, apiv1.AnyContentType, annotations, opts)
 	if err != nil {
-		return fmt.Errorf("pushing module failed: %w", err)
+		return err
 	}
 
 	if pushModArgs.latest {
-		if _, err := ociClient.Tag(ctx, digestURL, engine.LatestTag); err != nil {
+		if err := oci.TagArtifact(digestURL, apiv1.LatestVersion, opts); err != nil {
 			return fmt.Errorf("tagging module version as latest failed: %w", err)
 		}
 	}
@@ -201,13 +169,8 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("artifact digest parsing failed: %w", err)
 	}
 
-	tag, err := gcr.NewTag(url)
-	if err != nil {
-		return fmt.Errorf("artifact tag parsing failed: %w", err)
-	}
-
 	if pushModArgs.sign != "" {
-		err = signutil.Sign(log, pushModArgs.sign, digestURL, pushModArgs.cosignKey)
+		err = oci.SignArtifact(log, pushModArgs.sign, digestURL, pushModArgs.cosignKey)
 		if err != nil {
 			return err
 		}
@@ -221,7 +184,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	}{
 		URL:        fmt.Sprintf("oci://%s", digestURL),
 		Repository: digest.Repository.Name(),
-		Tag:        tag.TagStr(),
+		Tag:        version,
 		Digest:     digest.DigestStr(),
 	}
 

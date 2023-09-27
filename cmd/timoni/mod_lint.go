@@ -78,7 +78,7 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 	fetcher := engine.NewFetcher(
 		ctxPull,
 		lintModArgs.path,
-		engine.LatestTag,
+		apiv1.LatestVersion,
 		tmpDir,
 		"",
 	)

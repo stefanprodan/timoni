@@ -20,26 +20,13 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"time"
 
-	oci "github.com/fluxcd/pkg/oci/client"
-	"github.com/google/go-containerregistry/pkg/crane"
-	gcr "github.com/google/go-containerregistry/pkg/name"
-	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/empty"
-	"github.com/google/go-containerregistry/pkg/v1/mutate"
-	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/spf13/cobra"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
-	"github.com/stefanprodan/timoni/internal/signutil"
+	"github.com/stefanprodan/timoni/internal/oci"
 )
 
 var pushArtifactCmd = &cobra.Command{
@@ -90,7 +77,7 @@ func init() {
 		"Path to local file or directory.")
 	pushArtifactCmd.Flags().Var(&pushArtifactArgs.creds, pushArtifactArgs.creds.Type(), pushArtifactArgs.creds.Description())
 	pushArtifactCmd.Flags().StringArrayVarP(&pushArtifactArgs.tags, "tag", "t", nil,
-		"Tag of the artifact.")
+		"TagArtifact of the artifact.")
 	pushArtifactCmd.Flags().StringArrayVarP(&pushArtifactArgs.annotations, "annotation", "a", nil,
 		"Annotation in the format '<key>=<value>'.")
 	pushArtifactCmd.Flags().StringVar(&pushArtifactArgs.contentType, "content-type", "generic",
@@ -108,11 +95,6 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("repository URL is required")
 	}
 
-	ociURL, err := oci.ParseRepositoryURL(args[0])
-	if err != nil {
-		return err
-	}
-
 	if len(pushArtifactArgs.tags) == 0 {
 		return fmt.Errorf("at least one tag is required")
 	}
@@ -121,7 +103,6 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("file path not found %s", pushArtifactArgs.path)
 	}
-	path := pushArtifactArgs.path
 
 	contentType := pushArtifactArgs.contentType
 	if contentType == "" {
@@ -129,7 +110,7 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	if fi.IsDir() {
-		ps, err := engine.ReadIgnoreFile(path)
+		ps, err := engine.ReadIgnoreFile(pushArtifactArgs.path)
 		if err != nil {
 			return fmt.Errorf("reading %s failed: %w", apiv1.IgnoreFile, err)
 		}
@@ -137,98 +118,32 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	log := LoggerFrom(cmd.Context())
-	ociClient := oci.NewClient(nil)
-
-	url := fmt.Sprintf("%s:%v", ociURL, pushArtifactArgs.tags[0])
-	ref, err := gcr.ParseReference(url)
-	if err != nil {
-		return fmt.Errorf("'%s' invalid URL: %w", ociURL, err)
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	// Try to determine the last Git commit timestamp
-	ct := time.Now().UTC()
-	created := ct.Format(time.RFC3339)
-	gitCmd := exec.CommandContext(ctx, "git", "--no-pager", "log", "-1", `--format=%ct`)
-	gitCmd.Dir = pushArtifactArgs.path
-	if ts, err := gitCmd.Output(); err == nil && len(ts) > 1 {
-		if i, err := strconv.ParseInt(strings.TrimSuffix(string(ts), "\n"), 10, 64); err == nil {
-			d := time.Unix(i, 0)
-			created = d.Format(time.RFC3339)
-		}
-	}
-
-	annotations := map[string]string{}
-	annotations["org.opencontainers.image.created"] = created
-	for _, annotation := range pushArtifactArgs.annotations {
-		kv := strings.Split(annotation, "=")
-		if len(kv) != 2 {
-			return fmt.Errorf("invalid annotation %s, must be in the format key=value", annotation)
-		}
-		annotations[kv[0]] = kv[1]
-	}
-
-	if pushArtifactArgs.creds != "" {
-		if err := ociClient.LoginWithCredentials(pushArtifactArgs.creds.String()); err != nil {
-			return fmt.Errorf("could not login with credentials: %w", err)
-		}
-	}
-
-	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+	annotations, err := oci.ParseAnnotations(pushArtifactArgs.annotations)
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmpDir)
+	oci.AppendCreated(ctx, pushArtifactArgs.path, annotations)
 
-	tmpFile := filepath.Join(tmpDir, "artifact.tgz")
-	if err := ociClient.Build(tmpFile, path, pushArtifactArgs.ignorePaths); err != nil {
+	opts := oci.Options(ctx, pushArtifactArgs.creds.String())
+	ociURL := fmt.Sprintf("%s:%s", args[0], pushArtifactArgs.tags[0])
+	digestURL, err := oci.PushArtifact(ociURL,
+		pushArtifactArgs.path,
+		pushArtifactArgs.ignorePaths,
+		pushArtifactArgs.contentType,
+		annotations,
+		opts)
+	if err != nil {
 		return err
-	}
-
-	img := mutate.MediaType(empty.Image, types.OCIManifestSchema1)
-	img = mutate.ConfigMediaType(img, apiv1.ConfigMediaType)
-	img = mutate.Annotations(img, annotations).(gcrv1.Image)
-
-	layer, err := tarball.LayerFromFile(tmpFile, tarball.WithMediaType(apiv1.ContentMediaType))
-	if err != nil {
-		return fmt.Errorf("creating content layer failed: %w", err)
-	}
-
-	img, err = mutate.Append(img, mutate.Addendum{
-		Layer: layer,
-		Annotations: map[string]string{
-			apiv1.ContentTypeAnnotation: contentType,
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("appending content to artifact failed: %w", err)
-	}
-
-	opts := append(ociClient.GetOptions(), crane.WithContext(ctx))
-	if err := crane.Push(img, url, opts...); err != nil {
-		return fmt.Errorf("pushing artifact failed: %w", err)
-	}
-
-	digest, err := img.Digest()
-	if err != nil {
-		return fmt.Errorf("parsing artifact digest failed: %w", err)
-	}
-
-	digestURL := ref.Context().Digest(digest.String()).String()
-	if pushArtifactArgs.sign != "" {
-		err = signutil.Sign(log, pushArtifactArgs.sign, digestURL, pushArtifactArgs.cosignKey)
-		if err != nil {
-			return err
-		}
 	}
 
 	for i, tag := range pushArtifactArgs.tags {
 		if i == 0 {
 			continue
 		}
-		if err := crane.Tag(digestURL, tag, opts...); err != nil {
+		if err := oci.TagArtifact(digestURL, tag, opts); err != nil {
 			return fmt.Errorf("tagging artifact with %s failed: %w", tag, err)
 		}
 	}

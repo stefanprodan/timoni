@@ -14,18 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package oci
 
-const (
-	// UserAgent is the agent name used for OCI operations.
-	UserAgent = "timoni/v1"
-
-	// ConfigMediaType is the OCI media type for the config layer.
-	ConfigMediaType = "application/vnd.timoni.config.v1+json"
-
-	// ContentMediaType is the OCI media type for the content layer.
-	ContentMediaType = "application/vnd.timoni.content.v1.tar+gzip"
-
-	// ContentTypeAnnotation is the annotation key for OCI content layer.
-	ContentTypeAnnotation = "sh.timoni.content.type"
+import (
+	"github.com/google/go-containerregistry/pkg/crane"
 )
+
+// TagArtifact adds the tag to the remote OpenContainers artifact.
+func TagArtifact(url, tag string, opts []crane.Option) error {
+	return crane.Tag(url, tag, opts...)
+}

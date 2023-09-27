@@ -22,13 +22,10 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/fluxcd/pkg/oci"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 var (
@@ -85,10 +82,6 @@ func init() {
 	rootCmd.DisableAutoGenTag = true
 	rootCmd.SetOut(color.Output)
 	rootCmd.SetErr(color.Error)
-
-	oci.UserAgent = apiv1.UserAgent
-	oci.CanonicalConfigMediaType = apiv1.ConfigMediaType
-	oci.CanonicalContentMediaType = apiv1.ContentMediaType
 }
 
 func main() {
