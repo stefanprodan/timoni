@@ -27,29 +27,29 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-func Test_PushMod(t *testing.T) {
-	modPath := "testdata/module"
+func Test_PushArtifact(t *testing.T) {
+	aPath := "testdata/module-values"
 
 	g := NewWithT(t)
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
-	modVer := "1.0.0"
-	modLicense := "org.opencontainers.image.licenses=Apache-2.0"
-	modAbout := "org.opencontainers.image.description=My, test."
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	aTag := "1.0.0"
+	aLicense := "org.opencontainers.image.licenses=Apache-2.0"
+	aRevision := "org.opencontainers.image.revision=1.0.0"
 
-	// Push the module to registry
+	// Push the artifact to registry
 	output, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s -a '%s' -a '%s'",
-		modPath,
-		modURL,
-		modVer,
-		modLicense,
-		modAbout,
+		"artifact push oci://%s -f %s -t %s -a '%s' -a '%s' --content-type=generic",
+		aURL,
+		aPath,
+		aTag,
+		aLicense,
+		aRevision,
 	))
 	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(output).To(ContainSubstring(modURL))
+	g.Expect(output).To(ContainSubstring(aURL))
 
-	// Pull the module's artifact from registry
-	image, err := crane.Pull(fmt.Sprintf("%s:%s", modURL, modVer))
+	// Pull the artifact from registry
+	image, err := crane.Pull(fmt.Sprintf("%s:%s", aURL, aTag))
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// Extract the manifest
@@ -58,30 +58,13 @@ func Test_PushMod(t *testing.T) {
 
 	// Verify that annotations exist in manifest
 	g.Expect(manifest.Annotations[apiv1.CreatedAnnotation]).ToNot(BeEmpty())
-	g.Expect(manifest.Annotations[apiv1.RevisionAnnotation]).To(BeEquivalentTo(modVer))
+	g.Expect(manifest.Annotations[apiv1.RevisionAnnotation]).To(BeEquivalentTo(aTag))
 	g.Expect(manifest.Annotations["org.opencontainers.image.licenses"]).To(BeEquivalentTo("Apache-2.0"))
-	g.Expect(manifest.Annotations["org.opencontainers.image.description"]).To(BeEquivalentTo("My, test."))
 
 	// Verify media types
 	g.Expect(manifest.MediaType).To(Equal(types.OCIManifestSchema1))
 	g.Expect(manifest.Config.MediaType).To(BeEquivalentTo(apiv1.ConfigMediaType))
 	g.Expect(len(manifest.Layers)).To(BeEquivalentTo(1))
 	g.Expect(manifest.Layers[0].MediaType).To(BeEquivalentTo(apiv1.ContentMediaType))
-
-	// Push latest
-	newVer := "1.0.1"
-	_, err = executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s --latest",
-		modPath,
-		modURL,
-		newVer,
-	))
-	g.Expect(err).ToNot(HaveOccurred())
-
-	// Verify latest version
-	image, err = crane.Pull(fmt.Sprintf("%s:%s", modURL, apiv1.LatestVersion))
-	g.Expect(err).ToNot(HaveOccurred())
-	manifest, err = image.Manifest()
-	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(manifest.Annotations[apiv1.RevisionAnnotation]).To(BeEquivalentTo(newVer))
+	g.Expect(manifest.Layers[0].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo("generic"))
 }

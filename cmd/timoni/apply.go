@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/fluxcd/pkg/oci"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -145,10 +144,10 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	version := applyArgs.version.String()
 	if version == "" {
-		version = engine.LatestTag
+		version = apiv1.LatestVersion
 	}
 
-	if strings.HasPrefix(applyArgs.module, oci.OCIRepositoryPrefix) {
+	if strings.HasPrefix(applyArgs.module, apiv1.ArtifactPrefix) {
 		log.Info(fmt.Sprintf("pulling %s:%s", applyArgs.module, version))
 	} else {
 		log.Info(fmt.Sprintf("building %s", applyArgs.module))

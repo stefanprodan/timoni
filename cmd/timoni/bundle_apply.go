@@ -201,7 +201,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 	moduleVersion := instance.Module.Version
 	sourceURL := fmt.Sprintf("%s:%s", instance.Module.Repository, instance.Module.Version)
 
-	if moduleVersion == engine.LatestTag && instance.Module.Digest != "" {
+	if moduleVersion == apiv1.LatestVersion && instance.Module.Digest != "" {
 		sourceURL = fmt.Sprintf("%s@%s", instance.Module.Repository, instance.Module.Digest)
 		moduleVersion = "@" + instance.Module.Digest
 	}

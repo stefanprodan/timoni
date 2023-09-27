@@ -5,7 +5,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 
-	"github.com/stefanprodan/timoni/internal/engine"
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 type Version string
@@ -15,7 +15,7 @@ func (f *Version) String() string {
 }
 
 func (f *Version) Set(str string) error {
-	if str != "" && str != engine.LatestTag {
+	if str != "" && str != apiv1.LatestVersion {
 		if _, err := semver.StrictNewVersion(str); err != nil {
 			return err
 		}

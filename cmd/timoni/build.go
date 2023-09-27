@@ -99,7 +99,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 
 	version := buildArgs.version.String()
 	if version == "" {
-		version = engine.LatestTag
+		version = apiv1.LatestVersion
 	}
 
 	ctx := cuecontext.New()

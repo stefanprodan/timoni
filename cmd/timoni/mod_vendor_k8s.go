@@ -23,8 +23,10 @@ import (
 	"path"
 	"strings"
 
-	oci "github.com/fluxcd/pkg/oci/client"
 	"github.com/spf13/cobra"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/oci"
 )
 
 var vendorK8sCmd = &cobra.Command{
@@ -53,7 +55,7 @@ func init() {
 	modVendorCmd.AddCommand(vendorK8sCmd)
 }
 
-const k8sSchemaURL = "ghcr.io/stefanprodan/timoni/kubernetes-schema"
+const k8sSchemaURL = "oci://ghcr.io/stefanprodan/timoni/kubernetes-schema"
 
 func runVendorK8sCmd(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
@@ -71,20 +73,21 @@ func runVendorK8sCmd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	ociClient := oci.NewClient(nil)
-
-	url := fmt.Sprintf("%s:%s", k8sSchemaURL, vendorK8sArgs.version)
+	ociURL := fmt.Sprintf("%s:%s", k8sSchemaURL, vendorK8sArgs.version)
 	if ver := vendorK8sArgs.version; ver != "latest" && !strings.HasPrefix(ver, "v") {
-		url = fmt.Sprintf("%s:v%s", k8sSchemaURL, ver)
+		ociURL = fmt.Sprintf("%s:v%s", k8sSchemaURL, ver)
 	}
 
-	spin := StartSpinner(fmt.Sprintf("importing schemas from %s", url))
-	_, err := ociClient.Pull(ctx, url, path.Join(cueModDir, "gen"))
-	spin.Stop()
+	spin := StartSpinner(fmt.Sprintf("importing schemas from %s", ociURL))
+	defer spin.Stop()
+
+	opts := oci.Options(ctx, "")
+	err := oci.PullArtifact(ociURL, path.Join(cueModDir, "gen"), apiv1.CueModGenContentType, opts)
 	if err != nil {
 		return err
 	}
 
+	spin.Stop()
 	log.Info(fmt.Sprintf("schemas vendored: %s", colorizeSubject(path.Join(cueModDir, "gen", "k8s.io", "api"))))
 
 	return nil

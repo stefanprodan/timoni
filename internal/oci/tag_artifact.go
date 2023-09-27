@@ -14,5 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package signutil manages signing of OCI images
-package signutil
+package oci
+
+import (
+	"github.com/google/go-containerregistry/pkg/crane"
+)
+
+// TagArtifact adds the tag to the remote OpenContainers artifact.
+func TagArtifact(url, tag string, opts []crane.Option) error {
+	return crane.Tag(url, tag, opts...)
+}

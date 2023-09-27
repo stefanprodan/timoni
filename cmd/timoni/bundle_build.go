@@ -166,7 +166,7 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 func buildBundleInstance(instance engine.BundleInstance) (string, error) {
 	moduleVersion := instance.Module.Version
 
-	if moduleVersion == engine.LatestTag && instance.Module.Digest != "" {
+	if moduleVersion == apiv1.LatestVersion && instance.Module.Digest != "" {
 		moduleVersion = "@" + instance.Module.Digest
 	}
 
