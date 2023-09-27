@@ -34,6 +34,7 @@ var pullModCmd = &cobra.Command{
 	Long: `The pull command downloads the module from a container registry and
 extract its contents the specified directory.`,
 	Example: `  # Pull the latest stable version of a module
+  echo $DOCKER_TOKEN | timoni registry login docker.io -u timoni --password-stdin
   timoni mod pull oci://docker.io/org/app \
 	--output ./path/to/module
 
