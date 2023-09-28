@@ -32,14 +32,14 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-// PushArtifact performs the following operations:
-// - packages the content in a tar+gzip layer
-// - annotates the layer with the given content type
-// - adds the layer to an OpenContainers artifact
+// PushModule performs the following operations:
+// - packages the Timoni module's vendored schemas in a dedicated tar+gzip layer
+// - packages the Timoni module's templates, values, etc in a 2nd tar+gzip layer
+// - adds both layers to an OpenContainers artifact
 // - annotates the artifact with the given annotations
-// - uploads the artifact in the container registry
+// - uploads the module's artifact in the container registry
 // - returns the digest URL of the upstream artifact
-func PushArtifact(ociURL, contentPath string, ignorePaths []string, contentType string, annotations map[string]string, opts []crane.Option) (string, error) {
+func PushModule(ociURL, contentPath string, ignorePaths []string, annotations map[string]string, opts []crane.Option) (string, error) {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return "", err
@@ -51,33 +51,58 @@ func PushArtifact(ociURL, contentPath string, ignorePaths []string, contentType 
 	}
 	defer os.RemoveAll(tmpDir)
 
-	tgzFile := filepath.Join(tmpDir, "artifact.tgz")
-
-	if err := BuildArtifact(tgzFile, contentPath, ignorePaths); err != nil {
-		return "", fmt.Errorf("packging content failed: %w", err)
-	}
-
 	img := mutate.MediaType(empty.Image, types.OCIManifestSchema1)
 	img = mutate.ConfigMediaType(img, apiv1.ConfigMediaType)
 	img = mutate.Annotations(img, annotations).(gcrv1.Image)
 
-	layer, err := tarball.LayerFromFile(tgzFile,
+	tgzVendor := filepath.Join(tmpDir, "vendor.tgz")
+	vendorIgnorePaths := []string{"/*", "!/cue.mod"}
+	if err := BuildArtifact(tgzVendor, contentPath, vendorIgnorePaths); err != nil {
+		return "", fmt.Errorf("packging vendor layer failed: %w", err)
+	}
+
+	layerVendor, err := tarball.LayerFromFile(tgzVendor,
 		tarball.WithMediaType(apiv1.ContentMediaType),
 		tarball.WithCompression(compression.GZip),
 		tarball.WithCompressedCaching,
 	)
 	if err != nil {
-		return "", fmt.Errorf("creating content layer failed: %w", err)
+		return "", fmt.Errorf("creating vendor layer failed: %w", err)
 	}
 
 	img, err = mutate.Append(img, mutate.Addendum{
-		Layer: layer,
+		Layer: layerVendor,
 		Annotations: map[string]string{
-			apiv1.ContentTypeAnnotation: contentType,
+			apiv1.ContentTypeAnnotation: apiv1.CueModContentType,
 		},
 	})
 	if err != nil {
-		return "", fmt.Errorf("appending content to artifact failed: %w", err)
+		return "", fmt.Errorf("appending vendor layer to artifact failed: %w", err)
+	}
+
+	tgzModule := filepath.Join(tmpDir, "module.tgz")
+	ignorePaths = append(ignorePaths, "cue.mod/")
+	if err := BuildArtifact(tgzModule, contentPath, ignorePaths); err != nil {
+		return "", fmt.Errorf("packging module layer failed: %w", err)
+	}
+
+	layerModule, err := tarball.LayerFromFile(tgzModule,
+		tarball.WithMediaType(apiv1.ContentMediaType),
+		tarball.WithCompression(compression.GZip),
+		tarball.WithCompressedCaching,
+	)
+	if err != nil {
+		return "", fmt.Errorf("creating module layer failed: %w", err)
+	}
+
+	img, err = mutate.Append(img, mutate.Addendum{
+		Layer: layerModule,
+		Annotations: map[string]string{
+			apiv1.ContentTypeAnnotation: apiv1.TimoniModContentType,
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("appending module layer to artifact failed: %w", err)
 	}
 
 	if err := crane.Push(img, ref.String(), opts...); err != nil {

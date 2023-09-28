@@ -19,7 +19,6 @@ package oci
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -35,16 +34,11 @@ import (
 // - fetches the digest of each version (if configured to do so)
 // - returns an array of ModuleReference objects
 func ListModuleVersions(ociURL string, withDigest bool, opts []crane.Option) ([]apiv1.ModuleReference, error) {
-	if !strings.HasPrefix(ociURL, apiv1.ArtifactPrefix) {
-		return nil, fmt.Errorf("URL must be in format 'oci://<domain>/<org>/<repo>'")
-	}
-
 	var list []apiv1.ModuleReference
 
-	imgURL := strings.TrimPrefix(ociURL, apiv1.ArtifactPrefix)
-	ref, err := name.ParseReference(imgURL)
+	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
-		return nil, fmt.Errorf("'%s' invalid URL: %w", ociURL, err)
+		return nil, err
 	}
 
 	repoURL := ref.Context().Name()
@@ -73,20 +67,20 @@ func ListModuleVersions(ociURL string, withDigest bool, opts []crane.Option) ([]
 	}
 
 	for _, v := range versions {
+		digest := ""
 		if withDigest {
-			digest, err := crane.Digest(fmt.Sprintf("%s:%s", repoURL, v.String()), opts...)
+			d, err := crane.Digest(fmt.Sprintf("%s:%s", repoURL, v.String()), opts...)
 			if err != nil {
 				return nil, fmt.Errorf("faild to get digest for '%s': %w", v.String(), err)
 			}
-			list = append(list, apiv1.ModuleReference{
-				Version: v.String(),
-				Digest:  digest,
-			})
+			digest = d
 		}
 		list = append(list, apiv1.ModuleReference{
-			Version: v.String(),
-			Digest:  "",
+			Repository: ociURL,
+			Version:    v.String(),
+			Digest:     digest,
 		})
+
 	}
 
 	return list, nil

@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	gcr "github.com/google/go-containerregistry/pkg/name"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
@@ -143,7 +142,6 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		gitCmd.Dir = pushModArgs.module
 		if repo, err := gitCmd.Output(); err == nil && len(repo) > 1 {
 			pushModArgs.source = strings.TrimSuffix(string(repo), "\n")
-			log.Info(fmt.Sprintf("Setting the module source to: %s", pushModArgs.source))
 		}
 	}
 	oci.AppendSource(pushModArgs.source, version, annotations)
@@ -154,8 +152,11 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	pushModArgs.ignorePaths = append(pushModArgs.ignorePaths, ps...)
 
+	spin := StartSpinner("pushing module")
+	defer spin.Stop()
+
 	opts := oci.Options(ctx, pushModArgs.creds.String())
-	digestURL, err := oci.PushArtifact(ociURL, pushModArgs.module, pushModArgs.ignorePaths, apiv1.AnyContentType, annotations, opts)
+	digestURL, err := oci.PushModule(ociURL, pushModArgs.module, pushModArgs.ignorePaths, annotations, opts)
 	if err != nil {
 		return err
 	}
@@ -166,11 +167,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	digest, err := gcr.NewDigest(digestURL)
-	if err != nil {
-		return fmt.Errorf("artifact digest parsing failed: %w", err)
-	}
-
+	spin.Stop()
 	if pushModArgs.sign != "" {
 		err = oci.SignArtifact(log, pushModArgs.sign, digestURL, pushModArgs.cosignKey)
 		if err != nil {
@@ -178,15 +175,20 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	digest, err := oci.ParseDigest(digestURL)
+	if err != nil {
+		return fmt.Errorf("artifact digest parsing failed: %w", err)
+	}
+
 	info := struct {
 		URL        string `json:"url"`
 		Repository string `json:"repository"`
-		Tag        string `json:"tag"`
+		Version    string `json:"version"`
 		Digest     string `json:"digest"`
 	}{
-		URL:        fmt.Sprintf("oci://%s", digestURL),
+		URL:        digestURL,
 		Repository: digest.Repository.Name(),
-		Tag:        version,
+		Version:    version,
 		Digest:     digest.DigestStr(),
 	}
 
@@ -194,18 +196,22 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	case "json":
 		marshalled, err := json.MarshalIndent(&info, "", "  ")
 		if err != nil {
-			return fmt.Errorf("artifact digest JSON conversion failed: %w", err)
+			return fmt.Errorf("artifact info JSON conversion failed: %w", err)
 		}
 		marshalled = append(marshalled, "\n"...)
 		cmd.OutOrStdout().Write(marshalled)
 	case "yaml":
 		marshalled, err := yaml.Marshal(&info)
 		if err != nil {
-			return fmt.Errorf("artifact digest YAML conversion failed: %w", err)
+			return fmt.Errorf("artifact info YAML conversion failed: %w", err)
 		}
 		cmd.OutOrStdout().Write(marshalled)
 	default:
-		log.Info(fmt.Sprintf("Module pushed to: %s", digestURL))
+		digest, err := oci.ParseDigest(digestURL)
+		if err != nil {
+			return err
+		}
+		log.Info(fmt.Sprintf("digest: %s", colorizeSubject(digest.DigestStr())))
 	}
 
 	return nil

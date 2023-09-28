@@ -128,6 +128,9 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	oci.AppendCreated(ctx, pushArtifactArgs.path, annotations)
 
+	spin := StartSpinner("pushing artifact")
+	defer spin.Stop()
+
 	opts := oci.Options(ctx, pushArtifactArgs.creds.String())
 	ociURL := fmt.Sprintf("%s:%s", args[0], pushArtifactArgs.tags[0])
 	digestURL, err := oci.PushArtifact(ociURL,
@@ -146,6 +149,14 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		}
 		if err := oci.TagArtifact(digestURL, tag, opts); err != nil {
 			return fmt.Errorf("tagging artifact with %s failed: %w", tag, err)
+		}
+	}
+
+	spin.Stop()
+	if pushArtifactArgs.sign != "" {
+		err = oci.SignArtifact(log, pushArtifactArgs.sign, digestURL, pushArtifactArgs.cosignKey)
+		if err != nil {
+			return err
 		}
 	}
 

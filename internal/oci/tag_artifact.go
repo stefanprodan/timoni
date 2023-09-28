@@ -21,6 +21,11 @@ import (
 )
 
 // TagArtifact adds the tag to the remote OpenContainers artifact.
-func TagArtifact(url, tag string, opts []crane.Option) error {
-	return crane.Tag(url, tag, opts...)
+func TagArtifact(ociURL, tag string, opts []crane.Option) error {
+	ref, err := parseArtifactRef(ociURL)
+	if err != nil {
+		return err
+	}
+
+	return crane.Tag(ref.String(), tag, opts...)
 }
