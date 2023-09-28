@@ -57,6 +57,7 @@ container registry using the version as the image tag.`,
 	--latest=false
 
   # Push a module with custom OCI annotations
+  echo $GITHUB_TOKEN | timoni registry login ghcr.io -u timoni --password-stdin
   timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
 	--version=1.0.0 \
 	--source='https://github.com/my-org/my-app' \
@@ -65,6 +66,7 @@ container registry using the version as the image tag.`,
 	--annotations='org.opencontainers.image.description=A timoni.sh module for my app.'
 
   # Push a module and sign it with Cosign Keyless (the cosign binary must be present in PATH)
+  echo $GITHUB_TOKEN | timoni registry login ghcr.io -u timoni --password-stdin
   timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
 	--version=1.0.0 \
 	--sign=cosign

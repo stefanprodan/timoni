@@ -77,6 +77,9 @@ nav:
           - Build: cmd/timoni_bundle_build.md
           - Delete: cmd/timoni_bundle_delete.md
           - Lint: cmd/timoni_bundle_lint.md
+      - Registries:
+          - Login: cmd/timoni_registry_login.md
+          - Logout: cmd/timoni_registry_logout.md
       - Completion:
           - Bash: cmd/timoni_completion_bash.md
           - Fish: cmd/timoni_completion_fish.md

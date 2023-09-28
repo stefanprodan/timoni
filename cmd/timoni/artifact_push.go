@@ -49,6 +49,7 @@ the ignore rules will be used to exclude files from the artifact.`,
 	--content-type="timoni.sh/bundles"
 
   # Push and sign with Cosign (the cosign binary must be present in PATH)
+  echo $GITHUB_TOKEN | timoni registry login ghcr.io -u timoni --password-stdin
   export COSIGN_PASSWORD=password
   timoni artifact push oci://ghcr.io/org/schemas/app \
 	-f=/path/to/schemas \

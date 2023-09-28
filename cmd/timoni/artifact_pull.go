@@ -36,8 +36,8 @@ from a container registry and extract the selected layers to the specified direc
   timoni artifact pull oci://docker.io/org/app:latest
 
   # Pull an artifact by tag from a private GHCR repository
+  echo $GITHUB_TOKEN | timoni registry login ghcr.io -u timoni --password-stdin
   timoni artifact pull oci://ghcr.io/org/schemas/app:1.0.0 \
-	--creds=timoni:$GITHUB_TOKEN \
 	--output=./modules/my-app/cue.mod/pkg
 
   # VerifyArtifact the Cosign signature and pull (the cosign binary must be present in PATH)
