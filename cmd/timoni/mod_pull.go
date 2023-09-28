@@ -137,7 +137,7 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	spin.Stop()
-	log.Info(fmt.Sprintf("module extracted to %s", pullModArgs.output))
+	log.Info(fmt.Sprintf("extracted: %s", colorizeSubject(pullModArgs.output)))
 
 	return nil
 }

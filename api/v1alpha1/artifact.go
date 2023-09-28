@@ -36,6 +36,14 @@ const (
 	// AnyContentType is the default value of ContentTypeAnnotation.
 	AnyContentType = ""
 
+	// TimoniModContentType is the value of ContentTypeAnnotation for setting the
+	// content to Timoni module content without cue.mod.
+	TimoniModContentType = "module"
+
+	// CueModContentType is the value of ContentTypeAnnotation for setting the
+	// content to CUE vendor schemas.
+	CueModContentType = "cue.mod"
+
 	// CueModGenContentType is the value of ContentTypeAnnotation for setting the
 	// content to CUE generated schemas.
 	CueModGenContentType = "cue.mod/gen"

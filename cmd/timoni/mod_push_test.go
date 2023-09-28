@@ -46,11 +46,14 @@ func Test_PushMod(t *testing.T) {
 		modAbout,
 	))
 	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(output).To(ContainSubstring(modURL))
 
 	// Pull the module's artifact from registry
 	image, err := crane.Pull(fmt.Sprintf("%s:%s", modURL, modVer))
 	g.Expect(err).ToNot(HaveOccurred())
+
+	digest, err := image.Digest()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(output).To(ContainSubstring(digest.String()))
 
 	// Extract the manifest
 	manifest, err := image.Manifest()
@@ -65,8 +68,11 @@ func Test_PushMod(t *testing.T) {
 	// Verify media types
 	g.Expect(manifest.MediaType).To(Equal(types.OCIManifestSchema1))
 	g.Expect(manifest.Config.MediaType).To(BeEquivalentTo(apiv1.ConfigMediaType))
-	g.Expect(len(manifest.Layers)).To(BeEquivalentTo(1))
+	g.Expect(len(manifest.Layers)).To(BeEquivalentTo(2))
 	g.Expect(manifest.Layers[0].MediaType).To(BeEquivalentTo(apiv1.ContentMediaType))
+	g.Expect(manifest.Layers[0].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo(apiv1.CueModContentType))
+	g.Expect(manifest.Layers[1].MediaType).To(BeEquivalentTo(apiv1.ContentMediaType))
+	g.Expect(manifest.Layers[1].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo(apiv1.TimoniModContentType))
 
 	// Push latest
 	newVer := "1.0.1"
