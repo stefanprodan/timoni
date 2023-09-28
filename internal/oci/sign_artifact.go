@@ -23,10 +23,15 @@ import (
 )
 
 // SignArtifact signs an OpenContainers artifact using the specified provider.
-func SignArtifact(log logr.Logger, provider string, imageRef string, keyRef string) error {
+func SignArtifact(log logr.Logger, provider string, ociURL string, keyRef string) error {
+	ref, err := parseArtifactRef(ociURL)
+	if err != nil {
+		return err
+	}
+
 	switch provider {
 	case "cosign":
-		if err := SignCosign(log, imageRef, keyRef); err != nil {
+		if err := SignCosign(log, ref.String(), keyRef); err != nil {
 			return err
 		}
 	default:
@@ -36,10 +41,15 @@ func SignArtifact(log logr.Logger, provider string, imageRef string, keyRef stri
 }
 
 // VerifyArtifact verifies an OpenContainers artifact using the specified provider.
-func VerifyArtifact(log logr.Logger, provider string, imageRef string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string) error {
+func VerifyArtifact(log logr.Logger, provider string, ociURL string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string) error {
+	ref, err := parseArtifactRef(ociURL)
+	if err != nil {
+		return err
+	}
+
 	switch provider {
 	case "cosign":
-		if err := VerifyCosign(log, imageRef, keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp); err != nil {
+		if err := VerifyCosign(log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp); err != nil {
 			return err
 		}
 	default:

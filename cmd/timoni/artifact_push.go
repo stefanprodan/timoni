@@ -149,6 +149,13 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	if pushArtifactArgs.sign != "" {
+		err = oci.SignArtifact(log, pushArtifactArgs.sign, digestURL, pushArtifactArgs.cosignKey)
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Info(fmt.Sprintf("digest: %s", colorizeSubject(digestURL)))
 
 	return nil

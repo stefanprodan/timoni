@@ -19,11 +19,9 @@ package oci
 import (
 	"bytes"
 	"fmt"
-	"strings"
 
 	"github.com/fluxcd/pkg/tar"
 	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/google/go-containerregistry/pkg/name"
 	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -36,24 +34,19 @@ import (
 // - download all the compressed layer matching Timoni's media type
 // - extracts the module contents to the destination directory
 func PullModule(ociURL, dstPath string, opts []crane.Option) (*apiv1.ModuleReference, error) {
-	if !strings.HasPrefix(ociURL, apiv1.ArtifactPrefix) {
-		return nil, fmt.Errorf("URL must be in format 'oci://<domain>/<org>/<repo>'")
-	}
-
-	imgURL := strings.TrimPrefix(ociURL, apiv1.ArtifactPrefix)
-	ref, err := name.ParseReference(imgURL)
+	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
-		return nil, fmt.Errorf("'%s' invalid URL: %w", ociURL, err)
+		return nil, err
 	}
 
 	repoURL := ref.Context().Name()
 
-	digest, err := crane.Digest(imgURL, opts...)
+	digest, err := crane.Digest(ref.String(), opts...)
 	if err != nil {
 		return nil, fmt.Errorf("resolving the digest for '%s' failed: %w", ociURL, err)
 	}
 
-	manifestJSON, err := crane.Manifest(imgURL, opts...)
+	manifestJSON, err := crane.Manifest(ref.String(), opts...)
 	if err != nil {
 		return nil, fmt.Errorf("pulling artifact manifest failed: %w", err)
 	}

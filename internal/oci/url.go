@@ -27,29 +27,44 @@ import (
 
 // ParseArtifactURL validates the OpenContainers URL and returns the address of the artifact.
 func ParseArtifactURL(ociURL string) (string, error) {
-	if !strings.HasPrefix(ociURL, apiv1.ArtifactPrefix) {
-		return "", fmt.Errorf("URL must be in format 'oci://<domain>/<org>/<repo>'")
+	ref, err := parseArtifactRef(ociURL)
+	if err != nil {
+		return "", err
 	}
 
-	url := strings.TrimPrefix(ociURL, apiv1.ArtifactPrefix)
-	if _, err := name.ParseReference(url); err != nil {
-		return "", fmt.Errorf("'%s' invalid URL: %w", ociURL, err)
-	}
-
-	return url, nil
+	return ref.String(), nil
 }
 
 // ParseRepositoryURL validates the OpenContainers URL and returns the address of the artifact repository.
 func ParseRepositoryURL(ociURL string) (string, error) {
+	ref, err := parseArtifactRef(ociURL)
+	if err != nil {
+		return "", err
+	}
+
+	return ref.Context().Name(), nil
+}
+
+// ParseDigest extracts the digest from the OpenContainers URL.
+func ParseDigest(ociURL string) (name.Digest, error) {
+	ref, err := parseArtifactRef(ociURL)
+	if err != nil {
+		return name.Digest{}, err
+	}
+
+	return name.NewDigest(ref.String())
+}
+
+func parseArtifactRef(ociURL string) (name.Reference, error) {
 	if !strings.HasPrefix(ociURL, apiv1.ArtifactPrefix) {
-		return "", fmt.Errorf("URL must be in format 'oci://<domain>/<org>/<repo>'")
+		return nil, fmt.Errorf("URL must be in format 'oci://<domain>/<org>/<repo>'")
 	}
 
 	url := strings.TrimPrefix(ociURL, apiv1.ArtifactPrefix)
 	ref, err := name.ParseReference(url)
 	if err != nil {
-		return "", fmt.Errorf("'%s' invalid URL: %w", ociURL, err)
+		return nil, fmt.Errorf("'%s' invalid URL: %w", ociURL, err)
 	}
 
-	return ref.Context().Name(), nil
+	return ref, nil
 }

@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	gcr "github.com/google/go-containerregistry/pkg/name"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
@@ -166,16 +165,16 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	digest, err := gcr.NewDigest(digestURL)
-	if err != nil {
-		return fmt.Errorf("artifact digest parsing failed: %w", err)
-	}
-
 	if pushModArgs.sign != "" {
 		err = oci.SignArtifact(log, pushModArgs.sign, digestURL, pushModArgs.cosignKey)
 		if err != nil {
 			return err
 		}
+	}
+
+	digest, err := oci.ParseDigest(digestURL)
+	if err != nil {
+		return fmt.Errorf("artifact digest parsing failed: %w", err)
 	}
 
 	info := struct {

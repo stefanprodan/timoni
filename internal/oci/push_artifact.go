@@ -20,11 +20,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/fluxcd/pkg/oci/client"
+	"github.com/google/go-containerregistry/pkg/compression"
 	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/google/go-containerregistry/pkg/name"
 	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
@@ -42,13 +40,9 @@ import (
 // - uploads the artifact in the container registry
 // - returns the digest URL of the upstream artifact
 func PushArtifact(ociURL, contentPath string, ignorePaths []string, contentType string, annotations map[string]string, opts []crane.Option) (string, error) {
-	if !strings.HasPrefix(ociURL, apiv1.ArtifactPrefix) {
-		return "", fmt.Errorf("URL must be in format 'oci://<domain>/<org>/<repo>'")
-	}
-
-	ref, err := name.ParseReference(strings.TrimPrefix(ociURL, apiv1.ArtifactPrefix))
+	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
-		return "", fmt.Errorf("parsing '%s' failed: %w", ociURL, err)
+		return "", err
 	}
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
@@ -57,10 +51,9 @@ func PushArtifact(ociURL, contentPath string, ignorePaths []string, contentType 
 	}
 	defer os.RemoveAll(tmpDir)
 
-	builder := client.NewClient(nil)
-
 	tgzFile := filepath.Join(tmpDir, "artifact.tgz")
-	if err := builder.Build(tgzFile, contentPath, ignorePaths); err != nil {
+
+	if err := BuildArtifact(tgzFile, contentPath, ignorePaths); err != nil {
 		return "", fmt.Errorf("packging content failed: %w", err)
 	}
 
@@ -68,7 +61,11 @@ func PushArtifact(ociURL, contentPath string, ignorePaths []string, contentType 
 	img = mutate.ConfigMediaType(img, apiv1.ConfigMediaType)
 	img = mutate.Annotations(img, annotations).(gcrv1.Image)
 
-	layer, err := tarball.LayerFromFile(tgzFile, tarball.WithMediaType(apiv1.ContentMediaType))
+	layer, err := tarball.LayerFromFile(tgzFile,
+		tarball.WithMediaType(apiv1.ContentMediaType),
+		tarball.WithCompression(compression.GZip),
+		tarball.WithCompressedCaching,
+	)
 	if err != nil {
 		return "", fmt.Errorf("creating content layer failed: %w", err)
 	}
@@ -93,5 +90,5 @@ func PushArtifact(ociURL, contentPath string, ignorePaths []string, contentType 
 	}
 
 	digestURL := ref.Context().Digest(digest.String()).String()
-	return digestURL, nil
+	return fmt.Sprintf("%s%s", apiv1.ArtifactPrefix, digestURL), nil
 }

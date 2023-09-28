@@ -111,13 +111,9 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	log := LoggerFrom(cmd.Context())
 
 	if pullModArgs.verify != "" {
-		imgURL, err := oci.ParseArtifactURL(ociURL)
-		if err != nil {
-			return err
-		}
-		err = oci.VerifyArtifact(log,
+		err := oci.VerifyArtifact(log,
 			pullModArgs.verify,
-			imgURL,
+			ociURL,
 			pullModArgs.cosignKey,
 			pullModArgs.certificateIdentity,
 			pullModArgs.certificateIdentityRegexp,

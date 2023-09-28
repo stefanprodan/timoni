@@ -112,13 +112,9 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	if pullArtifactArgs.verify != "" {
-		imgURL, err := oci.ParseArtifactURL(ociURL)
-		if err != nil {
-			return err
-		}
-		err = oci.VerifyArtifact(log,
+		err := oci.VerifyArtifact(log,
 			pullArtifactArgs.verify,
-			imgURL,
+			ociURL,
 			pullArtifactArgs.cosignKey,
 			pullArtifactArgs.certificateIdentity,
 			pullArtifactArgs.certificateIdentityRegexp,
