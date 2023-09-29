@@ -80,6 +80,10 @@ nav:
       - Registries:
           - Login: cmd/timoni_registry_login.md
           - Logout: cmd/timoni_registry_logout.md
+      - Artifacts:
+          - Push: cmd/timoni_artifact_push.md
+          - Pull: cmd/timoni_artifact_pull.md
+          - List: cmd/timoni_artifact_list.md
       - Completion:
           - Bash: cmd/timoni_completion_bash.md
           - Fish: cmd/timoni_completion_fish.md
