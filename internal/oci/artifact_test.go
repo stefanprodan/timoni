@@ -52,13 +52,13 @@ func TestArtifactOperations(t *testing.T) {
 	err = TagArtifact(digestURL, apiv1.LatestVersion, opts)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	list, err := ListModuleVersions(imgURL, true, opts)
+	list, err := ListArtifactTags(imgURL, true, opts)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(len(list)).To(BeEquivalentTo(2))
-	g.Expect(list[0].Version).To(BeEquivalentTo(apiv1.LatestVersion))
+	g.Expect(list[0].Tag).To(BeEquivalentTo(apiv1.LatestVersion))
 	g.Expect(digestURL).To(ContainSubstring(list[0].Digest))
 	g.Expect(digestURL).To(ContainSubstring(list[0].Repository))
-	g.Expect(list[1].Version).To(BeEquivalentTo(imgVersion))
+	g.Expect(list[1].Tag).To(BeEquivalentTo(imgVersion))
 	g.Expect(digestURL).To(ContainSubstring(list[1].Digest))
 	g.Expect(digestURL).To(ContainSubstring(list[1].Repository))
 
