@@ -152,7 +152,14 @@ Commands for working with bundles:
 - `timoni bundle apply -f bundle.cue`
 - `timoni bundle delete -f bundle.cue`
 
-To learn more about bundles, please see the [Bundle API documentation](https://timoni.sh/bundles/).
+To learn more about bundles, please see the [Bundle API documentation](https://timoni.sh/bundles/)
+and the [Bundle Runtime API documentation](https://timoni.sh/bundle-runtime/).
+
+Commands for distributing bundles and runtimes:
+
+- `timoni artifact push oci://<artifact-url> -t <tag> -f <path/to/dir>`
+- `timoni artifact pull oci://<artifact-url> -o <path/to/dir>`
+- `timoni artifact list oci://<artifact-url>`
 
 ## Contributing
 
