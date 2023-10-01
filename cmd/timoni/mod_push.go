@@ -48,14 +48,12 @@ container registry using the version as the image tag.`,
 
   # Push a release candidate without marking it as the latest stable
   timoni mod push ./path/to/module oci://docker.io/org/app-module \
-	--source="$(git config --get remote.origin.url)" \
 	--version=2.0.0-rc.1 \
 	--latest=false
 
   # Push a module with custom OCI annotations
   timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
 	--version=1.0.0 \
-	--source='https://github.com/my-org/my-app' \
 	--annotation='org.opencontainers.image.licenses=Apache-2.0' \
 	--annotation='org.opencontainers.image.documentation=https://app.org/docs' \
 	--annotation='org.opencontainers.image.description=A timoni.sh module for my app.'
@@ -79,7 +77,6 @@ container registry using the version as the image tag.`,
 
 type pushModFlags struct {
 	module      string
-	source      string
 	version     flags.Version
 	latest      bool
 	creds       flags.Credentials
@@ -94,8 +91,6 @@ var pushModArgs pushModFlags
 
 func init() {
 	pushModCmd.Flags().VarP(&pushModArgs.version, pushModArgs.version.Type(), pushModArgs.version.Shorthand(), pushModArgs.version.Description())
-	pushModCmd.Flags().StringVar(&pushModArgs.source, "source", "",
-		"The VCS address of the module. When left empty, the Git CLI is used to get the remote origin URL.")
 	pushModCmd.Flags().Var(&pushModArgs.creds, pushModArgs.creds.Type(), pushModArgs.creds.Description())
 	pushModCmd.Flags().BoolVar(&pushModArgs.latest, "latest", true,
 		"Tags the current version as the latest stable release.")
@@ -136,9 +131,6 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	annotations[apiv1.VersionAnnotation] = version
-	if pushModArgs.source != "" {
-		annotations[apiv1.SourceAnnotation] = pushModArgs.source
-	}
 	oci.AppendGitMetadata(pushModArgs.module, annotations)
 
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
