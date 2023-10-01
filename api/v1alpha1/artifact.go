@@ -64,3 +64,17 @@ const (
 	// the build date and time on an artifact (RFC 3339).
 	CreatedAnnotation = "org.opencontainers.image.created"
 )
+
+// ArtifactReference contains the information necessary to locate
+// an artifact in the container registry.
+type ArtifactReference struct {
+	// Repository is the OpenContainers artifact repo name in the format
+	// 'oci://<reg.host>/<org>/<repo>'.
+	Repository string `json:"repository"`
+
+	// Tag is the OpenContainers artifact tag name.
+	Tag string `json:"tag"`
+
+	// Digest of the OpenContainers artifact in the format '<sha-type>:<hex>'.
+	Digest string `json:"digest"`
+}

@@ -40,12 +40,12 @@ from a container registry and extract the selected layers to the specified direc
   timoni artifact pull oci://ghcr.io/org/schemas/app:1.0.0 \
 	--output=./modules/my-app/cue.mod/pkg
 
-  # VerifyArtifact the Cosign signature and pull (the cosign binary must be present in PATH)
+  # Verify the Cosign signature and pull (the cosign binary must be present in PATH)
   timoni artifact pull oci://docker.io/org/app:latest \
 	--verify=cosign \
 	--cosign-key=/path/to/cosign.pub
 
-  # VerifyArtifact the Cosign keyless signature and pull (the cosign binary must be present in PATH)
+  # Verify the Cosign keyless signature and pull (the cosign binary must be present in PATH)
   timoni artifact pull oci://ghcr.io/org/schemas/app:1.0.0 \
 	--verify=cosign \
 	--certificate-identity-regexp="^https://github.com/org/.*$" \

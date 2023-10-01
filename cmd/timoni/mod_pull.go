@@ -35,13 +35,26 @@ var pullModCmd = &cobra.Command{
 extract its contents the specified directory.`,
 	Example: `  # Pull the latest stable version of a module
   echo $DOCKER_TOKEN | timoni registry login docker.io -u timoni --password-stdin
-  timoni mod pull oci://docker.io/org/app \
+  timoni mod pull oci://docker.io/org/app-module \
 	--output ./path/to/module
 
   # Pull a specific module version from GitHub Container Registry
-  timoni mod pull oci://ghcr.io/org/manifests/app --version 1.0.0 \
-	--output ./path/to/module \
+  timoni mod pull oci://ghcr.io/org/modules/app --version 1.0.0 \
+	--output=./modules/app \
 	--creds timoni:$GITHUB_TOKEN
+
+  # Verify the Cosign signature and pull (the cosign binary must be present in PATH)
+  timoni mod pull oci://docker.io/org/app-module \
+	--output=./modules/app \
+	--verify=cosign \
+	--cosign-key=/path/to/cosign.pub
+
+  # Verify the Cosign keyless signature and pull (the cosign binary must be present in PATH)
+  timoni artifact pull oci://ghcr.io/org/modules/app \
+	--output=./modules/app \
+	--verify=cosign \
+	--certificate-identity-regexp="^https://github.com/org/.*$" \
+	--certificate-oidc-issuer=https://token.actions.githubusercontent.com \
 `,
 	RunE: pullCmdRun,
 }

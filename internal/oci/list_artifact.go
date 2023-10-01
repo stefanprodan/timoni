@@ -20,21 +20,19 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-// ListModuleVersions performs the following operations:
-// - lists all the tags from to this module repository
-// - filters and orders the tags based on semver
-// - fetches the digest of the latest version
-// - fetches the digest of each version (if configured to do so)
-// - returns an array of ModuleReference objects
-func ListModuleVersions(ociURL string, withDigest bool, opts []crane.Option) ([]apiv1.ModuleReference, error) {
-	var list []apiv1.ModuleReference
+// ListArtifactTags performs the following operations:
+// - fetches the digest of the latest tag (if it exists)
+// - lists all the tags from the artifact repository
+// - fetches the digest of each tag (if configured to do so)
+// - returns an array of ArtifactReference objects
+func ListArtifactTags(ociURL string, withDigest bool, opts []crane.Option) ([]apiv1.ArtifactReference, error) {
+	var list []apiv1.ArtifactReference
 
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
@@ -43,47 +41,41 @@ func ListModuleVersions(ociURL string, withDigest bool, opts []crane.Option) ([]
 
 	repoURL := ref.Context().Name()
 
+	if digest, err := crane.Digest(fmt.Sprintf("%s:%s", repoURL, name.DefaultTag), opts...); err == nil {
+		if !withDigest {
+			digest = ""
+		}
+		list = append(list, apiv1.ArtifactReference{
+			Repository: ociURL,
+			Tag:        name.DefaultTag,
+			Digest:     digest,
+		})
+	}
+
 	tags, err := crane.ListTags(repoURL, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("listing tags failed: %w", err)
 	}
 
-	var versions []*semver.Version
+	sort.Slice(tags, func(i, j int) bool { return tags[i] > tags[j] })
+
 	for _, tag := range tags {
-		if v, err := semver.StrictNewVersion(tag); err != nil {
+		if tag == name.DefaultTag {
 			continue
-		} else {
-			versions = append(versions, v)
 		}
-	}
-	sort.Sort(sort.Reverse(semver.Collection(versions)))
-
-	if digest, err := crane.Digest(fmt.Sprintf("%s:%s", repoURL, name.DefaultTag), opts...); err == nil {
-		if !withDigest {
-			digest = ""
-		}
-		list = append(list, apiv1.ModuleReference{
-			Repository: ociURL,
-			Version:    name.DefaultTag,
-			Digest:     digest,
-		})
-	}
-
-	for _, v := range versions {
 		digest := ""
 		if withDigest {
-			d, err := crane.Digest(fmt.Sprintf("%s:%s", repoURL, v.String()), opts...)
+			d, err := crane.Digest(fmt.Sprintf("%s:%s", repoURL, tag), opts...)
 			if err != nil {
-				return nil, fmt.Errorf("faild to get digest for '%s': %w", v.String(), err)
+				return nil, fmt.Errorf("faild to get digest for '%s': %w", tag, err)
 			}
 			digest = d
 		}
-		list = append(list, apiv1.ModuleReference{
+		list = append(list, apiv1.ArtifactReference{
 			Repository: ociURL,
-			Version:    v.String(),
+			Tag:        tag,
 			Digest:     digest,
 		})
-
 	}
 
 	return list, nil

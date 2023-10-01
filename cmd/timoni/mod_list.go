@@ -64,7 +64,7 @@ func listModCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	ociURL := args[0]
 
-	spin := StartSpinner("fetching tags and digests")
+	spin := StartSpinner("fetching versions")
 	defer spin.Stop()
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)

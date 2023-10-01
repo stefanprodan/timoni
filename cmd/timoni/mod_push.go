@@ -41,7 +41,7 @@ var pushModCmd = &cobra.Command{
 container registry using the version as the image tag.`,
 	Example: `  # Push a module to Docker Hub using the credentials from '~/.docker/config.json'
   echo $DOCKER_PAT | docker login --username timoni --password-stdin
-  timoni mod push ./path/to/module oci://docker.io/org/app \
+  timoni mod push ./path/to/module oci://docker.io/org/app-module \
 	--version=1.0.0
 
   # Push a module to GitHub Container Registry using a GitHub token
@@ -50,7 +50,7 @@ container registry using the version as the image tag.`,
 	--creds timoni:$GITHUB_TOKEN
 
   # Push a release candidate without marking it as the latest stable
-  timoni mod push ./path/to/module oci://docker.io/org/app \
+  timoni mod push ./path/to/module oci://docker.io/org/app-module \
 	--source="$(git config --get remote.origin.url)" \
 	--version=2.0.0-rc.1 \
 	--latest=false
