@@ -42,8 +42,7 @@ func TestArtifactOperations(t *testing.T) {
 
 	annotations, err := ParseAnnotations([]string{imgLicense})
 	g.Expect(err).ToNot(HaveOccurred())
-	AppendCreated(ctx, srcPath, annotations)
-	AppendSource(imgURL, imgVersion, annotations)
+	AppendGitMetadata(srcPath, annotations)
 
 	opts := Options(ctx, "")
 	digestURL, err := PushArtifact(imgVersionURL, srcPath, imgIgnore, imgContentType, annotations, opts)

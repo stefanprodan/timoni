@@ -34,16 +34,18 @@ func Test_PushArtifact(t *testing.T) {
 	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
 	aTag := "1.0.0"
 	aLicense := "org.opencontainers.image.licenses=Apache-2.0"
+	aSource := "org.opencontainers.image.source=https://host/repo.git"
 	aRevision := "org.opencontainers.image.revision=1.0.0"
 
 	// Push the artifact to registry
 	output, err := executeCommand(fmt.Sprintf(
-		"artifact push oci://%s -f %s -t %s -a '%s' -a '%s' --content-type=generic",
+		"artifact push oci://%s -f %s -t %s -a '%s' -a '%s' -a '%s' --content-type=generic",
 		aURL,
 		aPath,
 		aTag,
 		aLicense,
 		aRevision,
+		aSource,
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(output).To(ContainSubstring(aURL))
@@ -58,6 +60,7 @@ func Test_PushArtifact(t *testing.T) {
 
 	// Verify that annotations exist in manifest
 	g.Expect(manifest.Annotations[apiv1.CreatedAnnotation]).ToNot(BeEmpty())
+	g.Expect(manifest.Annotations[apiv1.SourceAnnotation]).To(BeEquivalentTo("https://host/repo.git"))
 	g.Expect(manifest.Annotations[apiv1.RevisionAnnotation]).To(BeEquivalentTo(aTag))
 	g.Expect(manifest.Annotations["org.opencontainers.image.licenses"]).To(BeEquivalentTo("Apache-2.0"))
 

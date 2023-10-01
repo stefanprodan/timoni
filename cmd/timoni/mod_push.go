@@ -21,8 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/cobra"
@@ -41,8 +39,7 @@ var pushModCmd = &cobra.Command{
 container registry using the version as the image tag.`,
 	Example: `  # Push a module to Docker Hub using the credentials from '~/.docker/config.json'
   echo $DOCKER_PAT | docker login --username timoni --password-stdin
-  timoni mod push ./path/to/module oci://docker.io/org/app-module \
-	--version=1.0.0
+  timoni mod push ./path/to/module oci://docker.io/org/app-module -v 1.0.0
 
   # Push a module to GitHub Container Registry using a GitHub token
   timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
@@ -56,13 +53,20 @@ container registry using the version as the image tag.`,
 	--latest=false
 
   # Push a module with custom OCI annotations
-  echo $GITHUB_TOKEN | timoni registry login ghcr.io -u timoni --password-stdin
   timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
 	--version=1.0.0 \
 	--source='https://github.com/my-org/my-app' \
-	--annotations='org.opencontainers.image.licenses=Apache-2.0' \
-	--annotations='org.opencontainers.image.documentation=https://app.org/docs' \
-	--annotations='org.opencontainers.image.description=A timoni.sh module for my app.'
+	--annotation='org.opencontainers.image.licenses=Apache-2.0' \
+	--annotation='org.opencontainers.image.documentation=https://app.org/docs' \
+	--annotation='org.opencontainers.image.description=A timoni.sh module for my app.'
+
+  # Push and sign with Cosign (the cosign binary must be present in PATH)
+  echo $GITHUB_TOKEN | timoni registry login ghcr.io -u timoni --password-stdin
+  export COSIGN_PASSWORD=password
+  timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
+	--version=1.0.0 \
+	--sign=cosign \
+	--cosign-key=/path/to/cosign.key
 
   # Push a module and sign it with Cosign Keyless (the cosign binary must be present in PATH)
   echo $GITHUB_TOKEN | timoni registry login ghcr.io -u timoni --password-stdin
@@ -95,7 +99,7 @@ func init() {
 	pushModCmd.Flags().Var(&pushModArgs.creds, pushModArgs.creds.Type(), pushModArgs.creds.Description())
 	pushModCmd.Flags().BoolVar(&pushModArgs.latest, "latest", true,
 		"Tags the current version as the latest stable release.")
-	pushModCmd.Flags().StringArrayVarP(&pushModArgs.annotations, "annotations", "a", nil,
+	pushModCmd.Flags().StringArrayVarP(&pushModArgs.annotations, "annotation", "a", nil,
 		"Set custom OCI annotations in the format '<key>=<value>'.")
 	pushModCmd.Flags().StringVarP(&pushModArgs.output, "output", "o", "",
 		"The format in which the artifact digest should be printed, can be 'yaml' or 'json'.")
@@ -131,20 +135,14 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	annotations[apiv1.VersionAnnotation] = version
+	if pushModArgs.source != "" {
+		annotations[apiv1.SourceAnnotation] = pushModArgs.source
+	}
+	oci.AppendGitMetadata(pushModArgs.module, annotations)
+
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
-
-	oci.AppendCreated(ctx, pushModArgs.module, annotations)
-
-	// Try to determine the Git origin URL
-	if pushModArgs.source == "" {
-		gitCmd := exec.CommandContext(ctx, "git", "config", "--get", "remote.origin.url")
-		gitCmd.Dir = pushModArgs.module
-		if repo, err := gitCmd.Output(); err == nil && len(repo) > 1 {
-			pushModArgs.source = strings.TrimSuffix(string(repo), "\n")
-		}
-	}
-	oci.AppendSource(pushModArgs.source, version, annotations)
 
 	ps, err := engine.ReadIgnoreFile(pushModArgs.module)
 	if err != nil {
