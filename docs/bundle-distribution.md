@@ -1,7 +1,25 @@
 # Bundle Distribution
 
 [Bundles](bundles.md) and their [Runtimes](bundle-runtime.md) can be distributed as
-Open Container Initiative (OCI) artifacts.
+[Open Container Initiative](https://opencontainers.org/) (OCI) artifacts.
+
+## Artifact format
+
+The OCI artifacts produced with `timoni artifact push` have the following media types:
+
+- Image media type `application/vnd.oci.image.manifest.v1+json`
+- Config media type `application/vnd.timoni.config.v1+json`
+- Layer media type `application/vnd.timoni.content.v1.tar+gzip`
+
+The artifacts are annotated with OpenContainers
+[standard annotations](https://specs.opencontainers.org/image-spec/annotations/?v=v1.0.1#pre-defined-annotation-keys):
+
+- `org.opencontainers.image.source: <GIT URL>`
+- `org.opencontainers.image.revision: <GIT COMMIT SHA>`
+- `org.opencontainers.image.created: <GIT COMMIT DATE>`
+
+To enable reproducible builds, Timoni tries to determine the 
+source, revision and created date from the Git metadata.
 
 ## Publishing bundles to container registries
 

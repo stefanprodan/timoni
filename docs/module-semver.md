@@ -1,9 +1,27 @@
-# Module Versioning
+# Module Distribution
 
-Timoni modules are distributed as OCI artifacts. When publishing a module version
-to a container registry, the version number is used as the OCI artifact tag.
-The version number is also stored in the artifact manifest as the value of the
-`org.opencontainers.image.revision` annotation.
+Timoni modules are distributed as [Open Container Initiative](https://opencontainers.org/)
+(OCI) artifacts. When publishing a module version to a container registry,
+the version number is used as the OCI artifact tag.
+
+## Artifact format
+
+The OCI artifacts produced with `timoni mod push` have the following media types:
+
+- Image media type `application/vnd.oci.image.manifest.v1+json`
+- Config media type `application/vnd.timoni.config.v1+json`
+- Layer media type `application/vnd.timoni.content.v1.tar+gzip`
+
+The artifacts are annotated with OpenContainers
+[standard annotations](https://specs.opencontainers.org/image-spec/annotations/?v=v1.0.1#pre-defined-annotation-keys):
+
+- `org.opencontainers.image.version: <MODULE VERSION>`
+- `org.opencontainers.image.created: <MODULE LAST MODIFIED DATE>`
+- `org.opencontainers.image.source: <MODULE GIT URL>`
+- `org.opencontainers.image.revision: <MODULE GIT SHA>`
+
+To enable reproducible builds, Timoni tries to determine the module's
+last modified date, the source URL and source revision from the Git metadata.
 
 ## Version format
 
@@ -35,7 +53,6 @@ Example of publishing version `1.0.0` as the latest stable release:
 
 ```shell
 timoni mod push ./modules/my-app oci://ghcr.io/my-org/modules/my-app \
-  --source='https://github.com/my-org/my-app' \
   --latest=true \
   --version=1.0.0
 ```
@@ -47,7 +64,6 @@ Example of publishing a pre-release version:
 
 ```shell
 timoni mod push ./modules/my-app oci://ghcr.io/my-org/modules/my-app \
-  --source='https://github.com/my-org/my-app' \
   --latest=false \
   --version=2.0.0-beta.1
 ```
