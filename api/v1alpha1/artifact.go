@@ -37,12 +37,12 @@ const (
 	AnyContentType = ""
 
 	// TimoniModContentType is the value of ContentTypeAnnotation for setting the
-	// content to Timoni module content without cue.mod.
+	// layer type to Timoni module content.
 	TimoniModContentType = "module"
 
-	// CueModContentType is the value of ContentTypeAnnotation for setting the
-	// content to CUE vendor schemas.
-	CueModContentType = "cue.mod"
+	// TimoniModVendorContentType is the value of ContentTypeAnnotation for setting the
+	// layer type to Timoni module vendored CUE schemas.
+	TimoniModVendorContentType = "module/vendor"
 
 	// CueModGenContentType is the value of ContentTypeAnnotation for setting the
 	// content to CUE generated schemas.
@@ -59,6 +59,10 @@ const (
 	// RevisionAnnotation is the OpenContainers annotation for specifying
 	// the upstream source revision of an artifact.
 	RevisionAnnotation = "org.opencontainers.image.revision"
+
+	// VersionAnnotation is the OpenContainers annotation for specifying
+	// the semantic version of an artifact.
+	VersionAnnotation = "org.opencontainers.image.version"
 
 	// CreatedAnnotation is the OpenContainers annotation for specifying
 	// the build date and time on an artifact (RFC 3339).

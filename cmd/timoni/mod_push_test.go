@@ -61,7 +61,9 @@ func Test_PushMod(t *testing.T) {
 
 	// Verify that annotations exist in manifest
 	g.Expect(manifest.Annotations[apiv1.CreatedAnnotation]).ToNot(BeEmpty())
-	g.Expect(manifest.Annotations[apiv1.RevisionAnnotation]).To(BeEquivalentTo(modVer))
+	g.Expect(manifest.Annotations[apiv1.RevisionAnnotation]).ToNot(BeEmpty())
+	g.Expect(manifest.Annotations[apiv1.SourceAnnotation]).To(ContainSubstring("github.com"))
+	g.Expect(manifest.Annotations[apiv1.VersionAnnotation]).To(BeEquivalentTo(modVer))
 	g.Expect(manifest.Annotations["org.opencontainers.image.licenses"]).To(BeEquivalentTo("Apache-2.0"))
 	g.Expect(manifest.Annotations["org.opencontainers.image.description"]).To(BeEquivalentTo("My, test."))
 
@@ -70,7 +72,7 @@ func Test_PushMod(t *testing.T) {
 	g.Expect(manifest.Config.MediaType).To(BeEquivalentTo(apiv1.ConfigMediaType))
 	g.Expect(len(manifest.Layers)).To(BeEquivalentTo(2))
 	g.Expect(manifest.Layers[0].MediaType).To(BeEquivalentTo(apiv1.ContentMediaType))
-	g.Expect(manifest.Layers[0].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo(apiv1.CueModContentType))
+	g.Expect(manifest.Layers[0].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo(apiv1.TimoniModVendorContentType))
 	g.Expect(manifest.Layers[1].MediaType).To(BeEquivalentTo(apiv1.ContentMediaType))
 	g.Expect(manifest.Layers[1].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo(apiv1.TimoniModContentType))
 
@@ -89,5 +91,5 @@ func Test_PushMod(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	manifest, err = image.Manifest()
 	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(manifest.Annotations[apiv1.RevisionAnnotation]).To(BeEquivalentTo(newVer))
+	g.Expect(manifest.Annotations[apiv1.VersionAnnotation]).To(BeEquivalentTo(newVer))
 }

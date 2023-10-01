@@ -34,6 +34,7 @@ jobs:
           timoni mod push ./examples/minimal oci://ghcr.io/stefanprodan/timoni/minimal \
           --sign cosign \
           --version ${{ github.event.inputs.version }} \
-          --source https://github.com/stefanprodan/timoni/tree/main/examples/minimal  \
+          -a 'org.opencontainers.image.licenses=Apache-2.0' \
+          -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni/tree/main/examples/minimal'  \
           -a 'org.opencontainers.image.description=A minimal timoni.sh module example.' \
           -a 'org.opencontainers.image.documentation=https://github.com/stefanprodan/timoni/blob/main/examples/minimal/README.md'

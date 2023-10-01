@@ -41,8 +41,8 @@ func TestModuleOperations(t *testing.T) {
 
 	annotations, err := ParseAnnotations([]string{imgLicense})
 	g.Expect(err).ToNot(HaveOccurred())
-	AppendCreated(ctx, srcPath, annotations)
-	AppendSource(imgURL, imgVersion, annotations)
+	annotations[apiv1.VersionAnnotation] = imgVersion
+	AppendGitMetadata(srcPath, annotations)
 
 	opts := Options(ctx, "")
 	digestURL, err := PushModule(imgVersionURL, srcPath, imgIgnore, annotations, opts)
@@ -78,7 +78,7 @@ func TestModuleOperations(t *testing.T) {
 	}
 
 	dstVendorPath := filepath.Join(tmpDir, "module-vendor")
-	err = PullArtifact(imgURL, dstVendorPath, apiv1.CueModContentType, opts)
+	err = PullArtifact(imgURL, dstVendorPath, apiv1.TimoniModVendorContentType, opts)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(filepath.Join(dstVendorPath, "timoni.cue")).ToNot(BeAnExistingFile())
 	g.Expect(filepath.Join(dstVendorPath, "templates")).ToNot(BeAnExistingFile())

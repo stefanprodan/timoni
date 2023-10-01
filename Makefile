@@ -43,7 +43,7 @@ lint-samples: build
 REDIS_VER=$(shell cat ./examples/redis/templates/config.cue | awk '/tag:/ {print $$2}' | tr -d '*"')
 push-redis: build
 	./bin/timoni mod push ./examples/redis oci://ghcr.io/stefanprodan/modules/redis -v $(REDIS_VER) --latest \
-		--source https://github.com/stefanprodan/timoni/tree/main/examples/redis  \
+		-a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni/tree/main/examples/redis'  \
 		-a 'org.opencontainers.image.description=A timoni.sh module for deploying Redis master-replica clusters.' \
 		-a 'org.opencontainers.image.documentation=https://github.com/stefanprodan/timoni/blob/main/examples/redis/README.md'
 

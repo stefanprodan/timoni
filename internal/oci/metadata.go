@@ -42,30 +42,39 @@ func ParseAnnotations(args []string) (map[string]string, error) {
 	return annotations, nil
 }
 
-// AppendCreated tries to determine the last Git commit timestamp.
-// If the content path has no git history, it sets the created date to UTC now.
-func AppendCreated(ctx context.Context, contentPath string, annotations map[string]string) {
-	// Try to determine the last Git commit timestamp
-	ct := time.Now().UTC()
-	created := ct.Format(time.RFC3339)
-	gitCmd := exec.CommandContext(ctx, "git", "--no-pager", "log", "-1", `--format=%ct`)
-	gitCmd.Dir = contentPath
-	if ts, err := gitCmd.Output(); err == nil && len(ts) > 1 {
+// AppendGitMetadata sets the OpenContainers source, revision and created annotations
+// from the Git metadata. If the git binary or the .git dir are missing, the created
+// date is set to the current UTC date, and the source and revision are not appended.
+func AppendGitMetadata(repoPath string, annotations map[string]string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	tsCmd := exec.CommandContext(ctx, "git", "--no-pager", "log", "-1", `--format=%ct`)
+	tsCmd.Dir = repoPath
+	if ts, err := tsCmd.Output(); err == nil && len(ts) > 1 {
 		if i, err := strconv.ParseInt(strings.TrimSuffix(string(ts), "\n"), 10, 64); err == nil {
 			d := time.Unix(i, 0)
-			created = d.Format(time.RFC3339)
+			annotations[apiv1.CreatedAnnotation] = d.Format(time.RFC3339)
+		}
+	} else {
+		ct := time.Now().UTC()
+		annotations[apiv1.CreatedAnnotation] = ct.Format(time.RFC3339)
+		return
+	}
+
+	if _, found := annotations[apiv1.SourceAnnotation]; !found {
+		urlCmd := exec.CommandContext(ctx, "git", "config", "--get", "remote.origin.url")
+		urlCmd.Dir = repoPath
+		if repo, err := urlCmd.Output(); err == nil && len(repo) > 1 {
+			annotations[apiv1.SourceAnnotation] = strings.TrimSuffix(string(repo), "\n")
 		}
 	}
 
-	annotations[apiv1.CreatedAnnotation] = created
-}
-
-// AppendSource adds the source and revision to the OpenContainers annotations.
-func AppendSource(url, revision string, annotations map[string]string) {
-	if url != "" {
-		annotations[apiv1.SourceAnnotation] = url
-	}
-	if revision != "" {
-		annotations[apiv1.RevisionAnnotation] = revision
+	if _, found := annotations[apiv1.RevisionAnnotation]; !found {
+		shaCmd := exec.CommandContext(ctx, "git", "show", "-s", "--format=%H")
+		shaCmd.Dir = repoPath
+		if commit, err := shaCmd.Output(); err == nil && len(commit) > 1 {
+			annotations[apiv1.RevisionAnnotation] = strings.TrimSuffix(string(commit), "\n")
+		}
 	}
 }

@@ -73,7 +73,7 @@ func PushModule(ociURL, contentPath string, ignorePaths []string, annotations ma
 	img, err = mutate.Append(img, mutate.Addendum{
 		Layer: layerVendor,
 		Annotations: map[string]string{
-			apiv1.ContentTypeAnnotation: apiv1.CueModContentType,
+			apiv1.ContentTypeAnnotation: apiv1.TimoniModVendorContentType,
 		},
 	})
 	if err != nil {

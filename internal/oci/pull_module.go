@@ -61,9 +61,18 @@ func PullModule(ociURL, dstPath string, opts []crane.Option) (*apiv1.ModuleRefer
 			manifest.Config.MediaType, apiv1.ConfigMediaType)
 	}
 
+	version := ""
+	if rev, ok := manifest.Annotations[apiv1.RevisionAnnotation]; ok == true {
+		// For backwards compatibility with Timoni v0.13
+		version = rev
+	}
+	if ver, ok := manifest.Annotations[apiv1.VersionAnnotation]; ok == true {
+		version = ver
+	}
+
 	moduleRef := &apiv1.ModuleReference{
 		Repository: fmt.Sprintf("%s%s", apiv1.ArtifactPrefix, repoURL),
-		Version:    manifest.Annotations[apiv1.RevisionAnnotation],
+		Version:    version,
 		Digest:     digest,
 	}
 
