@@ -60,11 +60,13 @@ Commands for vendoring Kubernetes APIs and CRDs:
 - `timoni mod vendor k8s --version latest`
 - `timoni mod vendor crds -f <path/to/crds.yaml>`
 
+To learn more about modules, please see the [module documentation](module.md).
+
 #### OCI Artifacts
 
 Timoni modules are distributed as OCI artifacts and can be stored in container registries
 which support custom OCI media types.
-Modules are versioned using strict [semantic versioning](https://semver.org/),
+Modules are versioned using strict [semantic versioning](module-distribution.md#version-format),
 the version of a module is used as the OCI artifact tag.
 
 Commands for working with remote modules:
@@ -181,8 +183,8 @@ Commands for working with bundles:
 - `timoni bundle apply -f bundle.cue --runtime runtime.cue --diff`
 - `timoni bundle delete -f bundle.cue`
 
-To learn more about bundles, please see the [Bundle API documentation](https://timoni.sh/bundles/)
-and the [Bundle Runtime API documentation](https://timoni.sh/bundle-runtime/).
+To learn more about bundles, please see the [Bundle API documentation](bundle.md)
+and the [Bundle Runtime API documentation](bundle-runtime.md).
 
 Commands for distributing bundles and runtimes:
 
