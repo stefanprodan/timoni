@@ -28,8 +28,8 @@ To get started with Timoni please visit the documentation website at [timoni.sh]
 ## Concepts
 
 If you are familiar with Helm, a Timoni **[module](https://timoni.sh/module/)** is the equivalent of a **chart**,
-a Timoni **[bundle](https://timoni.sh/bundles/)** is the equivalent of an **umbrella chart**,
-and a Timoni **instance** is the equivalent of a Helm **release**.
+a Timoni **[bundle](https://timoni.sh/bundle/)** is the equivalent of an **umbrella chart**,
+and a Timoni **[instance](#timoni-instances)** is the equivalent of a Helm **release**.
 
 ### Timoni Modules
 
@@ -77,7 +77,8 @@ Commands for working with remote modules:
 - `timoni mod pull oci://<module-url> -v <semver> -o <path/to/module>`
 - `timoni mod list oci://<module-url>`
 
-To learn more about modules, please read the [docs](https://timoni.sh/#timoni-modules).
+To learn more about modules, please see the documentation for [Module structure](https://timoni.sh/module/)
+and [Module distribution](https://timoni.sh/module-distribution/).
 
 ### Timoni Instances
 
@@ -152,14 +153,15 @@ Commands for working with bundles:
 - `timoni bundle apply -f bundle.cue`
 - `timoni bundle delete -f bundle.cue`
 
-To learn more about bundles, please see the [Bundle API documentation](https://timoni.sh/bundles/)
-and the [Bundle Runtime API documentation](https://timoni.sh/bundle-runtime/).
-
 Commands for distributing bundles and runtimes:
 
 - `timoni artifact push oci://<artifact-url> -t <tag> -f <path/to/dir>`
 - `timoni artifact pull oci://<artifact-url> -o <path/to/dir>`
 - `timoni artifact list oci://<artifact-url>`
+
+To learn more about bundles, please see the documentation for [Bundle API](https://timoni.sh/bundle/)
+[Bundle Runtime API](https://timoni.sh/bundle-runtime/)
+and [Bundle distribution](https://timoni.sh/bundle-distribution/).
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 # Bundle Runtime
 
-While Timoni [Bundles](bundles.md) offer a way to specify the config values in declarative manner,
+While Timoni [Bundles](bundle.md) offer a way to specify the config values in declarative manner,
 not all the configuration values of an application are known ahead of time.
 Some values may be available at runtime, in the Kubernetes cluster where the Bundle is applied.
 

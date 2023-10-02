@@ -1,4 +1,4 @@
-# Module Structure
+# Module
 
 A Timoni module contains a set of CUE definitions and constraints organised
 into a [CUE module](https://cuelang.org/docs/concepts/packages/)

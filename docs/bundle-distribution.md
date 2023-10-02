@@ -1,6 +1,6 @@
 # Bundle Distribution
 
-[Bundles](bundles.md) and their [Runtimes](bundle-runtime.md) can be distributed as
+[Bundles](bundle.md) and their [Runtimes](bundle-runtime.md) can be distributed as
 [Open Container Initiative](https://opencontainers.org/) (OCI) artifacts.
 
 ## Artifact format

@@ -2,8 +2,8 @@
 
 ## Helm
 
-If you are familiar with Helm, a Timoni **[module](bundles.md)** is the equivalent of a **chart**, 
-a Timoni **[bundle](bundles.md)** is the equivalent of an **umbrella chart**,
+If you are familiar with Helm, a Timoni **[module](module.md)** is the equivalent of a **chart**, 
+a Timoni **[bundle](bundle.md)** is the equivalent of an **umbrella chart**,
 and a Timoni **instance** is the equivalent of a Helm **release**.
 
 ### Authoring differences
@@ -28,6 +28,6 @@ and a Timoni **instance** is the equivalent of a Helm **release**.
 - Timoni performs health checks on Kubernetes custom resources, which Helm ignores.
 - Unlike Helm, Timoni doesn't require keeping a copy of all YAML manifests in a Kubernetes secret, eliminating the limit on the number of objects constituting an application.
 - Timoni provides a `apply --diff` command for displaying a preview of the cluster state changes for an upgrade.
-- Timoni [Bundles](bundles.md) offer a declarative way of grouping multiple apps into a deployable unit, serving as an alternative to Helm's umbrella charts.
+- Timoni [Bundles](bundle.md) offer a declarative way of grouping multiple apps into a deployable unit, serving as an alternative to Helm's umbrella charts.
 - Timoni [Runtime API](bundle-runtime.md) offers a way to define values which are fetched from the Kubernetes API (ConfigMaps, Secrets, Custom Resources) and mapped to fields inside a Bundle. 
 - Timoni modules can be referenced by their OCI SHA256 digest, ensuring immutability and reproducibility, unlike Helm charts that are referenced only by version.

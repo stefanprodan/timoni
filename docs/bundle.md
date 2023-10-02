@@ -1,4 +1,4 @@
-# Bundles
+# Bundle
 
 Timoni bundles offer a declarative way of managing the lifecycle
 of applications and their infra dependencies.

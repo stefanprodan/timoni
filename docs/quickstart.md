@@ -111,7 +111,7 @@ timoni -n test delete podinfo --wait
 ## Bundling instances
 
 For deploying complex applications to production, it is recommended to use
-Timoni [Bundles](bundles.md).
+Timoni [Bundles](bundle.md).
 
 A Timoni Bundle is a CUE file for defining a group of instances together
 with their values and module references.
@@ -163,4 +163,5 @@ To delete all the instances defined in a bundle:
 timoni bundle delete -f podinfo.bundle.cue
 ```
 
-To learn more about bundles, please see the [Bundle API documentation](https://timoni.sh/bundles/).
+To learn more about bundles, please see the [Bundle API](bundle.md)
+and the [Bundle distribution](bundle-distribution.md) documentation.
