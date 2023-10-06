@@ -6,11 +6,11 @@ require (
 	cuelang.org/go v0.6.0
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/briandowns/spinner v1.23.0
-	github.com/distribution/distribution/v3 v3.0.0-20230927210405-3fc1216dc343
+	github.com/distribution/distribution/v3 v3.0.0-20231004133549-f7b3869062db
 	github.com/fatih/color v1.15.0
 	github.com/fluxcd/pkg/sourceignore v0.3.5
-	github.com/fluxcd/pkg/ssa v0.32.0
-	github.com/fluxcd/pkg/tar v0.2.0
+	github.com/fluxcd/pkg/ssa v0.32.1
+	github.com/fluxcd/pkg/tar v0.3.0
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zerologr v1.2.3
@@ -21,8 +21,8 @@ require (
 	github.com/homeport/dyff v1.5.8
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/onsi/gomega v1.27.10
-	github.com/otiai10/copy v1.12.0
+	github.com/onsi/gomega v1.28.0
+	github.com/otiai10/copy v1.14.0
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/rs/zerolog v1.31.0
 	github.com/sirupsen/logrus v1.9.3
