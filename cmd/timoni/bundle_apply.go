@@ -335,7 +335,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 		}
 
 		if !nsExists {
-			log.Info(colorizeJoin(colorizeNamespaceFromArgs(), ssa.CreatedAction))
+			log.Info(colorizeJoin(colorizeSubject("Namespace/"+instance.Namespace), ssa.CreatedAction))
 		}
 	} else {
 		log.Info(fmt.Sprintf("upgrading %s in namespace %s", instance.Name, instance.Namespace))

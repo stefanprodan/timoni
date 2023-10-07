@@ -102,7 +102,13 @@ func deleteBundleByName(ctx context.Context, bundle string) error {
 		return err
 	}
 
-	for _, instance := range instances {
+	if len(instances) == 0 {
+		return fmt.Errorf("no instances found in bundle")
+	}
+
+	// delete in revers order (last installed, first to uninstall)
+	for index := len(instances) - 1; index >= 0; index-- {
+		instance := instances[index]
 		log.Info(fmt.Sprintf("deleting instance %s from bundle %s", instance.Name, bundleDelArgs.name))
 		if err := deleteBundleInstance(ctx, engine.BundleInstance{
 			Bundle:    bundle,
@@ -159,7 +165,8 @@ func deleteBundleFromFile(ctx context.Context, cmd *cobra.Command) error {
 		return fmt.Errorf("no instances found in bundle")
 	}
 
-	for _, instance := range bundle.Instances {
+	for index := len(bundle.Instances) - 1; index >= 0; index-- {
+		instance := bundle.Instances[index]
 		log.Info(fmt.Sprintf("deleting instance %s", instance.Name))
 		if err := deleteBundleInstance(ctx, instance, bundleDelArgs.wait, bundleDelArgs.dryrun); err != nil {
 			return err
