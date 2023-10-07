@@ -22,6 +22,7 @@ import (
 	"io"
 	"maps"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -174,22 +175,40 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	log.Info(fmt.Sprintf("applying %v instance(s)", len(bundle.Instances)))
+	ctxPull, cancel := context.WithTimeout(ctx, rootArgs.timeout)
+	defer cancel()
+
+	for _, instance := range bundle.Instances {
+		spin := StartSpinner(fmt.Sprintf("pulling %s", instance.Module.Repository))
+		pullErr := fetchBundleInstanceModule(ctxPull, instance, tmpDir)
+		spin.Stop()
+		if pullErr != nil {
+			return pullErr
+		}
+	}
 
 	kubeVersion, err := runtime.ServerVersion(kubeconfigArgs)
 	if err != nil {
 		return err
 	}
 
+	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
+		log.Info(fmt.Sprintf("applying %v instance(s) %s",
+			len(bundle.Instances), colorizeDryRun("(server dry run)")))
+	} else {
+		log.Info(fmt.Sprintf("applying %v instance(s)",
+			len(bundle.Instances)))
+	}
+
 	for _, instance := range bundle.Instances {
-		log.Info(fmt.Sprintf("applying instance %s", instance.Name))
-		if err := applyBundleInstance(logr.NewContext(ctx, log), cuectx, instance, kubeVersion); err != nil {
+		if err := applyBundleInstance(logr.NewContext(ctx, log), cuectx, instance, kubeVersion, tmpDir); err != nil {
 			return err
 		}
 	}
 
 	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
-		log.Info(fmt.Sprintf("applied %v instance(s) (server dry run)", len(bundle.Instances)))
+		log.Info(fmt.Sprintf("applied successfully %s",
+			colorizeDryRun("(server dry run)")))
 	} else {
 		log.Info("applied successfully")
 	}
@@ -197,32 +216,22 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engine.BundleInstance, kubeVersion string) error {
-	moduleVersion := instance.Module.Version
-	sourceURL := fmt.Sprintf("%s:%s", instance.Module.Repository, instance.Module.Version)
+func fetchBundleInstanceModule(ctx context.Context, instance *engine.BundleInstance, rootDir string) error {
+	modDir := path.Join(rootDir, instance.Name)
+	if err := os.MkdirAll(modDir, os.ModePerm); err != nil {
+		return err
+	}
 
+	moduleVersion := instance.Module.Version
 	if moduleVersion == apiv1.LatestVersion && instance.Module.Digest != "" {
-		sourceURL = fmt.Sprintf("%s@%s", instance.Module.Repository, instance.Module.Digest)
 		moduleVersion = "@" + instance.Module.Digest
 	}
 
-	log := LoggerBundleInstance(ctx, instance.Bundle, instance.Name)
-	log.Info(fmt.Sprintf("pulling %s", sourceURL))
-
-	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tmpDir)
-
-	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
-
 	fetcher := engine.NewFetcher(
-		ctxPull,
+		ctx,
 		instance.Module.Repository,
 		moduleVersion,
-		tmpDir,
+		modDir,
 		bundleApplyArgs.creds.String(),
 	)
 	mod, err := fetcher.Fetch()
@@ -235,11 +244,19 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 			mod.Digest, instance.Module.Version, instance.Module.Digest)
 	}
 
+	instance.Module = *mod
+	return nil
+}
+
+func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *engine.BundleInstance, kubeVersion string, rootDir string) error {
+	log := LoggerBundleInstance(ctx, instance.Bundle, instance.Name)
+
+	modDir := path.Join(rootDir, instance.Name, "module")
 	builder := engine.NewModuleBuilder(
 		cuectx,
 		instance.Name,
 		instance.Namespace,
-		fetcher.GetModuleRoot(),
+		modDir,
 		bundleApplyArgs.pkg.String(),
 	)
 
@@ -247,23 +264,24 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 		return err
 	}
 
-	mod.Name, err = builder.GetModuleName()
+	modName, err := builder.GetModuleName()
 	if err != nil {
 		return err
 	}
+	instance.Module.Name = modName
 
-	log.Info(fmt.Sprintf("using module %s version %s", mod.Name, mod.Version))
-
+	log.Info(fmt.Sprintf("applying module %s version %s",
+		colorizeSubject(instance.Module.Name), colorizeSubject(instance.Module.Version)))
 	err = builder.WriteValuesFileWithDefaults(instance.Values)
 	if err != nil {
 		return err
 	}
 
-	builder.SetVersionInfo(mod.Version, kubeVersion)
+	builder.SetVersionInfo(instance.Module.Version, kubeVersion)
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return describeErr(fetcher.GetModuleRoot(), "failed to build instance", err)
+		return describeErr(modDir, "failed to build instance", err)
 	}
 
 	finalValues, err := builder.GetValues(buildResult)
@@ -299,7 +317,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 		return fmt.Errorf("instance init failed: %w", err)
 	}
 
-	im := runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, *mod)
+	im := runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, instance.Module)
 
 	if im.Instance.Labels == nil {
 		im.Instance.Labels = make(map[string]string)
@@ -317,18 +335,28 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 
 	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
 		if !nsExists {
-			log.Info(colorizeJoin(colorizeNamespaceFromArgs(), ssa.CreatedAction, dryRunServer))
+			log.Info(colorizeJoin(colorizeSubject("Namespace/"+instance.Namespace),
+				ssa.CreatedAction, dryRunServer))
 		}
-		if err := instanceDryRunDiff(logr.NewContext(ctx, log), rm, objects, staleObjects, nsExists, tmpDir, bundleApplyArgs.diff); err != nil {
+		if err := instanceDryRunDiff(
+			logr.NewContext(ctx, log),
+			rm,
+			objects,
+			staleObjects,
+			nsExists,
+			rootDir,
+			bundleApplyArgs.diff,
+		); err != nil {
 			return err
 		}
 
-		log.Info("applied successfully (server dry run)")
+		log.Info(colorizeJoin("applied successfully", colorizeDryRun("(server dry run)")))
 		return nil
 	}
 
 	if !exists {
-		log.Info(fmt.Sprintf("installing %s in namespace %s", instance.Name, instance.Namespace))
+		log.Info(fmt.Sprintf("installing %s in namespace %s",
+			colorizeSubject(instance.Name), colorizeSubject(instance.Namespace)))
 
 		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
 			return fmt.Errorf("instance init failed: %w", err)
@@ -338,7 +366,8 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 			log.Info(colorizeJoin(colorizeSubject("Namespace/"+instance.Namespace), ssa.CreatedAction))
 		}
 	} else {
-		log.Info(fmt.Sprintf("upgrading %s in namespace %s", instance.Name, instance.Namespace))
+		log.Info(fmt.Sprintf("upgrading %s in namespace %s",
+			colorizeSubject(instance.Name), colorizeSubject(instance.Namespace)))
 	}
 
 	applyOpts := runtime.ApplyOptions(bundleApplyArgs.force, rootArgs.timeout)
@@ -407,7 +436,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance engi
 	return nil
 }
 
-func bundleInstancesOwnershipConflicts(bundleInstances []engine.BundleInstance) error {
+func bundleInstancesOwnershipConflicts(bundleInstances []*engine.BundleInstance) error {
 	var conflicts []string
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {

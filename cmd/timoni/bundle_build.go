@@ -21,9 +21,11 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path"
 	"sort"
 	"strings"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
@@ -142,12 +144,21 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 
 	var sb strings.Builder
 
+	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
+	for _, instance := range bundle.Instances {
+		if err := fetchBundleInstanceModule(ctxPull, instance, tmpDir); err != nil {
+			return err
+		}
+	}
+
 	for i, instance := range bundle.Instances {
 		sb.WriteString("---\n")
 		sb.WriteString(fmt.Sprintf("# Instance: %s\n", instance.Name))
 		sb.WriteString("---\n")
 
-		instance, err := buildBundleInstance(instance)
+		instance, err := buildBundleInstance(ctx, instance, tmpDir)
 		if err != nil {
 			return err
 		}
@@ -163,45 +174,14 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func buildBundleInstance(instance engine.BundleInstance) (string, error) {
-	moduleVersion := instance.Module.Version
+func buildBundleInstance(cuectx *cue.Context, instance *engine.BundleInstance, rootDir string) (string, error) {
+	modDir := path.Join(rootDir, instance.Name, "module")
 
-	if moduleVersion == apiv1.LatestVersion && instance.Module.Digest != "" {
-		moduleVersion = "@" + instance.Module.Digest
-	}
-
-	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
-	if err != nil {
-		return "", err
-	}
-	defer os.RemoveAll(tmpDir)
-
-	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
-
-	fetcher := engine.NewFetcher(
-		ctxPull,
-		instance.Module.Repository,
-		moduleVersion,
-		tmpDir,
-		bundleBuildArgs.creds.String(),
-	)
-	mod, err := fetcher.Fetch()
-	if err != nil {
-		return "", err
-	}
-
-	if instance.Module.Digest != "" && mod.Digest != instance.Module.Digest {
-		return "", fmt.Errorf("the upstream digest %s of version %s doesn't match the specified digest %s",
-			mod.Digest, instance.Module.Version, instance.Module.Digest)
-	}
-
-	cuectx := cuecontext.New()
 	builder := engine.NewModuleBuilder(
 		cuectx,
 		instance.Name,
 		instance.Namespace,
-		fetcher.GetModuleRoot(),
+		modDir,
 		bundleBuildArgs.pkg.String(),
 	)
 
@@ -209,19 +189,22 @@ func buildBundleInstance(instance engine.BundleInstance) (string, error) {
 		return "", err
 	}
 
-	mod.Name, err = builder.GetModuleName()
+	modName, err := builder.GetModuleName()
 	if err != nil {
 		return "", err
 	}
+	instance.Module.Name = modName
 
 	err = builder.WriteValuesFileWithDefaults(instance.Values)
 	if err != nil {
 		return "", err
 	}
 
+	builder.SetVersionInfo(instance.Module.Version, "")
+
 	buildResult, err := builder.Build()
 	if err != nil {
-		return "", describeErr(fetcher.GetModuleRoot(), "failed to build instance", err)
+		return "", describeErr(modDir, "failed to build instance", err)
 	}
 
 	bundleBuildSets, err := builder.GetApplySets(buildResult)

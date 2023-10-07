@@ -110,7 +110,7 @@ func deleteBundleByName(ctx context.Context, bundle string) error {
 	for index := len(instances) - 1; index >= 0; index-- {
 		instance := instances[index]
 		log.Info(fmt.Sprintf("deleting instance %s from bundle %s", instance.Name, bundleDelArgs.name))
-		if err := deleteBundleInstance(ctx, engine.BundleInstance{
+		if err := deleteBundleInstance(ctx, &engine.BundleInstance{
 			Bundle:    bundle,
 			Name:      instance.Name,
 			Namespace: instance.Namespace,
@@ -176,7 +176,7 @@ func deleteBundleFromFile(ctx context.Context, cmd *cobra.Command) error {
 	return nil
 }
 
-func deleteBundleInstance(ctx context.Context, instance engine.BundleInstance, wait bool, dryrun bool) error {
+func deleteBundleInstance(ctx context.Context, instance *engine.BundleInstance, wait bool, dryrun bool) error {
 	log := LoggerBundle(ctx, instance.Bundle)
 
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
