@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"io"
+	"sort"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 
@@ -65,6 +66,11 @@ func runListCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	// alphabetical sort by instance name
+	sort.Slice(instances, func(i, j int) bool {
+		return instances[i].Name < instances[j].Name
+	})
 
 	var rows [][]string
 	for _, inv := range instances {

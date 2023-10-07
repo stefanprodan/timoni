@@ -19,6 +19,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -110,29 +111,40 @@ func (s *StorageManager) Get(ctx context.Context, name, namespace string) (*apiv
 // List returns the instances found in the given namespace.
 func (s *StorageManager) List(ctx context.Context, namespace, bundle string) ([]*apiv1.Instance, error) {
 	var res []*apiv1.Instance
-	cmList := &corev1.SecretList{}
+	instanceList := &corev1.SecretList{}
 	labels := s.getOwnerLabels()
 	if bundle != "" {
 		labels[apiv1.BundleNameLabelKey] = bundle
 	}
-	err := s.resManager.Client().List(ctx, cmList, client.InNamespace(namespace), labels)
+	err := s.resManager.Client().List(ctx, instanceList, client.InNamespace(namespace), labels)
 	if err != nil {
 		return res, err
 	}
 
-	for _, cm := range cmList.Items {
-		if _, ok := cm.Data[storageDataKey]; !ok {
+	if len(instanceList.Items) == 0 {
+		return res, nil
+	}
+
+	var instances = instanceList.Items
+
+	// order list by installed date
+	sort.Slice(instances, func(i, j int) bool {
+		return instances[i].CreationTimestamp.Before(&instances[j].CreationTimestamp)
+	})
+
+	for _, instance := range instances {
+		if _, ok := instance.Data[storageDataKey]; !ok {
 			return res, fmt.Errorf("instance data not found in Secret/%s/%s",
-				cm.GetNamespace(), cm.GetName())
+				instance.GetNamespace(), instance.GetName())
 		}
 
 		var inst apiv1.Instance
-		err = json.Unmarshal(cm.Data[storageDataKey], &inst)
+		err = json.Unmarshal(instance.Data[storageDataKey], &inst)
 		if err != nil {
 			return res, fmt.Errorf("invalid instance found in Secret/%s/%s: %w",
-				cm.GetNamespace(), cm.GetName(), err)
+				instance.GetNamespace(), instance.GetName(), err)
 		}
-		inst.Labels = cm.Labels
+		inst.Labels = instance.Labels
 		res = append(res, &inst)
 	}
 
