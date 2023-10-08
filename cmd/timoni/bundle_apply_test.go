@@ -228,7 +228,7 @@ bundle: {
 		g.Expect(output).To(ContainSubstring(anotherBundleName))
 
 		t.Cleanup(func() {
-			_, err = executeCommand(fmt.Sprintf("bundle delete --name %[1]s -n %[2]s", anotherBundleName, namespace))
+			_, err = executeCommand(fmt.Sprintf("bundle delete %s --wait", anotherBundleName))
 			g.Expect(err).ToNot(HaveOccurred())
 		})
 	})

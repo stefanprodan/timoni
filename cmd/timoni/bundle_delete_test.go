@@ -88,32 +88,7 @@ bundle: {
 		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
 		g.Expect(err).ToNot(HaveOccurred())
 
-		output, err := executeCommandWithIn("bundle delete -f - --wait", strings.NewReader(bundleData))
-		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(output).To(ContainSubstring("frontend"))
-		g.Expect(output).To(ContainSubstring("backend"))
-
-		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
-		g.Expect(errors.IsNotFound(err)).To(BeTrue())
-	})
-
-	t.Run("deletes instances from named bundle", func(t *testing.T) {
-		g := NewWithT(t)
-
-		_, err := executeCommandWithIn("bundle apply -f - -p main --wait", strings.NewReader(bundleData))
-		g.Expect(err).ToNot(HaveOccurred())
-
-		clientCM := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "frontend-client",
-				Namespace: namespace,
-			},
-		}
-
-		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
-		g.Expect(err).ToNot(HaveOccurred())
-
-		output, err := executeCommand(fmt.Sprintf("bundle delete --name %[1]s --namespace %[2]s --wait", bundleName, namespace))
+		output, err := executeCommand(fmt.Sprintf("bundle delete %s --wait", bundleName))
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(output).To(ContainSubstring("frontend"))
 		g.Expect(output).To(ContainSubstring("backend"))
@@ -193,7 +168,7 @@ bundle: {
 		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(serverCM), serverCM)
 		g.Expect(err).ToNot(HaveOccurred())
 
-		output, err := executeCommand(fmt.Sprintf("bundle delete --name %[1]s --wait", bundleName))
+		output, err := executeCommand(fmt.Sprintf("bundle delete %s --wait", bundleName))
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(output).To(ContainSubstring("frontend"))
 		g.Expect(output).To(ContainSubstring("backend"))
