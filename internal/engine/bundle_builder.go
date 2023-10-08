@@ -41,7 +41,7 @@ type BundleBuilder struct {
 
 type Bundle struct {
 	Name      string
-	Instances []BundleInstance
+	Instances []*BundleInstance
 }
 
 type BundleInstance struct {
@@ -165,7 +165,7 @@ func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
 		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.BundleInstancesSelector.String(), instances.Err())
 	}
 
-	var list []BundleInstance
+	var list []*BundleInstance
 	iter, err := instances.Fields(cue.Concrete(true))
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
 
 		values := expr.LookupPath(cue.ParsePath(apiv1.BundleValuesSelector.String()))
 
-		list = append(list, BundleInstance{
+		list = append(list, &BundleInstance{
 			Bundle:    bundleName,
 			Name:      name,
 			Namespace: namespace,

@@ -137,19 +137,17 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	spin := StartSpinner("pulling module")
-	defer spin.Stop()
-
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
+	spin := StartSpinner(fmt.Sprintf("pulling %s", ociURL))
 	opts := oci.Options(ctx, pullModArgs.creds.String())
 	err := oci.PullArtifact(ociURL, pullModArgs.output, apiv1.AnyContentType, opts)
+	spin.Stop()
 	if err != nil {
 		return err
 	}
 
-	spin.Stop()
 	log.Info(fmt.Sprintf("extracted: %s", colorizeSubject(pullModArgs.output)))
 
 	return nil

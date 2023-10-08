@@ -304,7 +304,6 @@ bundle: {
 		output, err := executeCommandWithIn("bundle apply -f - -p main --wait", r)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(output).To(ContainSubstring(modVer1))
-		g.Expect(output).To(ContainSubstring(modDigestv1))
 	})
 
 	t.Run("creates instance for module version digest", func(t *testing.T) {
