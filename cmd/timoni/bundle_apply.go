@@ -100,6 +100,7 @@ func init() {
 }
 
 func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
+	start := time.Now()
 	files := bundleApplyArgs.files
 	for i, file := range files {
 		if file == "-" {
@@ -206,11 +207,12 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
+	elapsed := time.Since(start)
 	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
 		log.Info(fmt.Sprintf("applied successfully %s",
 			colorizeDryRun("(server dry run)")))
 	} else {
-		log.Info("applied successfully")
+		log.Info(fmt.Sprintf("applied successfully in %s", elapsed.Round(time.Second)))
 	}
 
 	return nil
