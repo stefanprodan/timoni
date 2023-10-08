@@ -160,7 +160,12 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	log.Info(fmt.Sprintf("digest: %s", colorizeSubject(digestURL)))
+	digest, err := oci.ParseDigest(digestURL)
+	if err != nil {
+		return err
+	}
+	log.Info(fmt.Sprintf("artifact: %s", colorizeSubject(ociURL)))
+	log.Info(fmt.Sprintf("digest: %s", colorizeSubject(digest.DigestStr())))
 
 	return nil
 }

@@ -201,6 +201,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		log.Info(fmt.Sprintf("artifact: %s", colorizeSubject(ociURL)))
 		log.Info(fmt.Sprintf("digest: %s", colorizeSubject(digest.DigestStr())))
 	}
 
