@@ -18,6 +18,7 @@ package engine
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,6 +104,30 @@ func ExtractValueFromBytes(ctx *cue.Context, data []byte, expr string) (cue.Valu
 	}
 
 	return value, nil
+}
+
+func ExtractStringFromFile(ctx *cue.Context, filePath, exprPath string) (string, error) {
+	vData, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", err
+	}
+
+	value := ctx.CompileBytes(vData)
+	if value.Err() != nil {
+		return "", fmt.Errorf("compiling CUE file failed: %w", value.Err())
+	}
+
+	expr := value.LookupPath(cue.ParsePath(exprPath))
+	if expr.Err() != nil {
+		return "", fmt.Errorf("lookup path failed: %w", expr.Err())
+	}
+
+	result, err := expr.String()
+	if expr.Err() != nil {
+		return "", fmt.Errorf("reading string failed: %w", expr.Err())
+	}
+
+	return result, nil
 }
 
 // MergeValue merges the given overlay on top of the base CUE value.

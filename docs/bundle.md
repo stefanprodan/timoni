@@ -713,22 +713,25 @@ Timoni supports the following extensions: `.cue`, `.json`, `.yml`, `.yaml`.
 
 ### Uninstall
 
-To uninstall the instances defined in a Bundle file,
+To uninstall all the instances belonging to a Bundle,
 you can use the `timoni bundle delete` command.
 
-Example:
+Example using the bundle name:
+
+```shell
+timoni bundle delete my-bundle
+```
+
+Example using a bundle CUE file:
 
 ```shell
 timoni bundle delete -f bundle.cue
 ```
 
-Another option is to specify the Bundle name, and Timoni
-will search the cluster and delete all the instances having
-the `bundle.timoni.sh/name: <name>` label:
-
-```shell
-timoni bundle delete --name my-bundle
-```
+Timoni will search the cluster and delete all the instances having
+the `bundle.timoni.sh/name: <name>` label matching the given bundle name.
+The instances are uninstalled in reverse order,
+first created instance is last to be deleted.
 
 ### Garbage collection
 
