@@ -251,11 +251,11 @@ func (b *ModuleBuilder) GetModuleName() (string, error) {
 	return mod, nil
 }
 
-// GetValues extracts the values from the build result.
-func (b *ModuleBuilder) GetValues(value cue.Value) (string, error) {
-	expr := value.LookupPath(cue.ParsePath(apiv1.ValuesSelector.String()))
+// GetConfigValues extracts the instance config values from the build result.
+func (b *ModuleBuilder) GetConfigValues(value cue.Value) (string, error) {
+	expr := value.LookupPath(cue.ParsePath(apiv1.ConfigValuesSelector.String()))
 	if expr.Err() != nil {
-		return "", fmt.Errorf("lookup %s failed: %w", apiv1.ValuesSelector, expr.Err())
+		return "", fmt.Errorf("lookup %s failed: %w", apiv1.ConfigValuesSelector, expr.Err())
 	}
 
 	return fmt.Sprintf("%v", expr.Eval()), nil

@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -41,13 +42,13 @@ func TestInspect(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// Install the module from the registry
-	_, err = executeCommand(fmt.Sprintf(
-		"apply -n %s %s %s -v %s -p main --wait",
+	_, err = executeCommandWithIn(fmt.Sprintf(
+		"apply -n %s %s %s -v %s -p main --wait -f-",
 		namespace,
 		name,
 		modURL,
 		modVer,
-	))
+	), strings.NewReader(`values: domain: "app.internal"`))
 	g.Expect(err).ToNot(HaveOccurred())
 
 	t.Run("inspect module", func(t *testing.T) {
@@ -75,8 +76,8 @@ func TestInspect(t *testing.T) {
 		))
 		g.Expect(err).ToNot(HaveOccurred())
 
-		// Verify inspect output contains the expected values
-		g.Expect(output).To(ContainSubstring("example.internal"))
+		// Verify inspect output contains the user-supplied values
+		g.Expect(output).To(ContainSubstring("app.internal"))
 	})
 
 	t.Run("inspect resources", func(t *testing.T) {

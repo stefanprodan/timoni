@@ -217,7 +217,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return describeErr(fetcher.GetModuleRoot(), "failed to build instance", err)
 	}
 
-	finalValues, err := builder.GetValues(buildResult)
+	finalValues, err := builder.GetDefaultValues()
 	if err != nil {
 		return fmt.Errorf("failed to extract values: %w", err)
 	}

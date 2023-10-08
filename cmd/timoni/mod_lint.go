@@ -109,7 +109,7 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 		return describeErr(fetcher.GetModuleRoot(), "build failed", err)
 	}
 
-	if _, err := builder.GetValues(buildResult); err != nil {
+	if _, err := builder.GetConfigValues(buildResult); err != nil {
 		return fmt.Errorf("failed to extract values: %w", err)
 	}
 
