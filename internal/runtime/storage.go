@@ -240,6 +240,7 @@ func (s *StorageManager) newSecret(name, namespace string) *corev1.Secret {
 				createdByLabelKey: ownerRef.Field,
 			},
 		},
+		Type: corev1.SecretType(apiv1.InstanceStorageType),
 	}
 }
 

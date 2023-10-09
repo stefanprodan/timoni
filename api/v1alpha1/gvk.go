@@ -27,6 +27,10 @@ var (
 	// InstanceKind is the kind name of the Instance type.
 	InstanceKind = "Instance"
 
+	// InstanceStorageType is the name of the Kubernetes
+	// Secret type used to store the instance metadata and inventory.
+	InstanceStorageType = "timoni.sh/instance"
+
 	// FieldManager is the name of the manager performing Kubernetes patch operations.
 	FieldManager = "timoni"
 )
