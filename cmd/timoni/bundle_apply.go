@@ -286,7 +286,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 		return describeErr(modDir, "failed to build instance", err)
 	}
 
-	finalValues, err := builder.GetValues(buildResult)
+	finalValues, err := builder.GetDefaultValues()
 	if err != nil {
 		return fmt.Errorf("failed to extract values: %w", err)
 	}

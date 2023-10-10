@@ -55,97 +55,93 @@ func NewStorageManager(resManager *ssa.ResourceManager) *StorageManager {
 }
 
 // Apply creates or updates the storage object for the given instance.
-func (s *StorageManager) Apply(ctx context.Context, i *apiv1.Instance, createNamespace bool) error {
-	i.LastTransitionTime = time.Now().UTC().Format(time.RFC3339)
-	inst, err := json.Marshal(i)
+func (s *StorageManager) Apply(ctx context.Context, instance *apiv1.Instance, createNamespace bool) error {
+	instance.LastTransitionTime = time.Now().UTC().Format(time.RFC3339)
+	instanceData, err := json.Marshal(instance)
 	if err != nil {
 		return err
 	}
 
 	if createNamespace {
-		if err := s.createNamespace(ctx, i.Namespace); err != nil {
+		if err := s.createNamespace(ctx, instance.Namespace); err != nil {
 			return err
 		}
 	}
 
-	cm := s.newSecret(i.Name, i.Namespace)
-	cm.Data = map[string][]byte{
-		storageDataKey: inst,
+	secret := s.newSecret(instance.Name, instance.Namespace)
+	secret.Data = map[string][]byte{
+		storageDataKey: instanceData,
 	}
 
-	for labelKey, labelValue := range i.Labels {
-		cm.Labels[labelKey] = labelValue
+	for labelKey, labelValue := range instance.Labels {
+		secret.Labels[labelKey] = labelValue
 	}
 
 	opts := []client.PatchOption{
 		client.ForceOwnership,
 		client.FieldOwner(ownerRef.Field),
 	}
-	return s.resManager.Client().Patch(ctx, cm, client.Apply, opts...)
+	return s.resManager.Client().Patch(ctx, secret, client.Apply, opts...)
 }
 
 // Get retrieves the instance from the storage.
 func (s *StorageManager) Get(ctx context.Context, name, namespace string) (*apiv1.Instance, error) {
-	cm := s.newSecret(name, namespace)
+	secret := s.newSecret(name, namespace)
+	secretKey := client.ObjectKeyFromObject(secret)
 
-	cmKey := client.ObjectKeyFromObject(cm)
-	err := s.resManager.Client().Get(ctx, cmKey, cm)
+	err := s.resManager.Client().Get(ctx, secretKey, secret)
 	if err != nil {
 		return nil, fmt.Errorf("instance storage not found: %w", err)
 	}
 
-	if _, ok := cm.Data[storageDataKey]; !ok {
-		return nil, fmt.Errorf("instance data not found in Secret/%s", cmKey)
+	if _, ok := secret.Data[storageDataKey]; !ok {
+		return nil, fmt.Errorf("instance data not found in Secret/%s", secretKey)
 	}
 
-	var inst apiv1.Instance
-	err = json.Unmarshal(cm.Data[storageDataKey], &inst)
+	instance, err := s.decodeInstance(secret.Data[storageDataKey], secret.ObjectMeta)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid instance found in Secret/%s/%s: %w",
+			secret.GetNamespace(), secret.GetName(), err)
 	}
-	inst.Labels = cm.Labels
-
-	return &inst, nil
+	return instance, nil
 }
 
 // List returns the instances found in the given namespace.
 func (s *StorageManager) List(ctx context.Context, namespace, bundle string) ([]*apiv1.Instance, error) {
 	var res []*apiv1.Instance
-	instanceList := &corev1.SecretList{}
+	secretList := &corev1.SecretList{}
 	labels := s.getOwnerLabels()
 	if bundle != "" {
 		labels[apiv1.BundleNameLabelKey] = bundle
 	}
-	err := s.resManager.Client().List(ctx, instanceList, client.InNamespace(namespace), labels)
+	err := s.resManager.Client().List(ctx, secretList, client.InNamespace(namespace), labels)
 	if err != nil {
 		return res, err
 	}
 
-	if len(instanceList.Items) == 0 {
+	if len(secretList.Items) == 0 {
 		return res, nil
 	}
 
-	var instances = instanceList.Items
+	var secrets = secretList.Items
 
 	// order list by installed date
-	sort.Slice(instances, func(i, j int) bool {
-		return instances[i].CreationTimestamp.Before(&instances[j].CreationTimestamp)
+	sort.Slice(secrets, func(i, j int) bool {
+		return secrets[i].CreationTimestamp.Before(&secrets[j].CreationTimestamp)
 	})
 
-	for _, instance := range instances {
-		if _, ok := instance.Data[storageDataKey]; !ok {
+	for _, secret := range secrets {
+		if _, ok := secret.Data[storageDataKey]; !ok {
 			return res, fmt.Errorf("instance data not found in Secret/%s/%s",
-				instance.GetNamespace(), instance.GetName())
+				secret.GetNamespace(), secret.GetName())
 		}
 
-		var inst apiv1.Instance
-		err = json.Unmarshal(instance.Data[storageDataKey], &inst)
+		i, err := s.decodeInstance(secret.Data[storageDataKey], secret.ObjectMeta)
 		if err != nil {
 			return res, fmt.Errorf("invalid instance found in Secret/%s/%s: %w",
-				instance.GetNamespace(), instance.GetName(), err)
+				secret.GetNamespace(), secret.GetName(), err)
 		}
-		inst.Labels = instance.Labels
-		res = append(res, &inst)
+		res = append(res, i)
 	}
 
 	return res, nil
@@ -153,12 +149,12 @@ func (s *StorageManager) List(ctx context.Context, namespace, bundle string) ([]
 
 // Delete removes the storage for the given instance name and namespace.
 func (s *StorageManager) Delete(ctx context.Context, name, namespace string) error {
-	cm := s.newSecret(name, namespace)
+	secret := s.newSecret(name, namespace)
+	secretKey := client.ObjectKeyFromObject(secret)
 
-	cmKey := client.ObjectKeyFromObject(cm)
-	err := s.resManager.Client().Delete(ctx, cm)
+	err := s.resManager.Client().Delete(ctx, secret)
 	if err != nil && !apierrors.IsNotFound(err) {
-		return fmt.Errorf("failed to delete Secret/%s: %w", cmKey, err)
+		return fmt.Errorf("failed to delete Secret/%s: %w", secretKey, err)
 	}
 	return nil
 }
@@ -244,6 +240,7 @@ func (s *StorageManager) newSecret(name, namespace string) *corev1.Secret {
 				createdByLabelKey: ownerRef.Field,
 			},
 		},
+		Type: corev1.SecretType(apiv1.InstanceStorageType),
 	}
 }
 
@@ -275,4 +272,17 @@ func (s *StorageManager) createNamespace(ctx context.Context, name string) error
 	}
 
 	return nil
+}
+
+func (s *StorageManager) decodeInstance(data []byte, objMeta metav1.ObjectMeta) (*apiv1.Instance, error) {
+	var instance apiv1.Instance
+	err := json.Unmarshal(data, &instance)
+	if err != nil {
+		return nil, err
+	}
+
+	instance.Annotations = objMeta.Annotations
+	instance.Labels = objMeta.Labels
+	instance.CreationTimestamp = objMeta.CreationTimestamp
+	return &instance, nil
 }

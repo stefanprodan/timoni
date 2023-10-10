@@ -25,6 +25,9 @@ const (
 	// ApplySelector is the CUE path for the Timoni's apply resource sets.
 	ApplySelector Selector = "timoni.apply"
 
+	// ConfigValuesSelector is the CUE path for the Timoni's instance config values.
+	ConfigValuesSelector Selector = "timoni.instance.config"
+
 	// ValuesSelector is the CUE path for the Timoni's module values.
 	ValuesSelector Selector = "values"
 )
@@ -50,9 +53,8 @@ type Instance struct {
 	// Module is a reference to the module's artifact in the registry.
 	Module ModuleReference `json:"module"`
 
-	// Values is the module configuration.
-	// +optional
-	Values string `json:"values,omitempty"`
+	// Values hold the user-supplied configuration of this instance.
+	Values string `json:"values"`
 
 	// LastTransitionTime is the timestamp (UTC RFC3339) of the last inventory change.
 	// +optional
