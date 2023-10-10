@@ -96,8 +96,8 @@ func TestInspect(t *testing.T) {
 		g.Expect(err).ToNot(HaveOccurred())
 
 		// Verify inspect output contains the expected resources
-		g.Expect(output).To(ContainSubstring(fmt.Sprintf("ConfigMap/%s/%s-client", namespace, name)))
-		g.Expect(output).To(ContainSubstring(fmt.Sprintf("ConfigMap/%s/%s-server", namespace, name)))
+		g.Expect(output).To(ContainSubstring(fmt.Sprintf("configmap/%s-client", name)))
+		g.Expect(output).To(ContainSubstring(fmt.Sprintf("configmap/%s-server", name)))
 	})
 }
 
