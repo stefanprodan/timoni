@@ -421,6 +421,36 @@ Build the Bundle and print the resulting Kubernetes resources for all the Bundle
           serviceAccountName: podinfo
       ```
 
+List the managed resources from a bundle and their rollout status:
+
+=== "command"
+
+      ```sh
+      timoni bundle status -f podinfo.bundle.cue
+      ```
+
+=== "output"
+
+     ```text
+     last applied 2023-10-08T20:21:19Z
+     module oci://ghcr.io/stefanprodan/modules/redis:7.2.1
+     digest: sha256:9935e0b63db8a56c279d7722ced7683d5692a50815f715e336663509889b7e21
+     ServiceAccount/podinfo/redis Current Resource is current
+     ConfigMap/podinfo/redis Current Resource is always ready
+     Service/podinfo/redis Current Service is ready
+     Service/podinfo/redis-readonly Current Service is ready
+     Deployment/podinfo/redis-master Current Deployment is available. Replicas: 1
+     Deployment/podinfo/redis-replica Current Deployment is available. Replicas: 1
+     PersistentVolumeClaim/podinfo/redis-master Current PVC is Bound
+
+     last applied 2023-10-08T20:21:19Z
+     module oci://ghcr.io/stefanprodan/modules/podinfo:6.5.0
+     digest: sha256:d5cb5a8c625045ee1da01d629a2d46cd361f2b6472b8bd07bcabbd0012bc574b
+     ServiceAccount/podinfo/podinfo Current Resource is always ready
+     Service/podinfo/podinfo Current Service is ready
+     Deployment/podinfo/podinfo Current Deployment is available. Replicas: 1
+     ```
+
 List the instances in Bundle `podinfo` across all namespaces:
 
 === "command"
@@ -435,43 +465,6 @@ List the instances in Bundle `podinfo` across all namespaces:
      NAME    NAMESPACE         MODULE                                          VERSION LAST APPLIED          BUNDLE
      podinfo podinfo           oci://ghcr.io/stefanprodan/modules/podinfo      6.5.0   2023-09-10T16:20:07Z  podinfo
      redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        7.2.1  2023-09-10T16:20:00Z  podinfo
-     ```
-
-List the instance resources and their rollout status:
-
-=== "command"
-
-      ```sh
-      timoni status redis -n podinfo
-      ```
-
-=== "output"
-
-     ```text
-     ServiceAccount/podinfo/redis Current Resource is current
-     ConfigMap/podinfo/redis Current Resource is always ready
-     Service/podinfo/redis Current Service is ready
-     Service/podinfo/redis-readonly Current Service is ready
-     Deployment/podinfo/redis-master Current Deployment is available. Replicas: 1
-     Deployment/podinfo/redis-replica Current Deployment is available. Replicas: 1
-     PersistentVolumeClaim/podinfo/redis-master Current PVC is Bound
-     ```
-
-See an instance module reference and its digest:
-
-=== "command"
-
-      ```sh
-      timoni inspect module redis -n podinfo
-      ```
-
-=== "output"
-
-     ```text
-     name: timoni.sh/redis
-     repository: oci://ghcr.io/stefanprodan/modules/redis
-     version: 7.2.1
-     digest: sha256:9935e0b63db8a56c279d7722ced7683d5692a50815f715e336663509889b7e21
      ```
 
 ## Writing a Bundle spec
@@ -684,6 +677,24 @@ Example:
 
 ```shell
 timoni bundle apply --overwrite-ownership -f bundle.cue
+```
+
+### Status
+
+To list the current status of the managed resources for each
+instance including the last applied date, the module url and digest,
+you can use the `timoni bundle status`.
+
+Example using the bundle name:
+
+```shell
+timoni bundle status my-bundle
+```
+
+Example using a bundle CUE file:
+
+```shell
+timoni bundle status -f bundle.cue
 ```
 
 ### Build
