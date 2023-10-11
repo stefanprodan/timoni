@@ -19,9 +19,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
+
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
@@ -74,14 +75,35 @@ func runInspectResourcesCmd(cmd *cobra.Command, args []string) error {
 
 	iManager := runtime.InstanceManager{Instance: *inst}
 
-	metas, err := iManager.ListMeta()
+	//metas, err := iManager.ListMeta()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//for _, meta := range metas {
+	//	fmt.Fprintln(cmd.OutOrStdout(), colorizeSubject(ssa.FmtObjMetadata(meta)))
+	//}
+
+	objects, err := iManager.ListObjects()
 	if err != nil {
 		return err
 	}
 
-	for _, meta := range metas {
-		fmt.Fprintln(cmd.OutOrStdout(), colorizeSubject(ssa.FmtObjMetadata(meta)))
+	var rows [][]string
+	for _, obj := range objects {
+		ns := "-"
+		if obj.GetNamespace() != "" {
+			ns = obj.GetNamespace()
+		}
+		row := []string{
+			strings.ToLower(obj.GetKind() + "/" + obj.GetName()),
+			ns,
+			obj.GetAPIVersion(),
+		}
+		rows = append(rows, row)
 	}
+
+	printTable(rootCmd.OutOrStdout(), []string{"name", "namespace", "API version"}, rows)
 
 	return nil
 }
