@@ -3,12 +3,17 @@ package templates
 import (
 	"strings"
 
+	timoniv1 "timoni.sh/core/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 // Config defines the schema and defaults for the Instance values.
 #Config: {
+	// Runtime version info
+	moduleVersion!: string
+	kubeVersion!:   string
+
 	// Redis config
 	maxmemory: *512 | int & >=64
 	readonly: replicas: *1 | int & >=0
@@ -30,12 +35,9 @@ import (
 	metadata: annotations?: {[ string]: string}
 
 	// Container image
-	image: {
-		repository: *"cgr.dev/chainguard/redis" | string
-		tag:        *"7.2.1" | string
-		digest:     *"sha256:cbc98166e6a9dfa0bdcf27beca1f110c459f9d855734bbb0cec0053db35a6662" | string
-		pullPolicy: *"IfNotPresent" | string
-	}
+	image:           timoniv1.#Image
+	imagePullPolicy: *"IfNotPresent" | string
+
 	imagePullSecrets?: [...corev1.LocalObjectReference]
 
 	// Resource requirements

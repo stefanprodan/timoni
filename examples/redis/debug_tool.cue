@@ -1,29 +1,26 @@
 package main
 
 import (
-	"list"
 	"tool/cli"
 	"encoding/yaml"
 	"text/tabwriter"
 )
 
-all: list.Concat([timoni.apply.master, timoni.apply.replica])
-
 // The build command generates the Kubernetes manifests and prints the multi-docs YAML to stdout.
-// Run 'cue -t test build' to use the values from test_values.cue.
+// Example 'cue cmd -t debug -t name=test -t namespace=test -t mv=1.0.0 -t kv=1.28.0 build'.
 command: build: {
 	task: print: cli.Print & {
-		text: yaml.MarshalStream(all)
+		text: yaml.MarshalStream(timoni.apply.all)
 	}
 }
 
 // The ls command prints a table with the Kubernetes resources kind, namespace, name and version.
-// Run 'cue -t test ls' to use the values from test_values.cue.
+// Example 'cue cmd -t debug -t name=test -t namespace=test -t mv=1.0.0 -t kv=1.28.0 ls'.
 command: ls: {
 	task: print: cli.Print & {
 		text: tabwriter.Write([
 			"RESOURCE \tAPI VERSION",
-			for r in all {
+			for r in timoni.apply.all {
 				if r.metadata.namespace == _|_ {
 					"\(r.kind)/\(r.metadata.name) \t\(r.apiVersion)"
 				}

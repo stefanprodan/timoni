@@ -25,11 +25,17 @@ timoni: {
 		// The user-supplied values are merged with the
 		// default values at runtime by Timoni.
 		config: values
-		// The instance name and namespace tag values
-		// are injected at runtime by Timoni.
-		config: metadata: {
-			name:      string @tag(name)
-			namespace: string @tag(namespace)
+		// The user-supplied values are merged with the
+		// default values at runtime by Timoni.
+		config: values
+		// These values are injected at runtime by Timoni.
+		config: {
+			metadata: {
+				name:      string @tag(name)
+				namespace: string @tag(namespace)
+			}
+			moduleVersion: string @tag(mv, var=moduleVersion)
+			kubeVersion:   string @tag(kv, var=kubeVersion)
 		}
 	}
 
