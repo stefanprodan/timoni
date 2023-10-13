@@ -23,8 +23,8 @@ bundle: {
 		podinfo: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-				version: "6.5.0"
-				digest:  "sha256:d5cb5a8c625045ee1da01d629a2d46cd361f2b6472b8bd07bcabbd0012bc574b"
+				version: "6.5.2"
+				digest:  "sha256:6feb340acfc8f566bad9d4fa1e71a3cd0feade41a00750428b4f1b0b5e3c86a0"
 			}
 			namespace: "podinfo"
 			values: caching: {

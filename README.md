@@ -132,7 +132,7 @@ bundle: {
 		}
 		podinfo: {
 			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-			module: version: "6.5.0"
+			module: version: "6.5.2"
 			namespace: "podinfo"
 			values: caching: {
 				enabled:  true
