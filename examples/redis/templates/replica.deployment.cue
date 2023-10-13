@@ -36,13 +36,8 @@ import (
 				containers: [
 					{
 						name:            _config.metadata.name
-						if _config.image.digest == _|_ {
-							image: "\(_config.image.repository):\(_config.image.tag)"
-						}
-						if _config.image.digest != _|_ {
-							image: "\(_config.image.repository)@\(_config.image.digest)"
-						}
-						imagePullPolicy: _config.image.pullPolicy
+						image:           _config.image.reference
+						imagePullPolicy: _config.imagePullPolicy
 						ports: [{
 							name:          "redis"
 							containerPort: 6379

@@ -40,7 +40,7 @@ lint-samples: build
 	./bin/timoni mod lint ./internal/engine/testdata/module
 	cue fmt ./internal/engine/testdata/module-values
 
-REDIS_VER=$(shell cat ./examples/redis/templates/config.cue | awk '/tag:/ {print $$2}' | tr -d '*"')
+REDIS_VER=$(shell grep 'tag:' examples/redis/values.cue | awk '{ print $$2 }' | tr -d '"')
 push-redis: build
 	./bin/timoni mod push ./examples/redis oci://ghcr.io/stefanprodan/modules/redis -v $(REDIS_VER) --latest \
 		-a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni/tree/main/examples/redis'  \
