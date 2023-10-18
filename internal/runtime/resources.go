@@ -21,16 +21,16 @@ import (
 	"strings"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/fluxcd/pkg/ssa"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"sigs.k8s.io/cli-utils/pkg/kstatus/polling"
+	pollingEngine "sigs.k8s.io/cli-utils/pkg/kstatus/polling/engine"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -63,7 +63,11 @@ func NewResourceManager(rcg genericclioptions.RESTClientGetter) (*ssa.ResourceMa
 		return nil, err
 	}
 
-	kubePoller := polling.NewStatusPoller(kubeClient, restMapper, polling.Options{})
+	kubePoller := polling.NewStatusPoller(kubeClient, restMapper, polling.Options{
+		CustomStatusReaders: []pollingEngine.StatusReader{
+			NewCustomJobStatusReader(restMapper),
+		},
+	})
 
 	man := ssa.NewResourceManager(kubeClient, kubePoller, ownerRef)
 
@@ -125,4 +129,19 @@ func defaultScheme() *apiruntime.Scheme {
 	_ = apiextensionsv1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 	return scheme
+}
+
+// ToUnstructured converts a runtime.Object into an Unstructured object.
+func ToUnstructured(obj apiruntime.Object) (*unstructured.Unstructured, error) {
+	// If the incoming object is already unstructured, perform a deep copy first
+	// otherwise DefaultUnstructuredConverter ends up returning the inner map without
+	// making a copy.
+	if _, ok := obj.(apiruntime.Unstructured); ok {
+		obj = obj.DeepCopyObject()
+	}
+	rawMap, err := apiruntime.DefaultUnstructuredConverter.ToUnstructured(obj)
+	if err != nil {
+		return nil, err
+	}
+	return &unstructured.Unstructured{Object: rawMap}, nil
 }

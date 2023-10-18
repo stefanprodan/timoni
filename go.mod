@@ -6,19 +6,19 @@ require (
 	cuelang.org/go v0.6.0
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/briandowns/spinner v1.23.0
-	github.com/distribution/distribution/v3 v3.0.0-20231004133549-f7b3869062db
+	github.com/distribution/distribution/v3 v3.0.0-20231017204442-915ad2d5a607
 	github.com/fatih/color v1.15.0
 	github.com/fluxcd/pkg/sourceignore v0.3.5
-	github.com/fluxcd/pkg/ssa v0.32.1
+	github.com/fluxcd/pkg/ssa v0.33.0
 	github.com/fluxcd/pkg/tar v0.3.0
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zerologr v1.2.3
 	github.com/gonvenience/ytbx v1.4.4
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.16.1
 	github.com/hashicorp/go-cleanhttp v0.5.2
-	github.com/homeport/dyff v1.5.8
+	github.com/homeport/dyff v1.6.0
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/gomega v1.28.0
@@ -148,15 +148,14 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
-	golang.org/x/mod v0.12.0 // indirect
+	golang.org/x/mod v0.13.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/sync v0.4.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.12.1-0.20230815132531-74c255bcf846 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
