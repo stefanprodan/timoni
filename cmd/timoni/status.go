@@ -35,9 +35,9 @@ var statusCmd = &cobra.Command{
 	Use:   "status [INSTANCE NAME]",
 	Short: "Displays the current status of Kubernetes resources managed by an instance",
 	Example: `  # Show the current status of the managed resources
-  timoni status -n apps app
+  timoni -n apps status app
 `,
-	RunE: runstatusCmd,
+	RunE: runStatusCmd,
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		switch len(args) {
 		case 0:
@@ -58,7 +58,7 @@ func init() {
 	rootCmd.AddCommand(statusCmd)
 }
 
-func runstatusCmd(cmd *cobra.Command, args []string) error {
+func runStatusCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("instance name is required")
 	}
@@ -94,13 +94,13 @@ func runstatusCmd(cmd *cobra.Command, args []string) error {
 				log.Error(err, colorizeJoin(obj, errors.New("NotFound")))
 				continue
 			}
-			log.Error(err, colorizeJoin(obj, errors.New("query failed")))
+			log.Error(err, colorizeJoin(obj, errors.New("Unknown")))
 			continue
 		}
 
 		res, err := status.Compute(obj)
 		if err != nil {
-			log.Error(err, colorizeJoin(obj, errors.New("statusFailed failed")))
+			log.Error(err, colorizeJoin(obj, errors.New("Failed")))
 			continue
 		}
 		log.Info(colorizeJoin(obj, res.Status, "-", res.Message))

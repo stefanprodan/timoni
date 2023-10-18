@@ -120,6 +120,7 @@ func resetCmdArgs() {
 	applyArgs = applyFlags{}
 	buildArgs = buildFlags{}
 	deleteArgs = deleteFlags{}
+	statusArgs = statusFlags{}
 	inspectModuleArgs = inspectModuleFlags{}
 	inspectResourcesArgs = inspectResourcesFlags{}
 	inspectValuesArgs = inspectValuesFlags{}
