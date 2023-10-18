@@ -43,4 +43,9 @@ timoni: {
 	// to Timoni's multi-step apply.
 	apply: master: [ for obj in instance.master.objects {obj}]
 	apply: replica: [ for obj in instance.replica.objects {obj}]
+
+	// Conditionally run tests after an install or upgrade.
+	if instance.config.test {
+		apply: test: [ for obj in instance.test.objects {obj}]
+	}
 }
