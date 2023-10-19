@@ -81,7 +81,21 @@ func (s *StorageManager) Apply(ctx context.Context, instance *apiv1.Instance, cr
 		client.ForceOwnership,
 		client.FieldOwner(ownerRef.Field),
 	}
-	return s.resManager.Client().Patch(ctx, secret, client.Apply, opts...)
+
+	// Migrate storage from the Opaque type by recreating the Secret.
+	// TODO: remove the immutability error handling after 6 months.
+	if err := s.resManager.Client().Patch(ctx, secret, client.Apply, opts...); err != nil {
+		if ssa.IsImmutableError(err) {
+			if delErr := s.Delete(ctx, instance.Name, instance.Namespace); delErr != nil {
+				return delErr
+			}
+			return s.resManager.Client().Patch(ctx, secret, client.Apply, opts...)
+		} else {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Get retrieves the instance from the storage.
