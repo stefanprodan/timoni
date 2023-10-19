@@ -12,4 +12,12 @@ values: {
 		tag:        "1-alpine"
 		digest:     ""
 	}
+	test: {
+		enabled: true
+		image: {
+			repository: "docker.io/curlimages/curl"
+			tag:        "latest"
+			digest:     ""
+		}
+	}
 }

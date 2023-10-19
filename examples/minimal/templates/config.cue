@@ -18,7 +18,7 @@ import (
 	selector: timoniv1.#Selector & {#Name: metadata.name}
 
 	// App settings
-	message: string
+	message!: string
 
 	// Deployment
 	replicas: *1 | int & >0
@@ -32,13 +32,19 @@ import (
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
 	// Container
-	image:            timoniv1.#Image
+	image!:           timoniv1.#Image
 	imagePullPolicy:  *"IfNotPresent" | string
 	resources?:       corev1.#ResourceRequirements
 	securityContext?: corev1.#SecurityContext
 
 	// Service
 	service: port: *80 | int & >0 & <=65535
+
+	// Test Job
+	test: {
+		enabled: *false | bool
+		image!:  timoniv1.#Image
+	}
 }
 
 // Instance takes the config values and outputs the Kubernetes objects.
@@ -54,5 +60,9 @@ import (
 			_config: config
 			_cmName: objects.cm.metadata.name
 		}
+	}
+
+	tests: {
+		"test-svc": #TestJob & {_config: config}
 	}
 }

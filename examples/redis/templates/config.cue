@@ -68,6 +68,9 @@ import (
 	// Service
 	service: port: *6379 | int & >0 & <=65535
 	clusterDomain: "cluster.local"
+
+	// Test connection
+	test: *true | bool
 }
 
 // Instance takes the config values and outputs the Kubernetes objects.
@@ -89,5 +92,9 @@ import (
 	replica: objects: {
 		"\(config.metadata.name)-deploy-replica": #ReplicaDeployment & {_config: config}
 		"\(config.metadata.name)-svc-replica":    #ReplicaService & {_config:    config}
+	}
+
+	test: objects: {
+		"\(config.metadata.name)-ping-master": #TestJob & {_config: config}
 	}
 }

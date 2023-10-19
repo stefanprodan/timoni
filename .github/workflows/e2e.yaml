@@ -45,9 +45,12 @@ jobs:
       - name: List modules
         run: |
           timoni list -A
-      - name: Upgrade module
+      - name: Upgrade module with custom values
         run: |
           echo 'values: message: "e2e"' | timoni -n test apply nginx oci://localhost:5000/minimal -v 1.0.0 -f-
+      - name: Upgrade module with debug values
+        run: |
+          timoni -n test apply nginx oci://localhost:5000/minimal -f ./examples/minimal/debug_values.cue
       - name: Inspect module
         run: |
           timoni -n test inspect resources nginx

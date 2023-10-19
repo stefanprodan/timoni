@@ -309,6 +309,59 @@ To prevent Timoni's garbage collector from deleting certain
 resources such as Kubernetes Persistent Volumes,
 these resources can be annotated with `action.timoni.sh/prune: "disabled"`.
 
+### Running tests with Kubernetes Jobs
+
+Module authors can write end-to-end tests that are run by Timoni,
+after the app workloads are deployed on a cluster.
+Tests are defined as Kubernetes Jobs that can be placed inside the `templates` directory.
+
+Example of a test that verifies that an app is accessible from inside the cluster:
+
+```cue
+// source: myapp/templates/job.cue
+
+#TestJob: batchv1.#Job & {
+	_config:    #Config
+	apiVersion: "batch/v1"
+	kind:       "Job"
+	metadata:   _config.metadata
+	metadata: annotations: timoniv1.action.force
+	spec: batchv1.#JobSpec & {
+		template: corev1.#PodTemplateSpec & {
+			metadata: labels: _config.metadata.labels
+			let _checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(_config))
+			metadata: annotations: "timoni.sh/checksum": "\(_checksum)"
+			spec: {
+				containers: [{
+					name:            "curl"
+					image:           _config.test.image.reference
+					imagePullPolicy: _config.imagePullPolicy
+					command: [
+						"curl",
+						"-v",
+						"-m",
+						"5",
+						"\(_config.metadata.name):\(_config.service.port)",
+					]
+				}]
+				restartPolicy: "Never"
+			}
+		}
+	}
+}
+```
+
+After the app workloads are installed and become ready, Timoni will apply the Kubernetes Jobs
+and wait for the created pods to run to completion. On upgrades, Timoni will delete the
+previous test pods and will recreate the Jobs for the current module values and version.
+
+Test runs are idempotent, if the values or the module version doesn't change,
+Timoni will not create new test pods, tests are run only when a drift is detected 
+in desired state.
+
+A complete example of defining end-to-end tests can be found
+in modules created with `timoni mod init`.
+
 ## Kubernetes schemas
 
 To ensure that the Kubernetes resources defined in a module 
