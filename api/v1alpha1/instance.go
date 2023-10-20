@@ -22,11 +22,11 @@ const (
 	// APIVersionSelector is the CUE path for the Timoni's API version.
 	APIVersionSelector Selector = "timoni.apiVersion"
 
+	// InstanceSelector is the CUE path for the Timoni's instance.
+	InstanceSelector Selector = "timoni.instance"
+
 	// ApplySelector is the CUE path for the Timoni's apply resource sets.
 	ApplySelector Selector = "timoni.apply"
-
-	// ConfigValuesSelector is the CUE path for the Timoni's instance config values.
-	ConfigValuesSelector Selector = "timoni.instance.config"
 
 	// ValuesSelector is the CUE path for the Timoni's module values.
 	ValuesSelector Selector = "values"

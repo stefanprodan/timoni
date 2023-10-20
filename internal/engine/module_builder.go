@@ -140,8 +140,10 @@ func (b *ModuleBuilder) SetVersionInfo(moduleVersion, kubeVersion string) {
 	}
 }
 
-// Build builds a CUE instances for the specified package and returns the CUE value.
-func (b *ModuleBuilder) Build() (cue.Value, error) {
+// Build builds the Timoni instance for the specified module and returns its CUE value.
+// If the instance validation fails, the returned error may represent more than one error,
+// retrievable with errors.Errors.
+func (b *ModuleBuilder) Build(tags ...string) (cue.Value, error) {
 	var value cue.Value
 	cfg := &load.Config{
 		ModuleRoot: b.moduleRoot,
@@ -166,22 +168,37 @@ func (b *ModuleBuilder) Build() (cue.Value, error) {
 		},
 	}
 
-	ix := load.Instances([]string{}, cfg)
-	if len(ix) == 0 {
+	if len(tags) > 0 {
+		cfg.Tags = append(cfg.Tags, tags...)
+	}
+
+	modInstances := load.Instances([]string{}, cfg)
+	if len(modInstances) == 0 {
 		return value, fmt.Errorf("no instances found")
 	}
 
-	inst := ix[0]
-	if inst.Err != nil {
-		return value, fmt.Errorf("instance error: %w", inst.Err)
+	modInstance := modInstances[0]
+	if modInstance.Err != nil {
+		return value, fmt.Errorf("instance error: %w", modInstance.Err)
 	}
 
-	v := b.ctx.BuildInstance(inst)
-	if v.Err() != nil {
-		return value, v.Err()
+	modValue := b.ctx.BuildInstance(modInstance)
+	if modValue.Err() != nil {
+		return value, modValue.Err()
 	}
 
-	return v, nil
+	// Extract the Timoni instance from the build value.
+	instance := modValue.LookupPath(cue.ParsePath(apiv1.InstanceSelector.String()))
+	if instance.Err() != nil {
+		return modValue, fmt.Errorf("lookup %s failed: %w", apiv1.InstanceSelector, instance.Err())
+	}
+
+	// Validate the Timoni instance which should be concrete and final.
+	if err := instance.Validate(cue.Concrete(true), cue.Final()); err != nil {
+		return modValue, err
+	}
+
+	return modValue, nil
 }
 
 // GetAPIVersion returns the list of API version of the Timoni's CUE definition.
@@ -249,14 +266,4 @@ func (b *ModuleBuilder) GetModuleName() (string, error) {
 	}
 
 	return mod, nil
-}
-
-// GetConfigValues extracts the instance config values from the build result.
-func (b *ModuleBuilder) GetConfigValues(value cue.Value) (string, error) {
-	expr := value.LookupPath(cue.ParsePath(apiv1.ConfigValuesSelector.String()))
-	if expr.Err() != nil {
-		return "", fmt.Errorf("lookup %s failed: %w", apiv1.ConfigValuesSelector, expr.Err())
-	}
-
-	return fmt.Sprintf("%v", expr.Eval()), nil
 }
