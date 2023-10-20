@@ -92,11 +92,11 @@ To enforce a minimum supported version for your module, set a constraint for the
 version e.g. `kubeMinorVersion: int & >=20`.
 
 To test the constraint, you can use the `TIMONI_KUBE_VERSION` env var
-with `timoni mod lint` and `timoni build`.
+with `timoni mod vet` and `timoni build`.
 
 ```console
-$ TIMONI_KUBE_VERSION=1.19.0 timoni mod lint ./myapp
-build failed: timoni.kubeMinorVersion: invalid value 19 (out of bound >=20)
+$ TIMONI_KUBE_VERSION=1.19.0 timoni mod vet ./myapp
+validation failed: timoni.kubeMinorVersion: invalid value 19 (out of bound >=20)
 ```
 
 ## Ignore

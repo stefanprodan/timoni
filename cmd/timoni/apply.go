@@ -214,7 +214,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return describeErr(fetcher.GetModuleRoot(), "failed to build instance", err)
+		return describeErr(fetcher.GetModuleRoot(), "build failed", err)
 	}
 
 	finalValues, err := builder.GetDefaultValues()

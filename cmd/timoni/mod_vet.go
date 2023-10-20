@@ -20,8 +20,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 
 	"cuelang.org/go/cue/cuecontext"
+	"github.com/fluxcd/pkg/ssa"
+	cp "github.com/otiai10/copy"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -30,37 +33,44 @@ import (
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
-var lintModCmd = &cobra.Command{
-	Use:   "lint [MODULE PATH]",
-	Short: "Validate a local module",
-	Long:  `The lint command builds the local module and validates the resulting Kubernetes objects.`,
-	Example: `  # lint a local module
-  timoni mod lint ./path/to/module
+var vetModCmd = &cobra.Command{
+	Use:     "vet [MODULE PATH]",
+	Aliases: []string{"lint"},
+	Short:   "Validate a local module",
+	Long:    `The vet command builds the local module and validates the resulting Kubernetes objects.`,
+	Example: `  # validate module in the current path
+  timoni mod vet
+
+  # validate module using default values instead of debug_values.cue
+  timoni mod vet ./path/to/module --debug=false
 `,
-	RunE: runLintModCmd,
+	RunE: runVetModCmd,
 }
 
-type lintModFlags struct {
-	path string
-	pkg  flags.Package
+type vetModFlags struct {
+	path  string
+	pkg   flags.Package
+	debug bool
 }
 
-var lintModArgs lintModFlags
+var vetModArgs vetModFlags
 
 func init() {
-	lintModCmd.Flags().VarP(&lintModArgs.pkg, lintModArgs.pkg.Type(), lintModArgs.pkg.Shorthand(), lintModArgs.pkg.Description())
-
-	modCmd.AddCommand(lintModCmd)
+	vetModCmd.Flags().VarP(&vetModArgs.pkg, vetModArgs.pkg.Type(), vetModArgs.pkg.Shorthand(), vetModArgs.pkg.Description())
+	vetModCmd.Flags().BoolVar(&vetModArgs.debug, "debug", true,
+		"Use debug_values.cue if found in the module root instead of the default values.")
+	modCmd.AddCommand(vetModCmd)
 }
 
-func runLintModCmd(cmd *cobra.Command, args []string) error {
+func runVetModCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("module path is required")
+		vetModArgs.path = "."
+	} else {
+		vetModArgs.path = args[0]
 	}
 
-	lintModArgs.path = args[0]
-	if fs, err := os.Stat(lintModArgs.path); err != nil || !fs.IsDir() {
-		return fmt.Errorf("module not found at path %s", lintModArgs.path)
+	if fs, err := os.Stat(vetModArgs.path); err != nil || !fs.IsDir() {
+		return fmt.Errorf("module not found at path %s", vetModArgs.path)
 	}
 
 	log := LoggerFrom(cmd.Context())
@@ -77,7 +87,7 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 
 	fetcher := engine.NewFetcher(
 		ctxPull,
-		lintModArgs.path,
+		vetModArgs.path,
 		apiv1.LatestVersion,
 		tmpDir,
 		"",
@@ -87,12 +97,28 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	var tags []string
+	if vetModArgs.debug {
+		dv := path.Join(vetModArgs.path, "debug_values.cue")
+		if _, err := os.Stat(dv); err == nil {
+			if cpErr := cp.Copy(dv, path.Join(tmpDir, "module", "debug_values.cue")); cpErr != nil {
+				return cpErr
+			}
+			tags = append(tags, "debug")
+			log.Info("vetting with debug values")
+		} else {
+			log.Info("vetting with default values (debug values not found)")
+		}
+	} else {
+		log.Info("vetting with default values")
+	}
+
 	builder := engine.NewModuleBuilder(
 		cuectx,
 		"default",
 		*kubeconfigArgs.Namespace,
 		fetcher.GetModuleRoot(),
-		lintModArgs.pkg.String(),
+		vetModArgs.pkg.String(),
 	)
 
 	if err := builder.WriteSchemaFile(); err != nil {
@@ -104,13 +130,9 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("build failed: %w", err)
 	}
 
-	buildResult, err := builder.Build()
+	buildResult, err := builder.Build(tags...)
 	if err != nil {
-		return describeErr(fetcher.GetModuleRoot(), "build failed", err)
-	}
-
-	if _, err := builder.GetConfigValues(buildResult); err != nil {
-		return fmt.Errorf("failed to extract values: %w", err)
+		return describeErr(fetcher.GetModuleRoot(), "validation failed", err)
 	}
 
 	applySets, err := builder.GetApplySets(buildResult)
@@ -131,7 +153,11 @@ func runLintModCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("build failed, no objects to apply")
 	}
 
-	log.Info(fmt.Sprintf("%s linted", mod.Name))
+	for _, object := range objects {
+		log.Info(fmt.Sprintf("%s valid resource", colorizeSubject(ssa.FmtUnstructured(object))))
+	}
+
+	log.Info(fmt.Sprintf("%s valid module", colorizeSubject(mod.Name)))
 
 	return nil
 }

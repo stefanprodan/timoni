@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -51,19 +52,35 @@ func (f *Fetcher) GetModuleRoot() string {
 	return filepath.Join(f.dst, "module")
 }
 
-// Fetch downloads a remote module locally into tmp.
+// Fetch copies the module contents to the destination directory.
+// If the module source is a remote OCI repository, the artifact is pulled
+// from the registry and its contents extracted to the destination dir.
+// If the module source is a local directory, the module required
+// files are validated and the module contents is copied to the
+// destination dir while excluding files based on the timoni.ignore patters.
 func (f *Fetcher) Fetch() (*apiv1.ModuleReference, error) {
-	modulePath := f.GetModuleRoot()
+	dstDir := f.GetModuleRoot()
 
 	if strings.HasPrefix(f.src, "oci://") {
-		if err := os.MkdirAll(modulePath, os.ModePerm); err != nil {
-			return nil, err
-		}
-		return f.fetchOCI(modulePath)
+		return f.fetchRemoteModule(dstDir)
 	}
 
+	return f.fetchLocalModule(dstDir)
+}
+
+func (f *Fetcher) fetchLocalModule(dstDir string) (*apiv1.ModuleReference, error) {
 	if fs, err := os.Stat(f.src); err != nil || !fs.IsDir() {
 		return nil, fmt.Errorf("module not found at path %s", f.src)
+	}
+
+	modFile := path.Join(f.src, "cue.mod", "module.cue")
+	timoniFile := path.Join(f.src, "timoni.cue")
+	valuesFile := path.Join(f.src, "values.cue")
+
+	for _, requiredFile := range []string{modFile, timoniFile, valuesFile} {
+		if _, err := os.Stat(requiredFile); err != nil {
+			return nil, fmt.Errorf("required file not found: %s", requiredFile)
+		}
 	}
 
 	mr := apiv1.ModuleReference{
@@ -72,16 +89,19 @@ func (f *Fetcher) Fetch() (*apiv1.ModuleReference, error) {
 		Digest:     "unknown",
 	}
 
-	return &mr, CopyModule(f.src, modulePath)
+	return &mr, CopyModule(f.src, dstDir)
 }
 
-func (f *Fetcher) fetchOCI(dir string) (*apiv1.ModuleReference, error) {
+func (f *Fetcher) fetchRemoteModule(dstDir string) (*apiv1.ModuleReference, error) {
 	ociURL := fmt.Sprintf("%s:%s", f.src, f.version)
-
 	if strings.HasPrefix(f.version, "@") {
 		ociURL = fmt.Sprintf("%s%s", f.src, f.version)
 	}
 
+	if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
+		return nil, err
+	}
+
 	opts := oci.Options(f.ctx, f.creds)
-	return oci.PullModule(ociURL, dir, opts)
+	return oci.PullModule(ociURL, dstDir, opts)
 }

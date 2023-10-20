@@ -23,27 +23,26 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestLint(t *testing.T) {
+func TestModVet(t *testing.T) {
 	modPath := "testdata/module"
 
-	t.Run("lints module with default values", func(t *testing.T) {
+	t.Run("vets module with default values", func(t *testing.T) {
 		g := NewWithT(t)
 		output, err := executeCommand(fmt.Sprintf(
-			"mod lint %s -p main",
+			"mod vet %s -p main",
 			modPath,
 		))
 		g.Expect(err).ToNot(HaveOccurred())
 
-		g.Expect(output).To(ContainSubstring("linted"))
+		g.Expect(output).To(ContainSubstring("valid"))
 	})
 
-	t.Run("fails to lint with undefined package", func(t *testing.T) {
+	t.Run("fails to vet with undefined package", func(t *testing.T) {
 		g := NewWithT(t)
-		output, err := executeCommand(fmt.Sprintf(
-			"mod lint %s -p test",
+		_, err := executeCommand(fmt.Sprintf(
+			"mod vet %s -p test",
 			modPath,
 		))
-		g.Expect(output).To(BeEmpty())
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("cannot find package"))
 	})

@@ -60,7 +60,7 @@ Module examples can be found at [examples/minimal](examples/minimal) and [exampl
 Commands for working with local modules:
 
 - `timoni mod init <module-name>`
-- `timoni mod lint <path/to/module>`
+- `timoni mod vet <path/to/module>`
 - `timoni build <name> <path/to/module> -n <namespace>`
 - `timoni apply <name> <path/to/module> -f <path/to/values.cue> --dry-run --diff`
 
@@ -159,9 +159,10 @@ Commands for distributing bundles and runtimes:
 - `timoni artifact pull oci://<artifact-url> -o <path/to/dir>`
 - `timoni artifact list oci://<artifact-url>`
 
-To learn more about bundles, please see the documentation for [Bundle API](https://timoni.sh/bundle/)
-[Bundle Runtime API](https://timoni.sh/bundle-runtime/)
-and [Bundle distribution](https://timoni.sh/bundle-distribution/).
+To learn more about bundles, please see the documentation:
+- [Bundle API](https://timoni.sh/bundle/)
+- [Bundle Runtime API](https://timoni.sh/bundle-runtime/)
+- [Bundle distribution](https://timoni.sh/bundle-distribution/)
 
 ## Contributing
 
