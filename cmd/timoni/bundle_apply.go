@@ -405,6 +405,10 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 		}
 	}
 
+	if images, err := builder.GetContainerImages(buildResult); err == nil {
+		im.Instance.Images = images
+	}
+
 	if err := sm.Apply(ctx, &im.Instance, true); err != nil {
 		return fmt.Errorf("storing instance failed: %w", err)
 	}
