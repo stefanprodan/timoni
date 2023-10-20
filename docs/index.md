@@ -51,7 +51,7 @@ Module structure:
 Commands for working with local modules:
 
 - `timoni mod init <module-name>`
-- `timoni mod lint <path/to/module>`
+- `timoni mod vet <path/to/module>`
 - `timoni build <name> <path/to/module> -n <namespace>`
 - `timoni apply <name> <path/to/module> -f <path/to/values.cue> --dry-run --diff`
 
