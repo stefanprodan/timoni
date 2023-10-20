@@ -36,3 +36,12 @@ type ModuleReference struct {
 	// Digest of the OCI artifact in the format '<sha-type>:<hex>'.
 	Digest string `json:"digest"`
 }
+
+// ImageReference contains the information necessary to locate
+// a container's OCI artifact in the registry.
+type ImageReference struct {
+	Repository string `json:"repository"`
+	Tag        string `json:"tag"`
+	Digest     string `json:"digest"`
+	Reference  string `json:"reference"`
+}

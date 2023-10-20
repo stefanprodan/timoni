@@ -25,6 +25,9 @@ const (
 	// InstanceSelector is the CUE path for the Timoni's instance.
 	InstanceSelector Selector = "timoni.instance"
 
+	// ConfigValuesSelector is the CUE path for the Timoni's instance config.
+	ConfigValuesSelector Selector = "timoni.instance.config"
+
 	// ApplySelector is the CUE path for the Timoni's apply resource sets.
 	ApplySelector Selector = "timoni.apply"
 
@@ -63,4 +66,8 @@ type Instance struct {
 	// Inventory contains the list of Kubernetes resource object references.
 	// +optional
 	Inventory *ResourceInventory `json:"inventory,omitempty"`
+
+	// Images contains the list of container image references.
+	// +optional
+	Images []string `json:"images,omitempty"`
 }
