@@ -103,7 +103,13 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 		log.Info(fmt.Sprintf("digest %s",
 			colorizeSubject(instance.Module.Digest)))
 
+		for _, image := range instance.Images {
+			log.Info(fmt.Sprintf("container image %s",
+				colorizeSubject(image)))
+		}
+
 		im := runtime.InstanceManager{Instance: apiv1.Instance{Inventory: instance.Inventory}}
+
 		objects, err := im.ListObjects()
 		if err != nil {
 			return err

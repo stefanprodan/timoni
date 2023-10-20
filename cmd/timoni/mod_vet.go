@@ -38,11 +38,11 @@ var vetModCmd = &cobra.Command{
 	Aliases: []string{"lint"},
 	Short:   "Validate a local module",
 	Long:    `The vet command builds the local module and validates the resulting Kubernetes objects.`,
-	Example: `  # validate module in the current path
+	Example: `  # validate module using default values
   timoni mod vet
 
-  # validate module using default values instead of debug_values.cue
-  timoni mod vet ./path/to/module --debug=false
+  # validate module using debug values
+  timoni mod vet ./path/to/module --debug
 `,
 	RunE: runVetModCmd,
 }
@@ -57,7 +57,7 @@ var vetModArgs vetModFlags
 
 func init() {
 	vetModCmd.Flags().VarP(&vetModArgs.pkg, vetModArgs.pkg.Type(), vetModArgs.pkg.Shorthand(), vetModArgs.pkg.Description())
-	vetModCmd.Flags().BoolVar(&vetModArgs.debug, "debug", true,
+	vetModCmd.Flags().BoolVar(&vetModArgs.debug, "debug", false,
 		"Use debug_values.cue if found in the module root instead of the default values.")
 	modCmd.AddCommand(vetModCmd)
 }
@@ -155,6 +155,15 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 
 	for _, object := range objects {
 		log.Info(fmt.Sprintf("%s valid resource", colorizeSubject(ssa.FmtUnstructured(object))))
+	}
+
+	images, err := builder.GetContainerImages(buildResult)
+	if err != nil {
+		return fmt.Errorf("failed to extract images: %w", err)
+	}
+
+	for _, image := range images {
+		log.Info(fmt.Sprintf("%s valid image", colorizeSubject(image)))
 	}
 
 	log.Info(fmt.Sprintf("%s valid module", colorizeSubject(mod.Name)))
