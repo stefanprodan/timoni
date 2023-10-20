@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"slices"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
@@ -266,4 +268,39 @@ func (b *ModuleBuilder) GetModuleName() (string, error) {
 	}
 
 	return mod, nil
+}
+
+// GetContainerImages extracts the container images referenced in the instance config values.
+func (b *ModuleBuilder) GetContainerImages(value cue.Value) ([]string, error) {
+	cfgValues := value.LookupPath(cue.ParsePath(apiv1.ConfigValuesSelector.String()))
+	if cfgValues.Err() != nil {
+		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.ConfigValuesSelector, cfgValues.Err())
+	}
+
+	var images []string
+	imgExtract := func(v cue.Value) bool {
+		switch v.IncompleteKind() {
+		case cue.StructKind:
+			var img apiv1.ImageReference
+			imgVal := reflect.ValueOf(img)
+			for i := 0; i < imgVal.Type().NumField(); i++ {
+				if tag, ok := imgVal.Type().Field(i).Tag.Lookup("json"); ok {
+					if !v.LookupPath(cue.ParsePath(tag)).Exists() {
+						return true
+					}
+				}
+			}
+			if err := v.Decode(&img); err == nil {
+				images = append(images, img.Reference)
+			}
+		}
+		return true
+	}
+
+	cfgValues.Walk(imgExtract, nil)
+
+	images = slices.Compact(images)
+	slices.Sort(images)
+
+	return images, nil
 }
