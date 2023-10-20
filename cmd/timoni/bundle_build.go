@@ -204,7 +204,7 @@ func buildBundleInstance(cuectx *cue.Context, instance *engine.BundleInstance, r
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return "", describeErr(modDir, "failed to build instance", err)
+		return "", describeErr(modDir, "build failed for "+instance.Name, err)
 	}
 
 	bundleBuildSets, err := builder.GetApplySets(buildResult)

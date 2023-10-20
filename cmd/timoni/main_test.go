@@ -124,7 +124,7 @@ func resetCmdArgs() {
 	inspectModuleArgs = inspectModuleFlags{}
 	inspectResourcesArgs = inspectResourcesFlags{}
 	inspectValuesArgs = inspectValuesFlags{}
-	lintModArgs = lintModFlags{}
+	vetModArgs = vetModFlags{}
 	listArgs = listFlags{}
 	pullModArgs = pullModFlags{}
 	pushModArgs = pushModFlags{}

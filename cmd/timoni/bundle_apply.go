@@ -283,7 +283,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return describeErr(modDir, "failed to build instance", err)
+		return describeErr(modDir, "build failed for "+instance.Name, err)
 	}
 
 	finalValues, err := builder.GetDefaultValues()

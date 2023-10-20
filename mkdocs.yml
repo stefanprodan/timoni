@@ -77,10 +77,10 @@ nav:
   - Command Reference:
       - Modules:
           - Init: cmd/timoni_mod_init.md
-          - Lint: cmd/timoni_mod_lint.md
           - Push: cmd/timoni_mod_push.md
           - Pull: cmd/timoni_mod_pull.md
           - List: cmd/timoni_mod_list.md
+          - Vet: cmd/timoni_mod_vet.md
           - Vendor Kubernetes APIs: cmd/timoni_mod_vendor_k8s.md
           - Vendor Kubernetes CRDs: cmd/timoni_mod_vendor_crd.md
       - Instances:
