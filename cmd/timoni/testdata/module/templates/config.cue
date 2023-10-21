@@ -1,28 +1,33 @@
 package templates
 
-#Config: {
-	team!: string
+import (
+	timoniv1 "timoni.sh/core/v1alpha1"
+)
 
-	metadata: {
-		name:      *"test" | string
-		namespace: *"default" | string
-		labels:    *{
-				"app.kubernetes.io/name":    metadata.name
-				"app.kubernetes.io/version": moduleVersion
-				"app.kubernetes.io/kube":    kubeVersion
-				"app.kubernetes.io/team":    team
-		} | {[ string]: string}
-		annotations?: {[ string]: string}
+#Config: {
+	moduleVersion!: string
+	kubeVersion!:   string
+
+	metadata: timoniv1.#Metadata & {#Version: moduleVersion}
+	metadata: labels: {
+		"app.kubernetes.io/kube": kubeVersion
+		"app.kubernetes.io/team": team
 	}
 
-	moduleVersion: string
-	kubeVersion:   string
-
 	client: enabled: *true | bool
+
+	client: image: timoniv1.#Image & {
+		repository: *"cgr.dev/chainguard/timoni" | string
+		tag:        *"latest-dev" | string
+		digest:     *"sha256:b49fbaac0eedc22c1cfcd26684707179cccbed0df205171bae3e1bae61326a10" | string
+	}
+
 	server: enabled: *true | bool
 	domain: *"example.internal" | string
 
 	ns: enabled: *false | bool
+
+	team!: string
 }
 
 #Instance: {

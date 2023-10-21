@@ -75,12 +75,24 @@ func runStatusCmd(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	st := runtime.NewStorageManager(rm)
-	inst, err := st.Get(ctx, statusArgs.name, *kubeconfigArgs.Namespace)
+	instance, err := st.Get(ctx, statusArgs.name, *kubeconfigArgs.Namespace)
 	if err != nil {
 		return err
 	}
 
-	tm := runtime.InstanceManager{Instance: apiv1.Instance{Inventory: inst.Inventory}}
+	log.Info(fmt.Sprintf("last applied %s",
+		colorizeSubject(instance.LastTransitionTime)))
+	log.Info(fmt.Sprintf("module %s",
+		colorizeSubject(instance.Module.Repository+":"+instance.Module.Version)))
+	log.Info(fmt.Sprintf("digest %s",
+		colorizeSubject(instance.Module.Digest)))
+
+	for _, image := range instance.Images {
+		log.Info(fmt.Sprintf("container image %s",
+			colorizeSubject(image)))
+	}
+
+	tm := runtime.InstanceManager{Instance: apiv1.Instance{Inventory: instance.Inventory}}
 
 	objects, err := tm.ListObjects()
 	if err != nil {
