@@ -55,6 +55,51 @@ jobs:
           echo "hashes=$hashes" >> $GITHUB_OUTPUT
           echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
+  publish-artifacts:
+    needs: [goreleaser]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - name: Setup Cosign
+        uses: sigstore/cosign-installer@11086d25041f77fe8fe7b9ea4e48e3b9192b8f19 # v3.1.2
+      - name: Setup Timoni
+        uses: ./actions/setup
+      - name: Login to GHCR
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Version info
+        id: info
+        run: |
+          VERSION=$(timoni -v | awk '{ print $NF }')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+      - name: Push minimal module
+        run: |
+          timoni mod push ./examples/minimal oci://ghcr.io/stefanprodan/timoni/minimal \
+          -v ${{ steps.info.outputs.version }} --latest \
+          -a 'org.opencontainers.image.licenses=Apache-2.0' \
+          -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni'  \
+          -a 'org.opencontainers.image.description=A minimal timoni.sh module.' \
+          -a 'org.opencontainers.image.documentation=https://timoni.sh' \
+          --sign cosign
+      - name: Push schemas
+        run: |
+          timoni artifact push oci://ghcr.io/stefanprodan/timoni/schemas \
+          -f ./schemas -t ${{ steps.info.outputs.version }} -t latest \ 
+          -a 'org.opencontainers.image.licenses=Apache-2.0' \
+          -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni'  \
+          -a 'org.opencontainers.image.description=Timoni CUE schemas.' \
+          -a 'org.opencontainers.image.documentation=https://timoni.sh' \
+          --content-type="cue.mod/pkg" \
+          --sign cosign
+
   provenance:
     needs: [goreleaser]
     permissions:
