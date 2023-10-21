@@ -38,7 +38,7 @@ in a new namespace:
 ```console
 $ timoni -n test apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo --version latest
 pulling oci://ghcr.io/stefanprodan/modules/podinfo:latest
-using module timoni.sh/podinfo version 6.5.0
+using module timoni.sh/podinfo version 6.5.2
 installing podinfo in namespace test
 Namespace/test created
 ServiceAccount/test/podinfo created
@@ -57,9 +57,9 @@ To get more information on an instance, you can use the `timoni inspect` sub-com
 ```console
 $ timoni -n test inspect module podinfo
 name: timoni.sh/podinfo
-version: 6.5.0
+version: 6.5.2
 repository: oci://ghcr.io/stefanprodan/modules/podinfo
-digest: sha256:d5cb5a8c625045ee1da01d629a2d46cd361f2b6472b8bd07bcabbd0012bc574b
+digest: sha256:0e1f9cfbd020230e4e9f8c3b14bc728df932793d02d4f0a26512737af6df2dc8
 ```
 
 To learn more about the available commands, use `timoni inspect --help`.
@@ -127,14 +127,14 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.2.1"
+				version: "7.2.2"
 			}
 			namespace: "podinfo"
 			values: maxmemory: 256
 		}
 		podinfo: {
 			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-			module: version: "6.5.0"
+			module: version: "6.5.2"
 			namespace: "podinfo"
 			values: caching: {
 				enabled:  true
