@@ -1,10 +1,10 @@
-name: push
+name: push-artifacts
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'semver'
+        description: 'RC version'
         required: true
 
 permissions:
@@ -29,12 +29,22 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push and Sign
+      - name: Push minimal module
         run: |
           timoni mod push ./examples/minimal oci://ghcr.io/stefanprodan/timoni/minimal \
-          --sign cosign \
-          --version ${{ github.event.inputs.version }} \
+          -v ${{ github.event.inputs.version }} --latest \
           -a 'org.opencontainers.image.licenses=Apache-2.0' \
-          -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni/tree/main/examples/minimal'  \
-          -a 'org.opencontainers.image.description=A minimal timoni.sh module example.' \
-          -a 'org.opencontainers.image.documentation=https://github.com/stefanprodan/timoni/blob/main/examples/minimal/README.md'
+          -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni'  \
+          -a 'org.opencontainers.image.description=A minimal timoni.sh module.' \
+          -a 'org.opencontainers.image.documentation=https://timoni.sh' \
+          --sign cosign
+      - name: Push schemas
+        run: |
+          timoni artifact push oci://ghcr.io/stefanprodan/timoni/schemas \
+          -f ./schemas -t ${{ github.event.inputs.version }} -t latest \ 
+          -a 'org.opencontainers.image.licenses=Apache-2.0' \
+          -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni'  \
+          -a 'org.opencontainers.image.description=Timoni CUE schemas.' \
+          -a 'org.opencontainers.image.documentation=https://timoni.sh' \
+          --content-type="cue.mod/pkg" \
+          --sign cosign
