@@ -94,7 +94,7 @@ jobs:
           timoni artifact push oci://ghcr.io/stefanprodan/timoni/schemas \
           -f ./schemas -t ${{ steps.info.outputs.version }} -t latest \ 
           -a 'org.opencontainers.image.licenses=Apache-2.0' \
-          -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni'  \
+          -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni' \
           -a 'org.opencontainers.image.description=Timoni CUE schemas.' \
           -a 'org.opencontainers.image.documentation=https://timoni.sh' \
           --content-type="cue.mod/pkg" \
