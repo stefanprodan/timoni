@@ -23,7 +23,9 @@ import (
 	"path"
 
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/pkg/strings"
 	"github.com/fluxcd/pkg/ssa"
+	"github.com/google/go-containerregistry/pkg/name"
 	cp "github.com/otiai10/copy"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -154,7 +156,8 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, object := range objects {
-		log.Info(fmt.Sprintf("%s valid resource", colorizeSubject(ssa.FmtUnstructured(object))))
+		log.Info(fmt.Sprintf("%s %s",
+			colorizeSubject(ssa.FmtUnstructured(object)), colorizeInfo("valid resource")))
 	}
 
 	images, err := builder.GetContainerImages(buildResult)
@@ -163,10 +166,22 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, image := range images {
-		log.Info(fmt.Sprintf("%s valid image", colorizeSubject(image)))
+		if _, err := name.ParseReference(image); err != nil {
+			log.Error(err, "invalid image")
+			continue
+		}
+
+		if !strings.Contains(image, "@sha") {
+			log.Info(fmt.Sprintf("%s %s",
+				colorizeSubject(image), colorizeWarning("valid image (digest missing)")))
+		} else {
+			log.Info(fmt.Sprintf("%s %s",
+				colorizeSubject(image), colorizeInfo("valid image")))
+		}
 	}
 
-	log.Info(fmt.Sprintf("%s valid module", colorizeSubject(mod.Name)))
+	log.Info(fmt.Sprintf("%s %s",
+		colorizeSubject(mod.Name), colorizeInfo("valid module")))
 
 	return nil
 }

@@ -132,6 +132,14 @@ func colorizeSubject(subject string) string {
 	return color.CyanString(subject)
 }
 
+func colorizeInfo(subject string) string {
+	return color.GreenString(subject)
+}
+
+func colorizeWarning(subject string) string {
+	return color.YellowString(subject)
+}
+
 func colorizeNamespaceFromArgs() string {
 	return colorizeSubject("Namespace/" + *kubeconfigArgs.Namespace)
 }
