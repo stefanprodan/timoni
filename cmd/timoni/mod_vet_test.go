@@ -34,7 +34,8 @@ func TestModVet(t *testing.T) {
 		))
 		g.Expect(err).ToNot(HaveOccurred())
 
-		g.Expect(output).To(ContainSubstring("valid"))
+		g.Expect(output).To(ContainSubstring("timoni:latest-dev@sha256:"))
+		g.Expect(output).To(ContainSubstring("timoni.sh/test valid"))
 	})
 
 	t.Run("fails to vet with undefined package", func(t *testing.T) {

@@ -30,7 +30,7 @@ import (
 func Test_BundleStatus(t *testing.T) {
 	g := NewWithT(t)
 
-	bundleName := "my-bundle"
+	bundleName := rnd("my-bundle", 5)
 	modPath := "testdata/module"
 	namespace := rnd("my-namespace", 5)
 	modName := rnd("my-mod", 5)
@@ -111,5 +111,63 @@ bundle: {
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(output).To(ContainSubstring(fmt.Sprintf("ConfigMap/%s/frontend-client Current", namespace)))
 		g.Expect(output).To(ContainSubstring(fmt.Sprintf("ConfigMap/%s/backend-server NotFound", namespace)))
+	})
+
+	t.Run("fails for deleted bundle", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := executeCommand(fmt.Sprintf("bundle delete %s --wait", bundleName))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		_, err = executeCommand(fmt.Sprintf("bundle status %s", bundleName))
+		g.Expect(err).To(HaveOccurred())
+	})
+}
+
+func Test_BundleStatus_Images(t *testing.T) {
+	g := NewWithT(t)
+
+	bundleName := rnd("my-bundle", 5)
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+	modVer := "1.0.0"
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s",
+		modPath,
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	bundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		timoni: {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+			values: client: image: digest: ""
+		}
+	}
+}
+`, bundleName, modURL, modVer, namespace)
+
+	_, err = executeCommandWithIn("bundle apply -f - -p main --wait", strings.NewReader(bundleData))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Run("lists images", func(t *testing.T) {
+		g := NewWithT(t)
+
+		output, err := executeCommand(fmt.Sprintf("bundle status %s", bundleName))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).To(ContainSubstring("timoni:latest-dev"))
+		g.Expect(output).ToNot(ContainSubstring("timoni:latest-dev@sha"))
 	})
 }
