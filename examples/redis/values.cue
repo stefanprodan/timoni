@@ -5,7 +5,7 @@ package main
 values: {
 	image: {
 		repository: "cgr.dev/chainguard/redis"
-		tag:        "7.2.1"
-		digest:     "sha256:31e5ad71a315a1d6b75a93dfabcbfbe2cfcd6fe295cb605bad7441c17a2c48e8"
+		tag:        "7.2.2"
+		digest:     "sha256:8969ecdfa82ed7d0d10596163ba9b7063879e0b1ccb57d054d10aa9d99bd1ce5"
 	}
 }
