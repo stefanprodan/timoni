@@ -47,17 +47,6 @@ push-redis: build
 		-a 'org.opencontainers.image.description=A timoni.sh module for deploying Redis master-replica clusters.' \
 		-a 'org.opencontainers.image.documentation=https://github.com/stefanprodan/timoni/blob/main/examples/redis/README.md'
 
-SCHEMA_VER ?= "0.13.1"
-push-schemas: build
-	./bin/timoni artifact push oci://ghcr.io/stefanprodan/timoni/schemas \
-		-f ./schemas -t $(SCHEMA_VER) -t latest \
-		-a="org.opencontainers.image.source=https://github.com/stefanprodan/timoni" \
-		-a="org.opencontainers.image.revision=$(shell git rev-parse HEAD)" \
-		-a="org.opencontainers.image.licenses=Apache-2.0" \
-		-a="org.opencontainers.image.documentation=https://timoni.sh" \
-		-a="org.opencontainers.image.description=timoni.sh CUE schemas" \
-		--content-type="cue.mod/pkg"
-
 .PHONY: install
 install: ## Build and install the CLI binary.
 	go install ./cmd/timoni
