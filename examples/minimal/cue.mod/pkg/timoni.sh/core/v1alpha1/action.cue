@@ -3,22 +3,24 @@
 
 package v1alpha1
 
-// Action holds a list of annotations for controlling
+// Action holds the list of annotations for controlling
 // Timoni's apply behaviour of Kubernetes resources.
-action: {
+Action: {
 	// Force annotation for recreating immutable resources such as Kubernetes Jobs.
-	force: {
-		"action.timoni.sh/force": enabled
+	Force: {
+		"action.timoni.sh/force": ActionStatus.Enabled
 	}
 	// One-off annotation for appling resources only if they don't exist on the cluster.
-	oneoff: {
-		"action.timoni.sh/one-off": enabled
+	Oneoff: {
+		"action.timoni.sh/one-off": ActionStatus.Enabled
 	}
 	// Keep annotation for preventing Timoni's garbage collector from deleting resources.
-	keep: {
-		"action.timoni.sh/prune": disabled
+	Keep: {
+		"action.timoni.sh/prune": ActionStatus.Disabled
 	}
 }
 
-enabled:  "enabled"
-disabled: "disabled"
+ActionStatus: {
+	Enabled:  "enabled"
+	Disabled: "disabled"
+}

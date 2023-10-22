@@ -16,7 +16,7 @@ import (
 	metadata: name:        "\(_config.metadata.name)-test"
 	metadata: namespace:   _config.metadata.namespace
 	metadata: labels:      _config.metadata.labels
-	metadata: annotations: timoniv1.action.force
+	metadata: annotations: timoniv1.Action.Force
 	spec: batchv1.#JobSpec & {
 		template: corev1.#PodTemplateSpec & {
 			metadata: labels: _config.metadata.labels
