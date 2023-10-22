@@ -1,4 +1,4 @@
-site_name: timoni
+site_name: Timoni
 site_description: |
   Timoni is a package manager for Kubernetes powered by CUE lang.
 site_author: Stefan Prodan
@@ -9,8 +9,8 @@ edit_uri: ""
 
 theme:
   name: material
-  logo: images/gopher.png
-  favicon: images/gopher.png
+  logo: images/logo.svg
+  favicon: images/favicon.png
   language: en
   custom_dir: docs/theme/
   palette:
