@@ -12,7 +12,7 @@ The OCI artifacts produced with `timoni mod push` have the following media types
 - Config media type `application/vnd.timoni.config.v1+json`
 - Layer media type `application/vnd.timoni.content.v1.tar+gzip`
 
-The artifacts are annotated with OpenContainers
+The artifacts are annotated with OCI
 [standard annotations](https://specs.opencontainers.org/image-spec/annotations/?v=v1.0.1#pre-defined-annotation-keys):
 
 - `org.opencontainers.image.version: <MODULE VERSION>`

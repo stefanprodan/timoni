@@ -32,3 +32,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CUSTOM_DOMAIN: timoni.sh
           CONFIG_FILE: mkdocs.yml
+          REQUIREMENTS: hack/mkdocs/requirements.txt
