@@ -28,6 +28,9 @@ import (
 )
 
 const fmTemplate = `---
+hide:
+  - toc
+---
 title: "%s"
 ---
 `
@@ -70,5 +73,5 @@ func frontmatterPrepender(filename string) string {
 
 func linkHandler(name string) string {
 	base := strings.TrimSuffix(name, path.Ext(name))
-	return "../" + strings.ToLower(base) + "/"
+	return strings.ToLower(base) + ".md"
 }
