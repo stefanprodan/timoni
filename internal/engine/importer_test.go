@@ -18,6 +18,65 @@ var multiline = cmpopts.AcyclicTransformer("multiline", func(s string) []string 
 	return strings.Split(s, "\n")
 })
 
+func TestConvertCRDWithNoSpec(t *testing.T) {
+	ctx := cuecontext.New()
+	g := NewWithT(t)
+
+	crds := `{
+	apiVersion: "apiextensions.k8s.io/v1"
+	kind:       "CustomResourceDefinition"
+	metadata: {
+			name: "nospeccases.testing.timoni.sh"
+	}
+	spec: {
+			group: "testing.timoni.sh"
+			names: {
+					kind:     "NoSpecCase"
+					listKind: "NoSpecCaseList"
+					plural:   "nospeccases"
+					singular: "nospeccase"
+			}
+			scope: "Namespaced"
+			versions: [{
+					name: "v1"
+					storage: true
+					schema: {
+							openAPIV3Schema: {
+									type: "object"
+									properties: {
+										apiVersion: {
+												description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources"
+												type:        "string"
+										}
+										kind: {
+												description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+												type:        "string"
+										}
+										metadata: {
+												type: "object"
+										}
+									}
+							}
+					}
+			}]
+	}
+}`
+
+	crd := ctx.CompileString(crds)
+	g.Expect(crd.Err()).ToNot(HaveOccurred())
+
+	ir, err := convertCRD(crd)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	specNode := ir.Schemas[0].Schema.LookupPath(cue.ParsePath("#NoSpecCaseSpec"))
+	g.Expect(specNode.Exists()).To(BeFalse())
+
+	name := ir.Schemas[0].Schema.LookupPath(cue.ParsePath("#NoSpecCase.metadata!.name!"))
+	g.Expect(name.Exists()).To(BeTrue())
+	namespace := ir.Schemas[0].Schema.LookupPath(cue.ParsePath("#NoSpecCase.metadata!.namespace!"))
+	g.Expect(namespace.Exists()).To(BeTrue())
+}
+
 func TestConvertCRD(t *testing.T) {
 	ctx := cuecontext.New()
 	g := NewWithT(t)
