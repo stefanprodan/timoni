@@ -70,6 +70,11 @@ func TestConvertCRDWithNoSpec(t *testing.T) {
 
 	specNode := ir.Schemas[0].Schema.LookupPath(cue.ParsePath("#NoSpecCaseSpec"))
 	g.Expect(specNode.Exists()).To(BeFalse())
+
+	name := ir.Schemas[0].Schema.LookupPath(cue.ParsePath("#NoSpecCase.metadata!.name!"))
+	g.Expect(name.Exists()).To(BeTrue())
+	namespace := ir.Schemas[0].Schema.LookupPath(cue.ParsePath("#NoSpecCase.metadata!.namespace!"))
+	g.Expect(namespace.Exists()).To(BeTrue())
 }
 
 func TestConvertCRD(t *testing.T) {
