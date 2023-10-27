@@ -325,12 +325,15 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 			}
 			return true
 		}, nil)
-		specd := &ast.Field{
-			Label: ast.NewIdent("#" + kname + "Spec"),
-			Value: specf.Value,
+
+		if specf != nil {
+			specd := &ast.Field{
+				Label: ast.NewIdent("#" + kname + "Spec"),
+				Value: specf.Value,
+			}
+			astutil.CopyComments(specd, specf)
+			schast.Decls = append(schast.Decls, specd)
 		}
-		astutil.CopyComments(specd, specf)
-		schast.Decls = append(schast.Decls, specd)
 
 		if statusf != nil {
 			statusd := &ast.Field{
