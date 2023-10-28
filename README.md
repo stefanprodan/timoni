@@ -21,9 +21,9 @@ to offer a better experience of creating, packaging and delivering apps to Kuber
 > Note that Timoni in under active development and is still in its infancy.
 > The APIs and command-line interface may change in a backwards incompatible manner.
 
-## Get started
+## Get Started
 
-To get started with Timoni please visit the documentation website at [timoni.sh](https://timoni.sh/).
+To get started with Timoni please visit the documentation website at [timoni.sh](https://timoni.sh/quickstart/).
 
 ## Concepts
 
@@ -38,7 +38,38 @@ To get started with Timoni please visit the documentation website at [timoni.sh]
 > a Timoni **[bundle](https://timoni.sh/bundle/)** is the equivalent of an **umbrella chart**,
 > and a Timoni **[instance](https://timoni.sh/concepts/#instance)** is the equivalent of a Helm **release**.
 
-## Contributing
+## Features
+
+### App Packaging and Distribution
+
+Timoni enables software vendors to define complex application deployments,
+packaged as [Modules](https://timoni.sh/module/), using type-safe
+Kubernetes templates and rich customisation options for end-users.
+
+The app configuration packaged in a Module is
+[distributed](https://timoni.sh/module-distribution/) as an
+Open Container Initiative (OCI) artifact, next to the app images,
+in a container registry. Timoni Modules are semantically versioned
+and cryptographically [signed](https://timoni.sh/module-sign/).
+
+With Timoni, platform engineers can manage the lifecycle of Kubernetes
+controllers, including the upgrade of CRDs. Module authors can
+[import CRD schemas](https://timoni.sh/module/#kubernetes-crds)
+from YAML files and incorporate Kubernetes custom resources
+in their app deployments.
+
+### App Lifecycle Management
+
+With Timoni, users can manage the whole lifecycle of applications deployed on Kubernetes.
+From highly customised installation to seamless upgrades,
+end-to-end testing, safe rollback and uninstallation.
+
+With Timoni, users can bundle microservices and distributed monoliths into a deployable unit.
+The Timoni [Bundle](https://timoni.sh/bundle/) offers a declarative way of managing
+the app delivery across clusters, where secrets and other environment-specific config
+values are [dynamically loaded](https://timoni.sh/bundle-runtime/) during installation or upgrades.
+
+## License
 
 Timoni is [Apache 2.0 licensed](LICENSE) and accepts contributions via GitHub pull requests.
 Please see the [contributing guide](CONTRIBUTING.md) for more information.
