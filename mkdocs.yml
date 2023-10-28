@@ -10,10 +10,10 @@ copyright: Copyright © 2023 Stefan Prodan
 
 home:
   image: images/logo_icons.svg
-  tagline: Cloud Native Application Distribution and Lifecycle Management
+  tagline: Distribution and Lifecycle Management for Cloud-Native Applications
   description: |
     Timoni brings CUE's type safety, code generation, and data validation features to Kubernetes,
-    making the experience of crafting complex deployments into a pleasant and rewarding journey.
+    making the experience of crafting complex deployments into a pleasant journey.
   features: true
 
 theme:
