@@ -6,10 +6,19 @@ site_url: https://timoni.sh
 repo_name: stefanprodan/timoni
 repo_url: https://github.com/stefanprodan/timoni
 edit_uri: ""
+copyright: Copyright © 2023 Stefan Prodan
+
+home:
+  image: images/logo_icons.svg
+  tagline: Cloud Native Application Distribution and Lifecycle Management
+  description: |
+    Timoni brings CUE's type safety, code generation, and data validation features to Kubernetes,
+    making the experience of crafting complex deployments into a pleasant and rewarding journey.
+  features: true
 
 theme:
   name: material
-  logo: images/logo.svg
+  logo: images/logo_indigo.svg
   favicon: images/favicon.png
   language: en
   custom_dir: docs/theme/
@@ -29,8 +38,19 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
+    - content.code.copy
     - navigation.sections
     - navigation.top
+    - navigation.tabs
+
+extra:
+  social:
+    - icon: fontawesome/brands/slack
+      link: https://cloud-native.slack.com/team/ULPRMFH38
+    - icon: fontawesome/brands/square-x-twitter
+      link: https://x.com/stefanprodan
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/in/stefanprodan
 
 docs_dir: docs
 
@@ -40,9 +60,11 @@ plugins:
       redirect_maps:
         'module-semver.md': 'module-distribution.md'
         'bundles.md': 'bundle.md'
+        'values.md': 'bundle.md'
 
 markdown_extensions:
   - attr_list
+  - md_in_html
   - admonition
   - meta
   - codehilite
@@ -57,56 +79,73 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
-  - Introduction: index.md
-  - Installation: install.md
-  - Quickstart: quickstart.md
-  - Topics:
-      - Bundle files: bundle.md
-      - Bundle runtime: bundle-runtime.md
-      - Bundle distribution: bundle-distribution.md
-      - Module structure: module.md
-      - Module distribution: module-distribution.md
-      - Module signing: module-sign.md
-      - Values files: values.md
-      - Compared to other tools: comparison.md
-  - Automation:
-      - GitHub Actions: github-actions.md
-      - GitOps with Flux: gitops-flux.md
-  - Command Reference:
-      - Modules:
-          - Init: cmd/timoni_mod_init.md
-          - Push: cmd/timoni_mod_push.md
-          - Pull: cmd/timoni_mod_pull.md
-          - List: cmd/timoni_mod_list.md
-          - Vet: cmd/timoni_mod_vet.md
-          - Vendor Kubernetes APIs: cmd/timoni_mod_vendor_k8s.md
-          - Vendor Kubernetes CRDs: cmd/timoni_mod_vendor_crd.md
-      - Instances:
-          - Apply: cmd/timoni_apply.md
-          - Build: cmd/timoni_build.md
-          - Delete: cmd/timoni_delete.md
-          - List: cmd/timoni_list.md
-          - Inspect Module: cmd/timoni_inspect_module.md
-          - Inspect Values: cmd/timoni_inspect_values.md
-          - Inspect Resources: cmd/timoni_inspect_resources.md
-          - Status: cmd/timoni_status.md
-      - Bundles:
-          - Apply: cmd/timoni_bundle_apply.md
-          - Build: cmd/timoni_bundle_build.md
-          - Delete: cmd/timoni_bundle_delete.md
-          - Lint: cmd/timoni_bundle_lint.md
-          - Status: cmd/timoni_bundle_status.md
-      - Registries:
-          - Login: cmd/timoni_registry_login.md
-          - Logout: cmd/timoni_registry_logout.md
-      - Artifacts:
-          - Push: cmd/timoni_artifact_push.md
-          - Pull: cmd/timoni_artifact_pull.md
-          - List: cmd/timoni_artifact_list.md
+  - Home: index.md
+  - Documentation:
+    - Quickstart: quickstart.md
+    - Concepts: concepts.md
+    - Installation: install.md
+    - Compared to other tools: comparison.md
+    - App Delivery:
+        - Bundle files: bundle.md
+        - Bundle runtime: bundle-runtime.md
+        - Bundle distribution: bundle-distribution.md
+    - Module Development:
+        - Module structure: module.md
+        - Module distribution: module-distribution.md
+        - Module signing: module-sign.md
+    - Automation:
+        - GitHub Actions: github-actions.md
+        - GitOps with Flux: gitops-flux.md
+  - CLI Reference:
+      - cmd/timoni.md
+      - cmd/timoni_version.md
+      - Instance:
+          - cmd/timoni_apply.md
+          - cmd/timoni_build.md
+          - cmd/timoni_delete.md
+          - cmd/timoni_list.md
+          - cmd/timoni_inspect.md
+          - cmd/timoni_inspect_module.md
+          - cmd/timoni_inspect_values.md
+          - cmd/timoni_inspect_resources.md
+          - cmd/timoni_status.md
+      - Module:
+          - cmd/timoni_mod.md
+          - cmd/timoni_mod_init.md
+          - cmd/timoni_mod_push.md
+          - cmd/timoni_mod_pull.md
+          - cmd/timoni_mod_list.md
+          - cmd/timoni_mod_vet.md
+          - cmd/timoni_mod_vendor.md
+          - cmd/timoni_mod_vendor_k8s.md
+          - cmd/timoni_mod_vendor_crd.md
+      - Bundle:
+          - cmd/timoni_bundle.md
+          - cmd/timoni_bundle_apply.md
+          - cmd/timoni_bundle_build.md
+          - cmd/timoni_bundle_delete.md
+          - cmd/timoni_bundle_lint.md
+          - cmd/timoni_bundle_status.md
+      - Runtime:
+          - cmd/timoni_runtime.md
+          - cmd/timoni_runtime_build.md
+      - Registry:
+          - cmd/timoni_registry.md
+          - cmd/timoni_registry_login.md
+          - cmd/timoni_registry_logout.md
+      - Artifact:
+          - cmd/timoni_artifact.md
+          - cmd/timoni_artifact_list.md
+          - cmd/timoni_artifact_push.md
+          - cmd/timoni_artifact_pull.md
       - Completion:
-          - Bash: cmd/timoni_completion_bash.md
-          - Fish: cmd/timoni_completion_fish.md
-          - Powershell: cmd/timoni_completion_powershell.md
-          - ZSH: cmd/timoni_completion_zsh.md
+          - cmd/timoni_completion.md
+          - cmd/timoni_completion_bash.md
+          - cmd/timoni_completion_fish.md
+          - cmd/timoni_completion_powershell.md
+          - cmd/timoni_completion_zsh.md

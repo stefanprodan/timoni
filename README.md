@@ -21,150 +21,55 @@ to offer a better experience of creating, packaging and delivering apps to Kuber
 > Note that Timoni in under active development and is still in its infancy.
 > The APIs and command-line interface may change in a backwards incompatible manner.
 
-## Get started
+## Get Started
 
-To get started with Timoni please visit the documentation website at [timoni.sh](https://timoni.sh/).
+To get started with Timoni please visit the documentation website at [timoni.sh](https://timoni.sh/quickstart/).
 
 ## Concepts
 
-If you are familiar with Helm, a Timoni **[module](https://timoni.sh/module/)** is the equivalent of a **chart**,
-a Timoni **[bundle](https://timoni.sh/bundle/)** is the equivalent of an **umbrella chart**,
-and a Timoni **[instance](#timoni-instances)** is the equivalent of a Helm **release**.
+- [Module](https://timoni.sh/concepts/#module) - App definition containing Kubernetes CUE templates and configuration schema, distributed as OCI artifacts.
+- [Instance](https://timoni.sh/concepts/#instance) - App instantiation referencing the module and workloads deployed on a Kubernetes cluster.
+- [Bundle](https://timoni.sh/concepts/#bundle) - App composition bundling multiple modules and configurations into a deployable unit.
+- [OCI Artifact](https://timoni.sh/concepts/#artifact) - Packaging format used for distributing modules and bundles to container registries.
 
-### Timoni Modules
+> **Note**
+>
+> If you are familiar with Helm, a Timoni **[module](https://timoni.sh/module/)** is the equivalent of a **chart**,
+> a Timoni **[bundle](https://timoni.sh/bundle/)** is the equivalent of an **umbrella chart**,
+> and a Timoni **[instance](https://timoni.sh/concepts/#instance)** is the equivalent of a Helm **release**.
 
-A Timoni module contains a set of CUE definitions and constraints organised
-into a [CUE module](https://cuelang.org/docs/concepts/packages/)
-with an opinionated structure.
-A module accepts a set of values supplied by the user as `values.cue` files,
-and outputs a set of Kubernetes objects that Timoni deploys on Kubernetes.
+## Features
 
-Module structure:
-```sh
-├── README.md
-├── cue.mod
-│   ├── gen # Kubernetes APIs and CRDs schemas
-│   ├── pkg # Timoni APIs schemas
-│   └── module.cue # Module metadata
-├── templates
-│   ├── config.cue # Config schema and default values
-│   ├── deployment.cue # Kubernetes Deployment template
-│   └── service.cue # Kubernetes Service template
-├── timoni.cue # Timoni entry point
-├── timoni.ignore # Timoni ignore rules
-└── values.cue # Timoni values placeholder
-```
+### App Packaging and Distribution
 
-Module examples can be found at [examples/minimal](examples/minimal) and [examples/redis](examples/redis).
+Timoni enables software vendors to define complex application deployments,
+packaged as [Modules](https://timoni.sh/module/), using type-safe
+Kubernetes templates and rich customisation options for end-users.
 
-Commands for working with local modules:
+The app configuration packaged in a Module is
+[distributed](https://timoni.sh/module-distribution/) as an
+Open Container Initiative (OCI) artifact, next to the app images,
+in a container registry. Timoni Modules are semantically versioned
+and cryptographically [signed](https://timoni.sh/module-sign/).
 
-- `timoni mod init <module-name>`
-- `timoni mod vet <path/to/module>`
-- `timoni build <name> <path/to/module> -n <namespace>`
-- `timoni apply <name> <path/to/module> -f <path/to/values.cue> --dry-run --diff`
+With Timoni, platform engineers can manage the lifecycle of Kubernetes
+controllers, including the upgrade of CRDs. Module authors can
+[import CRD schemas](https://timoni.sh/module/#kubernetes-crds)
+from YAML files and incorporate Kubernetes custom resources
+in their app deployments.
 
-Commands for vendoring Kubernetes APIs and CRDs:
+### App Lifecycle Management
 
-- `timoni mod vendor k8s --version latest`
-- `timoni mod vendor crds -f <path/to/crds.yaml>`
+With Timoni, users can manage the whole lifecycle of applications deployed on Kubernetes.
+From highly customised installation to seamless upgrades,
+end-to-end testing, safe rollback and uninstallation.
 
-Timoni modules are distributed as OCI artifacts and can be stored in container registries.
+With Timoni, users can bundle microservices and distributed monoliths into a deployable unit.
+The Timoni [Bundle](https://timoni.sh/bundle/) offers a declarative way of managing
+the app delivery across clusters, where secrets and other environment-specific config
+values are [dynamically loaded](https://timoni.sh/bundle-runtime/) during installation or upgrades.
 
-Commands for working with remote modules:
-
-- `timoni mod push <path/to/module> oci://<module-url> -v <semver>`
-- `timoni mod pull oci://<module-url> -v <semver> -o <path/to/module>`
-- `timoni mod list oci://<module-url>`
-
-To learn more about modules, please see the documentation for [Module structure](https://timoni.sh/module/)
-and [Module distribution](https://timoni.sh/module-distribution/).
-
-### Timoni Instances
-
-A Timoni instance represent a module instantiation on a Kubernetes cluster.
-A module can be installed multiple times on a cluster by giving its instances
-unique names per namespace.
-
-When instantiating a module, users can supply their own `values.cue`
-that gets merged with the defaults included in the module:
-
-```cue
-values: {
-	ingress: {
-		enabled:   true
-		className: "nginx"
-		host:      "app.example.com"
-	}
-	autoscaling: enabled: true
-	monitoring: enabled:  true
-}
-```
-
-Commands for working with instances:
-
-- `timoni apply <name> oci://<module-url> -v <semver> -f <path/to/values.cue>`
-- `timoni delete <name> -n <namespace>`
-- `timoni list -n <namespace>`
-- `timoni inspect [module|values|resources] <name> -n <namespace>`
-- `timoni status <name> -n <namespace>`
-
-To learn more about instances, please read the [docs](https://timoni.sh/#timoni-instances).
-
-### Timoni Bundles
-
-Timoni bundles offer a declarative way of managing the lifecycle of applications and their infra dependencies.
-
-A Timoni bundle is a CUE file for defining a group of instances together with their values and module references:
-
-```cue
-bundle: {
-	apiVersion: "v1alpha1"
-	name: "podinfo"
-	instances: {
-		redis: {
-			module: {
-				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.2.2"
-			}
-			namespace: "podinfo"
-			values: maxmemory: 256
-		}
-		podinfo: {
-			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-			module: version: "6.5.2"
-			namespace: "podinfo"
-			values: caching: {
-				enabled:  true
-				redisURL: "tcp://redis:6379"
-			}
-		}
-	}
-}
-```
-
-In the bundle files you can use arithmetic operations,
-string interpolation and everything else that CUE std lib supports.
-
-Commands for working with bundles:
-
-- `timoni bundle lint -f bundle.cue`
-- `timoni bundle build -f bundle.cue`
-- `timoni bundle apply -f bundle.cue`
-- `timoni bundle delete -f bundle.cue`
-
-Commands for distributing bundles and runtimes:
-
-- `timoni artifact push oci://<artifact-url> -t <tag> -f <path/to/dir>`
-- `timoni artifact pull oci://<artifact-url> -o <path/to/dir>`
-- `timoni artifact list oci://<artifact-url>`
-
-To learn more about bundles, please see the documentation:
-- [Bundle API](https://timoni.sh/bundle/)
-- [Bundle Runtime API](https://timoni.sh/bundle-runtime/)
-- [Bundle distribution](https://timoni.sh/bundle-distribution/)
-
-## Contributing
+## License
 
 Timoni is [Apache 2.0 licensed](LICENSE) and accepts contributions via GitHub pull requests.
 Please see the [contributing guide](CONTRIBUTING.md) for more information.

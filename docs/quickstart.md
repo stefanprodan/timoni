@@ -22,7 +22,7 @@ see the [installation guide](install.md).
 
 ## Install a module
 
-To install a [Timoni module](index.md#timoni-modules) on a Kubernetes cluster,
+To install a [Timoni module](module.md) on a Kubernetes cluster,
 you have to specify the container registry address and the version of a module.
 
 !!! tip "Modules and Instances"
@@ -30,7 +30,7 @@ you have to specify the container registry address and the version of a module.
     If you are familiar with Helm,
     a Timoni **module** is the equivalent of a **chart**,
     and a Timoni **instance** is the equivalent of a Helm **release**.
-    To learn more about modules and instances, please see the [concepts section](index.md#concepts).
+    To learn more about modules and instances, please see the [concepts doc](concepts.md).
 
 For example, to install the latest stable version of [podinfo](https://github.com/stefanprodan/podinfo)
 in a new namespace:
@@ -72,7 +72,7 @@ timoni -n test status podinfo
 
 ## Configure a module instance
 
-To customise an instance, you can supply the configuration values using [values files](values.md).
+To customise an instance, you can supply the configuration using values files.
 
 For example, to set the [QoS](https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/)
 class to guaranteed, create a `qos-values.cue` file that sets the resources limits equal to the requests:
