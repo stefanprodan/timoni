@@ -130,8 +130,8 @@ nav:
           - cmd/timoni_bundle_apply.md
           - cmd/timoni_bundle_build.md
           - cmd/timoni_bundle_delete.md
-          - cmd/timoni_bundle_lint.md
           - cmd/timoni_bundle_status.md
+          - cmd/timoni_bundle_vet.md
       - Runtime:
           - cmd/timoni_runtime.md
           - cmd/timoni_runtime_build.md

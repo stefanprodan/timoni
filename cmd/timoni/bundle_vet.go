@@ -32,45 +32,57 @@ import (
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
-var bundleLintCmd = &cobra.Command{
-	Use:   "lint",
-	Short: "Validate bundle definitions",
-	Long: `The bundle lint command validates that a bundle definition conforms with Timoni's schema.'.
+var bundleVetCmd = &cobra.Command{
+	Use:     "vet",
+	Aliases: []string{"lint"},
+	Short:   "Validate a bundle definition",
+	Long: `The bundle vet command validates that a bundle definition conforms
+with Timoni's schema and optionally prints the computed value.
 `,
-	Example: `  # Validate a bundle
-  timoni bundle lint -f bundle.cue
+	Example: `  # Validate a bundle and list its instances
+  timoni bundle vet -f bundle.cue
 
-  # Validate a bundle defined in multiple files
-  timoni bundle lint \
+  # Validate a bundle defined in multiple files and print the computed value
+  timoni bundle vet \
   -f ./bundle.cue \
-  -f ./bundle_secrets.cue
+  -f ./bundle_secrets.cue \
+  --print-value
+
+  # Validate a bundle with runtime attributes and print the computed value
+  timoni bundle vet \
+  -f bundle.cue \
+  -r runtime.cue \
+  --print-value
 `,
-	RunE: runBundleLintCmd,
+	RunE: runBundleVetCmd,
 }
 
-type bundleLintFlags struct {
+type bundleVetFlags struct {
 	pkg            flags.Package
 	files          []string
 	runtimeFromEnv bool
 	runtimeFiles   []string
+	printValue     bool
 }
 
-var bundleLintArgs bundleLintFlags
+var bundleVetArgs bundleVetFlags
 
 func init() {
-	bundleLintCmd.Flags().VarP(&bundleLintArgs.pkg, bundleLintArgs.pkg.Type(), bundleLintArgs.pkg.Shorthand(), bundleLintArgs.pkg.Description())
-	bundleLintCmd.Flags().StringSliceVarP(&bundleLintArgs.files, "file", "f", nil,
+	bundleVetCmd.Flags().VarP(&bundleVetArgs.pkg, bundleVetArgs.pkg.Type(), bundleVetArgs.pkg.Shorthand(), bundleVetArgs.pkg.Description())
+	bundleVetCmd.Flags().StringSliceVarP(&bundleVetArgs.files, "file", "f", nil,
 		"The local path to bundle.cue files.")
-	bundleLintCmd.Flags().BoolVar(&bundleLintArgs.runtimeFromEnv, "runtime-from-env", false,
+	bundleVetCmd.Flags().BoolVar(&bundleVetArgs.runtimeFromEnv, "runtime-from-env", false,
 		"Inject runtime values from the environment.")
-	bundleLintCmd.Flags().StringSliceVarP(&bundleLintArgs.runtimeFiles, "runtime", "r", nil,
+	bundleVetCmd.Flags().StringSliceVarP(&bundleVetArgs.runtimeFiles, "runtime", "r", nil,
 		"The local path to runtime.cue files.")
-	bundleCmd.AddCommand(bundleLintCmd)
+	bundleVetCmd.Flags().BoolVar(&bundleVetArgs.printValue, "print-value", false,
+		"Print the computed value of the bundle.")
+	bundleCmd.AddCommand(bundleVetCmd)
 }
 
-func runBundleLintCmd(cmd *cobra.Command, args []string) error {
+func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 	log := LoggerFrom(cmd.Context())
-	files := bundleLintArgs.files
+	files := bundleVetArgs.files
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
@@ -83,15 +95,15 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 
 	runtimeValues := make(map[string]string)
 
-	if bundleLintArgs.runtimeFromEnv {
+	if bundleVetArgs.runtimeFromEnv {
 		maps.Copy(runtimeValues, engine.GetEnv())
 	}
 
-	if len(bundleLintArgs.runtimeFiles) > 0 {
+	if len(bundleVetArgs.runtimeFiles) > 0 {
 		kctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 		defer cancel()
 
-		rt, err := buildRuntime(bundleLintArgs.runtimeFiles)
+		rt, err := buildRuntime(bundleVetArgs.runtimeFiles)
 		if err != nil {
 			return err
 		}
@@ -117,6 +129,11 @@ func runBundleLintCmd(cmd *cobra.Command, args []string) error {
 	v, err := bm.Build()
 	if err != nil {
 		return describeErr(tmpDir, "failed to build bundle", err)
+	}
+
+	if bundleVetArgs.printValue {
+		_, err := rootCmd.OutOrStdout().Write([]byte(fmt.Sprintf("%v\n", v)))
+		return err
 	}
 
 	bundle, err := bm.GetBundle(v)

@@ -145,10 +145,10 @@ string interpolation and everything else that CUE std lib supports.
 
 Commands for working with bundles:
 
-- `timoni bundle lint -f bundle.cue`
-- `timoni bundle build -f bundle.cue -f bundle_extras.cue`
 - `timoni bundle apply -f bundle.cue --runtime runtime.cue --diff`
+- `timoni bundle build -f bundle.cue -f bundle_extras.cue`
 - `timoni bundle delete -f bundle.cue`
+- `timoni bundle vet -f bundle.cue`
 
 To learn more about bundles, please see the [Bundle API documentation](bundle.md)
 and the [Bundle Runtime API documentation](bundle-runtime.md).

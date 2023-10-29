@@ -497,16 +497,28 @@ the apply command will exit with an error.
 
 The readiness check is enabled by default, to opt-out set `--wait=false`.
 
-### Lint
+### Vetting
 
 To verify that one or more CUE files contain a valid Bundle definition,
-you can use the `timoni bundle lint` command.
+you can use the `timoni bundle vet` command.
 
 Example:
 
 ```shell
-timoni bundle lint -f bundle.cue -f extras.cue
+timoni bundle vet -f bundle.cue -f extras.cue
 ```
+
+If the validation passes, Timoni will list all the instances found in the computed bundle.
+
+When `--print-value` is specified, Timoni will write the Bundle computed value to stdout.
+
+Example:
+
+```shell
+timoni bundle vet -f bundle.cue --runtime-from-env --print-value
+```
+
+Printing the computed value is particular useful when debugging runtime attributes.
 
 ### Format
 

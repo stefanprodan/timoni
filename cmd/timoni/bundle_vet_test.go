@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func Test_BundleLint(t *testing.T) {
+func Test_BundleVet(t *testing.T) {
 
 	tests := []struct {
 		name     string
@@ -189,7 +189,7 @@ bundle: {
 			g.Expect(err).ToNot(HaveOccurred())
 
 			_, err = executeCommand(fmt.Sprintf(
-				"bundle lint -f %s --runtime-from-env",
+				"bundle vet -f %s --runtime-from-env",
 				bundlePath,
 			))
 
