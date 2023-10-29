@@ -94,6 +94,7 @@ nav:
         - Bundle files: bundle.md
         - Bundle runtime: bundle-runtime.md
         - Bundle distribution: bundle-distribution.md
+        - Bundle secrets injection: bundle-secrets.md
     - Module Development:
         - Module structure: module.md
         - Module distribution: module-distribution.md
