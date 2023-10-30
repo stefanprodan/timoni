@@ -36,23 +36,23 @@ import (
 					]
 				}]
 				restartPolicy: "Never"
+				if _config.podSecurityContext != _|_ {
+					securityContext: _config.podSecurityContext
+				}
+				if _config.topologySpreadConstraints != _|_ {
+					topologySpreadConstraints: _config.topologySpreadConstraints
+				}
+				if _config.affinity != _|_ {
+					affinity: _config.affinity
+				}
+				if _config.tolerations != _|_ {
+					tolerations: _config.tolerations
+				}
+				if _config.imagePullSecrets != _|_ {
+					imagePullSecrets: _config.imagePullSecrets
+				}
 			}
 		}
 		backoffLimit: 1
-		if _config.podSecurityContext != _|_ {
-			securityContext: _config.podSecurityContext
-		}
-		if _config.topologySpreadConstraints != _|_ {
-			topologySpreadConstraints: _config.topologySpreadConstraints
-		}
-		if _config.affinity != _|_ {
-			affinity: _config.affinity
-		}
-		if _config.tolerations != _|_ {
-			tolerations: _config.tolerations
-		}
-		if _config.imagePullSecrets != _|_ {
-			imagePullSecrets: _config.imagePullSecrets
-		}
 	}
 }

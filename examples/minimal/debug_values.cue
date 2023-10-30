@@ -20,4 +20,11 @@ values: {
 			digest:     ""
 		}
 	}
+	affinity: nodeAffinity: requiredDuringSchedulingIgnoredDuringExecution: nodeSelectorTerms: [{
+		matchExpressions: [{
+			key:      "kubernetes.io/os"
+			operator: "In"
+			values: ["linux"]
+		}]
+	}]
 }
