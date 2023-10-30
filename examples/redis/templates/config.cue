@@ -59,10 +59,19 @@ import (
 		seccompProfile: type: "RuntimeDefault"
 	} | corev1.#SecurityContext
 
+	// Pod affinity settings (common to all deployments)
+	affinity: corev1.#Affinity
+	affinity: nodeAffinity: requiredDuringSchedulingIgnoredDuringExecution: nodeSelectorTerms: [{
+		matchExpressions: [{
+			key:      "kubernetes.io/os"
+			operator: "In"
+			values: ["linux"]
+		}]
+	}]
+
 	// Pod optional settings (common to all deployments)
 	podAnnotations?: {[ string]: string}
 	tolerations?: [ ...corev1.#Toleration]
-	affinity?: corev1.#Affinity
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
 	// Service
