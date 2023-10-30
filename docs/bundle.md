@@ -145,7 +145,7 @@ List the managed resources from a bundle and their rollout status:
      ```text
      last applied 2023-10-08T20:21:19Z
      module oci://ghcr.io/stefanprodan/modules/redis:7.2.2
-     digest: sha256:0e1f9cfbd020230e4e9f8c3b14bc728df932793d02d4f0a26512737af6df2dc8
+     digest: sha256:22ab5f4f0158f02b353c168f21a54901a45b2a56865fcc470e5492120deb4111
      ServiceAccount/podinfo/redis Current Resource is current
      ConfigMap/podinfo/redis Current Resource is always ready
      Service/podinfo/redis Current Service is ready

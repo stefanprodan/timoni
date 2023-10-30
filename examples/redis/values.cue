@@ -6,6 +6,6 @@ values: {
 	image: {
 		repository: "cgr.dev/chainguard/redis"
 		tag:        "7.2.2"
-		digest:     "sha256:8969ecdfa82ed7d0d10596163ba9b7063879e0b1ccb57d054d10aa9d99bd1ce5"
+		digest:     "sha256:4622102d87353643c6fe0b9d6607e740aef7cdd59cc90e8f275a06c4642a584c"
 	}
 }
