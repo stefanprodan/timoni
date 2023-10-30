@@ -22,6 +22,7 @@ import (
 	"maps"
 	"os"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -131,11 +132,6 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 		return describeErr(tmpDir, "failed to build bundle", err)
 	}
 
-	if bundleVetArgs.printValue {
-		_, err := rootCmd.OutOrStdout().Write([]byte(fmt.Sprintf("%v\n", v)))
-		return err
-	}
-
 	bundle, err := bm.GetBundle(v)
 	if err != nil {
 		return err
@@ -144,6 +140,15 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 
 	if len(bundle.Instances) == 0 {
 		return fmt.Errorf("no instances found in bundle")
+	}
+
+	if bundleVetArgs.printValue {
+		val := v.LookupPath(cue.ParsePath("bundle"))
+		if val.Err() != nil {
+			return err
+		}
+		_, err := rootCmd.OutOrStdout().Write([]byte(fmt.Sprintf("bundle: %v\n", val)))
+		return err
 	}
 
 	for _, i := range bundle.Instances {
