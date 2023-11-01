@@ -75,6 +75,7 @@ func TestMain(m *testing.M) {
 	}
 
 	kubeconfigArgs.KubeConfig = &tmpFilename
+	rootArgs.cacheDir = tmpDir
 
 	code := m.Run()
 	testEnv.Stop()

@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"os"
+	"path"
 	"time"
 
 	"github.com/fatih/color"
@@ -57,6 +58,7 @@ type rootFlags struct {
 	timeout    time.Duration
 	prettyLog  bool
 	coloredLog bool
+	cacheDir   string
 }
 
 var (
@@ -76,6 +78,8 @@ func init() {
 		"Adds timestamps to the logs.")
 	rootCmd.PersistentFlags().BoolVar(&rootArgs.coloredLog, "log-color", rootArgs.coloredLog,
 		"Adds colorized output to the logs. (defaults to false when no tty)")
+	rootCmd.PersistentFlags().StringVar(&rootArgs.cacheDir, "cache-dir", "",
+		"Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to \"$HOME/.timoni/cache\")")
 
 	addKubeConfigFlags(rootCmd)
 
@@ -85,6 +89,7 @@ func init() {
 }
 
 func main() {
+	setCacheDir()
 	if err := rootCmd.Execute(); err != nil {
 		// Ensure a logger is initialized even if the rootCmd
 		// failed before running its hooks.
@@ -96,6 +101,26 @@ func main() {
 		// the error message on multiple lines.
 		logger.Error(nil, err.Error())
 		os.Exit(1)
+	}
+}
+
+func setCacheDir() {
+	caching := os.Getenv("TIMONI_CACHING")
+	if caching == "false" || caching == "0" {
+		rootArgs.cacheDir = ""
+		return
+	}
+	if rootArgs.cacheDir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return
+		}
+		rootArgs.cacheDir = path.Join(home, ".timoni/cache")
+	}
+
+	if err := os.MkdirAll(rootArgs.cacheDir, os.ModePerm); err != nil {
+		// disable caching if target dir is not writable
+		rootArgs.cacheDir = ""
 	}
 }
 
