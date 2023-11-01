@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func Test_BundleLint(t *testing.T) {
+func Test_BundleVet(t *testing.T) {
 
 	tests := []struct {
 		name     string
@@ -189,7 +189,7 @@ bundle: {
 			g.Expect(err).ToNot(HaveOccurred())
 
 			_, err = executeCommand(fmt.Sprintf(
-				"bundle lint -f %s --runtime-from-env",
+				"bundle vet -f %s --runtime-from-env",
 				bundlePath,
 			))
 
@@ -197,4 +197,98 @@ bundle: {
 			g.Expect(err.Error()).To(MatchRegexp(tt.matchErr))
 		})
 	}
+}
+
+func Test_BundleVet_PrintValue(t *testing.T) {
+	g := NewWithT(t)
+
+	bundleCue := `
+bundle: {
+	apiVersion: "v1alpha1"
+	name:       "podinfo"
+	_secrets: {
+		host:     string @timoni(runtime:string:TEST_BVET_HOST)
+		password: string @timoni(runtime:string:TEST_BVET_PASS)
+	}
+	instances: {
+		podinfo: {
+			module: url: "oci://ghcr.io/stefanprodan/modules/podinfo"
+			module: version: "latest"
+			namespace: "podinfo"
+			values: caching: {
+				enabled:  true
+				redisURL: "tcp://:\(_secrets.password)@\(_secrets.host):6379"
+			}
+		}
+	}
+}
+`
+	bundleYaml := `
+bundle:
+  instances:
+    podinfo:
+      values:
+        monitoring:
+          enabled: true
+`
+	bundleJson := `
+{
+  "bundle": {
+    "instances": {
+      "podinfo": {
+        "values": {
+          "autoscaling": {
+            "enabled": true
+          }
+        }
+      }
+    }
+  }
+}
+`
+	bundleComputed := `bundle: {
+	apiVersion: "v1alpha1"
+	name:       "podinfo"
+	instances: {
+		podinfo: {
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+				version: "latest"
+			}
+			namespace: "podinfo"
+			values: {
+				caching: {
+					enabled:  true
+					redisURL: "tcp://:password@test.host:6379"
+				}
+				monitoring: {
+					enabled: true
+				}
+				autoscaling: {
+					enabled: true
+				}
+			}
+		}
+	}
+}
+`
+	wd := t.TempDir()
+	cuePath := filepath.Join(wd, "bundle.cue")
+	g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
+
+	yamlPath := filepath.Join(wd, "bundle.yaml")
+	g.Expect(os.WriteFile(yamlPath, []byte(bundleYaml), 0644)).ToNot(HaveOccurred())
+
+	jsonPath := filepath.Join(wd, "bundle.json")
+	g.Expect(os.WriteFile(jsonPath, []byte(bundleJson), 0644)).ToNot(HaveOccurred())
+
+	t.Setenv("TEST_BVET_HOST", "test.host")
+	t.Setenv("TEST_BVET_PASS", "password")
+
+	output, err := executeCommand(fmt.Sprintf(
+		"bundle vet -f %s -f %s -f %s -p main --runtime-from-env --print-value",
+		cuePath, yamlPath, jsonPath,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(output).To(BeEquivalentTo(bundleComputed))
 }
