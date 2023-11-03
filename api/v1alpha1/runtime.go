@@ -36,6 +36,9 @@ const (
 	// RuntimeName is the CUE path for the Timoni's bundle name.
 	RuntimeName Selector = "runtime.name"
 
+	// 	RuntimeClustersSelector is the CUE path for the Timoni's runtime clusters.
+	RuntimeClustersSelector Selector = "runtime.clusters"
+
 	// RuntimeValuesSelector is the CUE path for the Timoni's runtime values.
 	RuntimeValuesSelector Selector = "runtime.values"
 )
@@ -53,6 +56,12 @@ import "strings"
 #Runtime: {
 	apiVersion: string & =~"^v1alpha1$"
 	name:       string & =~"^(([A-Za-z0-9][-A-Za-z0-9_]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)
+
+	clusters?: [string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)]: {
+		group!:       string
+		kubeContext!: string
+	}
+	
 	values: [...#RuntimeValue]
 }
 `
@@ -99,8 +108,24 @@ type Runtime struct {
 	// Name of the runtime.
 	Name string `json:"name"`
 
+	// Clusters is the list of Kubernetes
+	// clusters belonging to this runtime.
+	Clusters []RuntimeCluster `json:"clusters"`
+
 	// Refs is the list of in-cluster resource references.
 	Refs []RuntimeResourceRef `json:"refs"`
+}
+
+// RuntimeCluster holds the reference to a Kubernetes cluster.
+type RuntimeCluster struct {
+	// Name of the cluster.
+	Name string `json:"name"`
+
+	// Group name of the cluster.
+	Group string `json:"group"`
+
+	// KubeContext is the name of kubeconfig context for this cluster.
+	KubeContext string `json:"kubeContext"`
 }
 
 // RuntimeResourceRef holds the data needed to query the fields

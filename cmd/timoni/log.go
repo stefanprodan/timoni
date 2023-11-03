@@ -190,6 +190,10 @@ func colorizeRuntime(runtime string) string {
 	return colorCallerPrefix.Sprint("r:") + colorInstance.Sprint(runtime)
 }
 
+func colorizeCluster(cluster string) string {
+	return colorCallerPrefix.Sprint("c:") + colorInstance.Sprint(cluster)
+}
+
 func LoggerBundle(ctx context.Context, bundle string) logr.Logger {
 	if !rootArgs.prettyLog {
 		return LoggerFrom(ctx, "bundle", bundle)
@@ -211,11 +215,11 @@ func LoggerBundleInstance(ctx context.Context, bundle, instance string) logr.Log
 	return LoggerFrom(ctx, "caller", fmt.Sprintf("%s %s %s", colorizeBundle(bundle), color.CyanString(">"), colorizeInstance(instance)))
 }
 
-func LoggerRuntime(ctx context.Context, runtime string) logr.Logger {
+func LoggerRuntime(ctx context.Context, runtime, cluster string) logr.Logger {
 	if !rootArgs.prettyLog {
-		return LoggerFrom(ctx, "runtime", runtime)
+		return LoggerFrom(ctx, "runtime", runtime, "cluster", cluster)
 	}
-	return LoggerFrom(ctx, "caller", colorizeRuntime(runtime))
+	return LoggerFrom(ctx, "caller", fmt.Sprintf("%s %s %s", colorizeRuntime(runtime), color.CyanString(">"), colorizeCluster(cluster)))
 }
 
 // LoggerFrom returns a logr.Logger with predefined values from a context.Context.

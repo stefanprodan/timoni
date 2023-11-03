@@ -77,38 +77,59 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log := LoggerRuntime(cmd.Context(), rt.Name)
-
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
-	rm, err := runtime.NewResourceManager(kubeconfigArgs)
-	if err != nil {
-		return err
-	}
+	for _, cluster := range rt.Clusters {
+		log := LoggerRuntime(cmd.Context(), rt.Name, cluster.Name)
 
-	reader := runtime.NewResourceReader(rm)
+		kubeconfigArgs.Context = &cluster.KubeContext
+		rm, err := runtime.NewResourceManager(kubeconfigArgs)
+		if err != nil {
+			return err
+		}
 
-	values, err := reader.Read(ctx, rt.Refs)
-	if err != nil {
-		return err
-	}
+		reader := runtime.NewResourceReader(rm)
 
-	keys := make([]string, 0, len(values))
+		values, err := reader.Read(ctx, rt.Refs)
+		if err != nil {
+			return err
+		}
 
-	for k := range values {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
+		keys := make([]string, 0, len(values))
 
-	for _, k := range keys {
-		log.Info(fmt.Sprintf("%s: %s", colorizeSubject(k), values[k]))
+		for k := range values {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			log.Info(fmt.Sprintf("%s: %s", colorizeSubject(k), values[k]))
+		}
+
+		if len(values) == 0 {
+			log.Info("no values defined")
+		}
 	}
 
 	return nil
 }
 
 func buildRuntime(files []string) (*apiv1.Runtime, error) {
+	defaultCluster := apiv1.RuntimeCluster{
+		Name:        "default",
+		Group:       "default",
+		KubeContext: *kubeconfigArgs.Context,
+	}
+	if len(files) == 0 {
+		defaultRuntime := apiv1.Runtime{
+			Name:     "default",
+			Clusters: []apiv1.RuntimeCluster{defaultCluster},
+			Refs:     []apiv1.RuntimeResourceRef{},
+		}
+		return &defaultRuntime, nil
+	}
+
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
 		return nil, err
@@ -127,5 +148,13 @@ func buildRuntime(files []string) (*apiv1.Runtime, error) {
 		return nil, describeErr(tmpDir, "failed to parse runtime", err)
 	}
 
-	return rb.GetRuntime(v)
+	rt, err := rb.GetRuntime(v)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rt.Clusters) == 0 {
+		rt.Clusters = []apiv1.RuntimeCluster{defaultCluster}
+	}
+	return rt, nil
 }

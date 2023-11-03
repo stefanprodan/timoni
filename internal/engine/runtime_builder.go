@@ -168,8 +168,37 @@ func (b *RuntimeBuilder) GetRuntime(v cue.Value) (*apiv1.Runtime, error) {
 		refs = append(refs, *ref)
 	}
 
+	clusters := []apiv1.RuntimeCluster{}
+
+	clustersCue := v.LookupPath(cue.ParsePath(apiv1.RuntimeClustersSelector.String()))
+	if clustersCue.Err() == nil {
+
+		iter, err := clustersCue.Fields(cue.Concrete(true))
+		if err != nil {
+			return nil, err
+		}
+
+		for iter.Next() {
+			name := iter.Selector().Unquoted()
+			expr := iter.Value()
+
+			vGroup := expr.LookupPath(cue.ParsePath("group"))
+			group, _ := vGroup.String()
+
+			vkc := expr.LookupPath(cue.ParsePath("kubeContext"))
+			kc, _ := vkc.String()
+
+			clusters = append(clusters, apiv1.RuntimeCluster{
+				Name:        name,
+				Group:       group,
+				KubeContext: kc,
+			})
+		}
+	}
+
 	return &apiv1.Runtime{
-		Name: runtimeName,
-		Refs: refs,
+		Name:     runtimeName,
+		Clusters: clusters,
+		Refs:     refs,
 	}, nil
 }
