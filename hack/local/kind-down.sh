@@ -5,9 +5,9 @@
 
 set -o errexit
 
-cluster_name="timoni"
+CLUSTER_NAME="${CLUSTER_NAME:=timoni}"
 reg_name='timoni-registry'
 
-kind delete cluster --name ${cluster_name}
+kind delete cluster --name ${CLUSTER_NAME}
 
 docker rm -f ${reg_name}

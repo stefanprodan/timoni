@@ -14,12 +14,23 @@ tools: # Install required tools with Homebrew
 	brew bundle
 
 .PHONY: up
-up: # Start a local Kind clusters and a container registry on port 5555
+up: # Start a local Kind cluster and a container registry on port 5555
 	$(REPOSITORY_ROOT)/hack/local/kind-up.sh
 
 .PHONY: down
 down: # Teardown the Kind cluster and registry
 	$(REPOSITORY_ROOT)/hack/local/kind-down.sh
+
+.PHONY: fleet-up
+fleet-up: # Start local Kind clusters (staging and production) and a container registry on port 5555
+	CLUSTER_NAME=timoni-staging $(REPOSITORY_ROOT)/hack/local/kind-up.sh
+	CLUSTER_NAME=timoni-production $(REPOSITORY_ROOT)/hack/local/kind-up.sh
+
+.PHONY: fleet-down
+fleet-down: # Teardown the Kind clusters and registry
+	kind delete cluster --name timoni-staging
+	kind delete cluster --name timoni-production
+	docker rm -f timoni-registry
 
 .PHONY: push
 push: # Push the example modules to the local registry

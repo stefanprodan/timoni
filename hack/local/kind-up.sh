@@ -6,6 +6,7 @@
 set -o errexit
 
 CLUSTER_NAME="${CLUSTER_NAME:=timoni}"
+cluster_version="v1.28.0"
 reg_name='timoni-registry'
 reg_localhost_port='5555'
 reg_cluster_port='5000'
@@ -20,12 +21,15 @@ containerdConfigPatches:
       endpoint = ["http://${reg_name}:${reg_cluster_port}"]
 nodes:
   - role: control-plane
+    image: kindest/node:${cluster_version}
     kubeadmConfigPatches:
       - |
         kind: InitConfiguration
         nodeRegistration:
           kubeletExtraArgs:
             node-labels: "ingress-ready=true"
+  - role: worker
+    image: kindest/node:${cluster_version}
 EOF
 }
 

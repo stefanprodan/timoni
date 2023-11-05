@@ -23,6 +23,7 @@ bundle: {
 				enabled:  true
 				redisURL: "tcp://cache:6379"
 			}
+			values: test: enabled: true
 		}
 		frontend: {
 			module: {
@@ -47,6 +48,7 @@ bundle: {
 					capabilities: drop: ["ALL"]
 					seccompProfile: type: "RuntimeDefault"
 				}
+				test: enabled: true
 			}
 		}
 	}
