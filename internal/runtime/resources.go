@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"sigs.k8s.io/cli-utils/pkg/kstatus/polling"
+	"sigs.k8s.io/cli-utils/pkg/kstatus/polling/clusterreader"
 	pollingEngine "sigs.k8s.io/cli-utils/pkg/kstatus/polling/engine"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -67,6 +68,7 @@ func NewResourceManager(rcg genericclioptions.RESTClientGetter) (*ssa.ResourceMa
 		CustomStatusReaders: []pollingEngine.StatusReader{
 			NewCustomJobStatusReader(restMapper),
 		},
+		ClusterReaderFactory: pollingEngine.ClusterReaderFactoryFunc(clusterreader.NewDirectClusterReader),
 	})
 
 	man := ssa.NewResourceManager(kubeClient, kubePoller, ownerRef)
