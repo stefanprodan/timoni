@@ -121,7 +121,7 @@ $ timoni bundle build -f bundle.cue --runtime-from-env | grep redis
 ## SOPS secrets
 
 When using [SOPS](https://github.com/getsops/sops),
-we can decrypt the secrets and pipe
+we can decrypt the secrets and [inject](https://github.com/getsops/sops#passing-secrets-to-other-processes)
 those values to env vars, then use `--runtime-from-env`.
 
 Another option is to extract the secret values of a Timoni Bundle to an YAML or JSON file,
@@ -164,9 +164,5 @@ at apply-time we can run the SOPS decryption,
 and pass the plain YAML to Timoni's apply command like so:
 
 ```shell
-sops -d bundle.secret.yaml > bundle.secret.plain.yaml
-
-timoni bundle apply -f bundle.main.cue -f bundle.secret.plain.yaml
-
-rm bundle.secret.plain.yaml
+sops exec-file --filename secrets.yml bundle.secret.yaml 'timoni bundle apply -f bundle.main.cue -f {}'
 ```
