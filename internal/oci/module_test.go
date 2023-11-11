@@ -19,6 +19,7 @@ package oci
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -90,7 +91,8 @@ func TestModuleOperations(t *testing.T) {
 	}
 
 	dstPath := filepath.Join(tmpDir, "artifact")
-	modRef, err := PullModule(digestURL, dstPath, opts)
+	cacheDir := t.TempDir()
+	modRef, err := PullModule(digestURL, dstPath, cacheDir, opts)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(modRef.Version).To(BeEquivalentTo(imgVersion))
 	g.Expect(filepath.Join(dstPath, "timoni.ignore")).ToNot(BeAnExistingFile())
@@ -106,4 +108,7 @@ func TestModuleOperations(t *testing.T) {
 	} {
 		g.Expect(filepath.Join(dstPath, entry)).To(Or(BeAnExistingFile(), BeADirectory()))
 	}
+	cachedLayers, err := os.ReadDir(cacheDir)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(len(cachedLayers)).To(BeEquivalentTo(2))
 }

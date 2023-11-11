@@ -19,6 +19,9 @@ package oci
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"os"
+	"path"
 
 	"github.com/fluxcd/pkg/tar"
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -31,9 +34,10 @@ import (
 // - determines the artifact digest corresponding to the module version
 // - fetches the manifest of the remote artifact
 // - verifies that artifact config matches Timoni's media type
-// - download all the compressed layer matching Timoni's media type
+// - downloads all the compressed layer matching Timoni's media type (if not cached)
+// - stores the compressed layers in the local cache (if caching is enabled)
 // - extracts the module contents to the destination directory
-func PullModule(ociURL, dstPath string, opts []crane.Option) (*apiv1.ModuleReference, error) {
+func PullModule(ociURL, dstPath, cacheDir string, opts []crane.Option) (*apiv1.ModuleReference, error) {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return nil, err
@@ -43,7 +47,7 @@ func PullModule(ociURL, dstPath string, opts []crane.Option) (*apiv1.ModuleRefer
 
 	digest, err := crane.Digest(ref.String(), opts...)
 	if err != nil {
-		return nil, fmt.Errorf("resolving the digest for '%s' failed: %w", ociURL, err)
+		return nil, fmt.Errorf("resolving digest of '%s' failed: %w", ociURL, err)
 	}
 
 	manifestJSON, err := crane.Manifest(ref.String(), opts...)
@@ -76,24 +80,71 @@ func PullModule(ociURL, dstPath string, opts []crane.Option) (*apiv1.ModuleRefer
 		Digest:     digest,
 	}
 
+	// If caching is disable, download the compressed layers to an ephemeral tmp dir.
+	if cacheDir == "" {
+		tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+		if err != nil {
+			return nil, err
+		}
+		defer os.RemoveAll(tmpDir)
+		cacheDir = tmpDir
+	}
+
 	var foundLayer bool
 	for _, layer := range manifest.Layers {
 		if layer.MediaType == apiv1.ContentMediaType {
 			foundLayer = true
 			layerDigest := layer.Digest.String()
 			blobURL := fmt.Sprintf("%s@%s", repoURL, layerDigest)
-			layer, err := crane.PullLayer(blobURL, opts...)
-			if err != nil {
-				return nil, fmt.Errorf("pulling layer %s failed: %w", layerDigest, err)
+
+			isCached := false
+			cachedLayer := path.Join(cacheDir, fmt.Sprintf("%s.tgz", layer.Digest.Hex))
+			if _, err := os.Stat(cachedLayer); err == nil {
+				isCached = true
 			}
 
-			blob, err := layer.Compressed()
+			// Pull the compressed layer from the registry and persist the gzip tarball
+			// in the cache at '<cache-dir>/<layer-digest-hex>.tgz'.
+			if !isCached {
+				layer, err := crane.PullLayer(blobURL, opts...)
+				if err != nil {
+					return nil, fmt.Errorf("pulling layer %s failed: %w", layerDigest, err)
+				}
+
+				remote, err := layer.Compressed()
+				if err != nil {
+					return nil, fmt.Errorf("pulling layer %s failed: %w", layerDigest, err)
+				}
+
+				local, err := os.Create(cachedLayer)
+				if err != nil {
+					return nil, fmt.Errorf("writing layer to storage failed: %w", err)
+				}
+
+				if _, err := io.Copy(local, remote); err != nil {
+					return nil, fmt.Errorf("writing layer to storage failed: %w", err)
+				}
+
+				if err := local.Close(); err != nil {
+					return nil, fmt.Errorf("writing layer to storage failed: %w", err)
+				}
+			}
+
+			reader, err := os.Open(cachedLayer)
 			if err != nil {
+				return nil, fmt.Errorf("reading layer from storage failed: %w", err)
+			}
+
+			// Extract the contents from the gzip tarball stored in cache.
+			// If extraction fails, the gzip tarball is removed from cache.
+			if err = tar.Untar(reader, dstPath, tar.WithMaxUntarSize(-1)); err != nil {
+				_ = reader.Close()
+				_ = os.Remove(cachedLayer)
 				return nil, fmt.Errorf("extracting layer %s failed: %w", layerDigest, err)
 			}
 
-			if err = tar.Untar(blob, dstPath, tar.WithMaxUntarSize(-1)); err != nil {
-				return nil, fmt.Errorf("extracting layer %s failed: %w", layerDigest, err)
+			if err := reader.Close(); err != nil {
+				return nil, fmt.Errorf("reading layer from storage failed: %w", err)
 			}
 		}
 	}

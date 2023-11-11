@@ -30,21 +30,23 @@ import (
 
 // Fetcher downloads a module and extracts it locally.
 type Fetcher struct {
-	ctx     context.Context
-	src     string
-	dst     string
-	version string
-	creds   string
+	ctx      context.Context
+	src      string
+	dst      string
+	cacheDir string
+	version  string
+	creds    string
 }
 
 // NewFetcher creates a Fetcher for the given module.
-func NewFetcher(ctx context.Context, src, version, dst, creds string) *Fetcher {
+func NewFetcher(ctx context.Context, src, version, dst, cacheDir, creds string) *Fetcher {
 	return &Fetcher{
-		ctx:     ctx,
-		src:     src,
-		dst:     dst,
-		version: version,
-		creds:   creds,
+		ctx:      ctx,
+		src:      src,
+		dst:      dst,
+		version:  version,
+		cacheDir: cacheDir,
+		creds:    creds,
 	}
 }
 
@@ -103,5 +105,5 @@ func (f *Fetcher) fetchRemoteModule(dstDir string) (*apiv1.ModuleReference, erro
 	}
 
 	opts := oci.Options(f.ctx, f.creds)
-	return oci.PullModule(ociURL, dstDir, opts)
+	return oci.PullModule(ociURL, dstDir, f.cacheDir, opts)
 }

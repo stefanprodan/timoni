@@ -118,6 +118,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		buildArgs.module,
 		version,
 		tmpDir,
+		rootArgs.cacheDir,
 		buildArgs.creds.String(),
 	)
 	mod, err := fetcher.Fetch()

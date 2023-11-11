@@ -92,6 +92,7 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 		vetModArgs.path,
 		apiv1.LatestVersion,
 		tmpDir,
+		rootArgs.cacheDir,
 		"",
 	)
 	mod, err := fetcher.Fetch()

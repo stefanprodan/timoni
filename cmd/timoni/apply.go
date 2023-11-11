@@ -167,6 +167,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		applyArgs.module,
 		version,
 		tmpDir,
+		rootArgs.cacheDir,
 		applyArgs.creds.String(),
 	)
 	mod, err := fetcher.Fetch()

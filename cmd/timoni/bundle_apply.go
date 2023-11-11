@@ -234,6 +234,7 @@ func fetchBundleInstanceModule(ctx context.Context, instance *engine.BundleInsta
 		instance.Module.Repository,
 		moduleVersion,
 		modDir,
+		rootArgs.cacheDir,
 		bundleApplyArgs.creds.String(),
 	)
 	mod, err := fetcher.Fetch()
