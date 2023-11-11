@@ -13,7 +13,7 @@ The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://gi
 
     Note that the Homebrew formula will setup shell autocompletion for Bash, Fish and Zsh.
 
-=== "Install with arkade"
+=== "arkade"
 
     Install the latest release on Windows, macOS or Linux with:
     
@@ -23,7 +23,7 @@ The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://gi
 
     Note that the [Arkade](https://github.com/alexellis/arkade) version must be 0.9.11 or newer.
 
-=== "Install with nix"
+=== "nix"
 
     Install the latest release with [nix-env](https://nixos.org/manual/nix/unstable/command-ref/nix-env.html):
     
@@ -33,7 +33,37 @@ The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://gi
 
     Note that the Nix package will setup shell autocompletion for Bash, Fish and Zsh.
 
-=== "Install from source"
+=== "yay"
+
+    Install the latest release with [yay](https://github.com/Jguer/yay) (or another [AUR helper](https://wiki.archlinux.org/title/AUR_helpers)) for Arch Linux:
+    
+    ```shell
+    yay -S timoni
+    ```
+
+    If you prefer to use the upstream binaries:
+
+    ```shell
+    yay -S timoni-bin
+    ```
+
+=== "zypper"
+
+    Install the latest release with [zypper](https://github.com/openSUSE/zypper) for openSUSE:
+    
+    ```shell
+    zypper install timoni
+    ```
+
+    To setup shell autocompletion:
+
+    ```shell
+    zypper install timoni-bash-completion
+    zypper install timoni-fish-completion
+    zypper install timoni-zsh-completion
+    ```
+
+=== "from source"
 
     Using Go >= 1.21:
     
