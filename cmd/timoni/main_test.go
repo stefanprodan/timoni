@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/distribution/distribution/v3/configuration"
-	dcontext "github.com/distribution/distribution/v3/context"
 	"github.com/distribution/distribution/v3/registry"
 	_ "github.com/distribution/distribution/v3/registry/auth/htpasswd"
 	_ "github.com/distribution/distribution/v3/registry/storage/driver/inmemory"
@@ -153,14 +152,11 @@ func setupRegistryServer(ctx context.Context) error {
 	config := &configuration.Configuration{}
 	config.Log.AccessLog.Disabled = true
 	config.Log.Level = "error"
-	logger := logrus.New()
-	logger.SetOutput(io.Discard)
-	dcontext.SetDefaultLogger(logrus.NewEntry(logger))
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		return fmt.Errorf("failed to get free port: %s", err)
 	}
-
+	logrus.SetOutput(io.Discard)
 	dockerRegistry = fmt.Sprintf("localhost:%d", port)
 	config.HTTP.Addr = fmt.Sprintf("127.0.0.1:%d", port)
 	config.HTTP.DrainTimeout = time.Duration(10) * time.Second
