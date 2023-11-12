@@ -155,6 +155,17 @@ Configure your shell to load timoni completions:
     mv _timoni ~/.zprezto/modules/completion/external/src/  # zprezto
     ```
 
+## Local cache
+
+Timoni maintains a local cache of modules pulled from remote container registries.
+Cashing is meant to reduce network traffic for sequential pull operations and speeds up
+applying bundles which refer to modules with identical layers.
+
+The default cache location is `$HOME/.timoni/cache` and be changed with the `--cache-dir` global flag.
+
+If the home directory is not writable, caching can be disabled by
+setting the `TIMONI_CACHING=false` environment variable.
+
 ## SLSA Provenance & SBOMs
 
 The build, release and provenance portions of Timoni's supply chain meet the
