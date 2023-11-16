@@ -107,8 +107,8 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 
 	log := LoggerFrom(cmd.Context())
 
-	if fs, err := os.Stat(pullArtifactArgs.output); err != nil || !fs.IsDir() {
-		return fmt.Errorf("invalid output path %s", pullArtifactArgs.output)
+	if err := os.MkdirAll(pullArtifactArgs.output, os.ModePerm); err != nil {
+		return fmt.Errorf("invalid output path %s: %w", pullArtifactArgs.output, err)
 	}
 
 	if pullArtifactArgs.verify != "" {

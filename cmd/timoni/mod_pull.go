@@ -117,8 +117,8 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid output path %s", pullModArgs.output)
 	}
 
-	if fs, err := os.Stat(pullModArgs.output); err != nil || !fs.IsDir() {
-		return fmt.Errorf("invalid output path %s", pullModArgs.output)
+	if err := os.MkdirAll(pullModArgs.output, os.ModePerm); err != nil {
+		return fmt.Errorf("invalid output path %s: %w", pullModArgs.output, err)
 	}
 
 	log := LoggerFrom(cmd.Context())
