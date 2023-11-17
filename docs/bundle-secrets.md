@@ -124,7 +124,7 @@ When using [SOPS](https://github.com/getsops/sops),
 we can decrypt the secrets and [inject](https://github.com/getsops/sops#passing-secrets-to-other-processes)
 those values to env vars, then use `--runtime-from-env`.
 
-Another option is to extract the secret values of a Timoni Bundle to an YAML or JSON file,
+Another option is to extract the secret values of a Timoni Bundle to a YAML or JSON file,
 that we encrypt/decrypt with SOPS.
 
 ### Injecting secrets from SOPS

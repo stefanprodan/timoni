@@ -290,7 +290,7 @@ and will pull the module by its OCI digest.
 
 ### Instance Namespace
 
-The `instance.module` is a required field that specifies the Kubernetes namespace where the instance is created.
+The `instance.namespace` is a required field that specifies the Kubernetes namespace where the instance is created.
 
 If the specified namespace does not exist, Timoni will first create the namespace,
 then it will apply the instance's resources in that namespace.
@@ -315,7 +315,7 @@ values: {
 }
 ```
 
-To make an Runtime attribute required, the field value can be set to its type:
+To make a Runtime attribute required, the field value can be set to its type:
 
 ```cue
 values: {

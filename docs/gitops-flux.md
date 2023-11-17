@@ -35,7 +35,7 @@ in Kubernetes, will pick up the latest changes and deploy them on the cluster.
 
 ## Continuous Delivery workflow
 
-In the Git repository where Flux was bootstrap, we'll configure the reconciliation
+In the Git repository where Flux was bootstrapped, we'll configure the reconciliation
 of the Kubernetes resources pushed to the container registry.
 
 ```yaml
