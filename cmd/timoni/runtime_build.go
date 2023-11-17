@@ -32,10 +32,11 @@ import (
 
 var runtimeBuildCmd = &cobra.Command{
 	Use:   "build",
-	Short: "Build queries the cluster, extracts the values and prints them",
+	Short: "Build validates the runtime definition, queries the cluster, extracts the values and prints them",
 	Example: `  #  Print the runtime values from a cluster
   timoni runtime build -f runtime.cue
 `,
+	Args: cobra.NoArgs,
 	RunE: runRuntimeBuildCmd,
 }
 
@@ -53,6 +54,23 @@ func init() {
 
 func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	files := runtimeBuildArgs.files
+	if len(files) == 0 {
+		return fmt.Errorf("no runtime provided with -f")
+	}
+	var stdinFile string
+	for i, file := range files {
+		if file == "-" {
+			stdinFile, err := saveReaderToFile(cmd.InOrStdin())
+			if err != nil {
+				return err
+			}
+			files[i] = stdinFile
+			break
+		}
+	}
+	if stdinFile != "" {
+		defer os.Remove(stdinFile)
+	}
 
 	rt, err := buildRuntime(files)
 	if err != nil {

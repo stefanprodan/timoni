@@ -33,8 +33,11 @@ import (
 var initModCmd = &cobra.Command{
 	Use:   "init [MODULE NAME] [PATH]",
 	Short: "Create a module along with common files and directories",
-	Example: `  # create a module in the current directory
-  timoni mod init my-app .
+	Example: `  # Create a module in the current directory
+  timoni mod init my-app
+
+  # Create a module at the specified path
+  timoni mod init my-app ./modules
 `,
 	RunE: runInitModCmd,
 }
@@ -56,12 +59,16 @@ const (
 )
 
 func runInitModCmd(cmd *cobra.Command, args []string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("module name and path are required")
+	if len(args) < 1 {
+		return fmt.Errorf("module name is required")
 	}
-
 	initModArgs.name = args[0]
-	initModArgs.path = args[1]
+
+	if len(args) == 2 {
+		initModArgs.path = args[1]
+	} else {
+		initModArgs.path = "."
+	}
 
 	log := LoggerFrom(cmd.Context())
 

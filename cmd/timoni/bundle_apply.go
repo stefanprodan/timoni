@@ -59,6 +59,7 @@ var bundleApplyCmd = &cobra.Command{
   # Pass secret values from stdin
   cat ./bundle_secrets.cue | timoni bundle apply -f ./bundle.cue -f -
 `,
+	Args: cobra.NoArgs,
 	RunE: runBundleApplyCmd,
 }
 
@@ -102,17 +103,22 @@ func init() {
 func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	start := time.Now()
 	files := bundleApplyArgs.files
+	if len(files) == 0 {
+		return fmt.Errorf("no bundle provided with -f")
+	}
+	var stdinFile string
 	for i, file := range files {
 		if file == "-" {
-			path, err := saveReaderToFile(cmd.InOrStdin())
+			stdinFile, err := saveReaderToFile(cmd.InOrStdin())
 			if err != nil {
 				return err
 			}
-
-			defer os.Remove(path)
-
-			files[i] = path
+			files[i] = stdinFile
+			break
 		}
+	}
+	if stdinFile != "" {
+		defer os.Remove(stdinFile)
 	}
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
