@@ -136,6 +136,7 @@ func resetCmdArgs() {
 	vendorK8sArgs = vendorK8sFlags{}
 	pushArtifactArgs = pushArtifactFlags{}
 	pullArtifactArgs = pullArtifactFlags{}
+	runtimeBuildArgs = runtimeBuildFlags{}
 }
 
 func rnd(prefix string, n int) string {
