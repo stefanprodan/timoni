@@ -29,6 +29,8 @@ import (
 	"github.com/homeport/dyff/pkg/dyff"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 // DyffPrinter is a printer that prints dyff reports.
@@ -100,7 +102,18 @@ func instanceDryRunDiff(ctx context.Context,
 
 		change, liveObject, mergedObject, err := rm.Diff(ctx, r, diffOpts)
 		if err != nil {
-			log.Error(err, "diff failed")
+			if ssa.IsImmutableError(err) {
+				if ssa.AnyInMetadata(r, map[string]string{
+					apiv1.ForceAction: apiv1.EnabledValue,
+				}) {
+					log.Info(colorizeJoin(r, ssa.CreatedAction, dryRunServer))
+				} else {
+					log.Error(nil, colorizeJoin(r, "immutable", dryRunServer))
+				}
+			} else {
+				log.Error(err, colorizeUnstructured(r))
+			}
+
 			continue
 		}
 
