@@ -55,6 +55,7 @@ with Timoni's schema and optionally prints the computed value.
   -r runtime.cue \
   --print-value
 `,
+	Args: cobra.NoArgs,
 	RunE: runBundleVetCmd,
 }
 
@@ -84,6 +85,23 @@ func init() {
 func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 	log := LoggerFrom(cmd.Context())
 	files := bundleVetArgs.files
+	if len(files) == 0 {
+		return fmt.Errorf("no bundle provided with -f")
+	}
+	var stdinFile string
+	for i, file := range files {
+		if file == "-" {
+			stdinFile, err := saveReaderToFile(cmd.InOrStdin())
+			if err != nil {
+				return err
+			}
+			files[i] = stdinFile
+			break
+		}
+	}
+	if stdinFile != "" {
+		defer os.Remove(stdinFile)
+	}
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
