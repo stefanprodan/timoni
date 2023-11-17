@@ -6,7 +6,7 @@ the OCI artifact can be cryptographically signed to improve the software supply 
 ## Cosign
 
 Timoni can sign modules using Sigstore Cosign.
-[Cosign](https://github.com/sigstore/cosign) is tool that allows you to sign and verify
+[Cosign](https://github.com/sigstore/cosign) is a tool that allows you to sign and verify
 OCI artifacts with a public/private key pair or with an OIDC token provided by GitHub, Google or Microsoft.
 
 To sign modules, you need to [install](https://docs.sigstore.dev/system_config/installation/)

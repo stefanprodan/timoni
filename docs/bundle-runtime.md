@@ -150,11 +150,6 @@ Currently, the only supported value is `v1alpha1`.
 
 The `name` is a required field used to identify the Runtime.
 
-### Optional
-
-The `optional` field can be set to `true` and Timoni will skip
-not found Kubernetes resources instead of throwing an error.
-
 ### Values
 
 The `values` array is a required field that specifies the list of Kubernetes resources and the fields to be extracted.
@@ -226,6 +221,11 @@ runtime: {
 ```
 
 The CUE expression must result in a concrete value of type `string`, `number` or `bool`.
+
+#### Optional
+
+The `optional` field can be set to `true` and Timoni will skip
+not found Kubernetes resources instead of throwing an error.
 
 ## Using values from Kubernetes API
 
