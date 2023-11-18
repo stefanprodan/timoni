@@ -443,6 +443,8 @@ bundle: {
 			values: client: enabled: true @timoni(runtime:bool:CLIENT)
 			values: server: enabled: false @timoni(runtime:bool:ENABLED)
 			values: domain: string @timoni(runtime:string:DOMAIN)
+			values: metadata: labels: "cluster": string @timoni(runtime:string:TIMONI_CLUSTER_NAME)
+			values: metadata: labels: "env": string @timoni(runtime:string:TIMONI_CLUSTER_GROUP)
 		}
 	}
 }
@@ -452,6 +454,12 @@ bundle: {
 runtime: {
 	apiVersion: "v1alpha1"
 	name:       "test"
+	clusters: {
+		"test": {
+			group:       "testing"
+			kubeContext: "envtest"
+		}
+	}
 	values: [
 		{
 			query: "k8s:v1:Secret:%[1]s:%[2]s"
@@ -518,6 +526,8 @@ runtime: {
 		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(scm), scm)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(scm.Data["hostname"]).To(BeEquivalentTo("test.local"))
+		g.Expect(scm.GetLabels()).To(HaveKeyWithValue("cluster", "test"))
+		g.Expect(scm.GetLabels()).To(HaveKeyWithValue("env", "testing"))
 	})
 
 	t.Run("overrides env vars", func(t *testing.T) {
@@ -556,5 +566,29 @@ runtime: {
 		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(ccm), ccm)
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+	})
+
+	t.Run("fails for wrong cluster name selector", func(t *testing.T) {
+		g := NewWithT(t)
+
+		cmd := fmt.Sprintf("bundle apply -p main --wait -f- -r=%s --runtime-cluster=prod",
+			runtimePath,
+		)
+
+		_, err := executeCommandWithIn(cmd, strings.NewReader(bundleData))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("no cluster found"))
+	})
+
+	t.Run("fails for wrong cluster group selector", func(t *testing.T) {
+		g := NewWithT(t)
+
+		cmd := fmt.Sprintf("bundle apply -p main --wait -f- -r=%s --runtime-group=prod",
+			runtimePath,
+		)
+
+		_, err := executeCommandWithIn(cmd, strings.NewReader(bundleData))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("no cluster found"))
 	})
 }
