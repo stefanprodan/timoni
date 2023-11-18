@@ -196,11 +196,23 @@ func colorizeCluster(cluster string) string {
 	return colorCallerPrefix.Sprint("c:") + colorInstance.Sprint(cluster)
 }
 
-func LoggerBundle(ctx context.Context, bundle string) logr.Logger {
-	if !rootArgs.prettyLog {
-		return LoggerFrom(ctx, "bundle", bundle)
+func LoggerBundle(ctx context.Context, bundle, cluster string) logr.Logger {
+	switch cluster {
+	case apiv1.RuntimeDefaultName:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "bundle", bundle)
+		}
+		return LoggerFrom(ctx, "caller", colorizeBundle(bundle))
+	default:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "bundle", bundle, "cluster", cluster)
+		}
+		return LoggerFrom(ctx, "caller",
+			fmt.Sprintf("%s %s %s",
+				colorizeBundle(bundle),
+				color.CyanString(">"),
+				colorizeCluster(cluster)))
 	}
-	return LoggerFrom(ctx, "caller", colorizeBundle(bundle))
 }
 
 func LoggerInstance(ctx context.Context, instance string) logr.Logger {
@@ -210,11 +222,30 @@ func LoggerInstance(ctx context.Context, instance string) logr.Logger {
 	return LoggerFrom(ctx, "caller", colorizeInstance(instance))
 }
 
-func LoggerBundleInstance(ctx context.Context, bundle, instance string) logr.Logger {
-	if !rootArgs.prettyLog {
-		return LoggerFrom(ctx, "bundle", bundle, "instance", instance)
+func LoggerBundleInstance(ctx context.Context, bundle, cluster, instance string) logr.Logger {
+	switch cluster {
+	case apiv1.RuntimeDefaultName:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "bundle", bundle, "instance", instance)
+		}
+		return LoggerFrom(ctx, "caller",
+			fmt.Sprintf("%s %s %s",
+				colorizeBundle(bundle),
+				color.CyanString(">"),
+				colorizeInstance(instance)))
+	default:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "bundle", bundle, "cluster", cluster, "instance", instance)
+		}
+		return LoggerFrom(ctx, "caller",
+			fmt.Sprintf("%s %s %s %s %s",
+				colorizeBundle(bundle),
+				color.CyanString(">"),
+				colorizeCluster(cluster),
+				color.CyanString(">"),
+				colorizeInstance(instance)))
+
 	}
-	return LoggerFrom(ctx, "caller", fmt.Sprintf("%s %s %s", colorizeBundle(bundle), color.CyanString(">"), colorizeInstance(instance)))
 }
 
 func LoggerRuntime(ctx context.Context, runtime, cluster string) logr.Logger {

@@ -154,7 +154,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	log = LoggerBundle(logr.NewContext(cmd.Context(), log), bundle.Name)
+	log = LoggerBundle(logr.NewContext(cmd.Context(), log), bundle.Name, apiv1.RuntimeDefaultName)
 
 	if len(bundle.Instances) == 0 {
 		return fmt.Errorf("no instances found in bundle")
@@ -173,7 +173,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 		if i.Namespace == "" {
 			return fmt.Errorf("instance %s does not have a namespace", i.Name)
 		}
-		log := LoggerBundleInstance(logr.NewContext(cmd.Context(), log), bundle.Name, i.Name)
+		log := LoggerBundleInstance(logr.NewContext(cmd.Context(), log), bundle.Name, apiv1.RuntimeDefaultName, i.Name)
 		log.Info("instance is valid")
 	}
 

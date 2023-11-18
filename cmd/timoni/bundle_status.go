@@ -94,7 +94,7 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, instance := range instances {
-		log := LoggerBundleInstance(ctx, bundleStatusArgs.name, instance.Name)
+		log := LoggerBundleInstance(ctx, bundleStatusArgs.name, apiv1.RuntimeDefaultName, instance.Name)
 
 		log.Info(fmt.Sprintf("last applied %s",
 			colorizeSubject(instance.LastTransitionTime)))

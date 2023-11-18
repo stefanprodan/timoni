@@ -100,7 +100,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log := LoggerBundle(ctx, bundleDelArgs.name)
+	log := LoggerBundle(ctx, bundleDelArgs.name, apiv1.RuntimeDefaultName)
 	iStorage := runtime.NewStorageManager(sm)
 
 	instances, err := iStorage.List(ctx, "", bundleDelArgs.name)
@@ -129,7 +129,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 }
 
 func deleteBundleInstance(ctx context.Context, instance *engine.BundleInstance, wait bool, dryrun bool) error {
-	log := LoggerBundle(ctx, instance.Bundle)
+	log := LoggerBundle(ctx, instance.Bundle, apiv1.RuntimeDefaultName)
 
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {

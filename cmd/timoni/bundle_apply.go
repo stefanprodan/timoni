@@ -173,7 +173,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	log := LoggerBundle(cmd.Context(), bundle.Name)
+	log := LoggerBundle(cmd.Context(), bundle.Name, apiv1.RuntimeDefaultName)
 
 	if !bundleApplyArgs.overwriteOwnership {
 		err = bundleInstancesOwnershipConflicts(bundle.Instances)
@@ -258,7 +258,7 @@ func fetchBundleInstanceModule(ctx context.Context, instance *engine.BundleInsta
 }
 
 func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *engine.BundleInstance, kubeVersion string, rootDir string) error {
-	log := LoggerBundleInstance(ctx, instance.Bundle, instance.Name)
+	log := LoggerBundleInstance(ctx, instance.Bundle, apiv1.RuntimeDefaultName, instance.Name)
 
 	modDir := path.Join(rootDir, instance.Name, "module")
 	builder := engine.NewModuleBuilder(
