@@ -60,11 +60,9 @@ with Timoni's schema and optionally prints the computed value.
 }
 
 type bundleVetFlags struct {
-	pkg            flags.Package
-	files          []string
-	runtimeFromEnv bool
-	runtimeFiles   []string
-	printValue     bool
+	pkg        flags.Package
+	files      []string
+	printValue bool
 }
 
 var bundleVetArgs bundleVetFlags
@@ -73,10 +71,6 @@ func init() {
 	bundleVetCmd.Flags().VarP(&bundleVetArgs.pkg, bundleVetArgs.pkg.Type(), bundleVetArgs.pkg.Shorthand(), bundleVetArgs.pkg.Description())
 	bundleVetCmd.Flags().StringSliceVarP(&bundleVetArgs.files, "file", "f", nil,
 		"The local path to bundle.cue files.")
-	bundleVetCmd.Flags().BoolVar(&bundleVetArgs.runtimeFromEnv, "runtime-from-env", false,
-		"Inject runtime values from the environment.")
-	bundleVetCmd.Flags().StringSliceVarP(&bundleVetArgs.runtimeFiles, "runtime", "r", nil,
-		"The local path to runtime.cue files.")
 	bundleVetCmd.Flags().BoolVar(&bundleVetArgs.printValue, "print-value", false,
 		"Print the computed value of the bundle.")
 	bundleCmd.AddCommand(bundleVetCmd)
@@ -114,15 +108,15 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 
 	runtimeValues := make(map[string]string)
 
-	if bundleVetArgs.runtimeFromEnv {
+	if bundleArgs.runtimeFromEnv {
 		maps.Copy(runtimeValues, engine.GetEnv())
 	}
 
-	if len(bundleVetArgs.runtimeFiles) > 0 {
+	if len(bundleArgs.runtimeFiles) > 0 {
 		kctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 		defer cancel()
 
-		rt, err := buildRuntime(bundleVetArgs.runtimeFiles)
+		rt, err := buildRuntime(bundleArgs.runtimeFiles)
 		if err != nil {
 			return err
 		}

@@ -128,6 +128,7 @@ func resetCmdArgs() {
 	listArgs = listFlags{}
 	pullModArgs = pullModFlags{}
 	pushModArgs = pushModFlags{}
+	bundleArgs = bundleFlags{}
 	bundleApplyArgs = bundleApplyFlags{}
 	bundleVetArgs = bundleVetFlags{}
 	bundleDelArgs = bundleDelFlags{}

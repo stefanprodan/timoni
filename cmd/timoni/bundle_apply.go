@@ -71,8 +71,6 @@ type bundleApplyFlags struct {
 	wait               bool
 	force              bool
 	overwriteOwnership bool
-	runtimeFromEnv     bool
-	runtimeFiles       []string
 	creds              flags.Credentials
 }
 
@@ -92,10 +90,6 @@ func init() {
 		"Perform a server-side apply dry run and prints the diff.")
 	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.wait, "wait", true,
 		"Wait for the applied Kubernetes objects to become ready.")
-	bundleApplyCmd.Flags().StringSliceVarP(&bundleApplyArgs.runtimeFiles, "runtime", "r", nil,
-		"The local path to runtime.cue files.")
-	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.runtimeFromEnv, "runtime-from-env", false,
-		"Inject runtime values from the environment.")
 	bundleApplyCmd.Flags().Var(&bundleApplyArgs.creds, bundleApplyArgs.creds.Type(), bundleApplyArgs.creds.Description())
 	bundleCmd.AddCommand(bundleApplyCmd)
 }
@@ -135,12 +129,12 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 
 	runtimeValues := make(map[string]string)
 
-	if bundleApplyArgs.runtimeFromEnv {
+	if bundleArgs.runtimeFromEnv {
 		maps.Copy(runtimeValues, engine.GetEnv())
 	}
 
-	if len(bundleApplyArgs.runtimeFiles) > 0 {
-		rt, err := buildRuntime(bundleApplyArgs.runtimeFiles)
+	if len(bundleArgs.runtimeFiles) > 0 {
+		rt, err := buildRuntime(bundleArgs.runtimeFiles)
 		if err != nil {
 			return err
 		}

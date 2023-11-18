@@ -55,11 +55,9 @@ var bundleBuildCmd = &cobra.Command{
 }
 
 type bundleBuildFlags struct {
-	pkg            flags.Package
-	files          []string
-	creds          flags.Credentials
-	runtimeFromEnv bool
-	runtimeFiles   []string
+	pkg   flags.Package
+	files []string
+	creds flags.Credentials
 }
 
 var bundleBuildArgs bundleBuildFlags
@@ -68,10 +66,6 @@ func init() {
 	bundleBuildCmd.Flags().VarP(&bundleBuildArgs.pkg, bundleBuildArgs.pkg.Type(), bundleBuildArgs.pkg.Shorthand(), bundleBuildArgs.pkg.Description())
 	bundleBuildCmd.Flags().StringSliceVarP(&bundleBuildArgs.files, "file", "f", nil,
 		"The local path to bundle.cue files.")
-	bundleBuildCmd.Flags().BoolVar(&bundleBuildArgs.runtimeFromEnv, "runtime-from-env", false,
-		"Inject runtime values from the environment.")
-	bundleBuildCmd.Flags().StringSliceVarP(&bundleBuildArgs.runtimeFiles, "runtime", "r", nil,
-		"The local path to runtime.cue files.")
 	bundleBuildCmd.Flags().Var(&bundleBuildArgs.creds, bundleBuildArgs.creds.Type(), bundleBuildArgs.creds.Description())
 	bundleCmd.AddCommand(bundleBuildCmd)
 }
@@ -107,15 +101,15 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 
 	runtimeValues := make(map[string]string)
 
-	if bundleBuildArgs.runtimeFromEnv {
+	if bundleArgs.runtimeFromEnv {
 		maps.Copy(runtimeValues, engine.GetEnv())
 	}
 
-	if len(bundleBuildArgs.runtimeFiles) > 0 {
+	if len(bundleArgs.runtimeFiles) > 0 {
 		kctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 		defer cancel()
 
-		rt, err := buildRuntime(bundleBuildArgs.runtimeFiles)
+		rt, err := buildRuntime(bundleArgs.runtimeFiles)
 		if err != nil {
 			return err
 		}

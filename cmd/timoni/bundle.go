@@ -20,11 +20,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type bundleFlags struct {
+	runtimeFromEnv      bool
+	runtimeFiles        []string
+	runtimeCluster      string
+	runtimeClusterGroup string
+}
+
+var bundleArgs bundleFlags
+
 var bundleCmd = &cobra.Command{
 	Use:   "bundle",
 	Short: "Commands for managing bundles",
 }
 
 func init() {
+	bundleCmd.PersistentFlags().BoolVar(&bundleArgs.runtimeFromEnv, "runtime-from-env", false,
+		"Inject runtime values from the environment.")
+	bundleCmd.PersistentFlags().StringSliceVarP(&bundleArgs.runtimeFiles, "runtime", "r", nil,
+		"The local path to runtime.cue files.")
+	bundleCmd.PersistentFlags().StringVar(&bundleArgs.runtimeCluster, "runtime-cluster", "*",
+		"Filter runtime cluster by name.")
+	bundleCmd.PersistentFlags().StringVar(&bundleArgs.runtimeCluster, "runtime-group", "*",
+		"Filter runtime clusters by group.")
 	rootCmd.AddCommand(bundleCmd)
 }
