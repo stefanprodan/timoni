@@ -27,6 +27,9 @@ const (
 	// RuntimeKind is the name of the Timoni runtime CUE attributes.
 	RuntimeKind string = "runtime"
 
+	// RuntimeDefaultName is the name of the default Timoni runtime.
+	RuntimeDefaultName string = "_default"
+
 	// RuntimeDelimiter is the delimiter used in Timoni runtime CUE attributes.
 	RuntimeDelimiter string = ":"
 
@@ -116,6 +119,22 @@ type Runtime struct {
 	Refs []RuntimeResourceRef `json:"refs"`
 }
 
+// DefaultRuntime returns a Runtime with a single
+// cluster set to specified context.
+func DefaultRuntime(kubeContext string) *Runtime {
+	defaultCluster := RuntimeCluster{
+		Name:        RuntimeDefaultName,
+		Group:       RuntimeDefaultName,
+		KubeContext: kubeContext,
+	}
+
+	return &Runtime{
+		Name:     RuntimeDefaultName,
+		Clusters: []RuntimeCluster{defaultCluster},
+		Refs:     []RuntimeResourceRef{},
+	}
+}
+
 // RuntimeCluster holds the reference to a Kubernetes cluster.
 type RuntimeCluster struct {
 	// Name of the cluster.
@@ -126,6 +145,22 @@ type RuntimeCluster struct {
 
 	// KubeContext is the name of kubeconfig context for this cluster.
 	KubeContext string `json:"kubeContext"`
+}
+
+// SelectClusters returns the clusters matching the specified name and group.
+// Both the name and group support the '*' wildcard.
+func (r *Runtime) SelectClusters(name, group string) []RuntimeCluster {
+	var result []RuntimeCluster
+	for _, cluster := range r.Clusters {
+		if name != "" && name != "*" && !strings.EqualFold(cluster.Name, name) {
+			continue
+		}
+		if group != "" && group != "*" && !strings.EqualFold(cluster.Group, group) {
+			continue
+		}
+		result = append(result, cluster)
+	}
+	return result
 }
 
 // RuntimeResourceRef holds the data needed to query the fields
