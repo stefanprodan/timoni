@@ -181,7 +181,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 				return err
 			}
 			bundleCue := fmt.Sprintf("bundle: %v\n", val)
-			if cluster.Name != apiv1.RuntimeDefaultName {
+			if !cluster.IsDefault() {
 				bundleCue = fmt.Sprintf("\"%s\": bundle: %v\n", cluster.Name, val)
 			}
 			_, err := rootCmd.OutOrStdout().Write([]byte(bundleCue))

@@ -119,8 +119,8 @@ type Runtime struct {
 	Refs []RuntimeResourceRef `json:"refs"`
 }
 
-// DefaultRuntime returns a Runtime with a single
-// cluster set to specified context.
+// DefaultRuntime returns an empty Runtime with an unnamed
+// cluster set to the specified context.
 func DefaultRuntime(kubeContext string) *Runtime {
 	defaultCluster := RuntimeCluster{
 		Name:        RuntimeDefaultName,
@@ -147,10 +147,18 @@ type RuntimeCluster struct {
 	KubeContext string `json:"kubeContext"`
 }
 
-// NameGroupValues returns the Timoni runtime values for this cluster.
+// IsDefault returns true if the given cluster
+// was initialised by a Runtime with no target clusters.
+func (rt *RuntimeCluster) IsDefault() bool {
+	return rt.Name == RuntimeDefaultName
+}
+
+// NameGroupValues returns the cluster name and group variables
+// as specified in the Runtime definition. If the given cluster
+// was initialised by an empty Runtime, the returned map is empty.
 func (rt *RuntimeCluster) NameGroupValues() map[string]string {
 	result := make(map[string]string)
-	if rt.Name != RuntimeDefaultName {
+	if !rt.IsDefault() {
 		result["TIMONI_CLUSTER_NAME"] = rt.Name
 		result["TIMONI_CLUSTER_GROUP"] = rt.Group
 	}
