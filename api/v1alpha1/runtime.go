@@ -147,6 +147,16 @@ type RuntimeCluster struct {
 	KubeContext string `json:"kubeContext"`
 }
 
+// NameGroupValues returns the Timoni runtime values for this cluster.
+func (rt *RuntimeCluster) NameGroupValues() map[string]string {
+	result := make(map[string]string)
+	if rt.Name != RuntimeDefaultName {
+		result["TIMONI_CLUSTER_NAME"] = rt.Name
+		result["TIMONI_CLUSTER_GROUP"] = rt.Group
+	}
+	return result
+}
+
 // SelectClusters returns the clusters matching the specified name and group.
 // Both the name and group support the '*' wildcard.
 func (r *Runtime) SelectClusters(name, group string) []RuntimeCluster {
