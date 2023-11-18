@@ -41,7 +41,9 @@ var runtimeBuildCmd = &cobra.Command{
 }
 
 type runtimeBuildFlags struct {
-	files []string
+	files                []string
+	clusterSelector      string
+	clusterGroupSelector string
 }
 
 var runtimeBuildArgs runtimeBuildFlags
@@ -49,6 +51,10 @@ var runtimeBuildArgs runtimeBuildFlags
 func init() {
 	runtimeBuildCmd.Flags().StringSliceVarP(&runtimeBuildArgs.files, "file", "f", nil,
 		"The local path to runtime.cue files.")
+	runtimeBuildCmd.Flags().StringVar(&runtimeBuildArgs.clusterSelector, "cluster", "*",
+		"Select cluster by name.")
+	runtimeBuildCmd.Flags().StringVar(&runtimeBuildArgs.clusterGroupSelector, "cluster-group", "*",
+		"Select clusters by group name.")
 	runtimeCmd.AddCommand(runtimeBuildCmd)
 }
 
@@ -80,7 +86,12 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
-	for _, cluster := range rt.Clusters {
+	clusters := rt.SelectClusters(runtimeBuildArgs.clusterSelector, runtimeBuildArgs.clusterGroupSelector)
+	if len(clusters) == 0 {
+		return fmt.Errorf("no cluster found")
+	}
+
+	for _, cluster := range clusters {
 		log := LoggerRuntime(cmd.Context(), rt.Name, cluster.Name)
 
 		kubeconfigArgs.Context = &cluster.KubeContext
@@ -116,18 +127,9 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 }
 
 func buildRuntime(files []string) (*apiv1.Runtime, error) {
-	defaultCluster := apiv1.RuntimeCluster{
-		Name:        "default",
-		Group:       "default",
-		KubeContext: *kubeconfigArgs.Context,
-	}
+	defaultRuntime := apiv1.DefaultRuntime(*kubeconfigArgs.Context)
 	if len(files) == 0 {
-		defaultRuntime := apiv1.Runtime{
-			Name:     "default",
-			Clusters: []apiv1.RuntimeCluster{defaultCluster},
-			Refs:     []apiv1.RuntimeResourceRef{},
-		}
-		return &defaultRuntime, nil
+		return defaultRuntime, nil
 	}
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
@@ -154,7 +156,7 @@ func buildRuntime(files []string) (*apiv1.Runtime, error) {
 	}
 
 	if len(rt.Clusters) == 0 {
-		rt.Clusters = []apiv1.RuntimeCluster{defaultCluster}
+		rt.Clusters = defaultRuntime.Clusters
 	}
 	return rt, nil
 }

@@ -34,6 +34,8 @@ import (
 	"github.com/rs/zerolog"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	runtimeLog "sigs.k8s.io/controller-runtime/pkg/log"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 // NewConsoleLogger returns a human-friendly Logger.
@@ -216,10 +218,20 @@ func LoggerBundleInstance(ctx context.Context, bundle, instance string) logr.Log
 }
 
 func LoggerRuntime(ctx context.Context, runtime, cluster string) logr.Logger {
-	if !rootArgs.prettyLog {
-		return LoggerFrom(ctx, "runtime", runtime, "cluster", cluster)
+	switch cluster {
+	case apiv1.RuntimeDefaultName:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "runtime", runtime)
+		}
+		return LoggerFrom(ctx, "caller", colorizeRuntime(runtime))
+	default:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "runtime", runtime, "cluster", cluster)
+		}
+		return LoggerFrom(ctx, "caller",
+			fmt.Sprintf("%s %s %s", colorizeRuntime(runtime),
+				color.CyanString(">"), colorizeCluster(cluster)))
 	}
-	return LoggerFrom(ctx, "caller", fmt.Sprintf("%s %s %s", colorizeRuntime(runtime), color.CyanString(">"), colorizeCluster(cluster)))
 }
 
 // LoggerFrom returns a logr.Logger with predefined values from a context.Context.

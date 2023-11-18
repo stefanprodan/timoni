@@ -167,7 +167,7 @@ runtime: {
 	err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(ns), ns)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	t.Run("builds runtime for clusters with UID", func(t *testing.T) {
+	t.Run("builds runtime for all clusters", func(t *testing.T) {
 		g := NewWithT(t)
 
 		output, err := executeCommandWithIn("runtime build -f-", strings.NewReader(runtimeData))
@@ -189,5 +189,39 @@ runtime: {
 		}
 		g.Expect(scanner.Err()).ToNot(HaveOccurred())
 		g.Expect(i).To(BeEquivalentTo(2))
+	})
+
+	t.Run("builds runtime for selected cluster", func(t *testing.T) {
+		g := NewWithT(t)
+
+		output, err := executeCommandWithIn("runtime build --cluster=staging -f-", strings.NewReader(runtimeData))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		scanner := bufio.NewScanner(strings.NewReader(output))
+		var i int
+		for scanner.Scan() {
+			i++
+			g.Expect(scanner.Text()).To(MatchRegexp("staging.*CLUSTER_UID.*%s", string(ns.UID)))
+		}
+		g.Expect(scanner.Err()).ToNot(HaveOccurred())
+		g.Expect(i).To(BeEquivalentTo(1))
+	})
+
+	t.Run("builds runtime for selected group", func(t *testing.T) {
+		g := NewWithT(t)
+
+		output, err := executeCommandWithIn("runtime build --cluster-group=production -f-", strings.NewReader(runtimeData))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		scanner := bufio.NewScanner(strings.NewReader(output))
+		var i int
+		for scanner.Scan() {
+			i++
+			g.Expect(scanner.Text()).To(MatchRegexp("production.*CLUSTER_UID.*%s", string(ns.UID)))
+		}
+		g.Expect(scanner.Err()).ToNot(HaveOccurred())
+		g.Expect(i).To(BeEquivalentTo(1))
 	})
 }
