@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
@@ -112,65 +113,94 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 		maps.Copy(runtimeValues, engine.GetEnv())
 	}
 
-	if len(bundleArgs.runtimeFiles) > 0 {
-		kctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
-		defer cancel()
+	rt, err := buildRuntime(bundleArgs.runtimeFiles)
+	if err != nil {
+		return err
+	}
 
-		rt, err := buildRuntime(bundleArgs.runtimeFiles)
-		if err != nil {
-			return err
-		}
+	clusters := rt.SelectClusters(bundleArgs.runtimeCluster, bundleArgs.runtimeClusterGroup)
+	if len(clusters) == 0 {
+		return fmt.Errorf("no cluster found")
+	}
 
+	kctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+	defer cancel()
+
+	for _, cluster := range clusters {
+		kubeconfigArgs.Context = &cluster.KubeContext
+
+		clusterValues := make(map[string]string)
+
+		// add values from env
+		maps.Copy(clusterValues, runtimeValues)
+
+		// add values from cluster
 		rm, err := runtime.NewResourceManager(kubeconfigArgs)
 		if err != nil {
 			return err
 		}
-
 		reader := runtime.NewResourceReader(rm)
 		rv, err := reader.Read(kctx, rt.Refs)
 		if err != nil {
 			return err
 		}
+		maps.Copy(clusterValues, rv)
 
-		maps.Copy(runtimeValues, rv)
-	}
+		// add cluster info
+		maps.Copy(clusterValues, cluster.NameGroupValues())
 
-	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {
-		return describeErr(tmpDir, "failed to parse bundle", err)
-	}
-
-	v, err := bm.Build()
-	if err != nil {
-		return describeErr(tmpDir, "failed to build bundle", err)
-	}
-
-	bundle, err := bm.GetBundle(v)
-	if err != nil {
-		return err
-	}
-	log = LoggerBundle(logr.NewContext(cmd.Context(), log), bundle.Name, apiv1.RuntimeDefaultName)
-
-	if len(bundle.Instances) == 0 {
-		return fmt.Errorf("no instances found in bundle")
-	}
-
-	if bundleVetArgs.printValue {
-		val := v.LookupPath(cue.ParsePath("bundle"))
-		if val.Err() != nil {
+		// create cluster workspace
+		workspace := path.Join(tmpDir, cluster.Name)
+		if err := os.MkdirAll(workspace, os.ModePerm); err != nil {
 			return err
 		}
-		_, err := rootCmd.OutOrStdout().Write([]byte(fmt.Sprintf("bundle: %v\n", val)))
-		return err
-	}
 
-	for _, i := range bundle.Instances {
-		if i.Namespace == "" {
-			return fmt.Errorf("instance %s does not have a namespace", i.Name)
+		if err := bm.InitWorkspace(workspace, clusterValues); err != nil {
+			return describeErr(workspace, "failed to parse bundle", err)
 		}
-		log := LoggerBundleInstance(logr.NewContext(cmd.Context(), log), bundle.Name, apiv1.RuntimeDefaultName, i.Name)
-		log.Info("instance is valid")
+
+		v, err := bm.Build()
+		if err != nil {
+			return describeErr(workspace, "failed to build bundle", err)
+		}
+
+		bundle, err := bm.GetBundle(v)
+		if err != nil {
+			return err
+		}
+
+		log = LoggerBundle(logr.NewContext(cmd.Context(), log), bundle.Name, apiv1.RuntimeDefaultName)
+
+		if len(bundle.Instances) == 0 {
+			return fmt.Errorf("no instances found in bundle")
+		}
+
+		if bundleVetArgs.printValue {
+			val := v.LookupPath(cue.ParsePath("bundle"))
+			if val.Err() != nil {
+				return err
+			}
+			bundleCue := fmt.Sprintf("bundle: %v\n", val)
+			if cluster.Name != apiv1.RuntimeDefaultName {
+				bundleCue = fmt.Sprintf("\"%s\": bundle: %v\n", cluster.Name, val)
+			}
+			_, err := rootCmd.OutOrStdout().Write([]byte(bundleCue))
+			if err != nil {
+				return err
+			}
+		} else {
+			for _, i := range bundle.Instances {
+				if i.Namespace == "" {
+					return fmt.Errorf("instance %s does not have a namespace", i.Name)
+				}
+				log := LoggerBundleInstance(logr.NewContext(cmd.Context(), log), bundle.Name, cluster.Name, i.Name)
+				log.Info("instance is valid")
+			}
+		}
 	}
 
-	log.Info("bundle is valid")
+	if !bundleVetArgs.printValue {
+		log.Info("bundle is valid")
+	}
 	return nil
 }
