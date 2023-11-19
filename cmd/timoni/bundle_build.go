@@ -114,6 +114,17 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 			return err
 		}
 
+		clusters := rt.SelectClusters(bundleArgs.runtimeCluster, bundleArgs.runtimeClusterGroup)
+		if len(clusters) > 1 {
+			return fmt.Errorf("you must select a cluster with --runtime-cluster")
+		}
+		if len(clusters) == 0 {
+			return fmt.Errorf("no cluster found")
+		}
+
+		cluster := clusters[0]
+		kubeconfigArgs.Context = &cluster.KubeContext
+
 		rm, err := runtime.NewResourceManager(kubeconfigArgs)
 		if err != nil {
 			return err
@@ -126,6 +137,7 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		}
 
 		maps.Copy(runtimeValues, rv)
+		maps.Copy(runtimeValues, cluster.NameGroupValues())
 	}
 
 	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {

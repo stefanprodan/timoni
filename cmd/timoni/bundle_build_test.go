@@ -135,9 +135,86 @@ bundle:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(found).To(BeTrue())
 				g.Expect(host).To(ContainSubstring("example.internal"))
-
 			})
 		}
+	})
+}
+
+func Test_BundleBuild_Runtime(t *testing.T) {
+	g := NewWithT(t)
+
+	bundleName := rnd("my-bundle", 5)
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+	modVer := "1.0.0"
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s",
+		modPath,
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	bundleData := fmt.Sprintf(`
+bundle: {
+	_cluster: string @timoni(runtime:string:TIMONI_CLUSTER_NAME)
+
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		"\(_cluster)-app": {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+		}
+	}
+}
+`, bundleName, modURL, modVer, namespace)
+
+	runtimeCue := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "fleet-test"
+	clusters: {
+		"staging": {
+			group:       "staging"
+			kubeContext: "envtest"
+		}
+		"production": {
+			group:       "production"
+			kubeContext: "envtest"
+		}
+	}
+	values: []
+}
+`
+
+	runtimePath := filepath.Join(t.TempDir(), "runtime.cue")
+	g.Expect(os.WriteFile(runtimePath, []byte(runtimeCue), 0644)).ToNot(HaveOccurred())
+
+	t.Run("fails for multiple clusters", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err = executeCommandWithIn(
+			fmt.Sprintf("bundle build -f- -r %s -p main", runtimePath),
+			strings.NewReader(bundleData))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("select a cluster"))
+	})
+
+	t.Run("builds for a single cluster", func(t *testing.T) {
+		g := NewWithT(t)
+
+		output, err := executeCommandWithIn(
+			fmt.Sprintf("bundle build -f- -r %s -p main --runtime-group=production", runtimePath),
+			strings.NewReader(bundleData))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).ToNot(ContainSubstring("staging-app"))
+		g.Expect(output).To(ContainSubstring("production-app"))
 	})
 }
 

@@ -41,7 +41,7 @@ func init() {
 		"The local path to runtime.cue files.")
 	bundleCmd.PersistentFlags().StringVar(&bundleArgs.runtimeCluster, "runtime-cluster", "*",
 		"Filter runtime cluster by name.")
-	bundleCmd.PersistentFlags().StringVar(&bundleArgs.runtimeCluster, "runtime-group", "*",
+	bundleCmd.PersistentFlags().StringVar(&bundleArgs.runtimeClusterGroup, "runtime-group", "*",
 		"Filter runtime clusters by group.")
 	rootCmd.AddCommand(bundleCmd)
 }
