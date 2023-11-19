@@ -92,44 +92,60 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 		bundleDelArgs.name = args[0]
 	}
 
-	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+	rt, err := buildRuntime(bundleArgs.runtimeFiles)
+	if err != nil {
+		return err
+	}
+
+	clusters := rt.SelectClusters(bundleArgs.runtimeCluster, bundleArgs.runtimeClusterGroup)
+	if len(clusters) == 0 {
+		return fmt.Errorf("no cluster found")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	sm, err := runtime.NewResourceManager(kubeconfigArgs)
-	if err != nil {
-		return err
-	}
+	for _, cluster := range clusters {
+		kubeconfigArgs.Context = &cluster.KubeContext
 
-	log := LoggerBundle(ctx, bundleDelArgs.name, apiv1.RuntimeDefaultName)
-	iStorage := runtime.NewStorageManager(sm)
-
-	instances, err := iStorage.List(ctx, "", bundleDelArgs.name)
-	if err != nil {
-		return err
-	}
-
-	if len(instances) == 0 {
-		return fmt.Errorf("no instances found in bundle")
-	}
-
-	// delete in revers order (last installed, first to uninstall)
-	for index := len(instances) - 1; index >= 0; index-- {
-		instance := instances[index]
-		log.Info(fmt.Sprintf("deleting instance %s in namespace %s",
-			colorizeSubject(instance.Name), colorizeSubject(instance.Namespace)))
-		if err := deleteBundleInstance(ctx, &engine.BundleInstance{
-			Bundle:    bundleDelArgs.name,
-			Name:      instance.Name,
-			Namespace: instance.Namespace,
-		}, bundleDelArgs.wait, bundleDelArgs.dryrun); err != nil {
+		rm, err := runtime.NewResourceManager(kubeconfigArgs)
+		if err != nil {
 			return err
+		}
+
+		sm := runtime.NewStorageManager(rm)
+		instances, err := sm.List(ctx, "", bundleDelArgs.name)
+		if err != nil {
+			return err
+		}
+
+		log := LoggerBundle(ctx, bundleDelArgs.name, cluster.Name)
+
+		if len(instances) == 0 {
+			log.Error(nil, "no instances found in bundle")
+			continue
+		}
+
+		// delete in revers order (last installed, first to uninstall)
+		for index := len(instances) - 1; index >= 0; index-- {
+			instance := instances[index]
+			log.Info(fmt.Sprintf("deleting instance %s in namespace %s",
+				colorizeSubject(instance.Name), colorizeSubject(instance.Namespace)))
+			if err := deleteBundleInstance(ctx, &engine.BundleInstance{
+				Bundle:    bundleDelArgs.name,
+				Cluster:   cluster.Name,
+				Name:      instance.Name,
+				Namespace: instance.Namespace,
+			}, bundleDelArgs.wait, bundleDelArgs.dryrun); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
 func deleteBundleInstance(ctx context.Context, instance *engine.BundleInstance, wait bool, dryrun bool) error {
-	log := LoggerBundle(ctx, instance.Bundle, apiv1.RuntimeDefaultName)
+	log := LoggerBundle(ctx, instance.Bundle, instance.Cluster)
 
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {

@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/cli-utils/pkg/kstatus/status"
@@ -76,12 +75,6 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 		bundleStatusArgs.name = args[0]
 	}
 
-	runtimeValues := make(map[string]string)
-
-	if bundleArgs.runtimeFromEnv {
-		maps.Copy(runtimeValues, engine.GetEnv())
-	}
-
 	rt, err := buildRuntime(bundleArgs.runtimeFiles)
 	if err != nil {
 		return err
@@ -92,6 +85,9 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no cluster found")
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	defer cancel()
+
 	failed := false
 	for _, cluster := range clusters {
 		kubeconfigArgs.Context = &cluster.KubeContext
@@ -100,9 +96,6 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-		defer cancel()
 
 		sm := runtime.NewStorageManager(rm)
 		instances, err := sm.List(ctx, "", bundleStatusArgs.name)
