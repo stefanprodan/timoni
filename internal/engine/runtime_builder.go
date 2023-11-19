@@ -145,34 +145,9 @@ func (b *RuntimeBuilder) GetRuntime(v cue.Value) (*apiv1.Runtime, error) {
 		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.RuntimeName.String(), runtimeNameValue.Err())
 	}
 
-	runtimeValuesCue := v.LookupPath(cue.ParsePath(apiv1.RuntimeValuesSelector.String()))
-	if runtimeValuesCue.Err() != nil {
-		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.RuntimeValuesSelector.String(), runtimeValuesCue.Err())
-	}
-
-	runtimeValues := []apiv1.RuntimeValue{}
-
-	err = runtimeValuesCue.Decode(&runtimeValues)
-	if err != nil {
-		return nil, fmt.Errorf("values decoding failed: %w", err)
-	}
-
-	var refs []apiv1.RuntimeResourceRef
-
-	for _, rv := range runtimeValues {
-		ref, err := rv.ToResourceRef()
-		if err != nil {
-			return nil, fmt.Errorf("value decoding failed: %w", err)
-		}
-
-		refs = append(refs, *ref)
-	}
-
 	clusters := []apiv1.RuntimeCluster{}
-
 	clustersCue := v.LookupPath(cue.ParsePath(apiv1.RuntimeClustersSelector.String()))
 	if clustersCue.Err() == nil {
-
 		iter, err := clustersCue.Fields(cue.Concrete(true))
 		if err != nil {
 			return nil, err
@@ -193,6 +168,25 @@ func (b *RuntimeBuilder) GetRuntime(v cue.Value) (*apiv1.Runtime, error) {
 				Group:       group,
 				KubeContext: kc,
 			})
+		}
+	}
+
+	var refs []apiv1.RuntimeResourceRef
+	runtimeValuesCue := v.LookupPath(cue.ParsePath(apiv1.RuntimeValuesSelector.String()))
+	if runtimeValuesCue.Err() == nil {
+		runtimeValues := []apiv1.RuntimeValue{}
+		err = runtimeValuesCue.Decode(&runtimeValues)
+		if err != nil {
+			return nil, fmt.Errorf("values decoding failed: %w", err)
+		}
+
+		for _, rv := range runtimeValues {
+			ref, err := rv.ToResourceRef()
+			if err != nil {
+				return nil, fmt.Errorf("value decoding failed: %w", err)
+			}
+
+			refs = append(refs, *ref)
 		}
 	}
 

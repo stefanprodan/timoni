@@ -233,7 +233,6 @@ runtime: {
 			kubeContext: "envtest"
 		}
 	}
-	values: []
 }
 `
 

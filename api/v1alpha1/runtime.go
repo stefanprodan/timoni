@@ -65,7 +65,7 @@ import "strings"
 		kubeContext!: string
 	}
 	
-	values: [...#RuntimeValue]
+	values?: [...#RuntimeValue]
 }
 `
 

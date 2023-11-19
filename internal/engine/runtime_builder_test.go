@@ -26,7 +26,24 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-func TestGetRuntime(t *testing.T) {
+func TestRuntimeBuilder_Minimal(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	rt := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "minimal"
+}
+`
+	v := ctx.CompileString(rt)
+	builder := NewRuntimeBuilder(ctx, []string{})
+	b, err := builder.GetRuntime(v)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(b.Name).To(BeEquivalentTo("minimal"))
+}
+
+func TestRuntimeBuilder_Values(t *testing.T) {
 	g := NewWithT(t)
 	ctx := cuecontext.New()
 
@@ -82,7 +99,7 @@ runtime: {
 	g.Expect(b.Refs[2].Namespace).To(BeEmpty())
 }
 
-func TestGetRuntimeClusters(t *testing.T) {
+func TestRuntimeBuilder_Clusters(t *testing.T) {
 	g := NewWithT(t)
 	ctx := cuecontext.New()
 
@@ -108,7 +125,6 @@ runtime: {
 			kubeContext: "us-west-1:production"
 		}
 	}
-	values: []
 }
 `
 	v := ctx.CompileString(rt)
