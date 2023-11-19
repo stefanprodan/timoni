@@ -212,12 +212,15 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 			return err
 		}
 
+		startMsg := fmt.Sprintf("applying %v instance(s)", len(bundle.Instances))
+		if !cluster.IsDefault() {
+			startMsg = fmt.Sprintf("%s on %s", startMsg, colorizeSubject(cluster.Group))
+		}
+
 		if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
-			log.Info(fmt.Sprintf("applying %v instance(s) %s",
-				len(bundle.Instances), colorizeDryRun("(server dry run)")))
+			log.Info(fmt.Sprintf("%s %s", startMsg, colorizeDryRun("(server dry run)")))
 		} else {
-			log.Info(fmt.Sprintf("applying %v instance(s)",
-				len(bundle.Instances)))
+			log.Info(startMsg)
 		}
 
 		for _, instance := range bundle.Instances {
@@ -422,7 +425,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 			if err != nil {
 				return err
 			}
-			log.Info("resources are ready")
+			log.Info(fmt.Sprintf("%s resources %s", set.Name, colorizeReady("ready")))
 		}
 	}
 
@@ -453,10 +456,8 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 			err = rm.WaitForTermination(deletedObjects, waitOptions)
 			spin.Stop()
 			if err != nil {
-				return fmt.Errorf("wating for termination failed: %w", err)
+				return fmt.Errorf("waiting for termination failed: %w", err)
 			}
-
-			log.Info("all resources are ready")
 		}
 	}
 

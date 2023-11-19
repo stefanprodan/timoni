@@ -68,6 +68,7 @@ func NewConsoleLogger() logr.Logger {
 var (
 	colorDryRun       = color.New(color.FgHiBlack, color.Italic)
 	colorError        = color.New(color.FgHiRed)
+	colorReady        = color.New(color.FgHiGreen)
 	colorCallerPrefix = color.New(color.FgHiBlack)
 	colorBundle       = color.New(color.FgHiMagenta)
 	colorInstance     = color.New(color.FgHiMagenta)
@@ -132,6 +133,10 @@ func colorizeAny(v any) string {
 
 func colorizeSubject(subject string) string {
 	return color.CyanString(subject)
+}
+
+func colorizeReady(subject string) string {
+	return colorReady.Sprint(subject)
 }
 
 func colorizeInfo(subject string) string {
