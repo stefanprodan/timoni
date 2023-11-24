@@ -21,6 +21,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fluxcd/cli-utils/pkg/kstatus/polling"
+	"github.com/fluxcd/cli-utils/pkg/kstatus/polling/clusterreader"
+	pollingEngine "github.com/fluxcd/cli-utils/pkg/kstatus/polling/engine"
 	"github.com/fluxcd/pkg/ssa"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -29,9 +32,6 @@ import (
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"sigs.k8s.io/cli-utils/pkg/kstatus/polling"
-	"sigs.k8s.io/cli-utils/pkg/kstatus/polling/clusterreader"
-	pollingEngine "sigs.k8s.io/cli-utils/pkg/kstatus/polling/engine"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"

@@ -21,9 +21,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/fluxcd/cli-utils/pkg/kstatus/status"
 	"github.com/spf13/cobra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/cli-utils/pkg/kstatus/status"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/stefanprodan/timoni/internal/runtime"

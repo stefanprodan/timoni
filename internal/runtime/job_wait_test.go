@@ -24,11 +24,11 @@ package runtime
 import (
 	"testing"
 
+	"github.com/fluxcd/cli-utils/pkg/kstatus/status"
 	. "github.com/onsi/gomega"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cli-utils/pkg/kstatus/status"
 )
 
 func Test_jobConditions(t *testing.T) {
