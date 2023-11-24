@@ -26,13 +26,13 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
+	"github.com/fluxcd/cli-utils/pkg/kstatus/status"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zerologr"
 	gcrLog "github.com/google/go-containerregistry/pkg/logs"
 	"github.com/rs/zerolog"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/cli-utils/pkg/kstatus/status"
 	runtimeLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
