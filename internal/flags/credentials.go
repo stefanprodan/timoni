@@ -1,9 +1,5 @@
 package flags
 
-import (
-	"fmt"
-)
-
 type Credentials string
 
 func (f *Credentials) String() string {
@@ -20,5 +16,5 @@ func (f *Credentials) Type() string {
 }
 
 func (f *Credentials) Description() string {
-	return fmt.Sprintf("The credentials for the container registry in the format '<username>[:<password>]'.")
+	return "The credentials for the container registry in the format '<username>[:<password>]'."
 }

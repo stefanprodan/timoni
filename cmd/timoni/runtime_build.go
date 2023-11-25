@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -61,7 +62,7 @@ func init() {
 func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	files := runtimeBuildArgs.files
 	if len(files) == 0 {
-		return fmt.Errorf("no runtime provided with -f")
+		return errors.New("no runtime provided with -f")
 	}
 	var stdinFile string
 	for i, file := range files {
@@ -88,7 +89,7 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 
 	clusters := rt.SelectClusters(runtimeBuildArgs.clusterSelector, runtimeBuildArgs.clusterGroupSelector)
 	if len(clusters) == 0 {
-		return fmt.Errorf("no cluster found")
+		return errors.New("no cluster found")
 	}
 
 	for _, cluster := range clusters {

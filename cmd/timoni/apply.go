@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -134,7 +135,7 @@ func init() {
 
 func runApplyCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("name and module are required")
+		return errors.New("name and module are required")
 	}
 
 	applyArgs.name = args[0]

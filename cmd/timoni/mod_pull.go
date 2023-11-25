@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -104,7 +105,7 @@ func init() {
 
 func pullCmdRun(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("module URL is required")
+		return errors.New("module URL is required")
 	}
 
 	version := pullModArgs.version.String()

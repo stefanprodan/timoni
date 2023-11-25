@@ -123,8 +123,8 @@ func ExtractStringFromFile(ctx *cue.Context, filePath, exprPath string) (string,
 	}
 
 	result, err := expr.String()
-	if expr.Err() != nil {
-		return "", fmt.Errorf("reading string failed: %w", expr.Err())
+	if err != nil {
+		return "", fmt.Errorf("reading string failed: %w", err)
 	}
 
 	return result, nil

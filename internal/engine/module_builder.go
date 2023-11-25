@@ -17,6 +17,7 @@ limitations under the License.
 package engine
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -176,7 +177,7 @@ func (b *ModuleBuilder) Build(tags ...string) (cue.Value, error) {
 
 	modInstances := load.Instances([]string{}, cfg)
 	if len(modInstances) == 0 {
-		return value, fmt.Errorf("no instances found")
+		return value, errors.New("no instances found")
 	}
 
 	modInstance := modInstances[0]
@@ -263,8 +264,8 @@ func (b *ModuleBuilder) GetModuleName() (string, error) {
 	}
 
 	mod, err := expr.String()
-	if expr.Err() != nil {
-		return "", fmt.Errorf("lookup module name failed: %w", expr.Err())
+	if err != nil {
+		return "", fmt.Errorf("lookup module name failed: %w", err)
 	}
 
 	return mod, nil

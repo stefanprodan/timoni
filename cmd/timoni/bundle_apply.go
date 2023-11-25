@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -98,7 +99,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	start := time.Now()
 	files := bundleApplyArgs.files
 	if len(files) == 0 {
-		return fmt.Errorf("no bundle provided with -f")
+		return errors.New("no bundle provided with -f")
 	}
 	var stdinFile string
 	for i, file := range files {
@@ -140,7 +141,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 
 	clusters := rt.SelectClusters(bundleArgs.runtimeCluster, bundleArgs.runtimeClusterGroup)
 	if len(clusters) == 0 {
-		return fmt.Errorf("no cluster found")
+		return errors.New("no cluster found")
 	}
 
 	ctxPull, cancel := context.WithTimeout(ctx, rootArgs.timeout)
@@ -495,7 +496,7 @@ func bundleInstancesOwnershipConflicts(bundleInstances []*engine.BundleInstance)
 func saveReaderToFile(reader io.Reader) (string, error) {
 	f, err := os.CreateTemp("", "*.cue")
 	if err != nil {
-		return "", fmt.Errorf("unable to create temp dir for stdin")
+		return "", errors.New("unable to create temp dir for stdin")
 	}
 
 	defer f.Close()

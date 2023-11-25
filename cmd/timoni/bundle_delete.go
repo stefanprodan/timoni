@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -77,7 +78,7 @@ func init() {
 
 func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 && bundleDelArgs.filename == "" && bundleDelArgs.name == "" {
-		return fmt.Errorf("bundle name is required")
+		return errors.New("bundle name is required")
 	}
 
 	switch {
@@ -99,7 +100,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 
 	clusters := rt.SelectClusters(bundleArgs.runtimeCluster, bundleArgs.runtimeClusterGroup)
 	if len(clusters) == 0 {
-		return fmt.Errorf("no cluster found")
+		return errors.New("no cluster found")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)

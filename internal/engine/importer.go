@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -140,11 +141,11 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 
 	vlist := crd.LookupPath(cue.ParsePath("spec.versions"))
 	if !vlist.Exists() {
-		return nil, fmt.Errorf("crd versions list is absent")
+		return nil, errors.New("crd versions list is absent")
 	}
 	iter, err := vlist.List()
 	if err != nil {
-		return nil, fmt.Errorf("crd versions field is not a list")
+		return nil, errors.New("crd versions field is not a list")
 	}
 
 	ctx := crd.Context()

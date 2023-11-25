@@ -1,8 +1,6 @@
 package flags
 
 import (
-	"fmt"
-
 	"github.com/Masterminds/semver/v3"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -33,5 +31,5 @@ func (f *Version) Shorthand() string {
 }
 
 func (f *Version) Description() string {
-	return fmt.Sprintf("The version of the module e.g. '1.0.0' or '1.0.0-rc.1'.")
+	return "The version of the module e.g. '1.0.0' or '1.0.0-rc.1'."
 }
