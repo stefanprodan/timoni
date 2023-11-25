@@ -292,3 +292,117 @@ bundle:
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(output).To(BeEquivalentTo(bundleComputed))
 }
+
+func Test_BundleVet_Clusters(t *testing.T) {
+	g := NewWithT(t)
+
+	bundleCue := `
+bundle: {
+	_cluster: "dev" @timoni(runtime:string:TIMONI_CLUSTER_NAME)
+	_env:     "dev" @timoni(runtime:string:TIMONI_CLUSTER_GROUP)
+
+	apiVersion: "v1alpha1"
+	name:       "fleet-test"
+	instances: {
+		"frontend": {
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/timoni/minimal"
+				version: "latest"
+			}
+			namespace: "fleet-test"
+			values: {
+				message: "Hello from cluster \(_cluster)"
+				test: enabled: true
+
+				if _env == "staging" {
+					replicas: 2
+				}
+
+				if _env == "production" {
+					replicas: 3
+				}
+			}
+		}
+	}
+}
+`
+	runtimeCue := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "fleet-test"
+	clusters: {
+		"staging": {
+			group:       "staging"
+			kubeContext: "envtest"
+		}
+		"production": {
+			group:       "production"
+			kubeContext: "envtest"
+		}
+	}
+	values: [
+		{
+			query: "k8s:v1:Namespace:kube-system"
+			for: {
+				"CLUSTER_UID": "obj.metadata.uid"
+			}
+		},
+	]
+}
+`
+
+	bundleComputed := `"staging": bundle: {
+	apiVersion: "v1alpha1"
+	name:       "fleet-test"
+	instances: {
+		frontend: {
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/timoni/minimal"
+				version: "latest"
+			}
+			namespace: "fleet-test"
+			values: {
+				message:  "Hello from cluster staging"
+				replicas: 2
+				test: {
+					enabled: true
+				}
+			}
+		}
+	}
+}
+"production": bundle: {
+	apiVersion: "v1alpha1"
+	name:       "fleet-test"
+	instances: {
+		frontend: {
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/timoni/minimal"
+				version: "latest"
+			}
+			namespace: "fleet-test"
+			values: {
+				message:  "Hello from cluster production"
+				replicas: 3
+				test: {
+					enabled: true
+				}
+			}
+		}
+	}
+}
+`
+	wd := t.TempDir()
+	bundlePath := filepath.Join(wd, "bundle.cue")
+	g.Expect(os.WriteFile(bundlePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
+
+	runtimePath := filepath.Join(wd, "runtime.cue")
+	g.Expect(os.WriteFile(runtimePath, []byte(runtimeCue), 0644)).ToNot(HaveOccurred())
+
+	output, err := executeCommand(fmt.Sprintf(
+		"bundle vet -f %s -r %s -p main --print-value",
+		bundlePath, runtimePath,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(output).To(BeEquivalentTo(bundleComputed))
+}

@@ -34,6 +34,8 @@ import (
 	"github.com/rs/zerolog"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	runtimeLog "sigs.k8s.io/controller-runtime/pkg/log"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 // NewConsoleLogger returns a human-friendly Logger.
@@ -66,6 +68,7 @@ func NewConsoleLogger() logr.Logger {
 var (
 	colorDryRun       = color.New(color.FgHiBlack, color.Italic)
 	colorError        = color.New(color.FgHiRed)
+	colorReady        = color.New(color.FgHiGreen)
 	colorCallerPrefix = color.New(color.FgHiBlack)
 	colorBundle       = color.New(color.FgHiMagenta)
 	colorInstance     = color.New(color.FgHiMagenta)
@@ -132,6 +135,10 @@ func colorizeSubject(subject string) string {
 	return color.CyanString(subject)
 }
 
+func colorizeReady(subject string) string {
+	return colorReady.Sprint(subject)
+}
+
 func colorizeInfo(subject string) string {
 	return color.GreenString(subject)
 }
@@ -190,11 +197,27 @@ func colorizeRuntime(runtime string) string {
 	return colorCallerPrefix.Sprint("r:") + colorInstance.Sprint(runtime)
 }
 
-func LoggerBundle(ctx context.Context, bundle string) logr.Logger {
-	if !rootArgs.prettyLog {
-		return LoggerFrom(ctx, "bundle", bundle)
+func colorizeCluster(cluster string) string {
+	return colorCallerPrefix.Sprint("c:") + colorInstance.Sprint(cluster)
+}
+
+func LoggerBundle(ctx context.Context, bundle, cluster string) logr.Logger {
+	switch cluster {
+	case apiv1.RuntimeDefaultName:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "bundle", bundle)
+		}
+		return LoggerFrom(ctx, "caller", colorizeBundle(bundle))
+	default:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "bundle", bundle, "cluster", cluster)
+		}
+		return LoggerFrom(ctx, "caller",
+			fmt.Sprintf("%s %s %s",
+				colorizeBundle(bundle),
+				color.CyanString(">"),
+				colorizeCluster(cluster)))
 	}
-	return LoggerFrom(ctx, "caller", colorizeBundle(bundle))
 }
 
 func LoggerInstance(ctx context.Context, instance string) logr.Logger {
@@ -204,18 +227,47 @@ func LoggerInstance(ctx context.Context, instance string) logr.Logger {
 	return LoggerFrom(ctx, "caller", colorizeInstance(instance))
 }
 
-func LoggerBundleInstance(ctx context.Context, bundle, instance string) logr.Logger {
-	if !rootArgs.prettyLog {
-		return LoggerFrom(ctx, "bundle", bundle, "instance", instance)
+func LoggerBundleInstance(ctx context.Context, bundle, cluster, instance string) logr.Logger {
+	switch cluster {
+	case apiv1.RuntimeDefaultName:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "bundle", bundle, "instance", instance)
+		}
+		return LoggerFrom(ctx, "caller",
+			fmt.Sprintf("%s %s %s",
+				colorizeBundle(bundle),
+				color.CyanString(">"),
+				colorizeInstance(instance)))
+	default:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "bundle", bundle, "cluster", cluster, "instance", instance)
+		}
+		return LoggerFrom(ctx, "caller",
+			fmt.Sprintf("%s %s %s %s %s",
+				colorizeBundle(bundle),
+				color.CyanString(">"),
+				colorizeCluster(cluster),
+				color.CyanString(">"),
+				colorizeInstance(instance)))
+
 	}
-	return LoggerFrom(ctx, "caller", fmt.Sprintf("%s %s %s", colorizeBundle(bundle), color.CyanString(">"), colorizeInstance(instance)))
 }
 
-func LoggerRuntime(ctx context.Context, runtime string) logr.Logger {
-	if !rootArgs.prettyLog {
-		return LoggerFrom(ctx, "runtime", runtime)
+func LoggerRuntime(ctx context.Context, runtime, cluster string) logr.Logger {
+	switch cluster {
+	case apiv1.RuntimeDefaultName:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "runtime", runtime)
+		}
+		return LoggerFrom(ctx, "caller", colorizeRuntime(runtime))
+	default:
+		if !rootArgs.prettyLog {
+			return LoggerFrom(ctx, "runtime", runtime, "cluster", cluster)
+		}
+		return LoggerFrom(ctx, "caller",
+			fmt.Sprintf("%s %s %s", colorizeRuntime(runtime),
+				color.CyanString(">"), colorizeCluster(cluster)))
 	}
-	return LoggerFrom(ctx, "caller", colorizeRuntime(runtime))
 }
 
 // LoggerFrom returns a logr.Logger with predefined values from a context.Context.

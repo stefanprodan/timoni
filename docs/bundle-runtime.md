@@ -2,7 +2,7 @@
 
 While Timoni [Bundles](bundle.md) offer a way to specify the config values in declarative manner,
 not all the configuration values of an application are known ahead of time.
-Some values may be available at runtime, in the Kubernetes cluster where the Bundle is applied.
+Some values may be available at runtime, in the Kubernetes clusters where the Bundle is applied.
 
 For example, the API token for some backend service that your app consumes is stored in
 a Kubernetes Secret in-cluster. When installing the application with Timoni,
@@ -19,6 +19,9 @@ The following is an example of a Runtime definition that extracts values from th
 runtime: {
 	apiVersion: "v1alpha1"
 	name:       "production"
+	clusters: {
+		// using the cluster set in kubeconfig current context
+	}
 	values: [
 		{
 			query: "k8s:v1:ConfigMap:infra:aws-info"
@@ -130,7 +133,13 @@ A Runtime file must contain a definition that matches the following schema:
 #Runtime: {
 	apiVersion: string
 	name:       string
-	values: [...#RuntimeValue]
+	
+	clusters?: [string]: {
+		group!:       string
+		kubeContext!: string
+	}
+	
+	values?: [...#RuntimeValue]
 }
 
 #RuntimeValue: {
@@ -150,11 +159,88 @@ Currently, the only supported value is `v1alpha1`.
 
 The `name` is a required field used to identify the Runtime.
 
+### Clusters
+
+The `clusters` field is for defining the target clusters and
+environments (group of clusters) where a Bundle is applied.
+
+A cluster entry must specify the `group` and `kubeContext` fields.
+The `kubeContext` value must match a context name from the `.kube/config` file.
+
+!!! tip "Default cluster"
+    
+    When no clusters are defined in the Runtime, Timoni will use the
+    current context from the kubeconfig, unless the context is specifed
+    using the `--kube-context` flag.
+
+Example:
+
+```cue
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "fleet"
+	clusters: {
+		"preview-us-1": {
+			group:       "staging"
+			kubeContext: "eks-us-west-2"
+		}
+		"prod-us-1": {
+			group:       "production"
+			kubeContext: "eks-us-west-1"
+		}
+		"prod-eu-1": {
+			group:       "production"
+			kubeContext: "eks-eu-west-1"
+		}
+	}
+}
+```
+
+The clusters name and group, can be mapped to fields in a Bundle using `@timoni()` attributes.
+
+```cue
+bundle: {
+	_cluster: string @timoni(runtime:string:TIMONI_CLUSTER_NAME)
+	_env:     string @timoni(runtime:string:TIMONI_CLUSTER_GROUP)
+
+	apiVersion: "v1alpha1"
+	name:       "apps"
+	instances: {
+		app: {
+			module: url: "oci://ghcr.io/stefanprodan/modules/podinfo"
+			namespace: "apps"
+			values: {
+				ui: message: "Hosted by \(_cluster)"
+				if _env == "staging" {
+					replicas: 1
+				}
+				if _env == "production" {
+					replicas: 2
+				}
+			}
+		}
+	}
+}
+```
+
+When applying the above Bundle, Timoni will deploy the app instances to all the
+clusters, in the order defined in the Runtime. If the apply fails on a staging cluster,
+Timoni will stop the execution and not continue with production.
+
+For more details please see the [multi-cluster deployments guide](bundle-multi-cluster.md).
+
 ### Values
 
-The `values` array is a required field that specifies the list of Kubernetes resources and the fields to be extracted.
+The `values` array is for specifying
+the list of Kubernetes resources and the fields to be extracted.
 
-A Runtime must contain at least one value with the following required fields:
+#### Query
+
+The `values.query` is a required field that specifies the Kubernetes resource.
+
+The `query` field must be in the format `k8s:<apiVersion>:<kind>:<namespace>:<name>`.
+
+Example:
 
 ```cue
 runtime: {
@@ -171,13 +257,7 @@ runtime: {
 }
 ```
 
-#### Query
-
-The `values.query` is a required field that specifies the Kubernetes resource.
-
-The `query` field must be in the format `k8s:<apiVersion>:<kind>:<namespace>:<name>`.
-
-If the Kubernetes resource is global, the format is `k8s:<apiVersion>:<kind>:<name>`.
+If the Kubernetes resource is global, the `query` format is `k8s:<apiVersion>:<kind>:<name>`.
 
 Example:
 

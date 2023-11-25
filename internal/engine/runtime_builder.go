@@ -145,31 +145,54 @@ func (b *RuntimeBuilder) GetRuntime(v cue.Value) (*apiv1.Runtime, error) {
 		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.RuntimeName.String(), runtimeNameValue.Err())
 	}
 
-	runtimeValuesCue := v.LookupPath(cue.ParsePath(apiv1.RuntimeValuesSelector.String()))
-	if runtimeValuesCue.Err() != nil {
-		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.RuntimeValuesSelector.String(), runtimeValuesCue.Err())
-	}
+	clusters := []apiv1.RuntimeCluster{}
+	clustersCue := v.LookupPath(cue.ParsePath(apiv1.RuntimeClustersSelector.String()))
+	if clustersCue.Err() == nil {
+		iter, err := clustersCue.Fields(cue.Concrete(true))
+		if err != nil {
+			return nil, err
+		}
 
-	runtimeValues := []apiv1.RuntimeValue{}
+		for iter.Next() {
+			name := iter.Selector().Unquoted()
+			expr := iter.Value()
 
-	err = runtimeValuesCue.Decode(&runtimeValues)
-	if err != nil {
-		return nil, fmt.Errorf("values decoding failed: %w", err)
+			vGroup := expr.LookupPath(cue.ParsePath("group"))
+			group, _ := vGroup.String()
+
+			vkc := expr.LookupPath(cue.ParsePath("kubeContext"))
+			kc, _ := vkc.String()
+
+			clusters = append(clusters, apiv1.RuntimeCluster{
+				Name:        name,
+				Group:       group,
+				KubeContext: kc,
+			})
+		}
 	}
 
 	var refs []apiv1.RuntimeResourceRef
-
-	for _, rv := range runtimeValues {
-		ref, err := rv.ToResourceRef()
+	runtimeValuesCue := v.LookupPath(cue.ParsePath(apiv1.RuntimeValuesSelector.String()))
+	if runtimeValuesCue.Err() == nil {
+		runtimeValues := []apiv1.RuntimeValue{}
+		err = runtimeValuesCue.Decode(&runtimeValues)
 		if err != nil {
-			return nil, fmt.Errorf("value decoding failed: %w", err)
+			return nil, fmt.Errorf("values decoding failed: %w", err)
 		}
 
-		refs = append(refs, *ref)
+		for _, rv := range runtimeValues {
+			ref, err := rv.ToResourceRef()
+			if err != nil {
+				return nil, fmt.Errorf("value decoding failed: %w", err)
+			}
+
+			refs = append(refs, *ref)
+		}
 	}
 
 	return &apiv1.Runtime{
-		Name: runtimeName,
-		Refs: refs,
+		Name:     runtimeName,
+		Clusters: clusters,
+		Refs:     refs,
 	}, nil
 }

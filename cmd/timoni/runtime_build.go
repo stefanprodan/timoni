@@ -41,7 +41,9 @@ var runtimeBuildCmd = &cobra.Command{
 }
 
 type runtimeBuildFlags struct {
-	files []string
+	files                []string
+	clusterSelector      string
+	clusterGroupSelector string
 }
 
 var runtimeBuildArgs runtimeBuildFlags
@@ -49,6 +51,10 @@ var runtimeBuildArgs runtimeBuildFlags
 func init() {
 	runtimeBuildCmd.Flags().StringSliceVarP(&runtimeBuildArgs.files, "file", "f", nil,
 		"The local path to runtime.cue files.")
+	runtimeBuildCmd.Flags().StringVar(&runtimeBuildArgs.clusterSelector, "cluster", "*",
+		"Select cluster by name.")
+	runtimeBuildCmd.Flags().StringVar(&runtimeBuildArgs.clusterGroupSelector, "cluster-group", "*",
+		"Select clusters by group name.")
 	runtimeCmd.AddCommand(runtimeBuildCmd)
 }
 
@@ -77,38 +83,55 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log := LoggerRuntime(cmd.Context(), rt.Name)
-
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
-	rm, err := runtime.NewResourceManager(kubeconfigArgs)
-	if err != nil {
-		return err
+	clusters := rt.SelectClusters(runtimeBuildArgs.clusterSelector, runtimeBuildArgs.clusterGroupSelector)
+	if len(clusters) == 0 {
+		return fmt.Errorf("no cluster found")
 	}
 
-	reader := runtime.NewResourceReader(rm)
+	for _, cluster := range clusters {
+		log := LoggerRuntime(cmd.Context(), rt.Name, cluster.Name)
 
-	values, err := reader.Read(ctx, rt.Refs)
-	if err != nil {
-		return err
-	}
+		kubeconfigArgs.Context = &cluster.KubeContext
+		rm, err := runtime.NewResourceManager(kubeconfigArgs)
+		if err != nil {
+			return err
+		}
 
-	keys := make([]string, 0, len(values))
+		reader := runtime.NewResourceReader(rm)
 
-	for k := range values {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
+		values, err := reader.Read(ctx, rt.Refs)
+		if err != nil {
+			return err
+		}
 
-	for _, k := range keys {
-		log.Info(fmt.Sprintf("%s: %s", colorizeSubject(k), values[k]))
+		keys := make([]string, 0, len(values))
+
+		for k := range values {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			log.Info(fmt.Sprintf("%s: %s", colorizeSubject(k), values[k]))
+		}
+
+		if len(values) == 0 {
+			log.Info("no values defined")
+		}
 	}
 
 	return nil
 }
 
 func buildRuntime(files []string) (*apiv1.Runtime, error) {
+	defaultRuntime := apiv1.DefaultRuntime(*kubeconfigArgs.Context)
+	if len(files) == 0 {
+		return defaultRuntime, nil
+	}
+
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
 		return nil, err
@@ -127,5 +150,13 @@ func buildRuntime(files []string) (*apiv1.Runtime, error) {
 		return nil, describeErr(tmpDir, "failed to parse runtime", err)
 	}
 
-	return rb.GetRuntime(v)
+	rt, err := rb.GetRuntime(v)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rt.Clusters) == 0 {
+		rt.Clusters = defaultRuntime.Clusters
+	}
+	return rt, nil
 }

@@ -17,10 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -121,5 +123,105 @@ runtime: {
 		g.Expect(err).ToNot(HaveOccurred())
 		t.Log("\n", output)
 		g.Expect(output).To(ContainSubstring("sc.local"))
+	})
+}
+
+func Test_RuntimeBuild_Clusters(t *testing.T) {
+	g := NewWithT(t)
+
+	runtimeData := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "fleet"
+	clusters: {
+		"staging": {
+			group:       "staging"
+			kubeContext: "envtest"
+		}
+		"production": {
+			group:       "production"
+			kubeContext: "envtest"
+		}
+	}
+	values: [
+		{
+			query: "k8s:v1:Namespace:kube-system"
+			for: {
+				"CLUSTER_UID": "obj.metadata.uid"
+			}
+		},
+	]
+}
+`
+
+	runtimePath := filepath.Join(t.TempDir(), "runtime.cue")
+	err := os.WriteFile(runtimePath, []byte(runtimeData), 0644)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "kube-system",
+		},
+	}
+
+	err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(ns), ns)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Run("builds runtime for all clusters", func(t *testing.T) {
+		g := NewWithT(t)
+
+		output, err := executeCommandWithIn("runtime build -f-", strings.NewReader(runtimeData))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		scanner := bufio.NewScanner(strings.NewReader(output))
+		var i int
+		for scanner.Scan() {
+			i++
+			txt := scanner.Text()
+			g.Expect(txt).To(ContainSubstring(string(ns.UID)))
+			if i == 1 {
+				g.Expect(txt).To(MatchRegexp("staging.*CLUSTER_UID"))
+			}
+			if i == 2 {
+				g.Expect(txt).To(MatchRegexp("production.*CLUSTER_UID"))
+			}
+		}
+		g.Expect(scanner.Err()).ToNot(HaveOccurred())
+		g.Expect(i).To(BeEquivalentTo(2))
+	})
+
+	t.Run("builds runtime for selected cluster", func(t *testing.T) {
+		g := NewWithT(t)
+
+		output, err := executeCommandWithIn("runtime build --cluster=staging -f-", strings.NewReader(runtimeData))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		scanner := bufio.NewScanner(strings.NewReader(output))
+		var i int
+		for scanner.Scan() {
+			i++
+			g.Expect(scanner.Text()).To(MatchRegexp("staging.*CLUSTER_UID.*%s", string(ns.UID)))
+		}
+		g.Expect(scanner.Err()).ToNot(HaveOccurred())
+		g.Expect(i).To(BeEquivalentTo(1))
+	})
+
+	t.Run("builds runtime for selected group", func(t *testing.T) {
+		g := NewWithT(t)
+
+		output, err := executeCommandWithIn("runtime build --cluster-group=production -f-", strings.NewReader(runtimeData))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+
+		scanner := bufio.NewScanner(strings.NewReader(output))
+		var i int
+		for scanner.Scan() {
+			i++
+			g.Expect(scanner.Text()).To(MatchRegexp("production.*CLUSTER_UID.*%s", string(ns.UID)))
+		}
+		g.Expect(scanner.Err()).ToNot(HaveOccurred())
+		g.Expect(i).To(BeEquivalentTo(1))
 	})
 }

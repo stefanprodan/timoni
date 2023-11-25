@@ -27,6 +27,9 @@ const (
 	// RuntimeKind is the name of the Timoni runtime CUE attributes.
 	RuntimeKind string = "runtime"
 
+	// RuntimeDefaultName is the name of the default Timoni runtime.
+	RuntimeDefaultName string = "_default"
+
 	// RuntimeDelimiter is the delimiter used in Timoni runtime CUE attributes.
 	RuntimeDelimiter string = ":"
 
@@ -35,6 +38,9 @@ const (
 
 	// RuntimeName is the CUE path for the Timoni's bundle name.
 	RuntimeName Selector = "runtime.name"
+
+	// 	RuntimeClustersSelector is the CUE path for the Timoni's runtime clusters.
+	RuntimeClustersSelector Selector = "runtime.clusters"
 
 	// RuntimeValuesSelector is the CUE path for the Timoni's runtime values.
 	RuntimeValuesSelector Selector = "runtime.values"
@@ -53,7 +59,13 @@ import "strings"
 #Runtime: {
 	apiVersion: string & =~"^v1alpha1$"
 	name:       string & =~"^(([A-Za-z0-9][-A-Za-z0-9_]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)
-	values: [...#RuntimeValue]
+
+	clusters?: [string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)]: {
+		group!:       string
+		kubeContext!: string
+	}
+	
+	values?: [...#RuntimeValue]
 }
 `
 
@@ -99,8 +111,74 @@ type Runtime struct {
 	// Name of the runtime.
 	Name string `json:"name"`
 
+	// Clusters is the list of Kubernetes
+	// clusters belonging to this runtime.
+	Clusters []RuntimeCluster `json:"clusters"`
+
 	// Refs is the list of in-cluster resource references.
 	Refs []RuntimeResourceRef `json:"refs"`
+}
+
+// DefaultRuntime returns an empty Runtime with an unnamed
+// cluster set to the specified context.
+func DefaultRuntime(kubeContext string) *Runtime {
+	defaultCluster := RuntimeCluster{
+		Name:        RuntimeDefaultName,
+		Group:       RuntimeDefaultName,
+		KubeContext: kubeContext,
+	}
+
+	return &Runtime{
+		Name:     RuntimeDefaultName,
+		Clusters: []RuntimeCluster{defaultCluster},
+		Refs:     []RuntimeResourceRef{},
+	}
+}
+
+// RuntimeCluster holds the reference to a Kubernetes cluster.
+type RuntimeCluster struct {
+	// Name of the cluster.
+	Name string `json:"name"`
+
+	// Group name of the cluster.
+	Group string `json:"group"`
+
+	// KubeContext is the name of kubeconfig context for this cluster.
+	KubeContext string `json:"kubeContext"`
+}
+
+// IsDefault returns true if the given cluster
+// was initialised by a Runtime with no target clusters.
+func (rt *RuntimeCluster) IsDefault() bool {
+	return rt.Name == RuntimeDefaultName
+}
+
+// NameGroupValues returns the cluster name and group variables
+// as specified in the Runtime definition. If the given cluster
+// was initialised by an empty Runtime, the returned map is empty.
+func (rt *RuntimeCluster) NameGroupValues() map[string]string {
+	result := make(map[string]string)
+	if !rt.IsDefault() {
+		result["TIMONI_CLUSTER_NAME"] = rt.Name
+		result["TIMONI_CLUSTER_GROUP"] = rt.Group
+	}
+	return result
+}
+
+// SelectClusters returns the clusters matching the specified name and group.
+// Both the name and group support the '*' wildcard.
+func (r *Runtime) SelectClusters(name, group string) []RuntimeCluster {
+	var result []RuntimeCluster
+	for _, cluster := range r.Clusters {
+		if name != "" && name != "*" && !strings.EqualFold(cluster.Name, name) {
+			continue
+		}
+		if group != "" && group != "*" && !strings.EqualFold(cluster.Group, group) {
+			continue
+		}
+		result = append(result, cluster)
+	}
+	return result
 }
 
 // RuntimeResourceRef holds the data needed to query the fields

@@ -26,7 +26,24 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-func TestGetRuntime(t *testing.T) {
+func TestRuntimeBuilder_Minimal(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	rt := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "minimal"
+}
+`
+	v := ctx.CompileString(rt)
+	builder := NewRuntimeBuilder(ctx, []string{})
+	b, err := builder.GetRuntime(v)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(b.Name).To(BeEquivalentTo("minimal"))
+}
+
+func TestRuntimeBuilder_Values(t *testing.T) {
 	g := NewWithT(t)
 	ctx := cuecontext.New()
 
@@ -80,4 +97,50 @@ runtime: {
 		Optional: false,
 	}))
 	g.Expect(b.Refs[2].Namespace).To(BeEmpty())
+}
+
+func TestRuntimeBuilder_Clusters(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	rt := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "fleet"
+	clusters: {
+		"staging-eu": {
+			group:       "staging"
+			kubeContext: "eu-central-1:staging"
+		}
+		"staging-us": {
+			group:       "staging"
+			kubeContext: "us-west-1:staging"
+		}
+		"production-eu": {
+			group:       "production"
+			kubeContext: "eu-central-1:production"
+		}
+		"production-us": {
+			group:       "production"
+			kubeContext: "us-west-1:production"
+		}
+	}
+}
+`
+	v := ctx.CompileString(rt)
+	builder := NewRuntimeBuilder(ctx, []string{})
+	b, err := builder.GetRuntime(v)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(b.Name).To(BeEquivalentTo("fleet"))
+	g.Expect(len(b.Clusters)).To(BeEquivalentTo(4))
+	g.Expect(b.Clusters[0]).To(BeEquivalentTo(apiv1.RuntimeCluster{
+		Name:        "staging-eu",
+		Group:       "staging",
+		KubeContext: "eu-central-1:staging",
+	}))
+	g.Expect(b.Clusters[3]).To(BeEquivalentTo(apiv1.RuntimeCluster{
+		Name:        "production-us",
+		Group:       "production",
+		KubeContext: "us-west-1:production",
+	}))
 }

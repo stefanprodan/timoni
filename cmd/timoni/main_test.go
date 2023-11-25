@@ -128,6 +128,7 @@ func resetCmdArgs() {
 	listArgs = listFlags{}
 	pullModArgs = pullModFlags{}
 	pushModArgs = pushModFlags{}
+	bundleArgs = bundleFlags{}
 	bundleApplyArgs = bundleApplyFlags{}
 	bundleVetArgs = bundleVetFlags{}
 	bundleDelArgs = bundleDelFlags{}
@@ -136,6 +137,7 @@ func resetCmdArgs() {
 	vendorK8sArgs = vendorK8sFlags{}
 	pushArtifactArgs = pushArtifactFlags{}
 	pullArtifactArgs = pullArtifactFlags{}
+	runtimeBuildArgs = runtimeBuildFlags{}
 }
 
 func rnd(prefix string, n int) string {

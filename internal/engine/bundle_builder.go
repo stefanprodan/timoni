@@ -46,6 +46,7 @@ type Bundle struct {
 
 type BundleInstance struct {
 	Bundle    string
+	Cluster   string
 	Name      string
 	Namespace string
 	Module    apiv1.ModuleReference

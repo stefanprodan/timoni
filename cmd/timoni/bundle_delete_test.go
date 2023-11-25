@@ -19,6 +19,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -177,6 +179,103 @@ bundle: {
 		g.Expect(errors.IsNotFound(err)).To(BeTrue())
 
 		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(serverCM), serverCM)
+		g.Expect(errors.IsNotFound(err)).To(BeTrue())
+	})
+}
+
+func Test_BundleDelete_Runtime(t *testing.T) {
+	g := NewWithT(t)
+
+	bundleName := rnd("my-bundle", 5)
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+	modVer := "1.0.0"
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s",
+		modPath,
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	bundleData := fmt.Sprintf(`
+bundle: {
+	_cluster: string @timoni(runtime:string:TIMONI_CLUSTER_NAME)
+
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		"\(_cluster)-app": {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+		}
+	}
+}
+`, bundleName, modURL, modVer, namespace)
+
+	runtimeCue := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "fleet-test"
+	clusters: {
+		"staging": {
+			group:       "staging"
+			kubeContext: "envtest"
+		}
+		"production": {
+			group:       "production"
+			kubeContext: "envtest"
+		}
+	}
+}
+`
+
+	runtimePath := filepath.Join(t.TempDir(), "runtime.cue")
+	g.Expect(os.WriteFile(runtimePath, []byte(runtimeCue), 0644)).ToNot(HaveOccurred())
+
+	_, err = executeCommandWithIn(
+		fmt.Sprintf("bundle apply -f- -r %s -p main --wait", runtimePath),
+		strings.NewReader(bundleData))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	stagingCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "staging-app-server",
+			Namespace: namespace,
+		},
+	}
+
+	productionCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "production-app-server",
+			Namespace: namespace,
+		},
+	}
+
+	err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(stagingCM), stagingCM)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(productionCM), productionCM)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Run("deletes instances across clusters", func(t *testing.T) {
+		g := NewWithT(t)
+
+		output, err := executeCommand(fmt.Sprintf("bundle delete %s -r %s --wait", bundleName, runtimePath))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).To(ContainSubstring("staging-app"))
+		g.Expect(output).To(ContainSubstring("production-app"))
+
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(stagingCM), stagingCM)
+		g.Expect(errors.IsNotFound(err)).To(BeTrue())
+
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(productionCM), productionCM)
 		g.Expect(errors.IsNotFound(err)).To(BeTrue())
 	})
 }

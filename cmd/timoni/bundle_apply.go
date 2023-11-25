@@ -71,8 +71,6 @@ type bundleApplyFlags struct {
 	wait               bool
 	force              bool
 	overwriteOwnership bool
-	runtimeFromEnv     bool
-	runtimeFiles       []string
 	creds              flags.Credentials
 }
 
@@ -92,10 +90,6 @@ func init() {
 		"Perform a server-side apply dry run and prints the diff.")
 	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.wait, "wait", true,
 		"Wait for the applied Kubernetes objects to become ready.")
-	bundleApplyCmd.Flags().StringSliceVarP(&bundleApplyArgs.runtimeFiles, "runtime", "r", nil,
-		"The local path to runtime.cue files.")
-	bundleApplyCmd.Flags().BoolVar(&bundleApplyArgs.runtimeFromEnv, "runtime-from-env", false,
-		"Inject runtime values from the environment.")
 	bundleApplyCmd.Flags().Var(&bundleApplyArgs.creds, bundleApplyArgs.creds.Type(), bundleApplyArgs.creds.Description())
 	bundleCmd.AddCommand(bundleApplyCmd)
 }
@@ -135,92 +129,115 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 
 	runtimeValues := make(map[string]string)
 
-	if bundleApplyArgs.runtimeFromEnv {
+	if bundleArgs.runtimeFromEnv {
 		maps.Copy(runtimeValues, engine.GetEnv())
 	}
 
-	if len(bundleApplyArgs.runtimeFiles) > 0 {
-		rt, err := buildRuntime(bundleApplyArgs.runtimeFiles)
-		if err != nil {
-			return err
-		}
-
-		rm, err := runtime.NewResourceManager(kubeconfigArgs)
-		if err != nil {
-			return err
-		}
-
-		reader := runtime.NewResourceReader(rm)
-		rv, err := reader.Read(ctx, rt.Refs)
-		if err != nil {
-			return err
-		}
-
-		maps.Copy(runtimeValues, rv)
-	}
-
-	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {
-		return err
-	}
-
-	v, err := bm.Build()
-	if err != nil {
-		return describeErr(tmpDir, "failed to build bundle", err)
-	}
-
-	bundle, err := bm.GetBundle(v)
+	rt, err := buildRuntime(bundleArgs.runtimeFiles)
 	if err != nil {
 		return err
 	}
 
-	log := LoggerBundle(cmd.Context(), bundle.Name)
-
-	if !bundleApplyArgs.overwriteOwnership {
-		err = bundleInstancesOwnershipConflicts(bundle.Instances)
-		if err != nil {
-			return err
-		}
+	clusters := rt.SelectClusters(bundleArgs.runtimeCluster, bundleArgs.runtimeClusterGroup)
+	if len(clusters) == 0 {
+		return fmt.Errorf("no cluster found")
 	}
 
 	ctxPull, cancel := context.WithTimeout(ctx, rootArgs.timeout)
 	defer cancel()
 
-	for _, instance := range bundle.Instances {
-		spin := StartSpinner(fmt.Sprintf("pulling %s", instance.Module.Repository))
-		pullErr := fetchBundleInstanceModule(ctxPull, instance, tmpDir)
-		spin.Stop()
-		if pullErr != nil {
-			return pullErr
-		}
-	}
+	for _, cluster := range clusters {
+		kubeconfigArgs.Context = &cluster.KubeContext
 
-	kubeVersion, err := runtime.ServerVersion(kubeconfigArgs)
-	if err != nil {
-		return err
-	}
+		clusterValues := make(map[string]string)
 
-	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
-		log.Info(fmt.Sprintf("applying %v instance(s) %s",
-			len(bundle.Instances), colorizeDryRun("(server dry run)")))
-	} else {
-		log.Info(fmt.Sprintf("applying %v instance(s)",
-			len(bundle.Instances)))
-	}
+		// add values from env
+		maps.Copy(clusterValues, runtimeValues)
 
-	for _, instance := range bundle.Instances {
-		if err := applyBundleInstance(logr.NewContext(ctx, log), cuectx, instance, kubeVersion, tmpDir); err != nil {
+		// add values from cluster
+		rm, err := runtime.NewResourceManager(kubeconfigArgs)
+		if err != nil {
 			return err
 		}
-	}
+		reader := runtime.NewResourceReader(rm)
+		rv, err := reader.Read(ctx, rt.Refs)
+		if err != nil {
+			return err
+		}
+		maps.Copy(clusterValues, rv)
 
-	elapsed := time.Since(start)
-	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
-		log.Info(fmt.Sprintf("applied successfully %s",
-			colorizeDryRun("(server dry run)")))
-	} else {
-		log.Info(fmt.Sprintf("applied successfully in %s", elapsed.Round(time.Second)))
-	}
+		// add cluster info
+		maps.Copy(clusterValues, cluster.NameGroupValues())
 
+		// create cluster workspace
+		workspace := path.Join(tmpDir, cluster.Name)
+		if err := os.MkdirAll(workspace, os.ModePerm); err != nil {
+			return err
+		}
+
+		if err := bm.InitWorkspace(workspace, clusterValues); err != nil {
+			return describeErr(workspace, "failed to parse bundle", err)
+		}
+
+		v, err := bm.Build()
+		if err != nil {
+			return describeErr(tmpDir, "failed to build bundle", err)
+		}
+
+		bundle, err := bm.GetBundle(v)
+		if err != nil {
+			return err
+		}
+
+		log := LoggerBundle(cmd.Context(), bundle.Name, cluster.Name)
+
+		if !bundleApplyArgs.overwriteOwnership {
+			err = bundleInstancesOwnershipConflicts(bundle.Instances)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, instance := range bundle.Instances {
+			spin := StartSpinner(fmt.Sprintf("pulling %s", instance.Module.Repository))
+			pullErr := fetchBundleInstanceModule(ctxPull, instance, tmpDir)
+			spin.Stop()
+			if pullErr != nil {
+				return pullErr
+			}
+		}
+
+		kubeVersion, err := runtime.ServerVersion(kubeconfigArgs)
+		if err != nil {
+			return err
+		}
+
+		startMsg := fmt.Sprintf("applying %v instance(s)", len(bundle.Instances))
+		if !cluster.IsDefault() {
+			startMsg = fmt.Sprintf("%s on %s", startMsg, colorizeSubject(cluster.Group))
+		}
+
+		if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
+			log.Info(fmt.Sprintf("%s %s", startMsg, colorizeDryRun("(server dry run)")))
+		} else {
+			log.Info(startMsg)
+		}
+
+		for _, instance := range bundle.Instances {
+			instance.Cluster = cluster.Name
+			if err := applyBundleInstance(logr.NewContext(ctx, log), cuectx, instance, kubeVersion, tmpDir); err != nil {
+				return err
+			}
+		}
+
+		elapsed := time.Since(start)
+		if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
+			log.Info(fmt.Sprintf("applied successfully %s",
+				colorizeDryRun("(server dry run)")))
+		} else {
+			log.Info(fmt.Sprintf("applied successfully in %s", elapsed.Round(time.Second)))
+		}
+	}
 	return nil
 }
 
@@ -258,7 +275,7 @@ func fetchBundleInstanceModule(ctx context.Context, instance *engine.BundleInsta
 }
 
 func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *engine.BundleInstance, kubeVersion string, rootDir string) error {
-	log := LoggerBundleInstance(ctx, instance.Bundle, instance.Name)
+	log := LoggerBundleInstance(ctx, instance.Bundle, instance.Cluster, instance.Name)
 
 	modDir := path.Join(rootDir, instance.Name, "module")
 	builder := engine.NewModuleBuilder(
@@ -408,7 +425,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 			if err != nil {
 				return err
 			}
-			log.Info("resources are ready")
+			log.Info(fmt.Sprintf("%s resources %s", set.Name, colorizeReady("ready")))
 		}
 	}
 
@@ -439,10 +456,8 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 			err = rm.WaitForTermination(deletedObjects, waitOptions)
 			spin.Stop()
 			if err != nil {
-				return fmt.Errorf("wating for termination failed: %w", err)
+				return fmt.Errorf("waiting for termination failed: %w", err)
 			}
-
-			log.Info("all resources are ready")
 		}
 	}
 
