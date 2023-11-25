@@ -66,11 +66,11 @@ func PullModule(ociURL, dstPath, cacheDir string, opts []crane.Option) (*apiv1.M
 	}
 
 	version := ""
-	if rev, ok := manifest.Annotations[apiv1.RevisionAnnotation]; ok == true {
+	if rev, ok := manifest.Annotations[apiv1.RevisionAnnotation]; ok {
 		// For backwards compatibility with Timoni v0.13
 		version = rev
 	}
-	if ver, ok := manifest.Annotations[apiv1.VersionAnnotation]; ok == true {
+	if ver, ok := manifest.Annotations[apiv1.VersionAnnotation]; ok {
 		version = ver
 	}
 

@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -55,7 +56,7 @@ func init() {
 
 func runInspectModuleCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("instance name is required")
+		return errors.New("instance name is required")
 	}
 	inspectModuleArgs.name = args[0]
 

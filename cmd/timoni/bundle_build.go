@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -73,7 +74,7 @@ func init() {
 func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	files := bundleBuildArgs.files
 	if len(files) == 0 {
-		return fmt.Errorf("no bundle provided with -f")
+		return errors.New("no bundle provided with -f")
 	}
 	var stdinFile string
 	for i, file := range files {
@@ -116,10 +117,10 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 
 		clusters := rt.SelectClusters(bundleArgs.runtimeCluster, bundleArgs.runtimeClusterGroup)
 		if len(clusters) > 1 {
-			return fmt.Errorf("you must select a cluster with --runtime-cluster")
+			return errors.New("you must select a cluster with --runtime-cluster")
 		}
 		if len(clusters) == 0 {
-			return fmt.Errorf("no cluster found")
+			return errors.New("no cluster found")
 		}
 
 		cluster := clusters[0]

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -91,7 +92,7 @@ func init() {
 
 func runBuildCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("name and module are required")
+		return errors.New("name and module are required")
 	}
 
 	buildArgs.name = args[0]
@@ -190,6 +191,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 			sb.WriteString("---\n")
 		}
 		_, err = cmd.OutOrStdout().Write([]byte(sb.String()))
+		return err
 	case "json":
 		list := struct {
 			ApiVersion string                       `json:"apiVersion,omitempty"`
@@ -206,15 +208,14 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("converting objects failed: %w", err)
 		}
 		_, err = cmd.OutOrStdout().Write(b)
+		return err
 	default:
 		return fmt.Errorf("unknown --output=%s, can be yaml or json", buildArgs.output)
 	}
-
-	return err
 }
 
 func convertToCue(cmd *cobra.Command, paths []string) ([][]byte, error) {
-	valuesCue := make([][]byte, len(paths), len(paths))
+	valuesCue := make([][]byte, len(paths))
 	for i, path := range paths {
 		var (
 			bs  []byte
@@ -245,8 +246,14 @@ func convertToCue(cmd *cobra.Command, paths []string) ([][]byte, error) {
 			continue
 		case ".json":
 			node, err = cuejson.Extract(path, bs)
+			if err != nil {
+				return nil, fmt.Errorf("could not extract JSON from %s: %w", path, err)
+			}
 		case ".yaml", ".yml":
 			node, err = cueyaml.Extract(path, bs)
+			if err != nil {
+				return nil, fmt.Errorf("could not extract YAML from %s: %w", path, err)
+			}
 		default:
 			return nil, fmt.Errorf("unknown values file format for %s", path)
 		}

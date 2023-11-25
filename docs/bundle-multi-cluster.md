@@ -1,8 +1,8 @@
 # Multi-cluster Deployments
 
-Timoni offers a declarative way of managing the app delivery across environments.
+Timoni offers a declarative way of managing the delivery of applications across environments.
 The Timoni [Runtime](bundle-runtime.md) allows defining groups of clusters where apps are being deployed.
-The Timoni [Bundle](bundle.md) supports customising the app configuration based on the target
+The Timoni [Bundle](bundle.md) supports customising the apps configuration based on the target
 environment (group of clusters) and even for a specific cluster in a group.
 
 ```mermaid
@@ -19,8 +19,9 @@ G --> I[4. Region-B]
 ```
 
 When applying a Bundle to multiple clusters, Timoni iterates over the clusters
-in the order defined in the Runtime definition. It connects to each cluster,
-deploys the app changes, runs health checks and e2e tests before moving to the next cluster.
+in the order defined in the Runtime definition.
+It connects to each cluster, deploys the app changes, runs health checks,
+and end-to-end tests before moving to the next cluster.
 
 ## Multi-clusters definitions
 

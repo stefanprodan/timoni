@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -60,7 +61,7 @@ const (
 
 func runInitModCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("module name is required")
+		return errors.New("module name is required")
 	}
 	initModArgs.name = args[0]
 
@@ -170,7 +171,7 @@ func initModuleFromTemplate(mName, mTmpl, src string, dst string) (err error) {
 		return err
 	}
 	if !si.IsDir() {
-		return fmt.Errorf("source is not a directory")
+		return errors.New("source is not a directory")
 	}
 
 	_, err = os.Stat(dst)
