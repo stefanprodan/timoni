@@ -212,8 +212,6 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	default:
 		return fmt.Errorf("unknown --output=%s, can be yaml or json", buildArgs.output)
 	}
-
-	return nil
 }
 
 func convertToCue(cmd *cobra.Command, paths []string) ([][]byte, error) {
