@@ -227,6 +227,8 @@ When applying the above Bundle, Timoni will deploy the app instances to all the
 clusters, in the order defined in the Runtime. If the apply fails on a staging cluster,
 Timoni will stop the execution and not continue with production.
 
+For more details please see the [multi-cluster deployments guide](bundle-multi-cluster.md).
+
 ### Values
 
 The `values` array is for specifying
