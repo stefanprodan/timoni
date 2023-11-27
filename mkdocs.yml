@@ -100,8 +100,9 @@ nav:
         - Module structure: module.md
         - Module distribution: module-distribution.md
         - Module signing: module-sign.md
-    - Automation:
+    - Integrations:
         - GitHub Actions: github-actions.md
+        - Flux AIO Distribution: flux-aio.md
         - GitOps with Flux: gitops-flux.md
   - CLI Reference:
       - cmd/timoni.md

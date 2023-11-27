@@ -14,6 +14,13 @@ D --> E((Flux CD))
 E --> F[Kubernetes]
 ```
 
+!!! warning "Timoni Controller"
+    
+    Note that currently Timoni can be used with Flux as a templating engine for Kubernetes manifests.
+    Features like app lifecycle management, bundling, runtime values injection and multi-cluster
+    deployments are not available when using Timoni as a templating engine. For Timoni to fully embrace GitOps,
+    a Kubernetes controller will be implemented when Timoni's CUE APIs reach a more stable form.
+
 ## Build and Push workflow
 
 We'll build a module instance with Timoni, and we'll push 
