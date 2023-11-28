@@ -103,6 +103,7 @@ nav:
     - Integrations:
         - GitHub Actions: github-actions.md
         - Flux AIO Distribution: flux-aio.md
+        - Helm Interoperability: flux-helm-interop.md
         - GitOps with Flux: gitops-flux.md
   - CLI Reference:
       - cmd/timoni.md

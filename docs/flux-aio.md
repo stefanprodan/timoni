@@ -6,8 +6,8 @@ with Timoni for running the GitOps Toolkit controllers as a single deployable un
 !!! tip "Helm charts interoperability"
     
     Flux AIO can be used as a bridge between Timoni and Helm, enabling Timoni to orchestrate
-    Helm chart deployments by leveraging Flux's declarative Helm APIs
-    such as `HelmRepository` and `HelmRelease`.
+    Helm chart deployments by leveraging Flux's declarative Helm APIs. For more information
+    see the [Helm interoperability guide](flux-helm-interop.md).
 
 ## Specifications
 
