@@ -64,7 +64,10 @@ func runVersionCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cmd.OutOrStdout().Write(marshalled)
+	_, err = cmd.OutOrStdout().Write(marshalled)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

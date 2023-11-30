@@ -50,6 +50,14 @@ func Test_PushArtifact(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(output).To(ContainSubstring(aURL))
 
+	// List the artifacts
+	output, err = executeCommand(fmt.Sprintf(
+		"artifact list oci://%s",
+		aURL,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(output).To(ContainSubstring(aTag))
+
 	// Pull the artifact from registry
 	image, err := crane.Pull(fmt.Sprintf("%s:%s", aURL, aTag))
 	g.Expect(err).ToNot(HaveOccurred())
