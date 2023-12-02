@@ -1,2 +1,3 @@
 examples/**/templates/*.cue -linguist-documentation
 examples/bundles -linguist-documentation
+blueprint linguist-documentation
