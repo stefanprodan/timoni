@@ -14,8 +14,8 @@ import "strings"
 
 	// Map of string keys and values that can be used to organize and categorize (scope and select) objects.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
-	labels: {[string & =~"^(([A-Za-z0-9][-A-Za-z0-9_./]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)]: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)}
+	labels: #Labels
 
 	// Standard Kubernetes label: app name.
-	labels: "app.kubernetes.io/name": #Name
+	labels: "\(#StdLabelName)": #Name
 }
