@@ -6,10 +6,10 @@ package v1alpha1
 import "strings"
 
 // Annotations defines the schema for Kubernetes object metadata annotations.
-#Annotations: {[string & =~"^(([A-Za-z0-9][-A-Za-z0-9_./]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)]: string}
+#Annotations: {[string & strings.MaxRunes(253)]: string}
 
 // Labels defines the schema for Kubernetes object metadata labels.
-#Labels: {[string & =~"^(([A-Za-z0-9][-A-Za-z0-9_./]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)]: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)}
+#Labels: {[string & strings.MaxRunes(253)]: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)}
 
 #StdLabelName:      "app.kubernetes.io/name"
 #StdLabelVersion:   "app.kubernetes.io/version"
@@ -26,11 +26,11 @@ import "strings"
 	// Name must be unique within a namespace. Is required when creating resources.
 	// Name is primarily intended for creation idempotence and configuration definition.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
-	name!: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)
+	name!: #InstanceName
 
 	// Namespace defines the space within which each name must be unique.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces
-	namespace!: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)
+	namespace!: #InstanceNamespace
 
 	// Annotations is an unstructured key value map stored with a resource that may be
 	// set to store and retrieve arbitrary metadata.
