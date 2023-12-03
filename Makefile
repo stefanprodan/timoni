@@ -30,10 +30,13 @@ tidy: ## Tidy Go modules.
 fmt: ## Format Go code.
 	go fmt ./...
 
+cue-fmt: ## Format CUE schemas.
+	cue fmt ./schemas/...
+
 vet: ## Vet Go code.
 	go vet ./...
 
-lint-samples: build
+lint-samples: build cue-fmt ## Lint the CUE samples.
 	./bin/timoni mod lint ./examples/minimal
 	./bin/timoni mod lint ./examples/redis
 	./bin/timoni mod lint ./cmd/timoni/testdata/module
