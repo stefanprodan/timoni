@@ -3,8 +3,6 @@
 
 package v1alpha1
 
-import "strings"
-
 // Selector defines the schema for Kubernetes Pod label selector used in Deployments, Services, Jobs, etc.
 #Selector: {
 	// Name must be unique within a namespace. Is required when creating resources.
