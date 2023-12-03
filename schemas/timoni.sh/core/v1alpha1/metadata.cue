@@ -45,5 +45,6 @@ import "strings"
 	labels: {
 		"\(#StdLabelName)":      name
 		"\(#StdLabelVersion)":   #Version
+		"\(#StdLabelManagedBy)": "Timoni"
 	}
 }
