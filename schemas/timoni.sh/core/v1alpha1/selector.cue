@@ -38,5 +38,5 @@ import "strings"
 	matchLabels: #SelectorLabels
 
 	// Add the standard component label
-	matchLabels: "\(#stdLabelComponent)": #Component
+	matchLabels: "\(#StdLabelComponent)": #Component
 }
