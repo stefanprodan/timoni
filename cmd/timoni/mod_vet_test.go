@@ -36,6 +36,7 @@ func TestModVet(t *testing.T) {
 
 		g.Expect(output).To(ContainSubstring("timoni:latest-dev@sha256:"))
 		g.Expect(output).To(ContainSubstring("timoni.sh/test valid"))
+		g.Expect(output).To(ContainSubstring("default/default"))
 	})
 
 	t.Run("fails to vet with undefined package", func(t *testing.T) {
@@ -62,13 +63,67 @@ func TestModVetSetName(t *testing.T) {
 
 		g.Expect(output).To(ContainSubstring("timoni:latest-dev@sha256:"))
 		g.Expect(output).To(ContainSubstring("timoni.sh/test valid"))
-		g.Expect(output).To(ContainSubstring("my-mod"))
+		g.Expect(output).To(ContainSubstring("default/my-mod"))
 	})
 
 	t.Run("fails to vet with undefined package", func(t *testing.T) {
 		g := NewWithT(t)
 		_, err := executeCommand(fmt.Sprintf(
 			"mod vet %s -p test --name my-mod",
+			modPath,
+		))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("cannot find package"))
+	})
+}
+
+func TestModVetSetNamespace(t *testing.T) {
+	modPath := "testdata/module"
+
+	t.Run("vets module with default values", func(t *testing.T) {
+		g := NewWithT(t)
+		output, err := executeCommand(fmt.Sprintf(
+			"mod vet %s -p main --namespace my-mod",
+			modPath,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(output).To(ContainSubstring("timoni:latest-dev@sha256:"))
+		g.Expect(output).To(ContainSubstring("timoni.sh/test valid"))
+		g.Expect(output).To(ContainSubstring("my-mod/default"))
+	})
+
+	t.Run("fails to vet with undefined package", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := executeCommand(fmt.Sprintf(
+			"mod vet %s -p test --namespace my-mod",
+			modPath,
+		))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("cannot find package"))
+	})
+}
+
+func TestModVetSetNamespaceName(t *testing.T) {
+	modPath := "testdata/module"
+
+	t.Run("vets module with default values", func(t *testing.T) {
+		g := NewWithT(t)
+		output, err := executeCommand(fmt.Sprintf(
+			"mod vet %s -p main --namespace my-mod --name my-mod",
+			modPath,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(output).To(ContainSubstring("timoni:latest-dev@sha256:"))
+		g.Expect(output).To(ContainSubstring("timoni.sh/test valid"))
+		g.Expect(output).To(ContainSubstring("my-mod/my-mod"))
+	})
+
+	t.Run("fails to vet with undefined package", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := executeCommand(fmt.Sprintf(
+			"mod vet %s -p test --namespace my-mod --name my-mod",
 			modPath,
 		))
 		g.Expect(err).To(HaveOccurred())
