@@ -48,3 +48,30 @@ func TestModVet(t *testing.T) {
 		g.Expect(err.Error()).To(ContainSubstring("cannot find package"))
 	})
 }
+
+func TestModVetSetName(t *testing.T) {
+	modPath := "testdata/module"
+
+	t.Run("vets module with default values", func(t *testing.T) {
+		g := NewWithT(t)
+		output, err := executeCommand(fmt.Sprintf(
+			"mod vet %s -p main --name my-mod",
+			modPath,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(output).To(ContainSubstring("timoni:latest-dev@sha256:"))
+		g.Expect(output).To(ContainSubstring("timoni.sh/test valid"))
+		g.Expect(output).To(ContainSubstring("my-mod"))
+	})
+
+	t.Run("fails to vet with undefined package", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := executeCommand(fmt.Sprintf(
+			"mod vet %s -p test --name my-mod",
+			modPath,
+		))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("cannot find package"))
+	})
+}
