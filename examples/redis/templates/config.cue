@@ -32,7 +32,7 @@ import (
 		"app.kubernetes.io/version": image.tag
 		"app.kubernetes.io/part-of": metadata.name
 	}
-	metadata: annotations?: {[ string]: string}
+	metadata: annotations?: {[string]: string}
 
 	// Container image
 	image:           timoniv1.#Image
@@ -70,8 +70,8 @@ import (
 	}]
 
 	// Pod optional settings (common to all deployments)
-	podAnnotations?: {[ string]: string}
-	tolerations?: [ ...corev1.#Toleration]
+	podAnnotations?: {[string]: string}
+	tolerations?: [...corev1.#Toleration]
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
 	// Service
@@ -88,19 +88,19 @@ import (
 
 	master: objects: {
 		"\(config.metadata.name)-sa": #ServiceAccount & {_config: config}
-		"\(config.metadata.name)-cm": #ConfigMap & {_config:      config}
+		"\(config.metadata.name)-cm": #ConfigMap & {_config: config}
 
 		if config.persistence.enabled {
 			"\(config.metadata.name)-pvc": #MasterPVC & {_config: config}
 		}
 
-		"\(config.metadata.name)-svc":    #MasterService & {_config:    config}
+		"\(config.metadata.name)-svc": #MasterService & {_config: config}
 		"\(config.metadata.name)-deploy": #MasterDeployment & {_config: config}
 	}
 
 	replica: objects: {
 		"\(config.metadata.name)-deploy-replica": #ReplicaDeployment & {_config: config}
-		"\(config.metadata.name)-svc-replica":    #ReplicaService & {_config:    config}
+		"\(config.metadata.name)-svc-replica": #ReplicaService & {_config: config}
 	}
 
 	test: objects: {

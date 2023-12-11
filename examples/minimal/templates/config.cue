@@ -41,10 +41,10 @@ import (
 	replicas: *1 | int & >0
 
 	// Pod
-	podAnnotations?: {[ string]: string}
+	podAnnotations?: {[string]: string}
 	podSecurityContext?: corev1.#PodSecurityContext
 	imagePullSecrets?: [...corev1.LocalObjectReference]
-	tolerations?: [ ...corev1.#Toleration]
+	tolerations?: [...corev1.#Toleration]
 	affinity?: corev1.#Affinity
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
@@ -69,9 +69,9 @@ import (
 	config: #Config
 
 	objects: {
-		sa:  #ServiceAccount & {_config: config}
-		svc: #Service & {_config:        config}
-		cm:  #ConfigMap & {_config:      config}
+		sa: #ServiceAccount & {_config: config}
+		svc: #Service & {_config: config}
+		cm: #ConfigMap & {_config: config}
 
 		deploy: #Deployment & {
 			_config: config
