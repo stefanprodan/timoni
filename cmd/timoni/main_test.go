@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -90,6 +91,16 @@ func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 	args, err := shellwords.Parse(cmd)
 	if err != nil {
 		return "", err
+	}
+
+	if args[0] == "mod" && args[1] == "vet" {
+		if !slices.Contains(args, "--name") {
+			args = append(args, []string{"--name", "default"}...)
+		}
+
+		if !slices.Contains(args, "--namespace") {
+			args = append(args, []string{"--namespace", "default"}...)
+		}
 	}
 
 	buf := new(bytes.Buffer)
