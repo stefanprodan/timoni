@@ -59,7 +59,7 @@ type vetModFlags struct {
 var vetModArgs vetModFlags
 
 func init() {
-	vetModCmd.Flags().StringVar(&vetModArgs.name, "name", "default", "Vet the module using the name provided")
+	vetModCmd.Flags().StringVar(&vetModArgs.name, "name", "default", "Name of the instance used to build the module")
 	vetModCmd.Flags().VarP(&vetModArgs.pkg, vetModArgs.pkg.Type(), vetModArgs.pkg.Shorthand(), vetModArgs.pkg.Description())
 	vetModCmd.Flags().BoolVar(&vetModArgs.debug, "debug", false,
 		"Use debug_values.cue if found in the module root instead of the default values.")
