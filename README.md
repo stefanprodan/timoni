@@ -16,8 +16,7 @@ or layering YAML on top of each-other like Kustomize,
 Timoni relies on cuelang's type safety, code generation and data validation features
 to offer a better experience of creating, packaging and delivering apps to Kubernetes.
 
-> **Warning**
->
+> [!IMPORTANT]
 > Note that Timoni in under active development and is still in its infancy.
 > The APIs and command-line interface may change in a backwards incompatible manner.
 
@@ -32,8 +31,7 @@ To get started with Timoni please visit the documentation website at [timoni.sh]
 - [Bundle](https://timoni.sh/concepts/#bundle) - App composition bundling multiple modules and configurations into a deployable unit.
 - [OCI Artifact](https://timoni.sh/concepts/#artifact) - Packaging format used for distributing modules and bundles to container registries.
 
-> **Note**
->
+> [!TIP]
 > If you are familiar with Helm, a Timoni **[module](https://timoni.sh/module/)** is the equivalent of a **chart**,
 > a Timoni **[bundle](https://timoni.sh/bundle/)** is the equivalent of an **umbrella chart**,
 > and a Timoni **[instance](https://timoni.sh/concepts/#instance)** is the equivalent of a Helm **release**.

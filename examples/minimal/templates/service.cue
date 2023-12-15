@@ -9,6 +9,9 @@ import (
 	apiVersion: "v1"
 	kind:       "Service"
 	metadata:   _config.metadata
+	if _config.service.annotations != _|_ {
+		metadata: annotations: _config.service.annotations
+	}
 	spec: corev1.#ServiceSpec & {
 		type:     corev1.#ServiceTypeClusterIP
 		selector: _config.selector.labels

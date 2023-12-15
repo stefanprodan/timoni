@@ -27,7 +27,7 @@ import (
 					{
 						name:            _config.metadata.name
 						image:           _config.image.reference
-						imagePullPolicy: _config.imagePullPolicy
+						imagePullPolicy: _config.image.pullPolicy
 						ports: [
 							{
 								name:          "http"
@@ -57,12 +57,8 @@ import (
 								name:      "html"
 							},
 						]
-						if _config.resources != _|_ {
-							resources: _config.resources
-						}
-						if _config.securityContext != _|_ {
-							securityContext: _config.securityContext
-						}
+						resources:       _config.resources
+						securityContext: _config.securityContext
 					},
 				]
 				volumes: [
