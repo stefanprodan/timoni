@@ -53,11 +53,13 @@ type vetModFlags struct {
 	path  string
 	pkg   flags.Package
 	debug bool
+	name  string
 }
 
 var vetModArgs vetModFlags
 
 func init() {
+	vetModCmd.Flags().StringVar(&vetModArgs.name, "name", "default", "Name of the instance used to build the module")
 	vetModCmd.Flags().VarP(&vetModArgs.pkg, vetModArgs.pkg.Type(), vetModArgs.pkg.Shorthand(), vetModArgs.pkg.Description())
 	vetModCmd.Flags().BoolVar(&vetModArgs.debug, "debug", false,
 		"Use debug_values.cue if found in the module root instead of the default values.")
@@ -118,7 +120,7 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 
 	builder := engine.NewModuleBuilder(
 		cuectx,
-		"default",
+		vetModArgs.name,
 		*kubeconfigArgs.Namespace,
 		fetcher.GetModuleRoot(),
 		vetModArgs.pkg.String(),
