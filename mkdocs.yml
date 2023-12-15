@@ -147,6 +147,7 @@ nav:
           - cmd/timoni_artifact_list.md
           - cmd/timoni_artifact_push.md
           - cmd/timoni_artifact_pull.md
+          - cmd/timoni_artifact_tag.md
       - Completion:
           - cmd/timoni_completion.md
           - cmd/timoni_completion_bash.md
