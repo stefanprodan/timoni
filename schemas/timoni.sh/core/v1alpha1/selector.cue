@@ -4,6 +4,7 @@
 package v1alpha1
 
 // Selector defines the schema for Kubernetes Pod label selector used in Deployments, Services, Jobs, etc.
+// Depreacted in favor of #Metadata.#LabelSelector
 #Selector: {
 	// Name must be unique within a namespace. Is required when creating resources.
 	// Name is primarily intended for creation idempotence and configuration definition.
