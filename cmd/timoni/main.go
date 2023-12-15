@@ -31,7 +31,7 @@ import (
 
 var (
 	VERSION     = "0.0.0-dev.0"
-	CUE_VERSION = "0.6.0"
+	CUE_VERSION = "0.7.0"
 )
 
 var rootCmd = &cobra.Command{
