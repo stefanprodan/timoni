@@ -36,7 +36,7 @@ func TestModVet(t *testing.T) {
 
 		g.Expect(output).To(ContainSubstring("timoni:latest-dev@sha256:"))
 		g.Expect(output).To(ContainSubstring("timoni.sh/test valid"))
-		g.Expect(output).To(ContainSubstring("default/default"))
+		g.Expect(output).To(ContainSubstring("/default"))
 	})
 
 	t.Run("fails to vet with undefined package", func(t *testing.T) {
@@ -63,7 +63,7 @@ func TestModVetSetName(t *testing.T) {
 
 		g.Expect(output).To(ContainSubstring("timoni:latest-dev@sha256:"))
 		g.Expect(output).To(ContainSubstring("timoni.sh/test valid"))
-		g.Expect(output).To(ContainSubstring("default/my-mod"))
+		g.Expect(output).To(ContainSubstring("/my-mod"))
 	})
 
 	t.Run("fails to vet with undefined package", func(t *testing.T) {

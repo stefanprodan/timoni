@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"slices"
 	"testing"
 	"time"
 
@@ -93,16 +92,6 @@ func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 		return "", err
 	}
 
-	if args[0] == "mod" && args[1] == "vet" {
-		if !slices.Contains(args, "--name") {
-			args = append(args, []string{"--name", "default"}...)
-		}
-
-		if !slices.Contains(args, "--namespace") {
-			args = append(args, []string{"--namespace", "default"}...)
-		}
-	}
-
 	buf := new(bytes.Buffer)
 
 	rootCmd.SetOut(buf)
@@ -135,7 +124,9 @@ func resetCmdArgs() {
 	inspectModuleArgs = inspectModuleFlags{}
 	inspectResourcesArgs = inspectResourcesFlags{}
 	inspectValuesArgs = inspectValuesFlags{}
-	vetModArgs = vetModFlags{}
+	vetModArgs = vetModFlags{
+		name: "default",
+	}
 	listArgs = listFlags{}
 	pullModArgs = pullModFlags{}
 	pushModArgs = pushModFlags{}
