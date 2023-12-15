@@ -280,7 +280,19 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 				stack = append(stack[:i], pc.Node())
 				pathstack = append(pathstack[:i], psel)
 
-				if !preserve[cue.MakePath(pathstack...).String()] {
+				// Risk not closing up fields that are not marked with 'x-kubernetes-preserve-unknown-fields: true'
+				// if the current field name matches a path that is marked with preserve unknown.
+				// TODO: find a way to fix parentPath when arrays are involved.
+				currentPath := cue.MakePath(pathstack...).String()
+				found := false
+				for k, ok := range preserve {
+					if strings.HasSuffix(k, currentPath) && ok {
+						found = true
+						break
+					}
+				}
+
+				if !found {
 					newlist := make([]ast.Decl, 0, len(x.Elts))
 					for _, elt := range x.Elts {
 						if _, is := elt.(*ast.Ellipsis); !is {

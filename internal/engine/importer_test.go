@@ -334,7 +334,9 @@ func TestConvertCRD(t *testing.T) {
 	spec?: {
 		template?: {
 			// Preserve unknown fields.
-			values?: {}
+			values?: {
+				...
+			}
 		}
 	}
 }`,
