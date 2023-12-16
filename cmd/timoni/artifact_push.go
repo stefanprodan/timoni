@@ -78,7 +78,7 @@ func init() {
 		"Path to local file or directory.")
 	pushArtifactCmd.Flags().Var(&pushArtifactArgs.creds, pushArtifactArgs.creds.Type(), pushArtifactArgs.creds.Description())
 	pushArtifactCmd.Flags().StringArrayVarP(&pushArtifactArgs.tags, "tag", "t", nil,
-		"TagArtifact of the artifact.")
+		"Tag of the artifact.")
 	pushArtifactCmd.Flags().StringArrayVarP(&pushArtifactArgs.annotations, "annotation", "a", nil,
 		"Annotation in the format '<key>=<value>'.")
 	pushArtifactCmd.Flags().StringVar(&pushArtifactArgs.contentType, "content-type", "generic",

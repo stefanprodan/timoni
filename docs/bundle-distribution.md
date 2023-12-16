@@ -67,6 +67,14 @@ timoni artifact push oci://docker.io/my-org/my-app-bundle \
   --annotation='org.opencontainers.image.source=https://github.com/my-org/my-app'
 ```
 
+Add extra tags to the artifact with:
+
+```shell
+timoni artifact tag oci://docker.io/my-org/my-app-bundle:1.0.0 \
+  --tag=1.0 \
+  --tag=1
+```
+
 ## Using bundles from container registries
 
 Timoni offers commands for listing, verifying and extracting bundles
