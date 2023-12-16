@@ -13,21 +13,20 @@ import (
 	_config:    #Config
 	apiVersion: "batch/v1"
 	kind:       "Job"
-	metadata: {
-		name:        "\(_config.metadata.name)-test"
-		namespace:   _config.metadata.namespace
-		labels:      _config.metadata.labels
-		annotations: timoniv1.Action.Force
+	metadata: timoniv1.#MetaComponent & {
+		#Meta:      _config.metadata
+		#Component: "test"
 	}
+	metadata: annotations: timoniv1.Action.Force
 	spec: batchv1.#JobSpec & {
 		template: corev1.#PodTemplateSpec & {
-			metadata: labels: _config.metadata.labels
 			let _checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(_config))
 			metadata: annotations: "timoni.sh/checksum": "\(_checksum)"
 			spec: {
 				containers: [{
-					name:  "redis-cli"
-					image: _config.image.reference
+					name:            "redis-cli"
+					image:           _config.image.reference
+					imagePullPolicy: _config.image.pullPolicy
 					command: [
 						"redis-cli",
 						if _config.password != _|_ {

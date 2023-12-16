@@ -9,7 +9,7 @@ import (
 _resources: timoni.apply.master + timoni.apply.replica + timoni.apply.test
 
 // The build command generates the Kubernetes manifests and prints the multi-docs YAML to stdout.
-// Example 'cue cmd -t debug -t name=test -t namespace=test -t mv=1.0.0 -t kv=1.28.0 build'.
+// Example 'cue cmd -t debug -t name=redis -t namespace=test -t mv=1.0.0 -t kv=1.28.0 build'.
 command: build: {
 	task: print: cli.Print & {
 		text: yaml.MarshalStream(_resources)
@@ -17,7 +17,7 @@ command: build: {
 }
 
 // The ls command prints a table with the Kubernetes resources kind, namespace, name and version.
-// Example 'cue cmd -t debug -t name=test -t namespace=test -t mv=1.0.0 -t kv=1.28.0 ls'.
+// Example 'cue cmd -t debug -t name=redis -t namespace=test -t mv=1.0.0 -t kv=1.28.0 ls'.
 command: ls: {
 	task: print: cli.Print & {
 		text: tabwriter.Write([

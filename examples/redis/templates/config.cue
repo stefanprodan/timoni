@@ -1,18 +1,35 @@
 package templates
 
 import (
-	"strings"
-
 	timoniv1 "timoni.sh/core/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 // Config defines the schema and defaults for the Instance values.
 #Config: {
-	// Runtime version info
+	// The kubeVersion is a required field, set at apply-time
+	// via timoni.cue by querying the user's Kubernetes API.
+	kubeVersion!: string
+	// Using the kubeVersion you can enforce a minimum Kubernetes minor version.
+	// By default, the minimum Kubernetes version is set to 1.20.
+	clusterVersion: timoniv1.#SemVer & {#Version: kubeVersion, #Minimum: "1.20.0"}
+
+	// The moduleVersion is set from the user-supplied module version.
+	// This field is used for the `app.kubernetes.io/version` label.
 	moduleVersion!: string
-	kubeVersion!:   string
+
+	// The Kubernetes metadata common to all resources.
+	// The `metadata.name` and `metadata.namespace` fields are
+	// set from the user-supplied instance name and namespace.
+	metadata: timoniv1.#Metadata & {#Version: moduleVersion}
+
+	// The labels allows adding `metadata.labels` to all resources.
+	// The `app.kubernetes.io/name` and `app.kubernetes.io/version` labels
+	// are automatically generated and can't be overwritten.
+	metadata: labels: timoniv1.#Labels
+
+	// The annotations allows adding `metadata.annotations` to all resources.
+	metadata: annotations?: timoniv1.#Annotations
 
 	// Redis config
 	maxmemory: *512 | int & >=64
@@ -24,26 +41,26 @@ import (
 	}
 	password?: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$"
 
-	// Metadata (common to all resources)
-	metadata: metav1.#ObjectMeta
-	metadata: name:      *"redis" | string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63)
-	metadata: namespace: *"default" | string & strings.MaxRunes(63)
-	metadata: labels: {
-		"app.kubernetes.io/version": image.tag
-		"app.kubernetes.io/part-of": metadata.name
-	}
-	metadata: annotations?: {[string]: string}
-
 	// Container image
-	image:           timoniv1.#Image
-	imagePullPolicy: *"IfNotPresent" | string
-
+	image: timoniv1.#Image
 	imagePullSecrets?: [...corev1.LocalObjectReference]
 
 	// Resource requirements
 	resources: corev1.#ResourceRequirements
 	resources: requests: memory: *"64Mi" | string
 	resources: limits: memory:   *"\(maxmemory+32)Mi" | string
+
+	// The resources allows setting the container resource requirements.
+	// By default, each Redis container requests 100m CPU and 64Mi memory.
+	resources: timoniv1.#ResourceRequirements & {
+		requests: {
+			cpu:    *"100m" | timoniv1.#CPUQuantity
+			memory: *"64Mi" | timoniv1.#MemoryQuantity
+		}
+		limits: {
+			memory: *"\(maxmemory+32)Mi" | timoniv1.#MemoryQuantity
+		}
+	}
 
 	// Security (common to all deployments)
 	podSecurityContext: *{
@@ -78,8 +95,10 @@ import (
 	service: port: *6379 | int & >0 & <=65535
 	clusterDomain: "cluster.local"
 
-	// Test connection
-	test: *true | bool
+	// Test Job disabled by default.
+	test: {
+		enabled: *false | bool
+	}
 }
 
 // Instance takes the config values and outputs the Kubernetes objects.

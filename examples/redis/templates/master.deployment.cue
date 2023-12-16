@@ -3,22 +3,19 @@ package templates
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	timoniv1 "timoni.sh/core/v1alpha1"
 )
 
 #MasterDeployment: appsv1.#Deployment & {
 	_config: #Config
-	_name:   "\(_config.metadata.name)-master"
-	_selectorLabel: "app.kubernetes.io/name": _name
+	_selectorLabel: {
+		"\(timoniv1.#StdLabelName)": "\(_config.metadata.name)-master"
+	}
 	apiVersion: "apps/v1"
 	kind:       "Deployment"
-	metadata: {
-		name:      _name
-		namespace: _config.metadata.namespace
-		labels:    _selectorLabel
-		labels:    _config.metadata.labels
-		if _config.metadata.annotations != _|_ {
-			annotations: _config.metadata.annotations
-		}
+	metadata: timoniv1.#MetaComponent & {
+		#Meta:      _config.metadata
+		#Component: "master"
 	}
 	spec: appsv1.#DeploymentSpec & {
 		strategy: type:        "Recreate"
@@ -34,9 +31,9 @@ import (
 				serviceAccountName: _config.metadata.name
 				containers: [
 					{
-						name:            _config.metadata.name
+						name:            "redis"
 						image:           _config.image.reference
-						imagePullPolicy: _config.imagePullPolicy
+						imagePullPolicy: _config.image.pullPolicy
 						ports: [{
 							name:          "redis"
 							containerPort: 6379
@@ -84,10 +81,9 @@ import (
 							emptyDir: {}
 						}
 						if _config.persistence.enabled {
-							persistentVolumeClaim: claimName: _name
+							persistentVolumeClaim: claimName: "\(_config.metadata.name)-master"
 						}
 					},
-
 					{
 						name: "config"
 						configMap: {
