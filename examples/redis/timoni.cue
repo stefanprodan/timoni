@@ -45,7 +45,7 @@ timoni: {
 	apply: replica: [for obj in instance.replica.objects {obj}]
 
 	// Conditionally run tests after an install or upgrade.
-	if instance.config.test {
+	if instance.config.test.enabled {
 		apply: test: [for obj in instance.test.objects {obj}]
 	}
 }
