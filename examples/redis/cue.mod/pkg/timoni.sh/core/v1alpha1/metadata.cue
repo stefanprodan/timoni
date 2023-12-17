@@ -45,7 +45,7 @@ import "strings"
 	labels: {
 		"\(#StdLabelName)":      name
 		"\(#StdLabelVersion)":   #Version
-		"\(#StdLabelManagedBy)": "Timoni"
+		"\(#StdLabelManagedBy)": "timoni"
 	}
 
 	// LabelSelector selects Pods based on the app.kubernetes.io/name label.
