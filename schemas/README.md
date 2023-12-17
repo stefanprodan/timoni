@@ -11,7 +11,8 @@ The Timoni's CUE schemas are included in the modules generated with `timoni mod 
 - `#Labels` - Schema for validating Kubernetes labels.
 - `#StdLabel` - Values of Kubernetes `app.kubernetes.io` labels.
 - `#Metadata` - Schema for generating Kubernetes metadata (name, namespace, annotations and labels),
-  with automatic generation of `app.kubernetes.io/name` and `app.kubernetes.io/version` labels.
+  with automatic generation of `app.kubernetes.io/managed-by`,
+  `app.kubernetes.io/name` and `app.kubernetes.io/version` labels.
 - `#MetaComponent` - Superset of `#Metadata` schema for Kubernetes namespaced objects,
   that appends the component name to `metadata.name`, and
   with automatic generation of  `app.kubernetes.io/component` label.
