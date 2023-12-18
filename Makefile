@@ -30,20 +30,24 @@ tidy: ## Tidy Go modules.
 fmt: ## Format Go code.
 	go fmt ./...
 
-cue-fmt: ## Format CUE schemas.
-	cue fmt ./schemas/...
-
 vet: ## Vet Go code.
 	go vet ./...
 
-cue-vet: ## Vet CUE schemas.
+cue-vet: build ## Vet and fmt CUE files.
+	cue fmt ./schemas/...
 	cue vet ./schemas/...
-
-lint-samples: build cue-vet cue-fmt ## Lint the CUE samples.
-	./bin/timoni mod lint ./examples/minimal
-	./bin/timoni mod lint ./examples/redis
-	./bin/timoni mod lint ./cmd/timoni/testdata/module
-	./bin/timoni mod lint ./internal/engine/testdata/module
+	for dir in ./blueprints/* ; do
+		cue fmt $$dir/...
+		./bin/timoni mod vet $$dir
+	done
+	for dir in ./examples/* ; do
+		cue fmt $$dir/...
+		if [ $$dir != "./examples/bundles" ]; then
+			./bin/timoni mod vet $$dir
+		fi
+	done
+	./bin/timoni mod vet ./cmd/timoni/testdata/module
+	./bin/timoni mod vet ./internal/engine/testdata/module
 	cue fmt ./internal/engine/testdata/module-values
 
 REDIS_VER=$(shell grep 'tag:' examples/redis/values.cue | awk '{ print $$2 }' | tr -d '"')
