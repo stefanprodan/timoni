@@ -50,10 +50,11 @@ var vetModCmd = &cobra.Command{
 }
 
 type vetModFlags struct {
-	path  string
-	pkg   flags.Package
-	debug bool
-	name  string
+	path        string
+	pkg         flags.Package
+	debug       bool
+	valuesFiles []string
+	name        string
 }
 
 var vetModArgs vetModFlags
@@ -63,6 +64,8 @@ func init() {
 	vetModCmd.Flags().VarP(&vetModArgs.pkg, vetModArgs.pkg.Type(), vetModArgs.pkg.Shorthand(), vetModArgs.pkg.Description())
 	vetModCmd.Flags().BoolVar(&vetModArgs.debug, "debug", false,
 		"Use debug_values.cue if found in the module root instead of the default values.")
+	vetModCmd.Flags().StringSliceVarP(&vetModArgs.valuesFiles, "values", "f", nil,
+		"The local path to values files (cue, yaml or json format).")
 	modCmd.AddCommand(vetModCmd)
 }
 
@@ -134,6 +137,17 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 	mod.Name, err = builder.GetModuleName()
 	if err != nil {
 		return fmt.Errorf("build failed: %w", err)
+	}
+
+	if len(vetModArgs.valuesFiles) > 0 {
+		valuesCue, err := convertToCue(cmd, vetModArgs.valuesFiles)
+		if err != nil {
+			return err
+		}
+		err = builder.MergeValuesFile(valuesCue)
+		if err != nil {
+			return err
+		}
 	}
 
 	buildResult, err := builder.Build(tags...)
