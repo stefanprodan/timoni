@@ -96,6 +96,7 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 		tmpDir,
 		rootArgs.cacheDir,
 		"",
+		rootArgs.registryInsecure,
 	)
 	mod, err := fetcher.Fetch()
 	if err != nil {

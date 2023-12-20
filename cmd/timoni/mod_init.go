@@ -89,7 +89,7 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 	spin := StartSpinner(fmt.Sprintf("pulling template from %s", modTemplateURL))
 	defer spin.Stop()
 
-	opts := oci.Options(ctx, "")
+	opts := oci.Options(ctx, "", rootArgs.registryInsecure)
 	err = oci.PullArtifact(modTemplateURL, tmpDir, apiv1.AnyContentType, opts)
 	if err != nil {
 		return err

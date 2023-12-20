@@ -55,10 +55,11 @@ var rootCmd = &cobra.Command{
 }
 
 type rootFlags struct {
-	timeout    time.Duration
-	prettyLog  bool
-	coloredLog bool
-	cacheDir   string
+	timeout          time.Duration
+	prettyLog        bool
+	coloredLog       bool
+	cacheDir         string
+	registryInsecure bool
 }
 
 var (
@@ -80,6 +81,8 @@ func init() {
 		"Adds colorized output to the logs. (defaults to false when no tty)")
 	rootCmd.PersistentFlags().StringVar(&rootArgs.cacheDir, "cache-dir", "",
 		"Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to \"$HOME/.timoni/cache\")")
+	rootCmd.PersistentFlags().BoolVar(&rootArgs.registryInsecure, "registry-insecure", false,
+		"If true, allows connecting to a container registry without TLS or with a self-signed certificate.")
 
 	addKubeConfigFlags(rootCmd)
 

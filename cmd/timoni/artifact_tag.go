@@ -69,7 +69,7 @@ func tagArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	opts := oci.Options(ctx, tagArtifactArgs.creds.String())
+	opts := oci.Options(ctx, tagArtifactArgs.creds.String(), rootArgs.registryInsecure)
 
 	for _, tag := range tagArtifactArgs.tags {
 		if err := oci.TagArtifact(ociURL, tag, opts); err != nil {

@@ -36,10 +36,11 @@ type Fetcher struct {
 	cacheDir string
 	version  string
 	creds    string
+	insecure bool
 }
 
 // NewFetcher creates a Fetcher for the given module.
-func NewFetcher(ctx context.Context, src, version, dst, cacheDir, creds string) *Fetcher {
+func NewFetcher(ctx context.Context, src, version, dst, cacheDir, creds string, insecure bool) *Fetcher {
 	return &Fetcher{
 		ctx:      ctx,
 		src:      src,
@@ -47,6 +48,7 @@ func NewFetcher(ctx context.Context, src, version, dst, cacheDir, creds string) 
 		version:  version,
 		cacheDir: cacheDir,
 		creds:    creds,
+		insecure: insecure,
 	}
 }
 
@@ -104,6 +106,6 @@ func (f *Fetcher) fetchRemoteModule(dstDir string) (*apiv1.ModuleReference, erro
 		return nil, err
 	}
 
-	opts := oci.Options(f.ctx, f.creds)
+	opts := oci.Options(f.ctx, f.creds, f.insecure)
 	return oci.PullModule(ociURL, dstDir, f.cacheDir, opts)
 }
