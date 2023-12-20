@@ -39,18 +39,23 @@ var initModCmd = &cobra.Command{
 
   # Create a module at the specified path
   timoni mod init my-app ./modules
+
+  # Create a module from a blueprint
+  timoni mod init my-app --blueprint oci://ghcr.io/stefanprodan/timoni/blueprints/starter
 `,
 	RunE: runInitModCmd,
 }
 
 type initModFlags struct {
-	name string
-	path string
+	name         string
+	path         string
+	blueprintURL string
 }
 
 var initModArgs initModFlags
 
 func init() {
+	initModCmd.Flags().StringVarP(&initModArgs.blueprintURL, "blueprint", "b", "", "Blueprint OCI URL")
 	modCmd.AddCommand(initModCmd)
 }
 
@@ -86,11 +91,18 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	spin := StartSpinner(fmt.Sprintf("pulling template from %s", modTemplateURL))
+	templateURL := modTemplateURL
+	templateName := modTemplateName
+	if initModArgs.blueprintURL != "" {
+		templateURL = initModArgs.blueprintURL
+		templateName = "blueprint"
+	}
+
+	spin := StartSpinner(fmt.Sprintf("pulling template from %s", templateURL))
 	defer spin.Stop()
 
 	opts := oci.Options(ctx, "", rootArgs.registryInsecure)
-	err = oci.PullArtifact(modTemplateURL, tmpDir, apiv1.AnyContentType, opts)
+	err = oci.PullArtifact(templateURL, tmpDir, apiv1.AnyContentType, opts)
 	if err != nil {
 		return err
 	}
@@ -98,7 +110,7 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 	dst := filepath.Join(initModArgs.path, initModArgs.name)
 	err = initModuleFromTemplate(
 		initModArgs.name,
-		modTemplateName,
+		templateName,
 		tmpDir,
 		dst,
 	)
