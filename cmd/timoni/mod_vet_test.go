@@ -50,6 +50,35 @@ func TestModVet(t *testing.T) {
 	})
 }
 
+func TestModVetWithValue(t *testing.T) {
+	modPath := "testdata/module"
+	valuesPath := "testdata/module-values"
+
+	t.Run("vets module with correct values", func(t *testing.T) {
+		g := NewWithT(t)
+		output, err := executeCommand(fmt.Sprintf(
+			"mod vet %s -p main --values %s",
+			modPath, valuesPath+"/client-only.cue",
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(output).To(ContainSubstring("timoni:latest-dev@sha256:"))
+		g.Expect(output).To(ContainSubstring("timoni.sh/test valid"))
+		g.Expect(output).To(ContainSubstring("/default"))
+	})
+
+	t.Run("fails to vet with incorrect values", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := executeCommand(fmt.Sprintf(
+			"mod vet %s -p main --values %s",
+			modPath, valuesPath+"/invalid.cue",
+		))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("validation failed"))
+		g.Expect(err.Error()).To(ContainSubstring("mismatched types string and bool"))
+	})
+}
+
 func TestModVetSetName(t *testing.T) {
 	modPath := "testdata/module"
 
