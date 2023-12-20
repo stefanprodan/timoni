@@ -145,7 +145,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	spin := StartSpinner("pushing module")
 	defer spin.Stop()
 
-	opts := oci.Options(ctx, pushModArgs.creds.String())
+	opts := oci.Options(ctx, pushModArgs.creds.String(), rootArgs.registryInsecure)
 	digestURL, err := oci.PushModule(ociURL, pushModArgs.module, pushModArgs.ignorePaths, annotations, opts)
 	if err != nil {
 		return err

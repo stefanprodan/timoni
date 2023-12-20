@@ -131,7 +131,7 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	opts := oci.Options(ctx, pullArtifactArgs.creds.String())
+	opts := oci.Options(ctx, pullArtifactArgs.creds.String(), rootArgs.registryInsecure)
 	err := oci.PullArtifact(ociURL, pullArtifactArgs.output, pullArtifactArgs.contentType, opts)
 	if err != nil {
 		return err

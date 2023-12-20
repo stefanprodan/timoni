@@ -260,6 +260,7 @@ func fetchBundleInstanceModule(ctx context.Context, instance *engine.BundleInsta
 		modDir,
 		rootArgs.cacheDir,
 		bundleApplyArgs.creds.String(),
+		rootArgs.registryInsecure,
 	)
 	mod, err := fetcher.Fetch()
 	if err != nil {

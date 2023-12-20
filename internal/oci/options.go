@@ -27,7 +27,7 @@ import (
 )
 
 // Options returns the crane options for the given context.
-func Options(ctx context.Context, credentials string) []crane.Option {
+func Options(ctx context.Context, credentials string, insecure bool) []crane.Option {
 	var opts []crane.Option
 	opts = append(opts, crane.WithUserAgent(apiv1.UserAgent), crane.WithContext(ctx))
 
@@ -44,5 +44,8 @@ func Options(ctx context.Context, credentials string) []crane.Option {
 		opts = append(opts, crane.WithAuth(authn.FromConfig(authConfig)))
 	}
 
+	if insecure {
+		opts = append(opts, crane.Insecure)
+	}
 	return opts
 }

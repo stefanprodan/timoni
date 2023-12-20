@@ -70,7 +70,7 @@ func listModCmdRun(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
-	opts := oci.Options(ctx, listModArgs.creds.String())
+	opts := oci.Options(ctx, listModArgs.creds.String(), rootArgs.registryInsecure)
 	list, err := oci.ListModuleVersions(ociURL, listModArgs.withDigest, opts)
 	if err != nil {
 		return err

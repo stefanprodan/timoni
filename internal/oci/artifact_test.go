@@ -44,7 +44,7 @@ func TestArtifactOperations(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	AppendGitMetadata(srcPath, annotations)
 
-	opts := Options(ctx, "")
+	opts := Options(ctx, "", false)
 	digestURL, err := PushArtifact(imgVersionURL, srcPath, imgIgnore, imgContentType, annotations, opts)
 	g.Expect(err).ToNot(HaveOccurred())
 

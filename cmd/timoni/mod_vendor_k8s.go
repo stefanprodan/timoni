@@ -81,7 +81,7 @@ func runVendorK8sCmd(cmd *cobra.Command, args []string) error {
 	spin := StartSpinner(fmt.Sprintf("importing schemas from %s", ociURL))
 	defer spin.Stop()
 
-	opts := oci.Options(ctx, "")
+	opts := oci.Options(ctx, "", rootArgs.registryInsecure)
 	err := oci.PullArtifact(ociURL, path.Join(cueModDir, "gen"), apiv1.CueModGenContentType, opts)
 	if err != nil {
 		return err

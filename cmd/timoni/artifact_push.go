@@ -131,7 +131,7 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	spin := StartSpinner("pushing artifact")
 	defer spin.Stop()
 
-	opts := oci.Options(ctx, pushArtifactArgs.creds.String())
+	opts := oci.Options(ctx, pushArtifactArgs.creds.String(), rootArgs.registryInsecure)
 	ociURL := fmt.Sprintf("%s:%s", args[0], pushArtifactArgs.tags[0])
 	digestURL, err := oci.PushArtifact(ociURL,
 		pushArtifactArgs.path,

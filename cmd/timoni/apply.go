@@ -170,6 +170,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		tmpDir,
 		rootArgs.cacheDir,
 		applyArgs.creds.String(),
+		rootArgs.registryInsecure,
 	)
 	mod, err := fetcher.Fetch()
 	if err != nil {
