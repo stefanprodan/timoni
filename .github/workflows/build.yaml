@@ -25,11 +25,11 @@ jobs:
       - name: Setup CUE
         uses: cue-lang/setup-cue@1713281ae501e533ff06108005dffeab9e2e5203 # main
         with:
-          version: v0.6.0
+          version: v0.7.0
       - name: Run tests
         run: make test
       - name: Run linter
-        run: make lint-samples
+        run: make cue-vet
       - name: Run setup action
         uses: ./actions/setup
       - name: Check if working tree is dirty
