@@ -295,6 +295,52 @@ func TestConvertCRD(t *testing.T) {
 	...
 }`,
 		},
+		{
+			name: "array-xk-preserve",
+			spec: `type: "object"
+			properties: {
+				resources: {
+					properties: claims: {
+						items: {
+							properties: name: type: "string"
+							required: ["name"]
+							type: "object"
+						}
+						type: "array"
+						"x-kubernetes-list-map-keys": ["name"]
+						"x-kubernetes-list-type": "map"
+					}
+					type: "object"
+				}
+				spec: {
+					properties: template: {
+						properties: values: {
+							description:                            "Preserve unknown fields."
+							type:                                   "object"
+							"x-kubernetes-preserve-unknown-fields": true
+						}
+						type: "object"
+					}
+					type: "object"
+				}
+			}
+			`,
+			expect: `{
+	resources?: {
+		claims?: [...{
+			name: string
+		}]
+	}
+	spec?: {
+		template?: {
+			// Preserve unknown fields.
+			values?: {
+				...
+			}
+		}
+	}
+}`,
+		},
 	}
 
 	for _, item := range table {
@@ -314,6 +360,9 @@ func TestConvertCRD(t *testing.T) {
 			// remove the _#def injected by CUE's syntax formatter
 			fn, err := format.Node(specNode.(*ast.StructLit).Elts[1].(*ast.Field).Value)
 			g.Expect(err).ToNot(HaveOccurred())
+
+			t.Log(string(fn))
+
 			diff := cmp.Diff(tt.expect, string(fn), multiline)
 			if diff != "" {
 				t.Fatal(diff)

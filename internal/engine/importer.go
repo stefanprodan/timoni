@@ -252,7 +252,8 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		// all the way to the file root
 		err = walkfn(defpath.Selectors(), rootosch)
 
-		// First pass of astutil.Apply to remove ellipses for fields not marked with x-kubernetes-embedded-resource: true
+		// First pass of astutil.Apply to remove ellipses for fields not marked with
+		// 'x-kubernetes-preserve-unknown-fields: true'.
 		// Note that this implementation is only correct for CUE inputs that do not contain references.
 		// It is safe to use in this context because CRDs already have that invariant.
 		var stack []ast.Node
@@ -278,7 +279,20 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 				}
 				stack = append(stack[:i], pc.Node())
 				pathstack = append(pathstack[:i], psel)
-				if !preserve[cue.MakePath(pathstack...).String()] {
+
+				// Risk not closing up fields that are not marked with 'x-kubernetes-preserve-unknown-fields: true'
+				// if the current field name matches a path that is marked with preserve unknown.
+				// TODO: find a way to fix parentPath when arrays are involved.
+				currentPath := cue.MakePath(pathstack...).String()
+				found := false
+				for k, ok := range preserve {
+					if strings.HasSuffix(k, currentPath) && ok {
+						found = true
+						break
+					}
+				}
+
+				if !found {
 					newlist := make([]ast.Decl, 0, len(x.Elts))
 					for _, elt := range x.Elts {
 						if _, is := elt.(*ast.Ellipsis); !is {
@@ -366,7 +380,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 //   - *ast.ListLit (index is the path)
 //   - *ast.Field (label is the path)
 //
-// If the there exceptions for the above two items, or the list should properly
+// If there are exceptions for the above two items, or the list should properly
 // have more items, this func will be buggy
 func parentPath(c astutil.Cursor) (cue.Selector, astutil.Cursor) {
 	p, prior := c.Parent(), c
