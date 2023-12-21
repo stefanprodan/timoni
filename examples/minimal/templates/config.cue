@@ -77,7 +77,7 @@ import (
 	// Pod optional settings.
 	podAnnotations?: {[string]: string}
 	podSecurityContext?: corev1.#PodSecurityContext
-	imagePullSecrets?: [...corev1.LocalObjectReference]
+	imagePullSecrets?: [...timoniv1.ObjectReference]
 	tolerations?: [...corev1.#Toleration]
 	affinity?: corev1.#Affinity
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]

@@ -21,6 +21,8 @@ The Timoni's CUE schemas are included in the modules generated with `timoni mod 
   with automatic generation of  `app.kubernetes.io/component` label.
 - `#Selector` - Schema for generating Kubernetes label selectors
   with automatic generation of `app.kubernetes.io/name` label.
+- `#ObjectReference` - Schema for generating Kubernetes object references
+  based on `apiVersion`, `kind`, `name` and `namespace`.
 
 ### Container Image
 
