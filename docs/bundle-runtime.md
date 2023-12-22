@@ -133,12 +133,12 @@ A Runtime file must contain a definition that matches the following schema:
 #Runtime: {
 	apiVersion: string
 	name:       string
-	
+
 	clusters?: [string]: {
 		group!:       string
 		kubeContext!: string
 	}
-	
+
 	values?: [...#RuntimeValue]
 }
 

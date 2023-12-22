@@ -133,12 +133,12 @@ Note that this file must have no imports and all values must be concrete.
 // source: myapp/values.cue
 
 values: {
-    message: "Hello World"
-    image: {
-        repository: "cgr.dev/chainguard/nginx"
-        digest:     "sha256:d2b0e52d7c2e5dd9fe5266b163e14d41ed97fd380deb55a36ff17efd145549cd"
-        tag:        "1.25.1"
-    }
+	message: "Hello World"
+	image: {
+		repository: "cgr.dev/chainguard/nginx"
+		digest:     "sha256:d2b0e52d7c2e5dd9fe5266b163e14d41ed97fd380deb55a36ff17efd145549cd"
+		tag:        "1.25.1"
+	}
 }
 ```
 
@@ -217,7 +217,6 @@ Example of a minimal config for an app deployment:
 	service: port: *80 | int & >0 & <=65535
 	resources?: corev1.#ResourceRequirements
 }
-
 ```
 
 The user-supplied values can:
@@ -284,8 +283,8 @@ Example of defining an instance containing a Kubernetes Service and Deployment:
 	config: #Config
 
 	objects: {
-		svc:    #Service & {_config:        config}
-		deploy: #Deployment & {_config:     config}
+		svc: #Service & {_config: config}
+		deploy: #Deployment & {_config: config}
 	}
 }
 ```
@@ -308,7 +307,7 @@ import (
 	apiVersion: "v1"
 	kind:       "Service"
 	metadata:   _config.metadata
-	spec:       corev1.#ServiceSpec & {
+	spec: corev1.#ServiceSpec & {
 		type:     corev1.#ServiceTypeClusterIP
 		selector: _config.selector.labels
 		ports: [
@@ -501,8 +500,8 @@ import (
 )
 
 #ServiceMonitor: promv1.#ServiceMonitor & {
-	_config:    #Config
-	metadata:   _config.metadata
+	_config:  #Config
+	metadata: _config.metadata
 	spec: {
 		endpoints: [{
 			path:     "/metrics"
