@@ -111,7 +111,6 @@ bundle: {
 		}
 	}
 }
-
 ```
 
 The cluster name and group, are mapped to fields in a Bundle using the following attributes:
@@ -207,7 +206,7 @@ Perform a dry-run apply of the Bundle to review the changes across clusters:
 
     ```text
     b:apps > c:preview-eu-1 > applying 1 instance(s) on staging (server dry run)
-    b:apps > c:preview-eu-1 > i:podinfo > applying module timoni.sh/podinfo version 6.5.3
+    b:apps > c:preview-eu-1 > i:podinfo > applying module timoni.sh/podinfo version 6.5.4
     b:apps > c:preview-eu-1 > i:podinfo > Namespace/apps created (server dry run)
     b:apps > c:preview-eu-1 > i:podinfo > ServiceAccount/apps/podinfo created (server dry run)
     b:apps > c:preview-eu-1 > i:podinfo > Service/apps/podinfo created (server dry run)
@@ -216,7 +215,7 @@ Perform a dry-run apply of the Bundle to review the changes across clusters:
     b:apps > c:preview-eu-1 > i:podinfo > applied successfully (server dry run)
     b:apps > c:preview-eu-1 > applied successfully (server dry run)
     b:apps > c:prod-eu-1 > applying 1 instance(s) on production (server dry run)
-    b:apps > c:prod-eu-1 > i:podinfo > applying module timoni.sh/podinfo version 6.5.3
+    b:apps > c:prod-eu-1 > i:podinfo > applying module timoni.sh/podinfo version 6.5.4
     b:apps > c:prod-eu-1 > i:podinfo > Namespace/apps created (server dry run)
     b:apps > c:prod-eu-1 > i:podinfo > ServiceAccount/apps/podinfo created (server dry run)
     b:apps > c:prod-eu-1 > i:podinfo > Service/apps/podinfo created (server dry run)
@@ -240,7 +239,7 @@ To install or upgrade the instances defined in the Bundle to all clusters:
     
     ```text
     b:apps > c:preview-eu-1 > applying 1 instance(s) on staging
-    b:apps > c:preview-eu-1 > i:podinfo > applying module timoni.sh/podinfo version 6.5.3
+    b:apps > c:preview-eu-1 > i:podinfo > applying module timoni.sh/podinfo version 6.5.4
     b:apps > c:preview-eu-1 > i:podinfo > installing podinfo in namespace apps
     b:apps > c:preview-eu-1 > i:podinfo > Namespace/apps created
     b:apps > c:preview-eu-1 > i:podinfo > applying app
@@ -253,7 +252,7 @@ To install or upgrade the instances defined in the Bundle to all clusters:
     b:apps > c:preview-eu-1 > i:podinfo > test resources ready
     b:apps > c:preview-eu-1 > applied successfully in 22s
     b:apps > c:prod-eu-1 > applying 1 instance(s) on production
-    b:apps > c:prod-eu-1 > i:podinfo > applying module timoni.sh/podinfo version 6.5.3
+    b:apps > c:prod-eu-1 > i:podinfo > applying module timoni.sh/podinfo version 6.5.4
     b:apps > c:prod-eu-1 > i:podinfo > installing podinfo in namespace apps
     b:apps > c:prod-eu-1 > i:podinfo > Namespace/apps created
     b:apps > c:prod-eu-1 > i:podinfo > applying app
@@ -292,19 +291,19 @@ To list the current status of the deployed apps on all clusters:
 
     ```text
     b:apps > c:preview-eu-1 > i:podinfo > last applied 2023-11-25T12:50:02Z
-    b:apps > c:preview-eu-1 > i:podinfo > module oci://ghcr.io/stefanprodan/modules/podinfo:6.5.3
-    b:apps > c:preview-eu-1 > i:podinfo > digest sha256:54d38b407012ccfb42badf0974ba70f9ae229ecd38f17e8a1f4e7189283b924f
+    b:apps > c:preview-eu-1 > i:podinfo > module oci://ghcr.io/stefanprodan/modules/podinfo:6.5.4
+    b:apps > c:preview-eu-1 > i:podinfo > digest sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365
     b:apps > c:preview-eu-1 > i:podinfo > container image ghcr.io/curl/curl-container/curl-multi:master
-    b:apps > c:preview-eu-1 > i:podinfo > container image ghcr.io/stefanprodan/podinfo:6.5.3
+    b:apps > c:preview-eu-1 > i:podinfo > container image ghcr.io/stefanprodan/podinfo:6.5.4
     b:apps > c:preview-eu-1 > i:podinfo > ServiceAccount/apps/podinfo Current - Resource is current
     b:apps > c:preview-eu-1 > i:podinfo > Service/apps/podinfo Current - Service is ready
     b:apps > c:preview-eu-1 > i:podinfo > Deployment/apps/podinfo Current - Deployment is available. Replicas: 1
     b:apps > c:preview-eu-1 > i:podinfo > Job/apps/podinfo-test Current - Job Completed. succeeded: 1/1
     b:apps > c:prod-eu-1 > i:podinfo > last applied 2023-11-25T12:50:24Z
-    b:apps > c:prod-eu-1 > i:podinfo > module oci://ghcr.io/stefanprodan/modules/podinfo:6.5.3
-    b:apps > c:prod-eu-1 > i:podinfo > digest sha256:54d38b407012ccfb42badf0974ba70f9ae229ecd38f17e8a1f4e7189283b924f
+    b:apps > c:prod-eu-1 > i:podinfo > module oci://ghcr.io/stefanprodan/modules/podinfo:6.5.4
+    b:apps > c:prod-eu-1 > i:podinfo > digest sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365
     b:apps > c:prod-eu-1 > i:podinfo > container image ghcr.io/curl/curl-container/curl-multi:master
-    b:apps > c:prod-eu-1 > i:podinfo > container image ghcr.io/stefanprodan/podinfo:6.5.3
+    b:apps > c:prod-eu-1 > i:podinfo > container image ghcr.io/stefanprodan/podinfo:6.5.4
     b:apps > c:prod-eu-1 > i:podinfo > ServiceAccount/apps/podinfo Current - Resource is current
     b:apps > c:prod-eu-1 > i:podinfo > Service/apps/podinfo Current - Service is ready
     b:apps > c:prod-eu-1 > i:podinfo > Deployment/apps/podinfo Current - Deployment is available. Replicas: 2

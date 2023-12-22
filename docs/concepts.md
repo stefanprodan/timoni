@@ -126,10 +126,10 @@ For deterministic operations, it is possible to pin a module version by its OCI 
 
 ```cue
 redis: {
-    module: {
-        url:     "oci://ghcr.io/stefanprodan/modules/redis"
-        digest:  "sha256:e9137d41b0d263bfaf2a43fc862648ad9dc3a976b4b0fc6e27617ea28ee27d45"
-    }
+	module: {
+		url:    "oci://ghcr.io/stefanprodan/modules/redis"
+		digest: "sha256:e9137d41b0d263bfaf2a43fc862648ad9dc3a976b4b0fc6e27617ea28ee27d45"
+	}
 }
 ```
 
@@ -183,3 +183,4 @@ Commands for distributing bundles and runtimes:
 - `timoni artifact push oci://<artifact-url> -t <tag> -f <path/to/dir>`
 - `timoni artifact pull oci://<artifact-url> -o <path/to/dir>`
 - `timoni artifact list oci://<artifact-url>`
+- `timoni artifact tag oci://<artifact-url>:<tag> -t <new-tag>`

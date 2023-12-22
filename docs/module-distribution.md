@@ -94,9 +94,11 @@ Example:
 
 ```console
 $ timoni mod list oci://ghcr.io/stefanprodan/modules/podinfo
-VERSION	DIGEST                                                                  
-latest  sha256:d5cb5a8c625045ee1da01d629a2d46cd361f2b6472b8bd07bcabbd0012bc574b 
+VERSION DIGEST                                                                  
+latest  sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365 
+6.5.4   sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365 
+6.5.3   sha256:54d38b407012ccfb42badf0974ba70f9ae229ecd38f17e8a1f4e7189283b924f 
+6.5.2   sha256:6feb340acfc8f566bad9d4fa1e71a3cd0feade41a00750428b4f1b0b5e3c86a0 
+6.5.1   sha256:aa76ad9ab7e7a3efd12af1ceaaaa7e53a165a77869fecc64342c8ea6b1b758e2 
 6.5.0   sha256:d5cb5a8c625045ee1da01d629a2d46cd361f2b6472b8bd07bcabbd0012bc574b 
-6.4.1   sha256:b3ef5d3ce9f0246e2c596db62f2d0830f58aa2b7f07199fe002c913d991e9d0c 
-6.4.0   sha256:f2d85995c0936221eb58a16ead23125d81154ab2cd25a31b2b6314f1f584ee0b 
 ```

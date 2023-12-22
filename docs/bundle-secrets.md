@@ -140,7 +140,7 @@ bundle: {
 			module: url: "oci://my-registry/timoni/modules/my-app-storage"
 			namespace: "my-app"
 			values: {
-				endpoint:  "https://my-acc.r2.cloudflarestorage.com"
+				endpoint: "https://my-acc.r2.cloudflarestorage.com"
 				// The secrets are omitted here!
 			}
 		}

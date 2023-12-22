@@ -25,7 +25,7 @@ jobs:
             **/go.sum
             **/go.mod
       - name: Generate cmd docs
-        run: make docs
+        run: make prep-docs
       - name: Run mkdocs
         uses: mhausenblas/mkdocs-deploy-gh-pages@e55ecab6718b449a90ebd4313f1320f9327f1386 # master
         env:

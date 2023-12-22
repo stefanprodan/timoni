@@ -67,6 +67,9 @@ generate: controller-gen ## Generate API code.
 docs: build
 	./bin/timoni docgen
 
+prep-docs: docs
+	find ./docs -name '*.md' -print0 | xargs -0 sed -i 's/```cue/```go/g'
+
 CONTROLLER_GEN=$(BIN_DIR)/controller-gen
 .PHONY: controller-gen
 controller-gen:
