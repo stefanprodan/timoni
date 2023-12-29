@@ -105,6 +105,20 @@ nav:
         - Flux AIO Distribution: flux-aio.md
         - Helm Interoperability: flux-helm-interop.md
         - GitOps with Flux: gitops-flux.md
+  - CUE Reference:
+      - Introduction: cue/introduction.md
+      - CUE Walkthrough: cue/walkthrough.md
+      - Module Development:
+          - Get started with modules: cue/module/initialization.md
+          - Add custom resources: cue/module/custom-resources.md
+          - Cluster version constraints: cue/module/semver-constraints.md
+          - Control the apply behavior: cue/module/apply-behavior.md
+          - Run tests with Kubernetes Jobs: cue/module/test-jobs.md
+          - Import resources from YAML: cue/module/import-resources.md
+      - Module Distribution:
+          - Publishing module versions: cue/module/publishing.md
+          - Signing and Verification: cue/module/signing.md
+          - GitHub Actions: cue/module/github-actions.md
   - CLI Reference:
       - cmd/timoni.md
       - cmd/timoni_version.md
