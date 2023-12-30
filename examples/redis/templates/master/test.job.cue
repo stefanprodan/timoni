@@ -1,4 +1,4 @@
-package templates
+package master
 
 import (
 	"encoding/yaml"
@@ -7,10 +7,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	timoniv1 "timoni.sh/core/v1alpha1"
+	"timoni.sh/redis/templates/config"
 )
 
 #TestJob: batchv1.#Job & {
-	#config:    #Config
+	#config:    config.#Config
 	apiVersion: "batch/v1"
 	kind:       "Job"
 	metadata: timoniv1.#MetaComponent & {

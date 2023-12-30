@@ -5,13 +5,14 @@
 package main
 
 import (
+	conf "timoni.sh/redis/templates/config"
 	templates "timoni.sh/redis/templates"
 )
 
 // Define the schema for the user-supplied values.
 // At runtime, Timoni injects the supplied values
 // and validates them according to the Config schema.
-values: templates.#Config
+values: conf.#Config
 
 // Define how Timoni should build, validate and
 // apply the Kubernetes resources.

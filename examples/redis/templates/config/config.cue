@@ -1,4 +1,4 @@
-package templates
+package config
 
 import (
 	timoniv1 "timoni.sh/core/v1alpha1"
@@ -98,31 +98,5 @@ import (
 	// Test Job disabled by default.
 	test: {
 		enabled: *false | bool
-	}
-}
-
-// Instance takes the config values and outputs the Kubernetes objects.
-#Instance: {
-	config: #Config
-
-	master: objects: {
-		"\(config.metadata.name)-sa": #ServiceAccount & {#config: config}
-		"\(config.metadata.name)-cm": #ConfigMap & {#config: config}
-
-		if config.persistence.enabled {
-			"\(config.metadata.name)-pvc": #MasterPVC & {#config: config}
-		}
-
-		"\(config.metadata.name)-svc": #MasterService & {#config: config}
-		"\(config.metadata.name)-deploy": #MasterDeployment & {#config: config}
-	}
-
-	replica: objects: {
-		"\(config.metadata.name)-deploy-replica": #ReplicaDeployment & {#config: config}
-		"\(config.metadata.name)-svc-replica": #ReplicaService & {#config: config}
-	}
-
-	test: objects: {
-		"\(config.metadata.name)-ping-master": #TestJob & {#config: config}
 	}
 }

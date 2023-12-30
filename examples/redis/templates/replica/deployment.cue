@@ -1,13 +1,14 @@
-package templates
+package replica
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	timoniv1 "timoni.sh/core/v1alpha1"
+	"timoni.sh/redis/templates/config"
 )
 
 #ReplicaDeployment: appsv1.#Deployment & {
-	#config: #Config
+	#config: config.#Config
 	_selectorLabel: {
 		"\(timoniv1.#StdLabelName)": "\(#config.metadata.name)-replica"
 	}
