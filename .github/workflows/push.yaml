@@ -29,6 +29,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push blueprint starter
+        run: |
+          timoni mod push ./blueprints/starter oci://ghcr.io/stefanprodan/timoni/blueprints/starter \
+          -v ${{ github.event.inputs.version }} --latest \
+          -a 'org.opencontainers.image.licenses=Apache-2.0' \
+          -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni'  \
+          -a 'org.opencontainers.image.description=Get started blueprint for timoni.sh modules.' \
+          -a 'org.opencontainers.image.documentation=https://timoni.sh' \
+          --sign cosign
       - name: Push minimal module
         run: |
           timoni mod push ./examples/minimal oci://ghcr.io/stefanprodan/timoni/minimal \
