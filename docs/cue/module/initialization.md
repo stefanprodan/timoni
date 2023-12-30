@@ -241,9 +241,9 @@ The `replicas` value is used in the `deployment.cue` template to set the
 
 ```cue
 #Deployment: appsv1.#Deployment & {
-	_config: #Config
+	#config: #Config
 	spec: {
-		replicas: _config.replicas
+		replicas: #config.replicas
 	}
 }
 
@@ -263,8 +263,8 @@ and returns the list of objects with the `#Deployment` and `#Service` types:
 	config: #Config
 
 	objects: {
-		deploy: #Deployment & {_config: config}
-		service: #Service & {_config: config}
+		deploy: #Deployment & {#config: config}
+		service: #Service & {#config: config}
 	}
 }
 
@@ -306,18 +306,18 @@ import (
 )
 
 #Service: corev1.#Service & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "v1"
 	kind:       "Service"
-	metadata:   _config.metadata
-	if _config.service.annotations != _|_ {
-		metadata: annotations: _config.service.annotations
+	metadata:   #config.metadata
+	if #config.service.annotations != _|_ {
+		metadata: annotations: #config.service.annotations
 	}
 	spec: corev1.#ServiceSpec & {
-		selector: _config.selector.labels
+		selector: #config.selector.labels
 		ports: [
 			{
-				port:       _config.service.port
+				port:       #config.service.port
 				protocol:   "TCP"
 				name:       "http"
 				targetPort: name
@@ -340,20 +340,19 @@ is a Kubernetes Service object, and that it should inherit all the fields from t
 `corev1.#Service` type. This ensures that the generated object will be validated
 against the Kubernetes API schema.
 
-Inside the `#Service` definition, we have a `_config` field of type `#Config`.
-The `_config` field is used as an input parameter for the user-supplied values.
-The `_` prefix defines the field as hidden, meaning that it will not be part of the generated object.
+Inside the `#Service` definition, we have a `#config` field of type `#Config`.
+The `#config` field is used as an input parameter for the user-supplied values.
 
 The rest of the `#Service` definition is used to set the Kubernetes object fields
-to the `_config` values.
+to the `#config` values.
 
 Optional config fields, like the `service.annotations`, should be set only if the user
 supplied a value for them. To verify if a field has a value, we can use an if statement
 and map the config field inside:
 
 ```cue
-if _config.service.annotations != _|_ {
-    metadata: annotations: _config.service.annotations
+if #config.service.annotations != _|_ {
+    metadata: annotations: #config.service.annotations
 }
 ```
 
@@ -392,14 +391,14 @@ With the `|` operator we enumerate the allowed values for the `type` field.
 
 ### Map the field in the template
 
-Open the `service.cue` file and set the `spec.type` field to the `_config.service.type` value:
+Open the `service.cue` file and set the `spec.type` field to the `#config.service.type` value:
 
 ```cue
 #Service: corev1.#Service & {
-	_config: #Config
+	#config: #Config
 
 	spec: {
-		type: _config.service.type
+		type: #config.service.type
 	}
 }
 

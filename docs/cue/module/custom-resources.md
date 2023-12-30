@@ -51,18 +51,18 @@ import (
 )
 
 #ServiceMonitor: promv1.#ServiceMonitor & {
-	_config:  #Config
-	metadata: _config.metadata
+	#config:  #Config
+	metadata: #config.metadata
 	spec: {
 		endpoints: [{
 			// Change this to match the Service port where
 			// your app exposes the /metrics endpoint
 			port:     "http-metrics"
 			path:     "/metrics"
-			interval: "\(_config.monitoring.interval)s"
+			interval: "\(#config.monitoring.interval)s"
 		}]
-		namespaceSelector: matchNames: [_config.metadata.namespace]
-		selector: matchLabels: _config.selector.labels
+		namespaceSelector: matchNames: [#config.metadata.namespace]
+		selector: matchLabels: #config.selector.labels
 	}
 }
 ```
@@ -101,7 +101,7 @@ In the `templates/config.cue` file, add the `ServiceMonitor` resource to the ins
 	config: #Config
 
 	if config.monitoring.enabled {
-		objects: servicemonitor: #ServiceMonitor & {_config: config}
+		objects: servicemonitor: #ServiceMonitor & {#config: config}
 	}
 
 }

@@ -36,29 +36,29 @@ import (
 )
 
 #TestJob: batchv1.#Job & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "batch/v1"
 	kind:       "Job"
 	metadata: timoniv1.#MetaComponent & {
-		#Meta:      _config.metadata
+		#Meta:      #config.metadata
 		#Component: "test"
 	}
 	metadata: annotations: timoniv1.Action.Force
 	spec: batchv1.#JobSpec & {
 		template: corev1.#PodTemplateSpec & {
-			let checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(_config))
+			let checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(#config))
 			metadata: annotations: "timoni.sh/checksum": checksum
 			spec: {
 				containers: [{
 					name:            "curl"
-					image:           _config.test.image.reference
-					imagePullPolicy: _config.test.image.pullPolicy
+					image:           #config.test.image.reference
+					imagePullPolicy: #config.test.image.pullPolicy
 					command: [
 						"curl",
 						"-v",
 						"-m",
 						"5",
-						"\(_config.metadata.name):\(_config.service.port)",
+						"\(#config.metadata.name):\(#config.service.port)",
 					]
 				}]
 				restartPolicy: "Never"
@@ -99,7 +99,7 @@ In the module's `#Instance` definition we'll add the `#TestJob` to the `tests` l
 #Instance: {
 	config: #Config
 
-	tests: curl: #TestJob & {_config: config}
+	tests: curl: #TestJob & {#config: config}
 }
 ```
 

@@ -283,8 +283,8 @@ Example of defining an instance containing a Kubernetes Service and Deployment:
 	config: #Config
 
 	objects: {
-		svc: #Service & {_config: config}
-		deploy: #Deployment & {_config: config}
+		svc: #Service & {#config: config}
+		deploy: #Deployment & {#config: config}
 	}
 }
 ```
@@ -303,16 +303,16 @@ import (
 )
 
 #Service: corev1.#Service & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "v1"
 	kind:       "Service"
-	metadata:   _config.metadata
+	metadata:   #config.metadata
 	spec: corev1.#ServiceSpec & {
 		type:     corev1.#ServiceTypeClusterIP
-		selector: _config.selector.labels
+		selector: #config.selector.labels
 		ports: [
 			{
-				port:       _config.service.port
+				port:       #config.service.port
 				protocol:   "TCP"
 				name:       "http"
 				targetPort: name
@@ -373,29 +373,29 @@ Example of a test that verifies that an app is accessible from inside the cluste
 // source: myapp/templates/job.cue
 
 #TestJob: batchv1.#Job & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "batch/v1"
 	kind:       "Job"
 	metadata: timoniv1.#MetaComponent & {
-		#Meta:      _config.metadata
+		#Meta:      #config.metadata
 		#Component: "test"
 	}
 	metadata: annotations: timoniv1.Action.Force
 	spec: batchv1.#JobSpec & {
 		template: corev1.#PodTemplateSpec & {
-			let _checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(_config))
+			let _checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(#config))
 			metadata: annotations: "timoni.sh/checksum": "\(_checksum)"
 			spec: {
 				containers: [{
 					name:            "curl"
-					image:           _config.test.image.reference
-					imagePullPolicy: _config.test.image.pullPolicy
+					image:           #config.test.image.reference
+					imagePullPolicy: #config.test.image.pullPolicy
 					command: [
 						"curl",
 						"-v",
 						"-m",
 						"5",
-						"\(_config.metadata.name):\(_config.service.port)",
+						"\(#config.metadata.name):\(#config.service.port)",
 					]
 				}]
 				restartPolicy: "Never"
@@ -500,16 +500,16 @@ import (
 )
 
 #ServiceMonitor: promv1.#ServiceMonitor & {
-	_config:  #Config
-	metadata: _config.metadata
+	#config:  #Config
+	metadata: #config.metadata
 	spec: {
 		endpoints: [{
 			path:     "/metrics"
 			port:     "http-metrics"
-			interval: "\(_config.monitoring.interval)s"
+			interval: "\(#config.monitoring.interval)s"
 		}]
-		namespaceSelector: matchNames: [_config.metadata.namespace]
-		selector: matchLabels: _config.selector.labels
+		namespaceSelector: matchNames: [#config.metadata.namespace]
+		selector: matchLabels: #config.selector.labels
 	}
 }
 ```

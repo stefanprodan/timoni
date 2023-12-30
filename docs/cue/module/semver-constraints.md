@@ -44,7 +44,7 @@ you can use the following condition in your module's `#Instance` definition:
 	config: #Config
 
 	if config.clusterVersion.minor >= 29 {
-		objects: flowSchema: #FlowSchema & {_config: config}
+		objects: flowSchema: #FlowSchema & {#config: config}
 	}
 }
 

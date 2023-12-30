@@ -27,11 +27,11 @@ import (
 )
 
 #TestJob: batchv1.#Job & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "batch/v1"
 	kind:       "Job"
 	metadata: timoniv1.#MetaComponent & {
-		#Meta:      _config.metadata
+		#Meta:      #config.metadata
 		#Component: "test"
 	}
 	metadata: annotations: timoniv1.Action.Force
@@ -56,11 +56,11 @@ import (
 )
 
 #InstallJob: batchv1.#Job & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "batch/v1"
 	kind:       "Job"
 	metadata: timoniv1.#MetaComponent & {
-		#Meta:      _config.metadata
+		#Meta:      #config.metadata
 		#Component: "install"
 	}
 	metadata: annotations: timoniv1.Action.OneOff
@@ -87,11 +87,11 @@ import (
 )
 
 #DatabasePVC: corev1.#PersistentVolumeClaim & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "v1"
 	kind:       "PersistentVolumeClaim"
 	metadata: timoniv1.#MetaComponent & {
-		#Meta:      _config.metadata
+		#Meta:      #config.metadata
 		#Component: "database"
 	}
 	metadata: annotations: timoniv1.Action.Keep
