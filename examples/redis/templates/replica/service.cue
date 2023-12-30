@@ -1,19 +1,20 @@
-package templates
+package replica
 
 import (
 	corev1 "k8s.io/api/core/v1"
 	timoniv1 "timoni.sh/core/v1alpha1"
+	"timoni.sh/redis/templates/config"
 )
 
 #ReplicaService: corev1.#Service & {
-	_config: #Config
+	#config: config.#Config
 	_selectorLabel: {
-		"\(timoniv1.#StdLabelName)": "\(_config.metadata.name)-replica"
+		"\(timoniv1.#StdLabelName)": "\(#config.metadata.name)-replica"
 	}
 	apiVersion: "v1"
 	kind:       "Service"
 	metadata: timoniv1.#MetaComponent & {
-		#Meta:      _config.metadata
+		#Meta:      #config.metadata
 		#Component: "readonly"
 	}
 	spec: corev1.#ServiceSpec & {
@@ -22,7 +23,7 @@ import (
 		ports: [
 			{
 				name:       "redis"
-				port:       _config.service.port
+				port:       #config.service.port
 				targetPort: "\(name)"
 				protocol:   "TCP"
 			},

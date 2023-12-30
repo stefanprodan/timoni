@@ -9,15 +9,15 @@ import (
 )
 
 #ConfigMap: corev1.#ConfigMap & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "v1"
 	kind:       "ConfigMap"
 	metadata: {
-		name:      "\(_config.metadata.name)-\(_checksum)"
-		namespace: _config.metadata.namespace
-		labels:    _config.metadata.labels
-		if _config.metadata.annotations != _|_ {
-			annotations: _config.metadata.annotations
+		name:      "\(#config.metadata.name)-\(_checksum)"
+		namespace: #config.metadata.namespace
+		labels:    #config.metadata.labels
+		if #config.metadata.annotations != _|_ {
+			annotations: #config.metadata.annotations
 		}
 	}
 	immutable: true
@@ -26,7 +26,7 @@ import (
 		"nginx.default.conf": """
 			server {
 				listen       8080;
-				server_name  \(_config.metadata.name);
+				server_name  \(#config.metadata.name);
 
 				location / {
 			  	root   /usr/share/nginx/html;
@@ -52,7 +52,7 @@ import (
 			<head>
 			 	<meta charset="utf-8">
 			 	<meta http-equiv="refresh" content="10" />
-				<title>\(_config.metadata.name)</title>
+				<title>\(#config.metadata.name)</title>
 				<style>
 				html { color-scheme: light dark; }
 				body { width: 35em; margin: 0 auto;
@@ -60,8 +60,8 @@ import (
 				</style>
 			</head>
 			<body>
-				<h1> \(_config.message) from \(_config.metadata.name)!</h1>
-				<p>If you see this page, the <b>\(_config.metadata.name)</b> instance is successfully deployed in the <b>\(_config.metadata.namespace)</b> namespace by Timoni.</p>
+				<h1> \(#config.message) from \(#config.metadata.name)!</h1>
+				<p>If you see this page, the <b>\(#config.metadata.name)</b> instance is successfully deployed in the <b>\(#config.metadata.namespace)</b> namespace by Timoni.</p>
 			</body>
 			</html>
 			"""

@@ -1,20 +1,21 @@
-package templates
+package master
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	timoniv1 "timoni.sh/core/v1alpha1"
+	"timoni.sh/redis/templates/config"
 )
 
 #MasterDeployment: appsv1.#Deployment & {
-	_config: #Config
+	#config: config.#Config
 	_selectorLabel: {
-		"\(timoniv1.#StdLabelName)": "\(_config.metadata.name)-master"
+		"\(timoniv1.#StdLabelName)": "\(#config.metadata.name)-master"
 	}
 	apiVersion: "apps/v1"
 	kind:       "Deployment"
 	metadata: timoniv1.#MetaComponent & {
-		#Meta:      _config.metadata
+		#Meta:      #config.metadata
 		#Component: "master"
 	}
 	spec: appsv1.#DeploymentSpec & {
@@ -23,17 +24,17 @@ import (
 		template: {
 			metadata: {
 				labels: _selectorLabel
-				if _config.podAnnotations != _|_ {
-					annotations: _config.podAnnotations
+				if #config.podAnnotations != _|_ {
+					annotations: #config.podAnnotations
 				}
 			}
 			spec: corev1.#PodSpec & {
-				serviceAccountName: _config.metadata.name
+				serviceAccountName: #config.metadata.name
 				containers: [
 					{
 						name:            "redis"
-						image:           _config.image.reference
-						imagePullPolicy: _config.image.pullPolicy
+						image:           #config.image.reference
+						imagePullPolicy: #config.image.pullPolicy
 						ports: [{
 							name:          "redis"
 							containerPort: 6379
@@ -42,8 +43,8 @@ import (
 						command: [
 							"redis-server",
 							"/redis-master/redis.conf",
-							if _config.password != _|_ {
-								"--requirepass \(_config.password)"
+							if #config.password != _|_ {
+								"--requirepass \(#config.password)"
 							},
 						]
 						livenessProbe: {
@@ -66,28 +67,28 @@ import (
 								name:      "config"
 							},
 						]
-						if _config.resources != _|_ {
-							resources: _config.resources
+						if #config.resources != _|_ {
+							resources: #config.resources
 						}
-						if _config.securityContext != _|_ {
-							securityContext: _config.securityContext
+						if #config.securityContext != _|_ {
+							securityContext: #config.securityContext
 						}
 					},
 				]
 				volumes: [
 					{
 						name: "data"
-						if !_config.persistence.enabled {
+						if !#config.persistence.enabled {
 							emptyDir: {}
 						}
-						if _config.persistence.enabled {
-							persistentVolumeClaim: claimName: "\(_config.metadata.name)-master"
+						if #config.persistence.enabled {
+							persistentVolumeClaim: claimName: "\(#config.metadata.name)-master"
 						}
 					},
 					{
 						name: "config"
 						configMap: {
-							name: "\(_config.metadata.name)"
+							name: "\(#config.metadata.name)"
 							items: [{
 								key:  "redis.conf"
 								path: key
@@ -95,20 +96,20 @@ import (
 						}
 					},
 				]
-				if _config.podSecurityContext != _|_ {
-					securityContext: _config.podSecurityContext
+				if #config.podSecurityContext != _|_ {
+					securityContext: #config.podSecurityContext
 				}
-				if _config.topologySpreadConstraints != _|_ {
-					topologySpreadConstraints: _config.topologySpreadConstraints
+				if #config.topologySpreadConstraints != _|_ {
+					topologySpreadConstraints: #config.topologySpreadConstraints
 				}
-				if _config.affinity != _|_ {
-					affinity: _config.affinity
+				if #config.affinity != _|_ {
+					affinity: #config.affinity
 				}
-				if _config.tolerations != _|_ {
-					tolerations: _config.tolerations
+				if #config.tolerations != _|_ {
+					tolerations: #config.tolerations
 				}
-				if _config.imagePullSecrets != _|_ {
-					imagePullSecrets: _config.imagePullSecrets
+				if #config.imagePullSecrets != _|_ {
+					imagePullSecrets: #config.imagePullSecrets
 				}
 			}
 		}

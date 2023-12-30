@@ -6,26 +6,26 @@ import (
 )
 
 #Deployment: appsv1.#Deployment & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "apps/v1"
 	kind:       "Deployment"
-	metadata:   _config.metadata
+	metadata:   #config.metadata
 	spec: appsv1.#DeploymentSpec & {
-		replicas: _config.replicas
-		selector: matchLabels: _config.selector.labels
+		replicas: #config.replicas
+		selector: matchLabels: #config.selector.labels
 		template: {
 			metadata: {
-				labels: _config.selector.labels
-				if _config.pod.annotations != _|_ {
-					annotations: _config.pod.annotations
+				labels: #config.selector.labels
+				if #config.pod.annotations != _|_ {
+					annotations: #config.pod.annotations
 				}
 			}
 			spec: corev1.#PodSpec & {
 				containers: [
 					{
-						name:            _config.metadata.name
-						image:           _config.image.reference
-						imagePullPolicy: _config.image.pullPolicy
+						name:            #config.metadata.name
+						image:           #config.image.reference
+						imagePullPolicy: #config.image.pullPolicy
 						ports: [
 							{
 								name:          "http"
@@ -48,19 +48,19 @@ import (
 							initialDelaySeconds: 5
 							periodSeconds:       5
 						}
-						if _config.resources != _|_ {
-							resources: _config.resources
+						if #config.resources != _|_ {
+							resources: #config.resources
 						}
-						if _config.securityContext != _|_ {
-							securityContext: _config.securityContext
+						if #config.securityContext != _|_ {
+							securityContext: #config.securityContext
 						}
 					},
 				]
-				if _config.pod.affinity != _|_ {
-					affinity: _config.pod.affinity
+				if #config.pod.affinity != _|_ {
+					affinity: #config.pod.affinity
 				}
-				if _config.pod.imagePullSecrets != _|_ {
-					imagePullSecrets: _config.pod.imagePullSecrets
+				if #config.pod.imagePullSecrets != _|_ {
+					imagePullSecrets: #config.pod.imagePullSecrets
 				}
 			}
 		}

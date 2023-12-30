@@ -1,17 +1,18 @@
-package templates
+package master
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"timoni.sh/redis/templates/config"
 )
 
 #ConfigMap: corev1.#ConfigMap & {
-	_config:    #Config
+	#config:    config.#Config
 	apiVersion: "v1"
 	kind:       "ConfigMap"
-	metadata:   _config.metadata
+	metadata:   #config.metadata
 	data:
 		"redis.conf": """
-			maxmemory \(_config.maxmemory)mb
+			maxmemory \(#config.maxmemory)mb
 			maxmemory-policy allkeys-lru
 
 			dir /data

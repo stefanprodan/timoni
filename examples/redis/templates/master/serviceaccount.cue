@@ -1,12 +1,13 @@
-package templates
+package master
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"timoni.sh/redis/templates/config"
 )
 
 #ServiceAccount: corev1.#ServiceAccount & {
-	_config:    #Config
+	#config:    config.#Config
 	apiVersion: "v1"
 	kind:       "ServiceAccount"
-	metadata:   _config.metadata
+	metadata:   #config.metadata
 }

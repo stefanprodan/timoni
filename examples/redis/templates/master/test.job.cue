@@ -1,4 +1,4 @@
-package templates
+package master
 
 import (
 	"encoding/yaml"
@@ -7,10 +7,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	timoniv1 "timoni.sh/core/v1alpha1"
+	"timoni.sh/redis/templates/config"
 )
 
 #TestJob: batchv1.#Job & {
-	#config:    #Config
+	#config:    config.#Config
 	apiVersion: "batch/v1"
 	kind:       "Job"
 	metadata: timoniv1.#MetaComponent & {
@@ -24,15 +25,22 @@ import (
 			metadata: annotations: "timoni.sh/checksum": "\(_checksum)"
 			spec: {
 				containers: [{
-					name:            "curl"
-					image:           #config.test.image.reference
-					imagePullPolicy: #config.test.image.pullPolicy
+					name:            "redis-cli"
+					image:           #config.image.reference
+					imagePullPolicy: #config.image.pullPolicy
 					command: [
-						"curl",
-						"-v",
-						"-m",
-						"5",
-						"\(#config.metadata.name):\(#config.service.port)",
+						"redis-cli",
+						if #config.password != _|_ {
+							"-a"
+						},
+						if #config.password != _|_ {
+							"\(#config.password)"
+						},
+						"-h",
+						"\(#config.metadata.name)",
+						"-p",
+						"\(#config.service.port)",
+						"PING",
 					]
 				}]
 				restartPolicy: "Never"
