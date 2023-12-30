@@ -5,13 +5,13 @@ import (
 )
 
 #ConfigMap: corev1.#ConfigMap & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "v1"
 	kind:       "ConfigMap"
-	metadata:   _config.metadata
+	metadata:   #config.metadata
 	data:
 		"redis.conf": """
-			maxmemory \(_config.maxmemory)mb
+			maxmemory \(#config.maxmemory)mb
 			maxmemory-policy allkeys-lru
 
 			dir /data

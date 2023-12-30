@@ -6,16 +6,16 @@ import (
 )
 
 #MasterPVC: corev1.#PersistentVolumeClaim & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "v1"
 	kind:       "PersistentVolumeClaim"
 	metadata: timoniv1.#MetaComponent & {
-		#Meta:      _config.metadata
+		#Meta:      #config.metadata
 		#Component: "master"
 	}
 	spec: corev1.#PersistentVolumeClaimSpec & {
-		storageClassName: _config.persistence.storageClass
-		resources: requests: storage: _config.persistence.size
+		storageClassName: #config.persistence.storageClass
+		resources: requests: storage: #config.persistence.size
 		accessModes: ["ReadWriteOnce"]
 	}
 }

@@ -6,19 +6,19 @@ import (
 )
 
 #MasterService: corev1.#Service & {
-	_config: #Config
+	#config: #Config
 	_selectorLabel: {
-		"\(timoniv1.#StdLabelName)": "\(_config.metadata.name)-master"
+		"\(timoniv1.#StdLabelName)": "\(#config.metadata.name)-master"
 	}
 	apiVersion: "v1"
 	kind:       "Service"
-	metadata:   _config.metadata
+	metadata:   #config.metadata
 	spec: corev1.#ServiceSpec & {
 		type:     corev1.#ServiceTypeClusterIP
 		selector: _selectorLabel
 		ports: [{
 			name:       "redis"
-			port:       _config.service.port
+			port:       #config.service.port
 			targetPort: "\(name)"
 			protocol:   "TCP"
 		}]

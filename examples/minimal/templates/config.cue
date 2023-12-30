@@ -97,17 +97,17 @@ import (
 	config: #Config
 
 	objects: {
-		sa: #ServiceAccount & {_config: config}
-		svc: #Service & {_config: config}
-		cm: #ConfigMap & {_config: config}
+		sa: #ServiceAccount & {#config: config}
+		svc: #Service & {#config: config}
+		cm: #ConfigMap & {#config: config}
 
 		deploy: #Deployment & {
-			_config: config
+			#config: config
 			_cmName: objects.cm.metadata.name
 		}
 	}
 
 	tests: {
-		"test-svc": #TestJob & {_config: config}
+		"test-svc": #TestJob & {#config: config}
 	}
 }

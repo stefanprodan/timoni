@@ -10,53 +10,53 @@ import (
 )
 
 #TestJob: batchv1.#Job & {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "batch/v1"
 	kind:       "Job"
 	metadata: timoniv1.#MetaComponent & {
-		#Meta:      _config.metadata
+		#Meta:      #config.metadata
 		#Component: "test"
 	}
 	metadata: annotations: timoniv1.Action.Force
 	spec: batchv1.#JobSpec & {
 		template: corev1.#PodTemplateSpec & {
-			let _checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(_config))
+			let _checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(#config))
 			metadata: annotations: "timoni.sh/checksum": "\(_checksum)"
 			spec: {
 				containers: [{
 					name:            "redis-cli"
-					image:           _config.image.reference
-					imagePullPolicy: _config.image.pullPolicy
+					image:           #config.image.reference
+					imagePullPolicy: #config.image.pullPolicy
 					command: [
 						"redis-cli",
-						if _config.password != _|_ {
+						if #config.password != _|_ {
 							"-a"
 						},
-						if _config.password != _|_ {
-							"\(_config.password)"
+						if #config.password != _|_ {
+							"\(#config.password)"
 						},
 						"-h",
-						"\(_config.metadata.name)",
+						"\(#config.metadata.name)",
 						"-p",
-						"\(_config.service.port)",
+						"\(#config.service.port)",
 						"PING",
 					]
 				}]
 				restartPolicy: "Never"
-				if _config.podSecurityContext != _|_ {
-					securityContext: _config.podSecurityContext
+				if #config.podSecurityContext != _|_ {
+					securityContext: #config.podSecurityContext
 				}
-				if _config.topologySpreadConstraints != _|_ {
-					topologySpreadConstraints: _config.topologySpreadConstraints
+				if #config.topologySpreadConstraints != _|_ {
+					topologySpreadConstraints: #config.topologySpreadConstraints
 				}
-				if _config.affinity != _|_ {
-					affinity: _config.affinity
+				if #config.affinity != _|_ {
+					affinity: #config.affinity
 				}
-				if _config.tolerations != _|_ {
-					tolerations: _config.tolerations
+				if #config.tolerations != _|_ {
+					tolerations: #config.tolerations
 				}
-				if _config.imagePullSecrets != _|_ {
-					imagePullSecrets: _config.imagePullSecrets
+				if #config.imagePullSecrets != _|_ {
+					imagePullSecrets: #config.imagePullSecrets
 				}
 			}
 		}
