@@ -52,7 +52,7 @@ The apply command performs the following steps:
 - Builds the module by passing the instance name, namespace and values.
 - Labels the resulting Kubernetes resources with the instance name and namespace.
 - Applies the Kubernetes resources on the cluster.
-- Creates or updates the instance inventory with the last applied resources IDs.
+- Creates or updates the instance inventory with the last applied resources IDs (stored in a secret named timoni.<instance_name>).
 - Recreates the resources annotated with 'action.timoni.sh/force: "enabled"' if they contain changes to immutable fields.
 - Waits for the applied resources to become ready.
 - Deletes the resources which were previously applied but are missing from the current instance.
