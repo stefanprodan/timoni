@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/fatih/color"
@@ -27,6 +28,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 )
 
 var (
@@ -137,7 +140,7 @@ func addKubeConfigFlags(cmd *cobra.Command) {
 	}
 	kubeconfigArgs.Namespace = &namespace
 
-	cmd.PersistentFlags().StringVar(kubeconfigArgs.KubeConfig, "kubeconfig", os.Getenv("KUBECONFIG"), "Path to the kubeconfig file.")
+	cmd.PersistentFlags().StringVar(kubeconfigArgs.KubeConfig, "kubeconfig", getCurrentKubeconfigPath(), "Path to the kubeconfig file.")
 	cmd.PersistentFlags().StringVar(kubeconfigArgs.Context, "kube-context", "", "The name of the kubeconfig context to use.")
 	cmd.PersistentFlags().StringVar(kubeconfigArgs.Impersonate, "kube-as", "", "Username to impersonate for the operation. User could be a regular user or a service account in a namespace.")
 	cmd.PersistentFlags().StringArrayVar(kubeconfigArgs.ImpersonateGroup, "kube-as-group", nil, "Group to impersonate for the operation, this flag can be repeated to specify multiple groups.")
@@ -151,4 +154,34 @@ func addKubeConfigFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVar(kubeconfigArgs.Insecure, "kube-insecure-skip-tls-verify", false, "if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.")
 	cmd.PersistentFlags().StringVarP(kubeconfigArgs.Namespace, "namespace", "n", *kubeconfigArgs.Namespace, "The the namespace scope for the operation.")
 	cmd.RegisterFlagCompletionFunc("namespace", completeNamespaceList)
+}
+
+func getCurrentKubeconfigPath() string {
+	defaultPath := path.Join(homedir.HomeDir(), ".kube", "config")
+
+	kubeConfig := os.Getenv("KUBECONFIG")
+	if kubeConfig == "" {
+		return defaultPath
+	}
+
+	paths := filepath.SplitList(kubeConfig)
+	if len(paths) == 1 {
+		return paths[0]
+	}
+
+	var currentContext string
+	for _, path := range paths {
+		config, err := clientcmd.LoadFromFile(path)
+		if err != nil {
+			continue
+		}
+		if currentContext == "" {
+			currentContext = config.CurrentContext
+		}
+		_, ok := config.Contexts[currentContext]
+		if ok {
+			return path
+		}
+	}
+	return defaultPath
 }
