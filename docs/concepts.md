@@ -17,15 +17,6 @@ with an opinionated structure.
 A module accepts a set of values supplied by users,
 and outputs a set of Kubernetes objects that Timoni deploys on Kubernetes clusters.
 
-Module structure:
-```sh
-app
-├── cue.mod # Kubernetes APIs and CRDs schemas
-├── templates # Workloads and app config schema
-├── timoni.cue # Timoni entry point
-└── values.cue # Default config values
-```
-
 Commands for working with local modules:
 
 - `timoni mod init <module-name>`
@@ -38,8 +29,8 @@ Commands for vendoring Kubernetes APIs and CRDs:
 - `timoni mod vendor k8s --version latest`
 - `timoni mod vendor crds -f <path/to/crds.yaml>`
 
-Timoni modules are distributed as OCI artifacts that can be cryptographically [signed and verified](module-sign.md).
-Modules are versioned using strict [semantic versioning](module-distribution.md#version-format),
+Timoni modules are distributed as OCI artifacts that can be cryptographically [signed and verified](cue/module/signing.md).
+Modules are versioned using strict [semantic versioning](cue/module/publishing.md#version-format),
 the version of a module is used as the OCI artifact tag.
 
 To learn more about modules, please see the [module documentation](module.md).

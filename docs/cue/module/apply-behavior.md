@@ -1,4 +1,4 @@
-# Control the Apply Behaviour
+# Control the Apply Behavior
 
 Timoni allows changing the default apply behaviour of Kubernetes resources
 with the `action.timoni.sh` annotations.

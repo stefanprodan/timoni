@@ -248,7 +248,7 @@ where the module is published. The `url` field must be in the format `oci://<reg
 #### Version
 
 The `instance.module.version` is an optional field that specifies the version number of the module.
-The version number must follow [Timoni's semantic versioning](module-distribution.md).
+The version number must follow [Timoni's semantic versioning](cue/module/publishing.md#version-format).
 When not specified, the version defaults to `latest`, which pulls the module OCI artifact tagged as latest.
 
 ```cue
