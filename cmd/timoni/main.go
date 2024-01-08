@@ -29,7 +29,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
 var (
@@ -157,7 +156,7 @@ func addKubeConfigFlags(cmd *cobra.Command) {
 }
 
 func getCurrentKubeconfigPath() string {
-	defaultPath := path.Join(homedir.HomeDir(), ".kube", "config")
+	defaultPath := ""
 
 	kubeConfig := os.Getenv("KUBECONFIG")
 	if kubeConfig == "" {
