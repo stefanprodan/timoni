@@ -197,7 +197,7 @@ have a CUE plugin that can run the `cue fmt` command automatically when saving a
 ### Update the Kubernetes schemas
 
 To ensure that the Kubernetes resources defined in a module
-are in conformance with their OpenAPI schema, Timoni offer a command for
+are in conformance with their OpenAPI schema, Timoni offers a command for
 vendoring CUE definitions generated from the Kubernetes builtin APIs.
 
 To update the schemas to the latest Kubernetes stable release, run the following command:
@@ -206,8 +206,28 @@ To update the schemas to the latest Kubernetes stable release, run the following
 timoni mod vendor k8s
 ```
 
-The vendor command will download the Kubernetes schemas
-to the `cue.mod/gen/k8s.io` directory.
+The vendor command will download the Kubernetes schemas from GitHub
+[container registry](https://github.com/stefanprodan/kubernetes-cue-schema/pkgs/container/timoni%2Fkubernetes-schema),
+and will update the CUE definitions from the `cue.mod/gen/k8s.io` directory.
+
+### Update the Timoni schemas
+
+Timoni comes with a set of CUE definitions (schemas and generators), that are used to reduce the
+boilerplate code when developing modules. These definitions are included in the modules generated
+with `timoni mod init`, and are vendored in the `cue.mod/pkg/timoni` directory.
+
+To update the Timoni schemas to the latest version,
+run the following command from within the module root:
+
+```shell
+timoni artifact pull oci://ghcr.io/stefanprodan/timoni/schemas -o cue.mod/pkg
+```
+
+!!! tip "Schemas versioning"
+
+    The schemas are published with every Timoni release, each Timoni version has
+    a corresponding schemas artifact tag. While the Timoni API is in alpha,
+    the schemas may change between releases in a non-backwards compatible way.
 
 ## Templates overview
 
