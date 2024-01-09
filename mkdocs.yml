@@ -58,9 +58,8 @@ plugins:
   - search
   - redirects:
       redirect_maps:
-        'module-semver.md': 'module-distribution.md'
-        'bundles.md': 'bundle.md'
-        'values.md': 'bundle.md'
+        'module-sign.md': 'cue/module/signing.md'
+        'module-distribution.md': 'cue/module/publishing.md'
 
 markdown_extensions:
   - attr_list
@@ -96,15 +95,27 @@ nav:
         - Bundle distribution: bundle-distribution.md
         - Bundle secrets injection: bundle-secrets.md
         - Multi-cluster deployments: bundle-multi-cluster.md
-    - Module Development:
-        - Module structure: module.md
-        - Module distribution: module-distribution.md
-        - Module signing: module-sign.md
+    - App Packaging:
+        - Module specification: module.md
     - Integrations:
         - GitHub Actions: github-actions.md
         - Flux AIO Distribution: flux-aio.md
         - Helm Interoperability: flux-helm-interop.md
         - GitOps with Flux: gitops-flux.md
+  - CUE Reference:
+      - Introduction: cue/introduction.md
+      - CUE Walkthrough: cue/walkthrough.md
+      - Module Development:
+          - Get started with modules: cue/module/initialization.md
+          - Add custom resources: cue/module/custom-resources.md
+          - Cluster version constraints: cue/module/semver-constraints.md
+          - Control the apply behavior: cue/module/apply-behavior.md
+          - Run tests with Kubernetes Jobs: cue/module/test-jobs.md
+          - Import resources from YAML: cue/module/import-resources.md
+      - Module Distribution:
+          - Publishing module versions: cue/module/publishing.md
+          - Signing and Verification: cue/module/signing.md
+          - GitHub Actions: cue/module/github-actions.md
   - CLI Reference:
       - cmd/timoni.md
       - cmd/timoni_version.md

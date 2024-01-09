@@ -1,4 +1,4 @@
-# Module Distribution
+# Module Publishing
 
 Timoni modules are distributed as [Open Container Initiative](https://opencontainers.org/)
 (OCI) artifacts. When publishing a module version to a container registry,
@@ -46,8 +46,10 @@ Timoni offers a command for publishing a module version
 by packaging a local module as an OCI artifact and pushing
 the artifact to a container registry.
 
-When publishing a module with [timoni mod push](cmd/timoni_mod_push.md),
+When publishing a module with [timoni mod push](../../cmd/timoni_mod_push.md),
 the version number must be specified using the `--version` flag.
+
+### Stable versions
 
 Example of publishing version `1.0.0` as the latest stable release:
 
@@ -58,15 +60,19 @@ timoni mod push ./modules/my-app oci://ghcr.io/my-org/modules/my-app \
 ```
 
 To add custom metadata to a version, such as licenses and documentation links
-please the [timoni mod push docs](cmd/timoni_mod_pull.md).
+please the [timoni mod push docs](../../cmd/timoni_mod_push.md).
+
+### Pre-release versions
 
 Example of publishing a pre-release version:
 
 ```shell
 timoni mod push ./modules/my-app oci://ghcr.io/my-org/modules/my-app \
   --latest=false \
-  --version=2.0.0-beta.1
+  --version=2.0.0-rc.1
 ```
+
+### Latest version
 
 The `--latest` flag is used to mark a stable release as the latest version.
 When `--latest` is set to `true`, Timoni will push the version tag,
@@ -79,16 +85,44 @@ then it will tag the version as `latest` in the container registry.
     Overriding an existing version tag in the container registry should be avoided,
     some registries allow enforcing immutability for semver tags but this is not guranteed by default.
 
-To automate the publishing of module versions, please see the [Timoni GitHub Actions](github-actions.md).
+To automate the publishing of module versions, please see the [Timoni GitHub Actions doc](github-actions.md).
 
-To cryptographically sign a module version, please see the [Timoni module signing and verification doc](module-sign.md).
+
+### Ignoring files
+
+Timoni modules can contain files that are not meant to be published.
+To exclude files from the module artifact, you can add a `timoni.ignore` file
+in the module root directory.
+
+The `timoni.ignore` file must contain rules in the
+[.gitignore pattern format](https://git-scm.com/docs/gitignore#_pattern_format).
+
+It is recommended to exclude Git, Go and CUE tools related files, for example:
+
+```.gitignore
+# VCS
+.git/
+.gitignore
+.gitmodules
+.gitattributes
+
+# Go
+vendor/
+go.mod
+go.sum
+
+# CUE
+*_tool.cue
+debug_values.cue
+```
 
 ## Listing module versions
 
-Timoni offer a command for listing all the versions available in a container registry for a particular module.
+Timoni offers a command for listing all the versions available in a
+container registry for a particular module.
 
-The `timoni mod list oci://<module-url>` prints a table with the versions order by semver
-and the OCI digest corresponding to each version.
+The `timoni mod list oci://<module-url>` prints a table with the versions order
+by semver and the OCI digest corresponding to each version.
 
 Example:
 

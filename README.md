@@ -46,14 +46,14 @@ packaged as [Modules](https://timoni.sh/module/), using type-safe
 Kubernetes templates and rich customisation options for end-users.
 
 The app configuration packaged in a Module is
-[distributed](https://timoni.sh/module-distribution/) as an
+[distributed](https://timoni.sh/cue/module/publishing/) as an
 Open Container Initiative (OCI) artifact, next to the app images,
 in a container registry. Timoni Modules are semantically versioned
-and cryptographically [signed](https://timoni.sh/module-sign/).
+and cryptographically [signed](https://timoni.sh/cue/module/signing/).
 
 With Timoni, platform engineers can manage the lifecycle of Kubernetes
 controllers, including the upgrade of CRDs. Module authors can
-[import CRD schemas](https://timoni.sh/module/#kubernetes-crds)
+[import CRD schemas](https://timoni.sh/cue/module/custom-resources/)
 from YAML files and incorporate Kubernetes custom resources
 in their app deployments.
 

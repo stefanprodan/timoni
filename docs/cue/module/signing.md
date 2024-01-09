@@ -81,7 +81,6 @@ timoni mod push ./modules/my-app oci://ghcr.io/my-org/modules/my-app \
 
     When using `timoni push` in CI workflows, you can configure [GitHub](https://github.com/marketplace/actions/cosign-installer) and
     [GitLab](https://docs.gitlab.com/ee/ci/yaml/signing_examples.html) to provide Cosign with an OIDC token. 
-
     To automate the publishing and signing of module versions, please see the [Timoni GitHub Actions](github-actions.md).
 
 To verify the module signature:
