@@ -44,7 +44,7 @@ employ custom blueprints for generating modules.
 Timoni further assists in vendoring and keeping Kubernetes APIs and CRDs schemas
 up-to-date.
 
-## Module Artifacts and Metadata
+## Module Artifacts
 
 A module is packaged as an OCI artifact that contains the contents of the module
 directory compressed as a gzipped tarball.
@@ -99,6 +99,25 @@ Example of a module's OCI manifest:
   }
 }
 ```
+
+## Module Instance
+
+A Timoni instance represent a module instantiation on a Kubernetes cluster.
+The instance holds the inventory of the Kubernetes objects deployed on the cluster,
+the OCI reference of the module, and the user-supplied configuration values.
+
+In the cluster, the instance is stored as a Kubernetes Secret of type `timoni.sh/instance`.
+The secret's name contains the instance name in the format `timoni.<instance name>`,
+and the secret's namespace is the instance namespace.
+
+The role of the instance Kubernetes Secret is to keep track of the managed objects and to
+help Timoni's garbage collector to delete the objects when the instance is uninstalled.
+
+Timoni offers a set of commands for inspecting the instance state:
+
+- `timoni inspect module` - displays the module URL, digest, and version
+- `timoni inspect values` - displays the instance config values
+- `timoni inspect resources` - displays the Kubernetes objects managed by the instance
 
 ## Module Development
 
