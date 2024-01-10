@@ -103,15 +103,9 @@ cosign verify ghcr.io/my-org/modules/my-app:1.0.0 \
 Example verification of the podinfo module:
 
 ```shell
-cosign verify ghcr.io/stefanprodan/modules/podinfo:latest --certificate-identity-regexp="^https://github.com/stefanprodan/podinfo.*$" --certificate-oidc-issuer=https://token.actions.githubusercontent.com
-
-Verification for ghcr.io/stefanprodan/modules/podinfo:latest --
-The following checks were performed on each of these signatures:
-  - The cosign claims were validated
-  - Existence of the claims in the transparency log was verified offline
-  - The code-signing certificate was verified using trusted certificate authority certificates
-
-[{"critical":{...}}]
+cosign verify ghcr.io/stefanprodan/modules/podinfo:latest \
+  --certificate-identity-regexp="^https://github.com/stefanprodan/podinfo.*$" \
+  --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 ```
 
 To verify the module signature while pulling:
