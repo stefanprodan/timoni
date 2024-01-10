@@ -91,7 +91,7 @@ cosign verify ghcr.io/my-org/modules/my-app:1.0.0 \
   --certificate-oidc-issuer-regexp=<your issuer URL>
 ```
 
-!!! tip "Verify Signature from GitHub action"
+!!! tip "Verify Signature from GitHub action or GitLab CI/CD"
 
     When the signature was created in GitHub via the keyless signing you should set the flag `--certificate-identity-regexp`
     to a value like `^https://github.com/<user|org>/<repo-name>.*` and set the flag `--certificate-oidc-issuer-regexp`
