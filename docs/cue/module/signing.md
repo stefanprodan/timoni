@@ -91,6 +91,23 @@ cosign verify ghcr.io/my-org/modules/my-app:1.0.0 \
   --certificate-oidc-issuer-regexp=<your issuer URL>
 ```
 
+!!! tip "Verify Signature from GitHub action or GitLab CI/CD"
+
+    When the signature was created in GitHub via the keyless signing you should set the flag `--certificate-identity-regexp`
+    to a value like `^https://github.com/<user|org>/<repo-name>.*` and set the flag `--certificate-oidc-issuer-regexp`
+    to `https://token.actions.githubusercontent.com`.
+
+    GitLab is the same setup for the identity flag, `https://gitlab.com` instead of `https://github.com` and the oidc
+    issuer is the GitLab instance domain e.g. `https://gitlab.com`
+
+Example verification of the podinfo module:
+
+```shell
+cosign verify ghcr.io/stefanprodan/modules/podinfo:latest \
+  --certificate-identity-regexp="^https://github.com/stefanprodan/podinfo.*$" \
+  --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+```
+
 To verify the module signature while pulling:
 
 ```shell
