@@ -75,9 +75,10 @@ func PullModule(ociURL, dstPath, cacheDir string, opts []crane.Option) (*apiv1.M
 	}
 
 	moduleRef := &apiv1.ModuleReference{
-		Repository: fmt.Sprintf("%s%s", apiv1.ArtifactPrefix, repoURL),
-		Version:    version,
-		Digest:     digest,
+		Repository:  fmt.Sprintf("%s%s", apiv1.ArtifactPrefix, repoURL),
+		Version:     version,
+		Digest:      digest,
+		Annotations: manifest.Annotations,
 	}
 
 	// If caching is disable, download the compressed layers to an ephemeral tmp dir.

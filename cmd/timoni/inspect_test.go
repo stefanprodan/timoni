@@ -34,15 +34,17 @@ func TestInspect(t *testing.T) {
 	modPath := "testdata/module"
 	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-mod", 5))
 	modVer := "1.0.0"
+	modLicense := "Apache-2.0"
 	name := rnd("my-instance", 5)
 	namespace := rnd("my-namespace", 5)
 
 	// Package the module as an OCI artifact and push it to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s %s -v %s",
+		"mod push %s %s -v %s -a org.opencontainers.image.licenses=%s",
 		modPath,
 		modURL,
 		modVer,
+		modLicense,
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 
@@ -68,8 +70,10 @@ func TestInspect(t *testing.T) {
 		// Verify inspect output contains the module metadata
 		g.Expect(output).To(ContainSubstring(modURL))
 		g.Expect(output).To(ContainSubstring(modVer))
+		g.Expect(output).To(ContainSubstring(modLicense))
 		g.Expect(output).To(ContainSubstring("sha256"))
 		g.Expect(output).To(ContainSubstring("timoni.sh/test"))
+
 	})
 
 	t.Run("inspect values", func(t *testing.T) {
