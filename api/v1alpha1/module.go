@@ -35,6 +35,9 @@ type ModuleReference struct {
 
 	// Digest of the OCI artifact in the format '<sha-type>:<hex>'.
 	Digest string `json:"digest"`
+
+	// Annotations of the OCI artifact.
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 // ImageReference contains the information necessary to locate
