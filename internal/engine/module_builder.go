@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
@@ -304,4 +305,39 @@ func (b *ModuleBuilder) GetContainerImages(value cue.Value) ([]string, error) {
 	slices.Sort(images)
 
 	return images, nil
+}
+
+// GetConfigStructure extracts the config structure from the module.
+func (b *ModuleBuilder) GetConfigStructure(value cue.Value) ([][]string, error) {
+	cfgValues := value.LookupPath(cue.ParsePath(apiv1.ConfigValuesSelector.String()))
+	if cfgValues.Err() != nil {
+		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.ConfigValuesSelector, cfgValues.Err())
+	}
+
+	var rows [][]string
+	configDataInfo := func(v cue.Value) bool {
+		var row []string
+
+		if v.Kind().String() != "struct" && !v.IsConcrete() {
+			defaultVal, _ := v.Default()
+			value, _ := defaultVal.MarshalJSON()
+
+			row = append(row, fmt.Sprintf("`%s:`", strings.ReplaceAll(strings.Replace(v.Path().String(), "timoni.instance.config.", "", 1), ".", ": ")))
+			row = append(row, fmt.Sprintf("`%s`", v.IncompleteKind()))
+			row = append(row, fmt.Sprintf("`%s`", strings.ReplaceAll(string(value), "\":\"", "\": \"")))
+
+			var doc string
+			for _, d := range v.Doc() {
+				doc += strings.ReplaceAll(strings.ReplaceAll(d.Text(), "+optional", ""), "+required", "")
+			}
+
+			row = append(row, fmt.Sprintf("%s", strings.ReplaceAll(doc, "\n", " ")))
+			rows = append(rows, row)
+		}
+
+		return true
+	}
+
+	cfgValues.Walk(configDataInfo, nil)
+	return rows, nil
 }
