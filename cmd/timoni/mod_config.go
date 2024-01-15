@@ -17,10 +17,15 @@ limitations under the License.
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/olekukonko/tablewriter"
@@ -44,16 +49,18 @@ var configModCmd = &cobra.Command{
 }
 
 type configModFlags struct {
-	path string
-	pkg  flags.Package
-	name string
+	path   string
+	pkg    flags.Package
+	name   string
+	output string
 }
 
 var configModArgs = configModFlags{
-	name: "timoni",
+	name: "module-name",
 }
 
 func init() {
+	configModCmd.Flags().StringVarP(&configModArgs.output, "output", "o", "", "The file to output the config Markdown to, defaults to stdout")
 	modCmd.AddCommand(configModCmd)
 }
 
@@ -121,9 +128,88 @@ func runConfigModCmd(cmd *cobra.Command, args []string) error {
 		return describeErr(fetcher.GetModuleRoot(), "failed to get config structure", err)
 	}
 
-	printMarkDownTable(os.Stdout, []string{"Field", "Type", "Default", "Description"}, rows)
+	header := []string{"Key", "Type", "Default", "Description"}
+
+	if configModArgs.output == "" {
+		printMarkDownTable(os.Stdout, header, rows)
+	} else {
+		tmpFile, err := writeFile(configModArgs.output, header, rows, fetcher)
+		if err != nil {
+			return err
+		}
+
+		err = os.Rename(tmpFile, configModArgs.output)
+		if err != nil {
+			return describeErr(fetcher.GetModuleRoot(), "Unable to rename file", err)
+		}
+	}
 
 	return nil
+}
+
+func writeFile(readFile string, header []string, rows [][]string, fetcher *engine.Fetcher) (string, error) {
+	// Generate the markdown table
+	var tableBuffer bytes.Buffer
+	tableWriter := bufio.NewWriter(&tableBuffer)
+	printMarkDownTable(tableWriter, header, rows)
+	tableWriter.Flush()
+	// get a temporary file name
+	tmpFileName := readFile + ".tmp"
+	// open the input file
+	inputFile, err := os.Open(readFile)
+	if err != nil {
+		return "", describeErr(fetcher.GetModuleRoot(), "Unable to create the temporary output file", err)
+	}
+	defer inputFile.Close()
+
+	// open the output file
+	outputFile, err := os.Create(tmpFileName)
+	if err != nil {
+		return "", describeErr(fetcher.GetModuleRoot(), "Unable to create the temporary output file", err)
+	}
+	defer outputFile.Close()
+
+	// Create the scanner and writer
+	inputScanner := bufio.NewScanner(inputFile)
+	outputWriter := bufio.NewWriter(outputFile)
+	var configSection bool
+	var foundTable bool
+
+	// Scan the input file line by line to find the table and replace it or append it to the end
+	for inputScanner.Scan() {
+		line := inputScanner.Text()
+
+		if isMarkdownFile(readFile) {
+			if !configSection && line == "## Configuration" {
+				configSection = true
+			}
+
+			matched, err := regexp.MatchString(`^\|.*\|$`, line)
+			if err != nil {
+				return "", describeErr(fetcher.GetModuleRoot(), "Regex Match for table content failed", err)
+			}
+
+			if configSection && !foundTable && matched {
+				foundTable = true
+				outputWriter.WriteString(tableBuffer.String() + "\n")
+			} else if configSection && foundTable && matched {
+			} else if configSection && foundTable && !matched {
+				configSection = false
+			} else {
+				outputWriter.WriteString(line + "\n")
+			}
+		} else {
+			outputWriter.WriteString(line + "\n")
+		}
+	}
+
+	// If no table was found, append it to the end of the file
+	if !foundTable {
+		outputWriter.WriteString("\n" + tableBuffer.String())
+	}
+
+	outputWriter.Flush()
+	return tmpFileName, nil
 }
 
 func printMarkDownTable(writer io.Writer, header []string, rows [][]string) {
@@ -142,4 +228,9 @@ func printMarkDownTable(writer io.Writer, header []string, rows [][]string) {
 	table.SetNoWhiteSpace(false)
 	table.AppendBulk(rows)
 	table.Render()
+}
+
+func isMarkdownFile(filename string) bool {
+	extension := strings.ToLower(filepath.Ext(filename))
+	return extension == ".md" || extension == ".markdown"
 }

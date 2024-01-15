@@ -320,11 +320,16 @@ func (b *ModuleBuilder) GetConfigStructure(value cue.Value) ([][]string, error) 
 
 		if v.Kind().String() != "struct" && !v.IsConcrete() {
 			defaultVal, _ := v.Default()
-			value, _ := defaultVal.MarshalJSON()
+			valueBytes, _ := defaultVal.MarshalJSON()
+			valueType := strings.ReplaceAll(v.IncompleteKind().String(), "|", "\\|")
+			value := strings.ReplaceAll(string(valueBytes), "\":", "\": ")
+			value = strings.ReplaceAll(value, "\":[", "\": [")
+			value = strings.ReplaceAll(value, "},", "}, ")
+			value = strings.ReplaceAll(value, "|", "\\|")
 
 			row = append(row, fmt.Sprintf("`%s:`", strings.ReplaceAll(strings.Replace(v.Path().String(), "timoni.instance.config.", "", 1), ".", ": ")))
-			row = append(row, fmt.Sprintf("`%s`", v.IncompleteKind()))
-			row = append(row, fmt.Sprintf("`%s`", strings.ReplaceAll(string(value), "\":\"", "\": \"")))
+			row = append(row, fmt.Sprintf("`%s`", valueType))
+			row = append(row, fmt.Sprintf("`%s`", value))
 
 			var doc string
 			for _, d := range v.Doc() {
