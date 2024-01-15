@@ -51,7 +51,7 @@ that can be reused across multiple Kubernetes objects.
 
 The CUE language was originally developed at Google by [Marcel van Lohuizen](https://github.com/mpvl)
 who co-created the Borg Configuration Language (BCL). Although CUE is very different from BCL, it
-incorporates many of the lessons learned from 15 years of GCL usage.
+incorporates many of the lessons learned from 15 years of BCL usage.
 
 Nowadays, CUE is an independent open source project maintained by a dedicated team,
 with a growing community of contributors and users.
