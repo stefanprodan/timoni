@@ -103,7 +103,7 @@ import (
 
 		deploy: #Deployment & {
 			#config: config
-			_cmName: objects.cm.metadata.name
+			#cmName: objects.cm.metadata.name
 		}
 	}
 

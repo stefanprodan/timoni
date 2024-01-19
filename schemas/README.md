@@ -24,6 +24,11 @@ The Timoni's CUE schemas are included in the modules generated with `timoni mod 
 - `#ObjectReference` - Schema for generating Kubernetes object references
   based on `apiVersion`, `kind`, `name` and `namespace`.
 
+### Immutable ConfigMaps and Secrets
+
+- `#ImmutableConfig` - Schema for generating immutable Kubernetes ConfigMaps and Secrets.
+  The `metadata.name` of the generated object is suffixed with the hash of the input data.
+
 ### Container Image
 
 - `#Image` - Schema for generating a container image and pull policy
