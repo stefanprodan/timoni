@@ -35,40 +35,90 @@ you have to specify the container registry address and the version of a module.
 For example, to install the latest stable version of [podinfo](https://github.com/stefanprodan/podinfo)
 in a new namespace:
 
-```console
-$ timoni -n test apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo --version latest
-pulling oci://ghcr.io/stefanprodan/modules/podinfo:latest
-using module timoni.sh/podinfo version 6.5.4
-installing podinfo in namespace test
-Namespace/test created
-ServiceAccount/test/podinfo created
-Service/test/podinfo created
-Deployment/test/podinfo created
-waiting for 3 resource(s) to become ready...
-all resources are ready
-```
+=== "command"
+
+    ```shell
+    timoni -n test apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo
+    ```
+
+=== "output"
+
+    ```text
+    pulling oci://ghcr.io/stefanprodan/modules/podinfo:latest
+    using module timoni.sh/podinfo version 6.5.4
+    installing podinfo in namespace test
+    Namespace/test created
+    ServiceAccount/test/podinfo created
+    Service/test/podinfo created
+    Deployment/test/podinfo created
+    waiting for 3 resource(s) to become ready...
+    all resources are ready
+    ```
+
+The apply command pulls the module from the container registry,
+creates the Kubernetes resources in the specified namespace,
+and waits for all resources to become ready.
+
+To learn more about all the available apply options, use `timoni apply --help`.
 
 ## List and inspect instances
 
-You can list all instances in a cluster with `timoni ls -A`.
+You can list all instances in a cluster with:
 
-To get more information on an instance, you can use the `timoni inspect` sub-commands:
+=== "command"
 
-```console
-$ timoni -n test inspect module podinfo
-name: timoni.sh/podinfo
-version: 6.5.4
-repository: oci://ghcr.io/stefanprodan/modules/podinfo
-digest: sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365
-```
+    ```shell
+    timoni list -A
+    ```
 
-To learn more about the available commands, use `timoni inspect --help`.
+=== "output"
+
+    ```text
+    NAME   	NAMESPACE	MODULE                                    	VERSION	LAST APPLIED        	BUNDLE 
+    podinfo	test     	oci://ghcr.io/stefanprodan/modules/podinfo	6.5.4  	2024-01-20T19:51:17Z	- 
+    ```
 
 To see the status of the Kubernetes resources managed by an instance:
 
-```shell
-timoni -n test status podinfo 
-```
+=== "command"
+
+    ```shell
+    timoni -n test status podinfo
+    ```
+
+=== "output"
+
+    ```text
+    last applied 2024-01-20T19:51:17Z
+    module oci://ghcr.io/stefanprodan/modules/podinfo:6.5.4
+    digest sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365
+    container image ghcr.io/curl/curl-container/curl-multi:master
+    container image ghcr.io/stefanprodan/podinfo:6.5.4
+    ServiceAccount/test/podinfo Current - Resource is current
+    Service/test/podinfo Current - Service is ready
+    Deployment/test/podinfo Current - Deployment is available. Replicas: 1
+    ```
+
+To get more information on an instance, you can use the `timoni inspect` sub-commands.
+
+For example, to list the module URL, version and OCI digest of the podinfo instance:
+
+=== "command"
+
+    ```shell
+    timoni -n test inspect module podinfo
+    ```
+
+=== "output"
+
+    ```text
+    digest: sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365
+    name: timoni.sh/podinfo
+    repository: oci://ghcr.io/stefanprodan/modules/podinfo
+    version: 6.5.4
+    ```
+
+To learn more about the available commands, use `timoni inspect --help`.
 
 ## Configure a module instance
 
@@ -89,24 +139,50 @@ values: {
 
 Apply the config to the podinfo module to perform an upgrade:
 
-```shell
-timoni -n test apply podinfo \
-  oci://ghcr.io/stefanprodan/modules/podinfo \
-  --values qos-values.cue
-```
+=== "command"
+
+    ```shell
+    timoni -n test apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo \
+      --values qos-values.cue
+    ```
+
+=== "output"
+
+    ```text
+    pulling oci://ghcr.io/stefanprodan/modules/podinfo:latest
+    using module timoni.sh/podinfo version 6.5.4
+    upgrading podinfo in namespace test
+    ServiceAccount/test/podinfo unchanged
+    Service/test/podinfo unchanged
+    Deployment/test/podinfo configured
+    resources are ready
+    ```
 
 Before running an upgrade, you can review the changes that will
 be made on the cluster with `timoni apply --dry-run --diff`.
-
-To learn more about all the available apply options, use `timoni apply --help`.
 
 ## Uninstall a module instance
 
 To uninstall an instance and delete all the managed Kubernetes resources:
 
-```shell
-timoni -n test delete podinfo --wait
-```
+=== "command"
+
+    ```shell
+    timoni -n test delete podinfo
+    ```
+
+=== "output"
+
+    ```text
+    deleting 3 resource(s)...
+    Deployment/test/podinfo deleted
+    Service/test/podinfo deleted
+    ServiceAccount/test/podinfo deleted
+    all resources have been deleted
+    ```
+
+By default, the delete command will wait for all the resources to be removed.
+To skip waiting, use the `--wait=false` flag.
 
 ## Bundling instances
 
