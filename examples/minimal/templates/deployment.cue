@@ -7,7 +7,7 @@ import (
 
 #Deployment: appsv1.#Deployment & {
 	#config:    #Config
-	_cmName:    string
+	#cmName:    string
 	apiVersion: "apps/v1"
 	kind:       "Deployment"
 	metadata:   #config.metadata
@@ -65,7 +65,7 @@ import (
 					{
 						name: "config"
 						configMap: {
-							name: _cmName
+							name: #cmName
 							items: [{
 								key:  "nginx.default.conf"
 								path: key
@@ -75,7 +75,7 @@ import (
 					{
 						name: "html"
 						configMap: {
-							name: _cmName
+							name: #cmName
 							items: [{
 								key:  "index.html"
 								path: key
