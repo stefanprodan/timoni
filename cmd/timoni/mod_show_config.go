@@ -20,8 +20,10 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -35,17 +37,18 @@ import (
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
-var configModCmd = &cobra.Command{
+var configShowModCmd = &cobra.Command{
 	Use:   "config [MODULE PATH]",
 	Short: "Output the #Config structure of a local module",
 	Long:  `The config command parses the local module configuration structure and outputs the information to stdout.`,
 	Example: `  # print the config of a module in the current directory
-  timoni mod config
+  timoni mod show config
 
-  # print the config of a module in a specific directory
-  timoni mod config ./path/to/module
+  # output the config to a file, if the file is markdown, the table will overwrite a table in a Configuration section or
+  # be appended to the end of the file
+  timoni mod show config --output ./README.md
 `,
-	RunE: runConfigModCmd,
+	RunE: runConfigShowModCmd,
 }
 
 type configModFlags struct {
@@ -55,27 +58,26 @@ type configModFlags struct {
 	output string
 }
 
-var configModArgs = configModFlags{
+var configShowModArgs = configModFlags{
 	name: "module-name",
 }
 
 func init() {
-	configModCmd.Flags().StringVarP(&configModArgs.output, "output", "o", "", "The file to output the config Markdown to, defaults to stdout")
-	modCmd.AddCommand(configModCmd)
+	configShowModCmd.Flags().StringVarP(&configShowModArgs.output, "output", "o", "", "The file to output the config Markdown to, defaults to stdout")
+	showModCmd.AddCommand(configShowModCmd)
 }
 
-func runConfigModCmd(cmd *cobra.Command, args []string) error {
+func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
-		configModArgs.path = "."
+		configShowModArgs.path = "."
 	} else {
-		configModArgs.path = args[0]
+		configShowModArgs.path = args[0]
 	}
 
-	if fs, err := os.Stat(configModArgs.path); err != nil || !fs.IsDir() {
-		return fmt.Errorf("module not found at path %s", configModArgs.path)
+	if fs, err := os.Stat(configShowModArgs.path); err != nil || !fs.IsDir() {
+		return fmt.Errorf("module not found at path %s", configShowModArgs.path)
 	}
 
-	//log := LoggerFrom(cmd.Context())
 	cuectx := cuecontext.New()
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
@@ -89,7 +91,7 @@ func runConfigModCmd(cmd *cobra.Command, args []string) error {
 
 	fetcher := engine.NewFetcher(
 		ctxPull,
-		configModArgs.path,
+		configShowModArgs.path,
 		apiv1.LatestVersion,
 		tmpDir,
 		rootArgs.cacheDir,
@@ -103,10 +105,10 @@ func runConfigModCmd(cmd *cobra.Command, args []string) error {
 
 	builder := engine.NewModuleBuilder(
 		cuectx,
-		configModArgs.name,
+		configShowModArgs.name,
 		*kubeconfigArgs.Namespace,
 		fetcher.GetModuleRoot(),
-		configModArgs.pkg.String(),
+		configShowModArgs.pkg.String(),
 	)
 
 	if err := builder.WriteSchemaFile(); err != nil {
@@ -130,15 +132,15 @@ func runConfigModCmd(cmd *cobra.Command, args []string) error {
 
 	header := []string{"Key", "Type", "Default", "Description"}
 
-	if configModArgs.output == "" {
-		printMarkDownTable(os.Stdout, header, rows)
+	if configShowModArgs.output == "" {
+		printMarkDownTable(rootCmd.OutOrStdout(), header, rows)
 	} else {
-		tmpFile, err := writeFile(configModArgs.output, header, rows, fetcher)
+		tmpFile, err := writeFile(configShowModArgs.output, header, rows, fetcher)
 		if err != nil {
 			return err
 		}
 
-		err = os.Rename(tmpFile, configModArgs.output)
+		err = os.Rename(tmpFile, configShowModArgs.output)
 		if err != nil {
 			return describeErr(fetcher.GetModuleRoot(), "Unable to rename file", err)
 		}
@@ -158,7 +160,15 @@ func writeFile(readFile string, header []string, rows [][]string, fetcher *engin
 	// open the input file
 	inputFile, err := os.Open(readFile)
 	if err != nil {
-		return "", describeErr(fetcher.GetModuleRoot(), "Unable to create the temporary output file", err)
+		if errors.Is(err, fs.ErrNotExist) {
+			inputFile, err = os.Create(readFile)
+
+			if err != nil {
+				return "", describeErr(fetcher.GetModuleRoot(), "Unable to create the temporary output file", err)
+			}
+		} else {
+			return "", describeErr(fetcher.GetModuleRoot(), "Unable to create the temporary output file", err)
+		}
 	}
 	defer inputFile.Close()
 
