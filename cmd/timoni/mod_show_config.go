@@ -125,7 +125,7 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		return describeErr(fetcher.GetModuleRoot(), "validation failed", err)
 	}
 
-	rows, err := builder.GetConfigStructure(buildResult)
+	rows, err := builder.GetConfigDoc(buildResult)
 	if err != nil {
 		return describeErr(fetcher.GetModuleRoot(), "failed to get config structure", err)
 	}
@@ -218,7 +218,11 @@ func writeFile(readFile string, header []string, rows [][]string, fetcher *engin
 		outputWriter.WriteString("\n" + tableBuffer.String())
 	}
 
-	outputWriter.Flush()
+	err = outputWriter.Flush()
+	if err != nil {
+		return "", describeErr(fetcher.GetModuleRoot(), "Failed to Flush Writer", err)
+	}
+
 	return tmpFileName, nil
 }
 

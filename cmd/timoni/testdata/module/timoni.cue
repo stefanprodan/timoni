@@ -27,15 +27,21 @@ timoni: {
 	instance: templates.#Instance & {
 		// The user-supplied values are merged with the
 		// default values at runtime by Timoni.
+		// +nodoc
 		config: values
 		// These values are injected at runtime by Timoni.
 		config: {
+			// +nodoc
 			metadata: {
-				name:      string @tag(name)
+				// +nodoc
+				name: string @tag(name)
+				// +nodoc
 				namespace: string @tag(namespace)
 			}
+			// +nodoc
 			moduleVersion: string @tag(mv, var=moduleVersion)
-			kubeVersion:   string @tag(kv, var=kubeVersion)
+			// +nodoc
+			kubeVersion: string @tag(kv, var=kubeVersion)
 		}
 	}
 
@@ -45,5 +51,5 @@ timoni: {
 
 	// Pass Kubernetes resources outputted by the instance
 	// to Timoni's multi-step apply.
-	apply: all: [ for obj in instance.objects {obj}]
+	apply: all: [for obj in instance.objects {obj}]
 }

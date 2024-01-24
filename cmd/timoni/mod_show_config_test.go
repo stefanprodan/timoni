@@ -43,18 +43,49 @@ func Test_ShowConfig(t *testing.T) {
 
 func Test_ShowConfigOutput(t *testing.T) {
 	modPath := "testdata/module"
+	filePath := fmt.Sprintf("%s/README.md", modPath)
 
 	g := NewWithT(t)
 
 	// Push the module to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"mod show config %s --output %s/README.md",
+		"mod show config %s --output %s",
 		modPath,
-		modPath,
+		filePath,
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 
-	rmFile, err := os.ReadFile(fmt.Sprintf("%s/README.md", modPath))
+	rmFile, err := os.ReadFile(filePath)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	strContent := string(rmFile)
+
+	g.Expect(strContent).To(ContainSubstring("# module"))
+	g.Expect(strContent).To(ContainSubstring("## Install"))
+	g.Expect(strContent).To(ContainSubstring("## Uninstall"))
+	g.Expect(strContent).To(ContainSubstring("## Configuration"))
+	g.Expect(strContent).To(ContainSubstring("`client: enabled:`"))
+	g.Expect(strContent).To(ContainSubstring("`client: image: repository:`"))
+	g.Expect(strContent).To(ContainSubstring("`server: enabled:`"))
+
+	g.Expect(err).ToNot(HaveOccurred())
+}
+
+func Test_ShowConfigOutputNewFile(t *testing.T) {
+	modPath := "testdata/module"
+	filePath := fmt.Sprintf("%s/testing.md", modPath)
+
+	g := NewWithT(t)
+
+	// Push the module to registry
+	_, err := executeCommand(fmt.Sprintf(
+		"mod show config %s --output %s",
+		modPath,
+		filePath,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	rmFile, err := os.ReadFile(filePath)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	strContent := string(rmFile)
@@ -63,6 +94,6 @@ func Test_ShowConfigOutput(t *testing.T) {
 	g.Expect(strContent).To(ContainSubstring("`client: image: repository:`"))
 	g.Expect(strContent).To(ContainSubstring("`server: enabled:`"))
 
-	err = os.Remove(fmt.Sprintf("%s/README.md", modPath))
+	err = os.Remove(filePath)
 	g.Expect(err).ToNot(HaveOccurred())
 }

@@ -30,7 +30,9 @@ import "strings"
 
 	// Standard Kubernetes labels: app name and version.
 	labels: {
-		"app.kubernetes.io/name":    name
+		// +nodoc
+		"app.kubernetes.io/name": name
+		// +nodoc
 		"app.kubernetes.io/version": #Version
 	}
 }
