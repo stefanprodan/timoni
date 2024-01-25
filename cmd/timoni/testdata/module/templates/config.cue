@@ -8,24 +8,37 @@ import (
 	moduleVersion!: string
 	kubeVersion!:   string
 
+	// Common metadata for all objects
 	metadata: timoniv1.#Metadata & {#Version: moduleVersion}
 	metadata: labels: {
+		// +nodoc
 		"app.kubernetes.io/kube": kubeVersion
+		// +nodoc
 		"app.kubernetes.io/team": team
 	}
 
-	client: enabled: *true | bool
+	// +nodoc
+	client: {
+		enabled: *true | bool
 
-	client: image: timoniv1.#Image & {
-		repository: *"cgr.dev/chainguard/timoni" | string
-		tag:        *"latest-dev" | string
-		digest:     *"sha256:b49fbaac0eedc22c1cfcd26684707179cccbed0df205171bae3e1bae61326a10" | string
+		// +nodoc
+		image: timoniv1.#Image & {
+			repository: *"cgr.dev/chainguard/timoni" | string
+			tag:        *"latest-dev" | string
+			digest:     *"sha256:b49fbaac0eedc22c1cfcd26684707179cccbed0df205171bae3e1bae61326a10" | string
+		}
 	}
 
-	server: enabled: *true | bool
+	// +nodoc
+	server: {
+		enabled: *true | bool
+	}
 	domain: *"example.internal" | string
 
-	ns: enabled: *false | bool
+	// +nodoc
+	ns: {
+		enabled: *false | bool
+	}
 
 	team!: string
 }

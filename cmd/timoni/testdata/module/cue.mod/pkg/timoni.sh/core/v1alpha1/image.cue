@@ -24,6 +24,7 @@ import "strings"
 
 	// Reference is the image address computed from repository, tag and digest
 	// in the format [REPOSITORY]:[TAG]@[DIGEST].
+	// +nodoc
 	reference: string
 
 	if digest != "" && tag != "" {

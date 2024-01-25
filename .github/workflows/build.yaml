@@ -35,6 +35,6 @@ jobs:
       - name: Check if working tree is dirty
         run: |
           if [[ $(git diff --stat) != '' ]]; then
-            echo 'run "make test lint-samples" and commit changes'
+            echo 'run "make test cue-vet" and commit changes'
             exit 1
           fi
