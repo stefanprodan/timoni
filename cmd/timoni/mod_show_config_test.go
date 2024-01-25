@@ -73,7 +73,7 @@ func Test_ShowConfigOutput(t *testing.T) {
 
 func Test_ShowConfigOutputNewFile(t *testing.T) {
 	modPath := "testdata/module"
-	filePath := fmt.Sprintf("%s/testing.md", modPath)
+	filePath := fmt.Sprintf("%s/testing.md", t.TempDir())
 
 	g := NewWithT(t)
 
@@ -93,7 +93,4 @@ func Test_ShowConfigOutputNewFile(t *testing.T) {
 	g.Expect(strContent).To(ContainSubstring("`client: enabled:`"))
 	g.Expect(strContent).To(ContainSubstring("`client: image: repository:`"))
 	g.Expect(strContent).To(ContainSubstring("`server: enabled:`"))
-
-	err = os.Remove(filePath)
-	g.Expect(err).ToNot(HaveOccurred())
 }
