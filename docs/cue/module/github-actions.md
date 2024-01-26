@@ -28,7 +28,7 @@ Example workflow for linting, testing and pushing a module to GitHub Container R
 name: Release module
 on:
   push:
-    tag: ['*'] # semver format
+    tags: ['*'] # semver format
 
 permissions:
   contents: read # needed for checkout
@@ -47,10 +47,14 @@ jobs:
           timoni mod vet ./modules/my-module
       - name: Push module
         run: |
-          timoni mod push ./modules/my-module \
-            oci://ghcr.io/${{ github.repository_owner }}/modules/my-module \
+          timoni mod push ./my-module \
+            oci://ghcr.io/${{ github.repository_owner }}/my-module \
             --version ${{ github.ref_name }} \
-            --creds ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
+            --creds ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}  
+            --latest \
+            -a 'org.opencontainers.image.licenses=Apache-2.0' \
+            -a 'org.opencontainers.image.source=https://github.com/${{ github.repository }}' \
+            -a 'org.opencontainers.image.description=My Timoni module.' 
 ```
 
 ### Push and sign with Cosign Keyless
@@ -86,12 +90,16 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Vet module
         run: |
-          timoni mod vet ./modules/my-module
+          timoni mod vet ./my-module
       - name: Push and Sign
         run: |
-          timoni mod push ./modules/my-module \
-            oci://ghcr.io/${{ github.repository_owner }}/modules/my-module \
+          timoni mod push ./my-module \
+            oci://ghcr.io/${{ github.repository_owner }}/my-module \
             --version ${{ github.ref_name }} \
+            --latest \
+            -a 'org.opencontainers.image.licenses=Apache-2.0' \
+            -a 'org.opencontainers.image.source=https://github.com/${{ github.repository }}' \
+            -a 'org.opencontainers.image.description=My Timoni module.' \
             --sign=cosign
 ```
 
@@ -124,12 +132,16 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Vet module
         run: |
-          timoni mod vet ./modules/my-module
+          timoni mod vet ./my-module
       - name: Push
         run: |
-          timoni mod push ./modules/my-module \
+          timoni mod push ./my-module \
             oci://docker.io/my-org/my-module \
             --version ${{ github.ref_name }}
+            --latest \
+            -a 'org.opencontainers.image.licenses=Apache-2.0' \
+            -a 'org.opencontainers.image.source=https://github.com/${{ github.repository }}' \
+            -a 'org.opencontainers.image.description=My Timoni module.' 
       - name: Pull
         run: |
           mkdir -p /tmp/my-module
