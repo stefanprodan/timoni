@@ -28,7 +28,7 @@ Example workflow for linting, testing and pushing a module to GitHub Container R
 name: Release module
 on:
   push:
-    tag: ['*'] # semver format
+    tags: ['*'] # semver format
 
 permissions:
   contents: read # needed for checkout
