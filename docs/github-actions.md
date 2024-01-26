@@ -44,14 +44,14 @@ jobs:
         uses: stefanprodan/timoni/actions/setup@main
       - name: Lint
         run: |
-          timoni mod lint ./modules/my-module
+          timoni mod lint ./my-module
       - name: Test instance build
         run: |
-          timoni build -n testing test ./modules/my-module
+          timoni build -n testing test ./my-module
       - name: Push
         run: |
-          timoni mod push ./modules/my-module \
-            oci://ghcr.io/${{ github.repository_owner }}/modules/my-module \
+          timoni mod push ./my-module \
+            oci://ghcr.io/${{ github.repository_owner }}/my-repo/my-module \
             --version ${{ github.ref_name }} \
             --creds ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
 ```
@@ -64,7 +64,7 @@ Example workflow for pushing and signing the module using Cosign and GitHub OIDC
 name: Release and sign module
 on:
   push:
-    tag: ['*'] # semver format
+    tags: ['*'] # semver format
 
 permissions:
   contents: read # needed for checkout
@@ -89,8 +89,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push and Sign
         run: |
-          timoni mod push ./modules/my-module \
-            oci://ghcr.io/${{ github.repository_owner }}/modules/my-module \
+          timoni mod push ./my-module \
+            oci://ghcr.io/${{ github.repository_owner }}/my-repo/my-module \
             --version ${{ github.ref_name }} \
             --sign=cosign
 ```
@@ -103,7 +103,7 @@ Example workflow for using `docker login` to authenticate to Docker Hub:
 name: Release module
 on:
   push:
-    tag: ['*'] # semver format
+    tags: ['*'] # semver format
 
 permissions:
   contents: read # needed for checkout
@@ -124,13 +124,13 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Push
         run: |
-          timoni mod push ./modules/my-module \
-            oci://docker.io/my-org/my-module \
+          timoni mod push ./my-module \
+            oci://docker.io/${{ github.repository_owner }}/my-repo/my-module \
             --version ${{ github.ref_name }}
       - name: Pull
         run: |
           mkdir -p /tmp/my-module
-          timoni mod pull oci://docker.io/my-org/my-module \
+          timoni mod pull oci://docker.io/${{ github.repository_owner }}/my-repo/my-module \
             --version ${{ github.ref_name }} \
             --output /tmp/my-module
 ```
