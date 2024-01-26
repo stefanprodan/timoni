@@ -11,7 +11,7 @@ run the following command in the module's root directory:
 
 ```shell
 cue import /path/to/manifests.yaml \
-  -o -f templates/manifests.cue -p templates \
+  -f -o templates/manifests.cue -p templates \
   -l 'strings.ToLower(kind)' -l 'metadata.name'
 ```
 
