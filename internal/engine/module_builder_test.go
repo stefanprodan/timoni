@@ -63,3 +63,23 @@ func TestModuleBuilder(t *testing.T) {
 
 	g.Expect(fmt.Sprintf("%v", objects)).To(BeEquivalentTo(fmt.Sprintf("%v", gold)))
 }
+
+func TestModuleBuilder_InvalidValues(t *testing.T) {
+	g := NewWithT(t)
+	moduleRoot := path.Join(t.TempDir(), "module")
+
+	err := CopyModule("testdata/module-invalid", moduleRoot)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	ctx := cuecontext.New()
+
+	mb := NewModuleBuilder(ctx, "test-name", "test-namespace", moduleRoot, "main")
+
+	moduleName, err := mb.GetModuleName()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(moduleName).To(BeEquivalentTo("timoni.sh/test"))
+
+	err = mb.MergeValuesFile([][]byte{mustReadFile(g, "testdata/module-values/overlay-invalid.cue")})
+	g.Expect(err).ToNot(BeNil())
+	g.Expect(err.Error()).To(Equal("values.list: incompatible list lengths (0 and 1)"))
+}
