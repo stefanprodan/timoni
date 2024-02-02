@@ -9,7 +9,7 @@ import (
 #MasterService: corev1.#Service & {
 	#config: config.#Config
 	_selectorLabel: {
-		"\(timoniv1.#StdLabelName)": "\(#config.metadata.name)-master"
+		(timoniv1.#StdLabelName): "\(#config.metadata.name)-master"
 	}
 	apiVersion: "v1"
 	kind:       "Service"
