@@ -40,13 +40,13 @@ import (
 
 var configShowModCmd = &cobra.Command{
 	Use:   "config [MODULE PATH]",
-	Short: "Output the #Config structure of a local module",
+	Short: "Output the `#Config` structure of a local module",
 	Long:  `The config command parses the local module configuration structure and outputs the information to stdout.`,
 	Example: `  # print the config of a module in the current directory
   timoni mod show config
 
-  # output the config to a file, if the file is markdown, the table will overwrite a table in a Configuration section or
-  # be appended to the end of the file
+  # output the config to a file, if the file is markdown, the table will overwrite a table in the ## Configuration section
+  # under the sub heading ### General values or be appended to the end of the file
   timoni mod show config --output ./README.md
 `,
 	RunE: runConfigShowModCmd,
@@ -115,7 +115,7 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		configShowModArgs.pkg.String(),
 	)
 
-	if err := builder.WriteSchemaFile(); err != nil {
+	if err = builder.WriteSchemaFile(); err != nil {
 		return err
 	}
 
@@ -124,17 +124,16 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("build failed: %w", err)
 	}
 
-	buildResult, err := builder.Build()
+	_, err = builder.Build()
 	if err != nil {
 		return describeErr(f.GetModuleRoot(), "validation failed", err)
 	}
-
-	rows, err := builder.GetConfigDoc(buildResult)
+	rows, err := builder.GetConfigDoc()
 	if err != nil {
 		return describeErr(f.GetModuleRoot(), "failed to get config structure", err)
 	}
 
-	header := []string{"Key", "Type", "Default", "Description"}
+	header := []string{"Key", "Type", "Description"}
 
 	if configShowModArgs.output == "" {
 		printMarkDownTable(rootCmd.OutOrStdout(), header, rows)
@@ -158,7 +157,10 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 	var tableBuffer bytes.Buffer
 	tableWriter := bufio.NewWriter(&tableBuffer)
 	printMarkDownTable(tableWriter, header, rows)
-	tableWriter.Flush()
+	err := tableWriter.Flush()
+	if err != nil {
+		return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
+	}
 	// get a temporary file name
 	tmpFileName := readFile + ".tmp"
 	// open the input file
@@ -166,7 +168,6 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			inputFile, err = os.Create(readFile)
-
 			if err != nil {
 				return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
 			}
@@ -174,20 +175,31 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 			return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
 		}
 	}
-	defer inputFile.Close()
+	fileClose := func(file *os.File) {
+		err = file.Close()
+		if err != nil {
+			fmt.Println(describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err))
+		}
+	}
+	defer fileClose(inputFile)
 
 	// open the output file
 	outputFile, err := os.Create(tmpFileName)
 	if err != nil {
 		return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
 	}
-	defer outputFile.Close()
+	defer fileClose(outputFile)
 
 	// Create the scanner and writer
 	inputScanner := bufio.NewScanner(inputFile)
 	outputWriter := bufio.NewWriter(outputFile)
 	var configSection bool
+	var generalValuesSection bool
 	var foundTable bool
+	regex, err := regexp.Compile(`^\|.*\|$`)
+	if err != nil {
+		return "", describeErr(f.GetModuleRoot(), "Unalbe to compile the regex check", err)
+	}
 
 	// Scan the input file line by line to find the table and replace it or append it to the end
 	for inputScanner.Scan() {
@@ -197,29 +209,45 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 			if !configSection && line == "## Configuration" {
 				configSection = true
 			}
-
-			matched, err := regexp.MatchString(`^\|.*\|$`, line)
-			if err != nil {
-				return "", describeErr(f.GetModuleRoot(), "Regex Match for table content failed", err)
+			if configSection && !generalValuesSection && line == "### General values" {
+				generalValuesSection = true
 			}
 
-			if configSection && !foundTable && matched {
+			matched := regex.MatchString(line)
+			if configSection && generalValuesSection && !foundTable && matched {
+				// Write the new table
 				foundTable = true
-				outputWriter.WriteString(tableBuffer.String() + "\n")
-			} else if configSection && foundTable && matched {
-			} else if configSection && foundTable && !matched {
+				_, err = outputWriter.WriteString(tableBuffer.String() + "\n")
+				if err != nil {
+					return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
+				}
+			} else if configSection && generalValuesSection && foundTable && !matched {
+				// not a match for configuraton section so we set to false
 				configSection = false
+				generalValuesSection = false
+			} else if configSection && generalValuesSection && foundTable && matched {
+				// do nothing here as we don't want to write the old table data
 			} else {
-				outputWriter.WriteString(line + "\n")
+				// write the existing data
+				_, err = outputWriter.WriteString(line + "\n")
+				if err != nil {
+					return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
+				}
 			}
 		} else {
-			outputWriter.WriteString(line + "\n")
+			_, err = outputWriter.WriteString(line + "\n")
+			if err != nil {
+				return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
+			}
 		}
 	}
 
 	// If no table was found, append it to the end of the file
 	if !foundTable {
-		outputWriter.WriteString("\n" + tableBuffer.String())
+		_, err = outputWriter.WriteString("\n" + tableBuffer.String())
+		if err != nil {
+			return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
+		}
 	}
 
 	err = outputWriter.Flush()
