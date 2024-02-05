@@ -92,6 +92,10 @@ func (b *ModuleBuilder) MergeValuesFile(overlays [][]byte) error {
 		return err
 	}
 
+	if err := finalVal.Err(); err != nil {
+		return err
+	}
+
 	cueGen := fmt.Sprintf("package %s\n%s: %v", b.pkgName, apiv1.ValuesSelector, finalVal)
 
 	// overwrite the values.cue file with the merged values
@@ -110,6 +114,10 @@ func (b *ModuleBuilder) WriteValuesFileWithDefaults(val cue.Value) error {
 
 	finalVal, err := vb.MergeValues([][]byte{valData}, defaultFile)
 	if err != nil {
+		return err
+	}
+
+	if err := finalVal.Err(); err != nil {
 		return err
 	}
 
