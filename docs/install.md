@@ -62,6 +62,18 @@ The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://gi
     zypper install timoni-fish-completion
     zypper install timoni-zsh-completion
     ```
+=== "proto"
+
+    Manage multiple versions with [proto](https://moonrepo.dev/proto) for all supported systems:
+
+    ```toml
+    # .prototools file
+
+    timoni = "0.19.0"
+
+    [plugins]
+    timoni = "source:https://raw.githubusercontent.com/stefanprodan/timoni/main/proto-plugin.toml"
+    ```
 
 === "from source"
 
