@@ -1,6 +1,6 @@
 module github.com/stefanprodan/timoni
 
-go 1.21
+go 1.22
 
 require (
 	cuelang.org/go v0.7.0
