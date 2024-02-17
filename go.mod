@@ -3,7 +3,7 @@ module github.com/stefanprodan/timoni
 go 1.22
 
 require (
-	cuelang.org/go v0.7.0
+	cuelang.org/go v0.7.1
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/briandowns/spinner v1.23.0
 	github.com/distribution/distribution/v3 v3.0.0-20231211161154-c087d1956f8c
