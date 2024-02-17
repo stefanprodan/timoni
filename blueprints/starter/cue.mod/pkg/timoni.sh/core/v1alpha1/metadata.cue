@@ -43,14 +43,14 @@ import "strings"
 
 	// Standard Kubernetes labels: app name, version and managed-by.
 	labels: {
-		"\(#StdLabelName)":      name
-		"\(#StdLabelVersion)":   #Version
-		"\(#StdLabelManagedBy)": "timoni"
+		(#StdLabelName):      name
+		(#StdLabelVersion):   #Version
+		(#StdLabelManagedBy): "timoni"
 	}
 
 	// LabelSelector selects Pods based on the app.kubernetes.io/name label.
 	#LabelSelector: #Labels & {
-		"\(#StdLabelName)": name
+		(#StdLabelName): name
 	}
 }
 
@@ -69,7 +69,7 @@ import "strings"
 	namespace: #Meta.namespace
 
 	labels: #Meta.labels
-	labels: "\(#StdLabelComponent)": #Component
+	labels: (#StdLabelComponent): #Component
 
 	annotations?: #Annotations
 	if #Meta.annotations != _|_ {
@@ -79,8 +79,8 @@ import "strings"
 	// LabelSelector selects Pods based on the app.kubernetes.io/name
 	// and app.kubernetes.io/component labels.
 	#LabelSelector: #Labels & {
-		"\(#StdLabelComponent)": #Component
-		"\(#StdLabelName)":      #Meta.name
+		(#StdLabelComponent): #Component
+		(#StdLabelName):      #Meta.name
 	}
 }
 
@@ -99,7 +99,7 @@ import "strings"
 	name: #Meta.name + "-" + #Component
 
 	labels: #Meta.labels
-	labels: "\(#StdLabelComponent)": #Component
+	labels: (#StdLabelComponent): #Component
 
 	annotations?: #Annotations
 	if #Meta.annotations != _|_ {
@@ -109,7 +109,7 @@ import "strings"
 	// LabelSelector selects Pods based on the app.kubernetes.io/name
 	// and app.kubernetes.io/component labels.
 	#LabelSelector: #Labels & {
-		"\(#StdLabelComponent)": #Component
-		"\(#StdLabelName)":      #Meta.name
+		(#StdLabelComponent): #Component
+		(#StdLabelName):      #Meta.name
 	}
 }
