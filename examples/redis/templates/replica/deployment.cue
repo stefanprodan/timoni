@@ -10,7 +10,7 @@ import (
 #ReplicaDeployment: appsv1.#Deployment & {
 	#config: config.#Config
 	_selectorLabel: {
-		"\(timoniv1.#StdLabelName)": "\(#config.metadata.name)-replica"
+		(timoniv1.#StdLabelName): "\(#config.metadata.name)-replica"
 	}
 	apiVersion: "apps/v1"
 	kind:       "Deployment"

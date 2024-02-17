@@ -10,7 +10,7 @@ import (
 #MasterDeployment: appsv1.#Deployment & {
 	#config: config.#Config
 	_selectorLabel: {
-		"\(timoniv1.#StdLabelName)": "\(#config.metadata.name)-master"
+		(timoniv1.#StdLabelName): "\(#config.metadata.name)-master"
 	}
 	apiVersion: "apps/v1"
 	kind:       "Deployment"

@@ -9,7 +9,7 @@ import (
 #ReplicaService: corev1.#Service & {
 	#config: config.#Config
 	_selectorLabel: {
-		"\(timoniv1.#StdLabelName)": "\(#config.metadata.name)-replica"
+		(timoniv1.#StdLabelName): "\(#config.metadata.name)-replica"
 	}
 	apiVersion: "v1"
 	kind:       "Service"
