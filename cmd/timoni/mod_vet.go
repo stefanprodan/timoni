@@ -24,7 +24,7 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/pkg/strings"
-	"github.com/fluxcd/pkg/ssa"
+	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"github.com/google/go-containerregistry/pkg/name"
 	cp "github.com/otiai10/copy"
 	"github.com/spf13/cobra"
@@ -175,7 +175,7 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 
 	for _, object := range objects {
 		log.Info(fmt.Sprintf("%s %s",
-			colorizeSubject(ssa.FmtUnstructured(object)), colorizeInfo("valid resource")))
+			colorizeSubject(ssautil.FmtUnstructured(object)), colorizeInfo("valid resource")))
 	}
 
 	images, err := builder.GetContainerImages(buildResult)

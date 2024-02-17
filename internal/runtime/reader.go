@@ -25,6 +25,7 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/ssa"
+	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,7 +63,7 @@ func (r *ResourceReader) Read(ctx context.Context, refs []apiv1.RuntimeResourceR
 		ct := cuecontext.New()
 		m, err := r.getValues(ct, obj, ref.Expressions)
 		if err != nil {
-			return result, fmt.Errorf("can't extract values from %s: %w", ssa.FmtUnstructured(obj), err)
+			return result, fmt.Errorf("can't extract values from %s: %w", ssautil.FmtUnstructured(obj), err)
 		}
 
 		maps.Copy(result, m)

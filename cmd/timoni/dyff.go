@@ -25,6 +25,8 @@ import (
 	"sort"
 
 	"github.com/fluxcd/pkg/ssa"
+	ssaerr "github.com/fluxcd/pkg/ssa/errors"
+	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"github.com/gonvenience/ytbx"
 	"github.com/homeport/dyff/pkg/dyff"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -102,8 +104,8 @@ func instanceDryRunDiff(ctx context.Context,
 
 		change, liveObject, mergedObject, err := rm.Diff(ctx, r, diffOpts)
 		if err != nil {
-			if ssa.IsImmutableError(err) {
-				if ssa.AnyInMetadata(r, map[string]string{
+			if ssaerr.IsImmutableError(err) {
+				if ssautil.AnyInMetadata(r, map[string]string{
 					apiv1.ForceAction: apiv1.EnabledValue,
 				}) {
 					log.Info(colorizeJoin(r, ssa.CreatedAction, dryRunServer))

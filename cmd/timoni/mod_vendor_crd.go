@@ -28,7 +28,7 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/fluxcd/pkg/ssa"
+	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -127,7 +127,7 @@ func runVendorCrdCmd(cmd *cobra.Command, args []string) error {
 
 	// Extract the Kubernetes CRDs from the multi-doc YAML.
 	var builder strings.Builder
-	objects, err := ssa.ReadObjects(bytes.NewReader(crdData))
+	objects, err := ssautil.ReadObjects(bytes.NewReader(crdData))
 	if err != nil {
 		return fmt.Errorf("parsing CRDs failed: %w", err)
 	}

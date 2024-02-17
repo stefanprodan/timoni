@@ -28,6 +28,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/fluxcd/cli-utils/pkg/kstatus/status"
 	"github.com/fluxcd/pkg/ssa"
+	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zerologr"
 	gcrLog "github.com/google/go-containerregistry/pkg/logs"
@@ -152,7 +153,7 @@ func colorizeNamespaceFromArgs() string {
 }
 
 func colorizeUnstructured(object *unstructured.Unstructured) string {
-	return colorizeSubject(ssa.FmtUnstructured(object))
+	return colorizeSubject(ssautil.FmtUnstructured(object))
 }
 
 func colorizeAction(action ssa.Action) string {
