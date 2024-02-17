@@ -1,0 +1,25 @@
+name = "timoni"
+type = "cli"
+
+[platform.linux]
+bin-path = "timoni"
+download-file = "timoni_{version}_linux_{arch}.tar.gz"
+
+[platform.macos]
+bin-path = "timoni"
+download-file = "timoni_{version}_darwin_{arch}.tar.gz"
+
+[platform.windows]
+bin-path = "timoni.exe"
+download-file = "timoni_{version}_windows_{arch}.zip"
+
+[install]
+checksum-url = "https://github.com/stefanprodan/timoni/releases/download/v{version}/timoni_{version}_checksums.txt"
+download-url = "https://github.com/stefanprodan/timoni/releases/download/v{version}/{download_file}"
+
+[install.arch]
+aarch64 = "arm64"
+x86_64 = "amd64"
+
+[resolve]
+git-url = "https://github.com/stefanprodan/timoni"
