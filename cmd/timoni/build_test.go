@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fluxcd/pkg/ssa"
+	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -41,7 +41,7 @@ func TestBuild(t *testing.T) {
 		))
 		g.Expect(err).ToNot(HaveOccurred())
 
-		objects, err := ssa.ReadObjects(strings.NewReader(output))
+		objects, err := ssautil.ReadObjects(strings.NewReader(output))
 		g.Expect(err).ToNot(HaveOccurred())
 
 		g.Expect(output).To(ContainSubstring("tcp://example.internal"))
@@ -67,7 +67,7 @@ func TestBuild(t *testing.T) {
 
 		g.Expect(output).To(ContainSubstring("\"kind\": \"List\""))
 
-		objects, err := ssa.ReadObjects(strings.NewReader(output))
+		objects, err := ssautil.ReadObjects(strings.NewReader(output))
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(len(objects)).To(BeEquivalentTo(2))
 	})
@@ -87,7 +87,7 @@ func TestBuild(t *testing.T) {
 
 		g.Expect(output).To(ContainSubstring("tcp://example.com"))
 
-		objects, err := ssa.ReadObjects(strings.NewReader(output))
+		objects, err := ssautil.ReadObjects(strings.NewReader(output))
 		g.Expect(err).ToNot(HaveOccurred())
 
 		g.Expect(len(objects)).To(BeEquivalentTo(2))
@@ -113,7 +113,7 @@ func TestBuild(t *testing.T) {
 		// this domain is specified in the YAML file
 		g.Expect(output).To(ContainSubstring("tcp://yaml.example.com"))
 
-		objects, err := ssa.ReadObjects(strings.NewReader(output))
+		objects, err := ssautil.ReadObjects(strings.NewReader(output))
 		g.Expect(err).ToNot(HaveOccurred())
 
 		g.Expect(len(objects)).To(BeEquivalentTo(2))
@@ -137,7 +137,7 @@ func TestBuild(t *testing.T) {
 		))
 		g.Expect(err).ToNot(HaveOccurred())
 
-		objects, err := ssa.ReadObjects(strings.NewReader(output))
+		objects, err := ssautil.ReadObjects(strings.NewReader(output))
 		g.Expect(err).ToNot(HaveOccurred())
 
 		g.Expect(len(objects)).To(BeEquivalentTo(1))

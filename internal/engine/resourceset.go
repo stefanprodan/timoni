@@ -22,7 +22,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/yaml"
-	"github.com/fluxcd/pkg/ssa"
+	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -66,7 +66,7 @@ func GetResources(value cue.Value) ([]ResourceSet, error) {
 			return nil, fmt.Errorf("converting objects for resource list %q failed: %w", name, err)
 		}
 
-		objects, err := ssa.ReadObjects(bytes.NewReader(data))
+		objects, err := ssautil.ReadObjects(bytes.NewReader(data))
 		if err != nil {
 			return nil, fmt.Errorf("loading objects for resource list %q failed: %w", name, err)
 		}

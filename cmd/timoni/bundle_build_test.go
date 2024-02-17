@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fluxcd/pkg/ssa"
+	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -112,7 +112,7 @@ bundle:
 				output, err := execCommand()
 				g.Expect(err).ToNot(HaveOccurred())
 
-				objects, err := ssa.ReadObjects(strings.NewReader(output))
+				objects, err := ssautil.ReadObjects(strings.NewReader(output))
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(objects).To(HaveLen(2))
 

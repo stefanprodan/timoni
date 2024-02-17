@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/fluxcd/pkg/ssa"
+	ssaerr "github.com/fluxcd/pkg/ssa/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,7 +86,7 @@ func (s *StorageManager) Apply(ctx context.Context, instance *apiv1.Instance, cr
 	// Migrate storage from the Opaque type by recreating the Secret.
 	// TODO: remove the immutability error handling after 6 months.
 	if err := s.resManager.Client().Patch(ctx, secret, client.Apply, opts...); err != nil {
-		if ssa.IsImmutableError(err) {
+		if ssaerr.IsImmutableError(err) {
 			if delErr := s.Delete(ctx, instance.Name, instance.Namespace); delErr != nil {
 				return delErr
 			}
