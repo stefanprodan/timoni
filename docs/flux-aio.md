@@ -169,6 +169,28 @@ where you'll define the configuration of the Flux controllers and their settings
     
     For Google Cloud, the type must be set to `gcp` and the identity set to the GCP Identity Name.
 
+## Flux upgrade
+
+To upgrade Flux to the latest version, you can rerun the `timoni bundle apply -f flux-aio.cue` command,
+and Timoni will check if a newer version of the `flux-aio` module is available and apply the changes.
+
+To upgrade Flux to a specific version, you can specify the version in the `module.version` field:
+
+```cue
+module: {
+    url:     "oci://ghcr.io/stefanprodan/modules/flux-aio"
+    version: "2.2.3-0"
+}
+```
+
+!!! tip "Flux AIO versioning"
+
+    The versioning of the AIO distribution follows semver with the following format:
+    `<flux version>-<distribution release number>`, e.g. `2.2.3-0`.
+    
+    To list all available versions of the `flux-aio` module, you can use the `timoni mod ls` command,
+    or you can check the [flux-aio release page](https://github.com/stefanprodan/flux-aio/releases).
+
 ## Flux Git sync configuration
 
 To configure Flux to deploy workloads from a Git repository,
@@ -214,7 +236,7 @@ the configuration of the Git HTTPS URL, auth token, branch, path, interval, heal
     ```
     
     You can fine tune the sync using the options listed in the flux-git-sync module
-    [readme](https://github.com/stefanprodan/flux-aio/tree/main/modules/flux-gitsync/README.md#configuration).
+    [readme](https://github.com/stefanprodan/flux-aio/tree/main/modules/flux-git-sync/README.md#configuration).
 
 === "Private repository"
 
