@@ -26,8 +26,8 @@ type ModuleReference struct {
 	// Name of the module.
 	Name string `json:"name"`
 
-	// Repository is the OCI artifact repo name in the format
-	// 'oci://<reg.host>/<org>/<repo>'.
+	// Repository is the OCI artifact or local repo name in the format
+	// 'oci://<reg.host>/<org>/<repo>' or 'file://<path>'.
 	Repository string `json:"repository"`
 
 	// Version is the OCI artifact tag in strict semver format.
