@@ -32,6 +32,7 @@ import (
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
@@ -92,16 +93,25 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	fetcher := engine.NewFetcher(
-		ctxPull,
-		vetModArgs.path,
-		apiv1.LatestVersion,
-		tmpDir,
-		rootArgs.cacheDir,
-		"",
-		rootArgs.registryInsecure,
-	)
-	mod, err := fetcher.Fetch()
+	var f fetcher.Fetcher
+	if strings.HasPrefix(vetModArgs.path, "oci://") {
+		f = fetcher.NewOCI(
+			ctxPull,
+			vetModArgs.path,
+			apiv1.LatestVersion,
+			tmpDir,
+			rootArgs.cacheDir,
+			"",
+			rootArgs.registryInsecure,
+		)
+	} else {
+		f = fetcher.NewLocal(
+			strings.TrimPrefix(vetModArgs.path, "file://"),
+			tmpDir,
+		)
+	}
+
+	mod, err := f.Fetch()
 	if err != nil {
 		return err
 	}
@@ -126,7 +136,7 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 		cuectx,
 		vetModArgs.name,
 		*kubeconfigArgs.Namespace,
-		fetcher.GetModuleRoot(),
+		f.GetModuleRoot(),
 		vetModArgs.pkg.String(),
 	)
 
@@ -152,7 +162,7 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 
 	buildResult, err := builder.Build(tags...)
 	if err != nil {
-		return describeErr(fetcher.GetModuleRoot(), "validation failed", err)
+		return describeErr(f.GetModuleRoot(), "validation failed", err)
 	}
 
 	applySets, err := builder.GetApplySets(buildResult)
