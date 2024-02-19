@@ -8,11 +8,7 @@ bundle: {
 	name:       "podinfo"
 	instances: {
 		redis: {
-			module: {
-				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.2.2"
-				digest:  "sha256:22ab5f4f0158f02b353c168f21a54901a45b2a56865fcc470e5492120deb4111"
-			}
+			module: url: "file://../redis"
 			namespace: "podinfo"
 			values: {
 				maxmemory: 256
