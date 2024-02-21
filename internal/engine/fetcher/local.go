@@ -55,11 +55,7 @@ func (f *Local) Fetch() (*apiv1.ModuleReference, error) {
 		return nil, fmt.Errorf("module not found at path %s", f.src)
 	}
 
-	modFile := path.Join(f.src, "cue.mod", "module.cue")
-	timoniFile := path.Join(f.src, "timoni.cue")
-	valuesFile := path.Join(f.src, "values.cue")
-
-	for _, requiredFile := range []string{modFile, timoniFile, valuesFile} {
+	for _, requiredFile := range f.requiredFiles {
 		if _, err := os.Stat(requiredFile); err != nil {
 			return nil, fmt.Errorf("required file not found: %s", requiredFile)
 		}

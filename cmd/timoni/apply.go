@@ -164,22 +164,17 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	var f fetcher.Fetcher
-	if strings.HasPrefix(applyArgs.module, "oci://") {
-		f = fetcher.NewOCI(
-			ctxPull,
-			applyArgs.module,
-			version,
-			tmpDir,
-			rootArgs.cacheDir,
-			applyArgs.creds.String(),
-			rootArgs.registryInsecure,
-		)
-	} else {
-		f = fetcher.NewLocal(
-			strings.TrimPrefix(applyArgs.module, "file://"),
-			tmpDir,
-		)
+	f, err := fetcher.New(ctxPull, fetcher.Options{
+		Source:       applyArgs.module,
+		Version:      version,
+		Destination:  tmpDir,
+		CacheDir:     rootArgs.cacheDir,
+		Creds:        applyArgs.creds.String(),
+		Insecure:     rootArgs.registryInsecure,
+		DefaultLocal: true,
+	})
+	if err != nil {
+		return err
 	}
 	mod, err := f.Fetch()
 	if err != nil {

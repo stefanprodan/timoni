@@ -254,24 +254,16 @@ func fetchBundleInstanceModule(ctx context.Context, instance *engine.BundleInsta
 		moduleVersion = "@" + instance.Module.Digest
 	}
 
-	var f fetcher.Fetcher
-	if strings.HasPrefix(instance.Module.Repository, "oci://") {
-		f = fetcher.NewOCI(
-			ctx,
-			instance.Module.Repository,
-			moduleVersion,
-			modDir,
-			rootArgs.cacheDir,
-			bundleApplyArgs.creds.String(),
-			rootArgs.registryInsecure,
-		)
-	} else if strings.HasPrefix(instance.Module.Repository, "file://") {
-		f = fetcher.NewLocal(
-			strings.TrimPrefix(instance.Module.Repository, "file://"),
-			modDir,
-		)
-	} else {
-		return fmt.Errorf("unsupported module repository %s", instance.Module.Repository)
+	f, err := fetcher.New(ctx, fetcher.Options{
+		Source:      instance.Module.Repository,
+		Version:     moduleVersion,
+		Destination: modDir,
+		CacheDir:    rootArgs.cacheDir,
+		Creds:       bundleApplyArgs.creds.String(),
+		Insecure:    rootArgs.registryInsecure,
+	})
+	if err != nil {
+		return err
 	}
 
 	mod, err := f.Fetch()

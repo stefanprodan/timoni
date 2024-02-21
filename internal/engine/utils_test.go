@@ -57,3 +57,15 @@ func TestCopyModule_Ignore(t *testing.T) {
 	})
 	g.Expect(fsErr).ToNot(HaveOccurred())
 }
+
+func TestIsOCIUrl(t *testing.T) {
+	g := NewWithT(t)
+	g.Expect(IsOCIUrl("oci://foo/bar")).To(BeTrueBecause("oci:// is an OCI URL"))
+	g.Expect(IsOCIUrl("file://afile.txt")).To(BeFalseBecause("file:// is not an OCI URL"))
+}
+
+func TestIsFileUrl(t *testing.T) {
+	g := NewWithT(t)
+	g.Expect(IsFileUrl("file://afile.txt")).To(BeTrueBecause("file:// is a file URL"))
+	g.Expect(IsFileUrl("oci://foo/bar")).To(BeFalseBecause("oci:// is not a file URL"))
+}

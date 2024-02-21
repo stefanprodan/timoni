@@ -115,24 +115,18 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	var f fetcher.Fetcher
-	if strings.HasPrefix(buildArgs.module, "oci://") {
-		f = fetcher.NewOCI(
-			ctxPull,
-			buildArgs.module,
-			version,
-			tmpDir,
-			rootArgs.cacheDir,
-			buildArgs.creds.String(),
-			rootArgs.registryInsecure,
-		)
-	} else {
-		f = fetcher.NewLocal(
-			strings.TrimPrefix(buildArgs.module, "file://"),
-			tmpDir,
-		)
+	f, err := fetcher.New(ctxPull, fetcher.Options{
+		Source:       buildArgs.module,
+		Version:      version,
+		Destination:  tmpDir,
+		CacheDir:     rootArgs.cacheDir,
+		Creds:        buildArgs.creds.String(),
+		Insecure:     rootArgs.registryInsecure,
+		DefaultLocal: true,
+	})
+	if err != nil {
+		return err
 	}
-
 	mod, err := f.Fetch()
 	if err != nil {
 		return err

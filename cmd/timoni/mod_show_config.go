@@ -90,22 +90,16 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	var f fetcher.Fetcher
-	if strings.HasPrefix(configShowModArgs.path, "oci://") {
-		f = fetcher.NewOCI(
-			ctxPull,
-			configShowModArgs.path,
-			apiv1.LatestVersion,
-			tmpDir,
-			rootArgs.cacheDir,
-			"",
-			rootArgs.registryInsecure,
-		)
-	} else {
-		f = fetcher.NewLocal(
-			strings.TrimPrefix(configShowModArgs.path, "file://"),
-			tmpDir,
-		)
+	f, err := fetcher.New(ctxPull, fetcher.Options{
+		Source:       configShowModArgs.path,
+		Version:      apiv1.LatestVersion,
+		Destination:  tmpDir,
+		CacheDir:     rootArgs.cacheDir,
+		Insecure:     rootArgs.registryInsecure,
+		DefaultLocal: true,
+	})
+	if err != nil {
+		return err
 	}
 
 	mod, err := f.Fetch()
