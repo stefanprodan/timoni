@@ -68,6 +68,10 @@ func (f *OCI) Fetch() (*apiv1.ModuleReference, error) {
 		return nil, err
 	}
 
+	if err := os.MkdirAll(f.cacheDir, os.ModePerm); err != nil {
+		return nil, err
+	}
+
 	opts := oci.Options(f.ctx, f.creds, f.insecure)
 	return oci.PullModule(ociURL, dstDir, f.cacheDir, opts)
 }

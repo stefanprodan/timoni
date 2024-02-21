@@ -2,8 +2,6 @@ package testutils
 
 import (
 	"testing"
-
-	. "github.com/onsi/gomega"
 )
 
 type testStruct struct{}
@@ -21,6 +19,8 @@ func TestImplements(t *testing.T) {
 		NotTestMethod()
 	}
 
-	g.Expect(Implements[truthteller](&testStruct{})).To(BeTrueBecause("testStruct implements truthteller"))
-	g.Expect(Implements[liar](&testStruct{})).To(BeFalseBecause("testStruct does not implement liar"))
+	a := &testStruct{}
+
+	g.Expect(a).To(Implement((*truthteller)(nil)))
+	g.Expect(a).ToNot(Implement((*liar)(nil)))
 }

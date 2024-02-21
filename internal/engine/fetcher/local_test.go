@@ -22,7 +22,6 @@ import (
 
 	cp "github.com/otiai10/copy"
 
-	. "github.com/onsi/gomega"
 	. "github.com/stefanprodan/timoni/internal/testutils"
 )
 
@@ -31,7 +30,7 @@ func TestNewLocal(t *testing.T) {
 	lf := NewLocal("src", "dst")
 
 	g.Expect(lf).ToNot(BeNil())
-	g.Expect(Implements[Fetcher](lf)).To(BeTrueBecause("Local should implement Fetcher interface"))
+	g.Expect(lf).To(Implement((*Fetcher)(nil)))
 }
 
 func TestLocalGetModuleRoot(t *testing.T) {
