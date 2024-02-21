@@ -242,8 +242,16 @@ of the instance's module.
 
 #### URL
 
-The `instance.module.url` is a required field that specifies the OCI repository address
-where the module is published. The `url` field must be in the format `oci://<registry-host>/<repo-name>`.
+The `instance.module.url` is a required field that specifies the source of the module.
+It can be either an OCI repository address (preferred) or a local path to a module (useful during development).
+
+When using an OCI repository, the `url` field must be in the format `oci://<registry-host>/<repo-name>`.
+
+When using a Local path, the `url` field must be in the format `file://path/to/module`.
+
+!!! tip Relative paths
+
+    Relative paths are always computed relatively to the path of the bundle file containing the value.
 
 #### Version
 
