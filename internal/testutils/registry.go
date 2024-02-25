@@ -56,29 +56,3 @@ func (t *WithT) SetupTestRegistry() string {
 
 	return address
 }
-
-// func SetupTestRegistry(t *testing.T) string {
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	t.Cleanup(cancel)
-
-// 	config := &configuration.Configuration{}
-// 	config.Log.AccessLog.Disabled = true
-// 	config.Log.Level = "error"
-// 	port, err := freeport.GetFreePort()
-// 	if err != nil {
-// 		t.Fatalf("failed to get free port: %s", err)
-// 	}
-// 	logrus.SetOutput(io.Discard)
-// 	address := fmt.Sprintf("localhost:%d", port)
-// 	config.HTTP.Addr = fmt.Sprintf("127.0.0.1:%d", port)
-// 	config.HTTP.DrainTimeout = time.Duration(10) * time.Second
-// 	config.Storage = map[string]configuration.Parameters{"inmemory": map[string]interface{}{}}
-// 	dockerRegistry, err := registry.NewRegistry(ctx, config)
-// 	if err != nil {
-// 		t.Fatalf("failed to create docker registry: %s", err)
-// 	}
-
-// 	go dockerRegistry.ListenAndServe()
-
-// 	return address
-// }
