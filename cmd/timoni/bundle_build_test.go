@@ -10,6 +10,8 @@ import (
 	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/stefanprodan/timoni/internal/engine"
 )
 
 func Test_BundleBuild(t *testing.T) {
@@ -138,6 +140,56 @@ bundle:
 			})
 		}
 	})
+}
+
+func Test_BundleBuild_LocalModule(t *testing.T) {
+	g := NewWithT(t)
+
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+
+	bundleCue := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "my-bundle"
+	instances: {
+		backend: {
+			module: {
+				url:     "file://%[1]s"
+			}
+			namespace: "%[2]s"
+			values: client: enabled: true
+		}
+	}
+}
+`, modPath, namespace)
+
+	wd := t.TempDir()
+	cuePath := filepath.Join(wd, "bundle.cue")
+	g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
+
+	err := engine.CopyModule(modPath, filepath.Join(wd, modPath))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	output, err := executeCommand(fmt.Sprintf(
+		"bundle build -f %s -p main",
+		cuePath,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	objects, err := ssautil.ReadObjects(strings.NewReader(output))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	backendClientCm, err := getObjectByName(objects, "backend-server")
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(backendClientCm.GetKind()).To(BeEquivalentTo("ConfigMap"))
+	g.Expect(backendClientCm.GetNamespace()).To(ContainSubstring(namespace))
+
+	host, found, err := unstructured.NestedString(backendClientCm.Object, "data", "hostname")
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(found).To(BeTrue())
+	g.Expect(host).To(ContainSubstring("example.internal"))
+
 }
 
 func Test_BundleBuild_Runtime(t *testing.T) {
