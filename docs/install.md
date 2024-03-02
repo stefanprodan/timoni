@@ -23,6 +23,16 @@ The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://gi
 
     Note that the [Arkade](https://github.com/alexellis/arkade) version must be 0.9.11 or newer.
 
+=== "scoop"
+
+    Install the latest release on Windows with:
+    
+    ```shell
+    scoop install timoni
+    ```
+    
+    View the available versions using [scoop.sh](https://scoop.sh/#/apps?q=timoni). The `cue` dependency will also be installed if necessary.
+
 === "nix"
 
     Install the latest release with [nix-env](https://nixos.org/manual/nix/unstable/command-ref/nix-env.html):
