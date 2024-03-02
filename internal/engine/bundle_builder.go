@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
@@ -34,9 +35,10 @@ import (
 
 // BundleBuilder compiles CUE definitions to Go Bundle objects.
 type BundleBuilder struct {
-	ctx      *cue.Context
-	files    []string
-	injector *RuntimeInjector
+	ctx               *cue.Context
+	files             []string
+	mapSourceToOrigin map[string]string
+	injector          *RuntimeInjector
 }
 
 type Bundle struct {
@@ -59,9 +61,10 @@ func NewBundleBuilder(ctx *cue.Context, files []string) *BundleBuilder {
 		ctx = cuecontext.New()
 	}
 	b := &BundleBuilder{
-		ctx:      ctx,
-		files:    files,
-		injector: NewRuntimeInjector(ctx),
+		ctx:               ctx,
+		files:             files,
+		mapSourceToOrigin: make(map[string]string, len(files)),
+		injector:          NewRuntimeInjector(ctx),
 	}
 	return b
 }
@@ -108,6 +111,7 @@ func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string
 		if err := os.WriteFile(dstFile, data, os.ModePerm); err != nil {
 			return fmt.Errorf("failed to write %s: %w", fn, err)
 		}
+		b.mapSourceToOrigin[dstFile] = file
 
 		files = append(files, dstFile)
 	}
@@ -153,6 +157,19 @@ func (b *BundleBuilder) Build() (cue.Value, error) {
 	return v, nil
 }
 
+func (b *BundleBuilder) getInstanceUrl(v cue.Value) string {
+	url, _ := v.String()
+	if path := strings.TrimPrefix(url, "file://"); IsFileUrl(url) && !filepath.IsAbs(path) {
+		source := v.Pos().Filename()
+		if origin, ok := b.mapSourceToOrigin[source]; ok {
+			source = origin
+		}
+		url = filepath.Clean(filepath.Join(filepath.Dir(source), path))
+		url = "file://" + path // re-add prefix
+	}
+	return url
+}
+
 // GetBundle returns a Bundle from the bundle CUE value.
 func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
 	bundleNameValue := v.LookupPath(cue.ParsePath(apiv1.BundleName.String()))
@@ -177,7 +194,7 @@ func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
 		expr := iter.Value()
 
 		vURL := expr.LookupPath(cue.ParsePath(apiv1.BundleModuleURLSelector.String()))
-		url, _ := vURL.String()
+		url := b.getInstanceUrl(vURL)
 
 		vDigest := expr.LookupPath(cue.ParsePath(apiv1.BundleModuleDigestSelector.String()))
 		digest, _ := vDigest.String()

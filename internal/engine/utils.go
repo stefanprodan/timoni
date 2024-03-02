@@ -30,6 +30,16 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
+// IsOCIUrl returns true if the given URL is an OCI URL.
+func IsOCIUrl(url string) bool {
+	return strings.HasPrefix(url, apiv1.ArtifactPrefix)
+}
+
+// IsFileUrl returns true if the given URL is a file URL.
+func IsFileUrl(url string) bool {
+	return strings.HasPrefix(url, apiv1.LocalPrefix)
+}
+
 // GetEnv returns a map of all environment variables.
 func GetEnv() map[string]string {
 	vars := make(map[string]string)

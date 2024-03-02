@@ -34,6 +34,7 @@ import (
 	"github.com/spf13/cobra"
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
@@ -89,16 +90,19 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	fetcher := engine.NewFetcher(
-		ctxPull,
-		configShowModArgs.path,
-		apiv1.LatestVersion,
-		tmpDir,
-		rootArgs.cacheDir,
-		"",
-		rootArgs.registryInsecure,
-	)
-	mod, err := fetcher.Fetch()
+	f, err := fetcher.New(ctxPull, fetcher.Options{
+		Source:       configShowModArgs.path,
+		Version:      apiv1.LatestVersion,
+		Destination:  tmpDir,
+		CacheDir:     rootArgs.cacheDir,
+		Insecure:     rootArgs.registryInsecure,
+		DefaultLocal: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	mod, err := f.Fetch()
 	if err != nil {
 		return err
 	}
@@ -107,7 +111,7 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		cuectx,
 		configShowModArgs.name,
 		*kubeconfigArgs.Namespace,
-		fetcher.GetModuleRoot(),
+		f.GetModuleRoot(),
 		configShowModArgs.pkg.String(),
 	)
 
@@ -122,12 +126,12 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return describeErr(fetcher.GetModuleRoot(), "validation failed", err)
+		return describeErr(f.GetModuleRoot(), "validation failed", err)
 	}
 
 	rows, err := builder.GetConfigDoc(buildResult)
 	if err != nil {
-		return describeErr(fetcher.GetModuleRoot(), "failed to get config structure", err)
+		return describeErr(f.GetModuleRoot(), "failed to get config structure", err)
 	}
 
 	header := []string{"Key", "Type", "Default", "Description"}
@@ -135,21 +139,21 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 	if configShowModArgs.output == "" {
 		printMarkDownTable(rootCmd.OutOrStdout(), header, rows)
 	} else {
-		tmpFile, err := writeFile(configShowModArgs.output, header, rows, fetcher)
+		tmpFile, err := writeFile(configShowModArgs.output, header, rows, f)
 		if err != nil {
 			return err
 		}
 
 		err = os.Rename(tmpFile, configShowModArgs.output)
 		if err != nil {
-			return describeErr(fetcher.GetModuleRoot(), "Unable to rename file", err)
+			return describeErr(f.GetModuleRoot(), "Unable to rename file", err)
 		}
 	}
 
 	return nil
 }
 
-func writeFile(readFile string, header []string, rows [][]string, fetcher *engine.Fetcher) (string, error) {
+func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetcher) (string, error) {
 	// Generate the markdown table
 	var tableBuffer bytes.Buffer
 	tableWriter := bufio.NewWriter(&tableBuffer)
@@ -164,10 +168,10 @@ func writeFile(readFile string, header []string, rows [][]string, fetcher *engin
 			inputFile, err = os.Create(readFile)
 
 			if err != nil {
-				return "", describeErr(fetcher.GetModuleRoot(), "Unable to create the temporary output file", err)
+				return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
 			}
 		} else {
-			return "", describeErr(fetcher.GetModuleRoot(), "Unable to create the temporary output file", err)
+			return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
 		}
 	}
 	defer inputFile.Close()
@@ -175,7 +179,7 @@ func writeFile(readFile string, header []string, rows [][]string, fetcher *engin
 	// open the output file
 	outputFile, err := os.Create(tmpFileName)
 	if err != nil {
-		return "", describeErr(fetcher.GetModuleRoot(), "Unable to create the temporary output file", err)
+		return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
 	}
 	defer outputFile.Close()
 
@@ -196,7 +200,7 @@ func writeFile(readFile string, header []string, rows [][]string, fetcher *engin
 
 			matched, err := regexp.MatchString(`^\|.*\|$`, line)
 			if err != nil {
-				return "", describeErr(fetcher.GetModuleRoot(), "Regex Match for table content failed", err)
+				return "", describeErr(f.GetModuleRoot(), "Regex Match for table content failed", err)
 			}
 
 			if configSection && !foundTable && matched {
@@ -220,7 +224,7 @@ func writeFile(readFile string, header []string, rows [][]string, fetcher *engin
 
 	err = outputWriter.Flush()
 	if err != nil {
-		return "", describeErr(fetcher.GetModuleRoot(), "Failed to Flush Writer", err)
+		return "", describeErr(f.GetModuleRoot(), "Failed to Flush Writer", err)
 	}
 
 	return tmpFileName, nil

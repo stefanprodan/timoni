@@ -38,6 +38,7 @@ import (
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
@@ -114,16 +115,19 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	fetcher := engine.NewFetcher(
-		ctxPull,
-		buildArgs.module,
-		version,
-		tmpDir,
-		rootArgs.cacheDir,
-		buildArgs.creds.String(),
-		rootArgs.registryInsecure,
-	)
-	mod, err := fetcher.Fetch()
+	f, err := fetcher.New(ctxPull, fetcher.Options{
+		Source:       buildArgs.module,
+		Version:      version,
+		Destination:  tmpDir,
+		CacheDir:     rootArgs.cacheDir,
+		Creds:        buildArgs.creds.String(),
+		Insecure:     rootArgs.registryInsecure,
+		DefaultLocal: true,
+	})
+	if err != nil {
+		return err
+	}
+	mod, err := f.Fetch()
 	if err != nil {
 		return err
 	}
@@ -132,7 +136,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		ctx,
 		buildArgs.name,
 		*kubeconfigArgs.Namespace,
-		fetcher.GetModuleRoot(),
+		f.GetModuleRoot(),
 		buildArgs.pkg.String(),
 	)
 
@@ -158,7 +162,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return describeErr(fetcher.GetModuleRoot(), "build failed", err)
+		return describeErr(f.GetModuleRoot(), "build failed", err)
 	}
 
 	apiVer, err := builder.GetAPIVersion(buildResult)

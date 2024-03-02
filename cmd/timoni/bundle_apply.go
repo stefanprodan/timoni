@@ -36,6 +36,7 @@ import (
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
@@ -253,16 +254,19 @@ func fetchBundleInstanceModule(ctx context.Context, instance *engine.BundleInsta
 		moduleVersion = "@" + instance.Module.Digest
 	}
 
-	fetcher := engine.NewFetcher(
-		ctx,
-		instance.Module.Repository,
-		moduleVersion,
-		modDir,
-		rootArgs.cacheDir,
-		bundleApplyArgs.creds.String(),
-		rootArgs.registryInsecure,
-	)
-	mod, err := fetcher.Fetch()
+	f, err := fetcher.New(ctx, fetcher.Options{
+		Source:      instance.Module.Repository,
+		Version:     moduleVersion,
+		Destination: modDir,
+		CacheDir:    rootArgs.cacheDir,
+		Creds:       bundleApplyArgs.creds.String(),
+		Insecure:    rootArgs.registryInsecure,
+	})
+	if err != nil {
+		return err
+	}
+
+	mod, err := f.Fetch()
 	if err != nil {
 		return err
 	}

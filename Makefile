@@ -48,6 +48,7 @@ cue-vet: build ## Vet and fmt CUE files.
 	done
 	./bin/timoni mod vet ./cmd/timoni/testdata/module
 	./bin/timoni mod vet ./internal/engine/testdata/module
+	./bin/timoni mod vet ./internal/engine/fetcher/testdata/module
 	cue fmt ./internal/engine/testdata/module-values
 
 REDIS_VER=$(shell grep 'tag:' examples/redis/values.cue | awk '{ print $$2 }' | tr -d '"')

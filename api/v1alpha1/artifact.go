@@ -20,6 +20,9 @@ const (
 	// ArtifactPrefix is the prefix used for OpenContainers artifact address.
 	ArtifactPrefix = "oci://"
 
+	// LocalPrefix is the prefix used for local file system address.
+	LocalPrefix = "file://"
+
 	// UserAgent is the agent name used for OpenContainers artifact operations.
 	UserAgent = "timoni/v1"
 
