@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
@@ -34,6 +35,7 @@ type Local struct {
 
 // NewLocal creates a local Fetcher for the given module.
 func NewLocal(src, dst string) *Local {
+	src = strings.TrimPrefix(src, apiv1.LocalPrefix)
 	requiredFiles := []string{
 		path.Join(src, "cue.mod", "module.cue"),
 		path.Join(src, "timoni.cue"),

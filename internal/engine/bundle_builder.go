@@ -159,13 +159,12 @@ func (b *BundleBuilder) Build() (cue.Value, error) {
 
 func (b *BundleBuilder) getInstanceUrl(v cue.Value) string {
 	url, _ := v.String()
-	if path := strings.TrimPrefix(url, "file://"); IsFileUrl(url) && !filepath.IsAbs(path) {
+	if path := strings.TrimPrefix(url, apiv1.LocalPrefix); IsFileUrl(url) && !filepath.IsAbs(path) {
 		source := v.Pos().Filename()
 		if origin, ok := b.mapSourceToOrigin[source]; ok {
 			source = origin
 		}
-		url = filepath.Clean(filepath.Join(filepath.Dir(source), path))
-		url = "file://" + path // re-add prefix
+		url = apiv1.LocalPrefix + filepath.Clean(filepath.Join(filepath.Dir(source), path))
 	}
 	return url
 }

@@ -47,7 +47,7 @@ type Options struct {
 	DefaultLocal bool
 }
 
-// NewFetcher is a factory function that creates a new Fetcher based on the provided options.
+// New is a factory function that creates a new Fetcher based on the provided options.
 // If you know the type of fetcher you want to create, prefer using the specific factory function.
 func New(ctx context.Context, opts Options) (Fetcher, error) {
 	switch {

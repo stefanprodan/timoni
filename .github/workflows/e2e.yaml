@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  kubernetes:
+  k8s-modules:
     runs-on: ubuntu-latest
     services:
       registry:
@@ -62,3 +62,48 @@ jobs:
       - name: Uninstall module
         run: |
           timoni -n test delete nginx --wait
+
+  k8s-bundles:
+    env:
+      NGINX_MODULE_URL: "oci://localhost:5000/nginx"
+    runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Setup Go
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version: 1.22.x
+          cache-dependency-path: |
+            **/go.sum
+            **/go.mod
+      - name: Setup Kubernetes
+        uses: helm/kind-action@99576bfa6ddf9a8e612d83b513da5a75875caced # v1.9.0
+        with:
+          version: v0.22.0
+          cluster_name: kind
+      - name: Install
+        run: make install
+      - name: Push module
+        run: |
+          timoni mod push ./blueprints/starter ${NGINX_MODULE_URL} -v 1.0.0 --latest
+      - name: Vet bundle
+        run: |
+          timoni bundle vet -f hack/tests/nginx_bundle.cue --runtime-from-env
+      - name: Build bundle
+        run: |
+          timoni bundle build -f hack/tests/nginx_bundle.cue --runtime-from-env
+      - name: Apply bundle
+        run: |
+          timoni bundle apply -f hack/tests/nginx_bundle.cue --runtime-from-env
+      - name: Inspect bundle
+        run: |
+          timoni bundle status nginx
+      - name: Delete bundle
+        run: |
+          timoni bundle delete nginx
