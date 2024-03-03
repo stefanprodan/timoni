@@ -130,10 +130,6 @@ func (b *RuntimeBuilder) Build() (cue.Value, error) {
 		return value, v.Err()
 	}
 
-	if err := v.Validate(cue.Concrete(true)); err != nil {
-		return value, err
-	}
-
 	return v, nil
 }
 
