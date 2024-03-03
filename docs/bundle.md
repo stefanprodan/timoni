@@ -19,7 +19,7 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.2.3"
+				version: "7.2.4"
 			}
 			namespace: "podinfo"
 			values: maxmemory: 256
@@ -66,8 +66,8 @@ Apply the Bundle on the cluster:
 
       ```text
       applying instance redis
-      pulling oci://ghcr.io/stefanprodan/modules/redis:7.2.3
-      using module timoni.sh/redis version 7.2.3
+      pulling oci://ghcr.io/stefanprodan/modules/redis:7.2.4
+      using module timoni.sh/redis version 7.2.4
       installing redis in namespace podinfo
       Namespace/podinfo created
       applying master
@@ -112,7 +112,7 @@ Build the Bundle and print the resulting Kubernetes resources for all the Bundle
       metadata:
       labels:
         app.kubernetes.io/part-of: redis
-        app.kubernetes.io/version: 7.2.3
+        app.kubernetes.io/version: 7.2.4
       name: redis
       namespace: podinfo
       ---
@@ -143,9 +143,9 @@ List the managed resources from a bundle and their rollout status:
 === "output"
 
      ```text
-     last applied 2023-10-08T20:21:19Z
-     module oci://ghcr.io/stefanprodan/modules/redis:7.2.3
-     digest: sha256:fe22718cc6ad8c306fcea2c75d9ddfea1cc176b02c66796ce0fa7b79d2f3e0f5
+     last applied 2024-03-03T20:21:19Z
+     module oci://ghcr.io/stefanprodan/modules/redis:7.2.4
+     digest: sha256:8cf531365742c7cab9628909dfe16958550853f7c994284eacad64f169f4c74a
      ServiceAccount/podinfo/redis Current Resource is current
      ConfigMap/podinfo/redis Current Resource is always ready
      Service/podinfo/redis Current Service is ready
@@ -154,7 +154,7 @@ List the managed resources from a bundle and their rollout status:
      Deployment/podinfo/redis-replica Current Deployment is available. Replicas: 1
      PersistentVolumeClaim/podinfo/redis-master Current PVC is Bound
 
-     last applied 2023-10-08T20:21:19Z
+     last applied 2024-03-03T20:21:19Z
      module oci://ghcr.io/stefanprodan/modules/podinfo:6.5.4
      digest: sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365
      ServiceAccount/podinfo/podinfo Current Resource is always ready
@@ -174,8 +174,8 @@ List the instances in Bundle `podinfo` across all namespaces:
 
      ```text
      NAME    NAMESPACE         MODULE                                          VERSION LAST APPLIED          BUNDLE
-     podinfo podinfo           oci://ghcr.io/stefanprodan/modules/podinfo      6.5.4   2023-12-10T16:20:07Z  podinfo
-     redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        7.2.3   2023-12-10T16:20:00Z  podinfo
+     podinfo podinfo           oci://ghcr.io/stefanprodan/modules/podinfo      6.5.4   2024-03-03T16:20:07Z  podinfo
+     redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        7.2.4   2024-03-03T16:20:00Z  podinfo
      ```
 
 ## Writing a Bundle spec
