@@ -22,6 +22,8 @@ Timoni modules part of this distribution:
 
 - [flux-aio](https://github.com/stefanprodan/flux-aio/tree/main/modules/flux-aio) - A module for deploying 
   Flux core components such as source-controller, helm-controller, kustomize-controller and notification-controller.
+- [flux-oci-sync](https://github.com/stefanprodan/flux-aio/tree/main/modules/flux-oci-sync) - A module for
+  configuring Flux to deploy workloads from OCI artifacts.
 - [flux-git-sync](https://github.com/stefanprodan/flux-aio/tree/main/modules/flux-git-sync) - A module for 
   configuring Flux to deploy workloads from Git repositories.
 - [flux-helm-release](https://github.com/stefanprodan/flux-aio/tree/main/modules/flux-helm-release) - A module for
@@ -190,6 +192,97 @@ module: {
     
     To list all available versions of the `flux-aio` module, you can use the `timoni mod ls` command,
     or you can check the [flux-aio release page](https://github.com/stefanprodan/flux-aio/releases).
+
+## Flux OCI sync configuration
+
+To configure Flux to deploy workloads from OCI artifacts hosted on container registries,
+you'll be using the flux-oci-sync module.
+
+This module generates Flux `OCIRepository` and `Kustomization` objects and allows
+the configuration of the OCI artifact URL, auth credentials, tag, interval, substitutions, health checks.
+
+=== "Public repository"
+
+    To configure Flux to sync with a public OCI repository, you have to specify the
+    OCI address of the repository, the tag or semver range,
+    and optionally you can enable waiting for the workloads to become ready.
+    
+    For example, to sync the [podinfo](https://github.com/stefanprodan/podinfo)
+    Kustomize overlay to the `default` namespace:
+    
+    ```cue
+    bundle: {
+        apiVersion: "v1alpha1"
+        name:       "podinfo"
+        instances: {
+            "podinfo": {
+                module: url: "oci://ghcr.io/stefanprodan/modules/flux-oci-sync"
+                namespace: "flux-system"
+                values: {
+                    artifact: {
+                        url:    "oci://ghcr.io/stefanprodan/manifests/podinfo"
+                        semver: ">=1.0.0"
+                    }
+                    sync: {
+                        targetNamespace: "default"
+                        wait:            true
+                    }
+                }
+            }
+        }
+    }
+    ```
+    
+    Apply the bundle with:
+    
+    ```shell
+    timoni bundle apply -f podinfo.cue
+    ```
+    
+    You can fine tune the sync using the options listed in the flux-oci-sync module
+    [readme](https://github.com/stefanprodan/flux-aio/tree/main/modules/flux-oci-sync/README.md#configuration).
+
+=== "Private repository"
+
+    To configure Flux to sync from a private container registry, you can specify the registry credentials
+    that will be persisted in the cluster as a Kubernetes Secret of type `dockerconfigjson`.
+    
+    To avoid storing sensitive information in your bundle files,
+    Timoni can read values from environment variable.
+    
+    For example, to sync podinfo from your own private repo:
+    
+    ```cue
+    bundle: {
+        apiVersion: "v1alpha1"
+        name:       "podinfo"
+        instances: {
+            "podinfo": {
+                module: url: "oci://ghcr.io/stefanprodan/modules/flux-oci-sync"
+                namespace: "flux-system"
+                values: {
+                    artifact: {
+                        auth: credentials: {
+                            username: "flux"
+                            password: string @timoni(runtime:string:GCHR_TOKEN)
+                        }
+                        url: "oci://ghcr.io/stefanprodan/manifests/podinfo"
+                        tag: "latest"
+                    }
+                    sync: targetNamespace: "default"
+                }
+            }
+        }
+    }
+    
+    ```
+    
+    Assuming the `GCHR_TOKEN` is set in your environment, apply the bundle
+    using the `--runtime-from-env` flag and Timoni will fill in the password value:
+    
+    ```shell
+    timoni bundle apply -f podinfo.cue --runtime-from-env
+    ```
 
 ## Flux Git sync configuration
 

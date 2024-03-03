@@ -35,6 +35,16 @@ flux push artifact oci://registry.internal/podinfo:staging \
   --path=-
 ```
 
+You can also use a Timoni bundle to generate the Kubernetes manifests:
+
+```shell
+timoni bundle build -f podinfo.cue | \
+flux push artifact oci://registry.internal/podinfo:staging \
+  --source="http://github.com/stefanprodan/podinfo" \
+  --revision="6.3.4" \
+  --path=-
+```
+
 The above commands could be run in CI for the Git repository
 that contains the values files. Committing a change to the values, will
 result in a new artifact pushed to the registry. From there, Flux running
@@ -44,6 +54,11 @@ in Kubernetes, will pick up the latest changes and deploy them on the cluster.
 
 In the Git repository where Flux was bootstrapped, we'll configure the reconciliation
 of the Kubernetes resources pushed to the container registry.
+
+!!! info "Flux sync module"
+
+    You can generate the configuration for Flux to reconcile the OCI artifacts
+    using the [flux-oci-sync module](flux-aio.md#flux-oci-sync-configuration).
 
 ```yaml
 ---
