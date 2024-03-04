@@ -537,3 +537,47 @@ Example:
 ```shell
 cue fmt bundle.cue
 ```
+
+### Referencing local modules
+
+When developing and testing Timoni Modules, you can reference them
+from a Bundle file using relative local paths.
+
+Example repo structure:
+
+```shell
+├── modules
+│   ├── app1
+│   └── app2
+└── bundles
+    └── apps-test.cue
+```
+
+Example Bundle file:
+
+```cue
+bundle: {
+	apiVersion: "v1alpha1"
+	name:       "apps-test"
+	instances: {
+		"app1": {
+			module: url: "file://../modules/app1"
+			namespace: "app1"
+			values: {...}
+		}
+		"app2": {
+			module: url: "file://../modules/app2"
+			namespace: "app2"
+			values: {...}
+		}
+	}
+}
+```
+
+When using local paths, the `url` field must be in the format `file://path/to/module`
+and the module path is computed relatively to the path of the bundle file location.
+
+Note that when using local modules, the module's version and digest are ignored, as these
+are only relevant when pulling modules from a container registry.
+All instances created from modules referenced with local paths have
+the module version set to `0.0.0-devel`.
