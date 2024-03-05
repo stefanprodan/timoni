@@ -1,0 +1,247 @@
+{% extends "main.html" %}
+{% block tabs %}
+{{ super() }}
+
+<style>
+    .md-header {
+        position: initial
+    }
+
+    .md-main__inner {
+        margin: 0
+    }
+
+    .md-content {
+        display: none
+    }
+
+    .container-hero {
+        padding-top: .0rem;
+        background: linear-gradient(to bottom, var(--md-primary-fg-color), hsl(0, 48%, 55%) 99%)
+    }
+
+    .tx-hero {
+        margin: 32px 2.8rem;
+        color: var(--md-primary-bg-color);
+        justify-content: center;
+    }
+
+    .tx-hero h1 {
+        margin-bottom: 1rem;
+        color: currentColor;
+        font-weight: 700
+    }
+
+    .tx-hero__content {
+        padding-bottom: 1rem;
+        margin: 0 auto;
+    }
+
+    .tx-hero__image {
+        width: 17rem;
+        height: 17rem;
+        order: 1;
+        padding-right: 2.5rem;
+    }
+
+    .tx-hero .md-button {
+        margin-top: .5rem;
+        margin-right: .5rem;
+        color: var(--md-primary-bg-color);
+        border-color: transparent
+    }
+
+    .tx-hero .md-button--primary {
+        background-color: var(--md-primary-bg-color);
+        color: hsla(280deg, 37%, 48%, 1);
+        border-color: var(--md-primary-bg-color)
+    }
+
+    .tx-hero .md-button:focus,
+    .tx-hero .md-button:hover {
+        background-color: #000000;
+        color: #ffffff;
+        border-color: #000000
+    }
+
+    @media screen and (min-width: 60em) {
+        .md-sidebar--secondary {
+            display: none
+        }
+
+        .tx-hero {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tx-hero__content {
+            max-width: 22rem;
+            margin: 3.5rem 4.0rem 3.5rem 1.0rem;
+            align-items: center;
+        }
+    }
+
+    @media screen and (min-width: 76.25em) {
+        .md-sidebar--primary {
+            display: none
+        }
+    }
+
+    .content-container-centered {
+        padding: 1.8rem 0;
+        margin: 0 0.8rem;
+    }
+
+    .centered-content-grid {
+        margin-top: 2.4rem
+
+    }
+
+    .centered-content-grid ul.centered-content-grid__list {
+        display: flex;
+        flex-flow: row wrap;
+        gap: 1.6rem;
+        padding: 0;
+        margin: 0;
+    }
+
+    .centered-content-grid ul.centered-content-grid__list > li.centered-content-grid__item {
+        display: flex;
+        flex: 1 0 48%;
+        gap: 0.6rem;
+        margin: 0;
+    }
+
+    .centered-content-grid ul.centered-content-grid__list > li.centered-content-grid__item div.item_content {
+        color: var(--md-typeset-color) !important;
+    }
+
+
+    .centered-content-grid ul.centered-content-grid__list > li.centered-content-grid__item div.item_content h2.card_title {
+        font-weight: 700;
+        margin-top: 0.175em;
+    }
+
+    .centered-content-grid ul.centered-content-grid__list > li.centered-content-grid__item div.content_icon {
+        fill: currentcolor;
+        background-color: var(--md-default-fg-color--lightest);
+        border-radius: 100%;
+        flex-shrink: 0;
+        height: 2.2rem;
+        padding: 0.4rem;
+        width: 2.2rem;
+    }
+
+</style>
+
+<section class="tx-container container-hero">
+    <div class="md-grid md-typeset">
+        <div class="tx-hero">
+            <div class="tx-hero__image">
+                <img src="{{ config.home.image }}" draggable="false" alt="Timoni">
+            </div>
+            <div class="tx-hero__content">
+                <h1>{{ config.home.tagline }}</h1>
+                <p>{{ config.home.description }}</p>
+                <a href="quickstart/" title="Get Started" class="md-button md-button--primary">
+                    Get Started
+                </a>
+                <a href="concepts/" title="More" class="md-button">
+                    Learn more
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{%- if config.home.features -%}
+<section class="tx-container">
+    <div class="md-grid md-typeset">
+        <div class="content-container-centered">
+            <h1>Feature-rich package manager</h1>
+            <div class="centered-content-grid">
+                <ul class="centered-content-grid__list">
+                    <li class="centered-content-grid__item md-typeset">
+                        <div class="content_icon">
+                            {% include ".icons/fontawesome/solid/layer-group.svg" %}
+                        </div>
+                        <div class="item_content">
+                            <h2 class="card_title">App definition</h2>
+                            <p>Timoni enables software vendors to define complex application
+                                deployments packaged as <a href="module/">Modules</a>
+                                using type-safe Kubernetes templates and rich customisation
+                                options for end-users.</p>
+                        </div>
+                    </li>
+                    <li class="centered-content-grid__item md-typeset">
+                        <div class="content_icon">
+                            {% include ".icons/fontawesome/solid/cloud-arrow-up.svg" %}
+                        </div>
+                        <div class="item_content">
+                            <h2 class="card_title">App distribution</h2>
+                            <p>The app configuration contained in a Timoni Module
+                                is <a href="cue/module/publishing/">distributed</a> as
+                                an OCI artifact, next to the app container images.
+                                The modules are semantically versioned and
+                                <a href="cue/module/signing/">cryptographically signed</a>.</p>
+                        </div>
+                    </li>
+                    <li class="centered-content-grid__item md-typeset">
+                        <div class="content_icon">
+                            {% include ".icons/fontawesome/solid/arrows-spin.svg" %}
+                        </div>
+                        <div class="item_content">
+                            <h2 class="card_title">App lifecycle</h2>
+                            <p>With <a href="bundle/">Bundles</a>, users can manage the whole lifecycle of
+                                applications deployed on Kubernetes. From highly customised installation
+                                to seamless upgrades, end-to-end testing, safe rollback and uninstallation.</p>
+                        </div>
+                    </li>
+                    <li class="centered-content-grid__item md-typeset">
+                        <div class="content_icon">
+                            {% include ".icons/fontawesome/solid/object-group.svg" %}
+                        </div>
+                        <div class="item_content">
+                            <h2 class="card_title">App composition</h2>
+                            <p>With Timoni, users can bundle microservices
+                                and distributed monoliths into a deployable unit.
+                                The <a href="bundle-runtime/">Bundle Runtime</a> API offers a declarative
+                                way of managing the app delivery across environments.</p>
+                        </div>
+                    </li>
+                    <li class="centered-content-grid__item md-typeset">
+                        <div class="content_icon">
+                            {% include ".icons/fontawesome/solid/gear.svg" %}
+                        </div>
+                        <div class="item_content">
+                            <h2 class="card_title">Kubernetes CRD support</h2>
+                            <p>With Timoni, users can manage the lifecycle of Kubernetes controllers, including
+                                the upgrade of CRDs. Module authors can <a href="cue/module/custom-resources">import CRD</a>
+                                schemas from YAML files and incorporate custom resources in their modules. </p>
+                        </div>
+                    </li>
+                    <li class="centered-content-grid__item md-typeset">
+                        <div class="content_icon">
+                            {% include ".icons/fontawesome/solid/code-fork.svg" %}
+                        </div>
+                        <div class="item_content">
+                            <h2 class="card_title">Drift detection and correction</h2>
+                            <p>For apps managed by Timoni, users can review the
+                                <a href="bundle/#diff-upgrade">cluster state diff</a>
+                                before an upgrade. When correcting drift, Timoni waits for the changes
+                                to roll out are reports back the application health status.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+{%- endif -%}
+
+{% endblock %}
+{% block content %}{% endblock %}
+{% block footer %}
+{{ super() }}
+{% endblock %}
