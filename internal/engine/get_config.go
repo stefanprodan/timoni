@@ -106,12 +106,25 @@ func iterateFields(v cue.Value) ([][]string, error) {
 		// - annotations?: {[string]: string}
 		// - affinity: corev1.Affinity | *{nodeAffinity: requiredDuringSchedulingIgnoredDuringExecution: nodeSelectorTerms: [...]}
 		if v.IncompleteKind() == cue.StructKind && !fields.IsOptional() && v.IsConcrete() {
+			// Assume we want to use the field
+			useField := true
 			iRows, err := iterateFields(v)
+
 			if err != nil {
 				return nil, err
 			}
 
-			rows = append(rows, iRows...)
+			for _, row := range iRows {
+				if len(row) > 0 {
+					// If we have a row with more than 0 elements, we don't want to use the field and should use the child rows instead
+					useField = false
+					rows = append(rows, row)
+				}
+			}
+
+			if useField {
+				rows = append(rows, getField(v))
+			}
 		} else {
 			rows = append(rows, getField(v))
 		}
@@ -151,6 +164,10 @@ func getField(v cue.Value) []string {
 		value = strings.ReplaceAll(value, "\":[", "\": [")
 		value = strings.ReplaceAll(value, "},", "}, ")
 		value = strings.ReplaceAll(value, "|", "\\|")
+
+		if len(value) == 0 {
+			value = " "
+		}
 
 		field := strings.Replace(v.Path().String(), "timoni.instance.config.", "", 1)
 		match := labelDomain.FindStringSubmatch(field)
