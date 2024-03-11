@@ -30,7 +30,7 @@ jobs:
             **/go.sum
             **/go.mod
       - name: Setup Syft
-        uses: anchore/sbom-action/download-syft@b6a39da80722a2cb0ef5d197531764a89b5d48c3 # v0.15.8
+        uses: anchore/sbom-action/download-syft@9fece9e20048ca9590af301449208b2b8861333b # v0.15.9
       - name: Run GoReleaser
         id: run-goreleaser
         uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5.0.0
