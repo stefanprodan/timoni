@@ -321,10 +321,27 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 		return cueerrors.Describe(modDir, "build failed for "+instance.Name, err)
 	}
 
-	return applyInstance(ctx, log, builder, buildResult, instance, rootDir)
+	opts := applyInstanceOptions{
+		rootDir:            rootDir,
+		dryrun:             bundleApplyArgs.diff,
+		diff:               bundleApplyArgs.diff,
+		wait:               bundleApplyArgs.wait,
+		force:              bundleApplyArgs.force,
+		overwriteOwnership: bundleApplyArgs.overwriteOwnership,
+	}
+	return applyInstance(ctx, log, builder, buildResult, instance, opts, rootArgs.timeout)
 }
 
-func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, rootDir string) error {
+type applyInstanceOptions struct {
+	rootDir            string
+	dryrun             bool
+	diff               bool
+	wait               bool
+	force              bool
+	overwriteOwnership bool
+}
+
+func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, opts applyInstanceOptions, timeout time.Duration) error {
 	isStandaloneInstance := instance.Bundle != ""
 
 	finalValues, err := builder.GetDefaultValues()
@@ -361,7 +378,7 @@ func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 		return fmt.Errorf("instance init failed: %w", err)
 	}
 
-	if !applyArgs.overwriteOwnership && exists && isStandaloneInstance {
+	if !opts.overwriteOwnership && exists && isStandaloneInstance {
 		if currentOwnerBundle := storedInstance.Labels[apiv1.BundleNameLabelKey]; currentOwnerBundle != "" {
 			return instancesOwnershipConflictsErr(fmt.Sprintf("instance \"%s\" exists and is managed by bundle \"%s\"", instance.Name, currentOwnerBundle))
 		}
@@ -385,7 +402,7 @@ func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 		return fmt.Errorf("getting stale objects failed: %w", err)
 	}
 
-	if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
+	if opts.dryrun || opts.diff {
 		if !nsExists {
 			log.Info(colorizeJoin(colorizeSubject("Namespace/"+instance.Namespace),
 				ssa.CreatedAction, dryRunServer))
@@ -396,8 +413,8 @@ func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 			objects,
 			staleObjects,
 			nsExists,
-			rootDir,
-			bundleApplyArgs.diff,
+			opts.rootDir,
+			opts.diff,
 		); err != nil {
 			return err
 		}
@@ -422,12 +439,12 @@ func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 			colorizeSubject(instance.Name), colorizeSubject(instance.Namespace)))
 	}
 
-	applyOpts := runtime.ApplyOptions(bundleApplyArgs.force, rootArgs.timeout)
+	applyOpts := runtime.ApplyOptions(opts.force, timeout)
 	applyOpts.WaitInterval = 5 * time.Second
 
 	waitOptions := ssa.WaitOptions{
 		Interval: applyOpts.WaitInterval,
-		Timeout:  rootArgs.timeout,
+		Timeout:  timeout,
 		FailFast: true,
 	}
 
@@ -444,7 +461,7 @@ func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 			log.Info(colorizeJoin(change))
 		}
 
-		if bundleApplyArgs.wait {
+		if opts.wait {
 			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
 			err = rm.Wait(set.Objects, waitOptions)
 			spin.Stop()
@@ -476,7 +493,7 @@ func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 		}
 	}
 
-	if bundleApplyArgs.wait {
+	if opts.wait {
 		if len(deletedObjects) > 0 {
 			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 			err = rm.WaitForTermination(deletedObjects, waitOptions)
