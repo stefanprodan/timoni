@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
 )
 
@@ -62,7 +63,7 @@ func runVendorK8sCmd(cmd *cobra.Command, args []string) error {
 		vendorK8sArgs.modRoot = args[0]
 	}
 
-	log := LoggerFrom(cmd.Context())
+	log := logger.LoggerFrom(cmd.Context())
 
 	// Make sure we're importing into a CUE module.
 	cueModDir := path.Join(vendorK8sArgs.modRoot, "cue.mod")
@@ -78,7 +79,7 @@ func runVendorK8sCmd(cmd *cobra.Command, args []string) error {
 		ociURL = fmt.Sprintf("%s:v%s", k8sSchemaURL, ver)
 	}
 
-	spin := StartSpinner(fmt.Sprintf("importing schemas from %s", ociURL))
+	spin := logger.StartSpinner(fmt.Sprintf("importing schemas from %s", ociURL))
 	defer spin.Stop()
 
 	opts := oci.Options(ctx, "", rootArgs.registryInsecure)
@@ -88,7 +89,7 @@ func runVendorK8sCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	spin.Stop()
-	log.Info(fmt.Sprintf("schemas vendored: %s", colorizeSubject(path.Join(cueModDir, "gen", "k8s.io", "api"))))
+	log.Info(fmt.Sprintf("schemas vendored: %s", logger.ColorizeSubject(path.Join(cueModDir, "gen", "k8s.io", "api"))))
 
 	return nil
 }

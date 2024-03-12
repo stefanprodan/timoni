@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
 )
 
@@ -64,7 +65,7 @@ func listArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	ociURL := args[0]
 
-	spin := StartSpinner("fetching tags")
+	spin := logger.StartSpinner("fetching tags")
 	defer spin.Stop()
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)

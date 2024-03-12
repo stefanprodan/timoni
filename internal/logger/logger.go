@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Stefan Prodan
+Copyright 2024 Stefan Prodan
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package logger
 
 import (
 	"context"
@@ -39,12 +39,14 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
+var logger logr.Logger
+
 // NewConsoleLogger returns a human-friendly Logger.
 // Pretty print adds timestamp, log level and colorized output to the logs.
-func NewConsoleLogger() logr.Logger {
-	color.NoColor = !rootArgs.coloredLog
-	zconfig := zerolog.ConsoleWriter{Out: color.Error, NoColor: !rootArgs.coloredLog}
-	if !rootArgs.prettyLog {
+func NewConsoleLogger(colorize, prettify bool) logr.Logger {
+	color.NoColor = !colorize
+	zconfig := zerolog.ConsoleWriter{Out: color.Error, NoColor: !colorize}
+	if !prettify {
 		zconfig.PartsExclude = []string{
 			zerolog.TimestampFieldName,
 			zerolog.LevelFieldName,
@@ -91,40 +93,40 @@ var (
 	}
 )
 
-type dryRunType string
+type DryRunType string
 
 const (
-	dryRunClient dryRunType = "(dry run)"
-	dryRunServer dryRunType = "(server dry run)"
+	DryRunClient DryRunType = "(dry run)"
+	DryRunServer DryRunType = "(server dry run)"
 )
 
-func colorizeJoin(values ...any) string {
+func ColorizeJoin(values ...any) string {
 	var sb strings.Builder
 	for i, v := range values {
 		if i > 0 {
 			sb.WriteByte(' ')
 		}
-		sb.WriteString(colorizeAny(v))
+		sb.WriteString(ColorizeAny(v))
 	}
 	return sb.String()
 }
 
-func colorizeAny(v any) string {
+func ColorizeAny(v any) string {
 	switch v := v.(type) {
 	case *unstructured.Unstructured:
-		return colorizeUnstructured(v)
-	case dryRunType:
-		return colorizeDryRun(v)
+		return ColorizeUnstructured(v)
+	case DryRunType:
+		return ColorizeDryRun(v)
 	case ssa.Action:
-		return colorizeAction(v)
+		return ColorizeAction(v)
 	case ssa.ChangeSetEntry:
-		return colorizeChangeSetEntry(v)
+		return ColorizeChangeSetEntry(v)
 	case *ssa.ChangeSetEntry:
-		return colorizeChangeSetEntry(*v)
+		return ColorizeChangeSetEntry(*v)
 	case status.Status:
-		return colorizeStatus(v)
+		return ColorizeStatus(v)
 	case error:
-		return colorizeError(v)
+		return ColorizeError(v)
 	case string:
 		return v
 	default:
@@ -132,147 +134,146 @@ func colorizeAny(v any) string {
 	}
 }
 
-func colorizeSubject(subject string) string {
+func ColorizeSubject(subject string) string {
 	return color.CyanString(subject)
 }
 
-func colorizeReady(subject string) string {
+func ColorizeReady(subject string) string {
 	return colorReady.Sprint(subject)
 }
 
-func colorizeInfo(subject string) string {
+func ColorizeInfo(subject string) string {
 	return color.GreenString(subject)
 }
 
-func colorizeWarning(subject string) string {
+func ColorizeWarning(subject string) string {
 	return color.YellowString(subject)
 }
 
-func colorizeNamespaceFromArgs() string {
-	return colorizeSubject("Namespace/" + *kubeconfigArgs.Namespace)
+func ColorizeUnstructured(object *unstructured.Unstructured) string {
+	return ColorizeSubject(ssautil.FmtUnstructured(object))
 }
 
-func colorizeUnstructured(object *unstructured.Unstructured) string {
-	return colorizeSubject(ssautil.FmtUnstructured(object))
-}
-
-func colorizeAction(action ssa.Action) string {
+func ColorizeAction(action ssa.Action) string {
 	if c, ok := colorPerAction[action]; ok {
 		return c.Sprint(action)
 	}
 	return action.String()
 }
 
-func colorizeChange(subject string, action ssa.Action) string {
-	return fmt.Sprintf("%s %s", colorizeSubject(subject), colorizeAction(action))
+func ColorizeChange(subject string, action ssa.Action) string {
+	return fmt.Sprintf("%s %s", ColorizeSubject(subject), ColorizeAction(action))
 }
 
-func colorizeChangeSetEntry(change ssa.ChangeSetEntry) string {
-	return colorizeChange(change.Subject, change.Action)
+func ColorizeChangeSetEntry(change ssa.ChangeSetEntry) string {
+	return ColorizeChange(change.Subject, change.Action)
 }
 
-func colorizeDryRun(dryRun dryRunType) string {
+func ColorizeDryRun(dryRun DryRunType) string {
 	return colorDryRun.Sprint(string(dryRun))
 }
 
-func colorizeError(err error) string {
+func ColorizeError(err error) string {
 	return colorError.Sprint(err.Error())
 }
 
-func colorizeStatus(status status.Status) string {
+func ColorizeStatus(status status.Status) string {
 	if c, ok := colorPerStatus[status]; ok {
 		return c.Sprint(status)
 	}
 	return status.String()
 }
 
-func colorizeBundle(bundle string) string {
+func ColorizeBundle(bundle string) string {
 	return colorCallerPrefix.Sprint("b:") + colorBundle.Sprint(bundle)
 }
 
-func colorizeInstance(instance string) string {
+func ColorizeInstance(instance string) string {
 	return colorCallerPrefix.Sprint("i:") + colorInstance.Sprint(instance)
 }
 
-func colorizeRuntime(runtime string) string {
+func ColorizeRuntime(runtime string) string {
 	return colorCallerPrefix.Sprint("r:") + colorInstance.Sprint(runtime)
 }
 
-func colorizeCluster(cluster string) string {
+func ColorizeCluster(cluster string) string {
 	return colorCallerPrefix.Sprint("c:") + colorInstance.Sprint(cluster)
 }
 
-func LoggerBundle(ctx context.Context, bundle, cluster string) logr.Logger {
+func LoggerBundle(ctx context.Context, bundle, cluster string, prettify bool) logr.Logger {
 	switch cluster {
 	case apiv1.RuntimeDefaultName:
-		if !rootArgs.prettyLog {
+		if !prettify {
 			return LoggerFrom(ctx, "bundle", bundle)
 		}
-		return LoggerFrom(ctx, "caller", colorizeBundle(bundle))
+		return LoggerFrom(ctx, "caller", ColorizeBundle(bundle))
 	default:
-		if !rootArgs.prettyLog {
+		if !prettify {
 			return LoggerFrom(ctx, "bundle", bundle, "cluster", cluster)
 		}
 		return LoggerFrom(ctx, "caller",
 			fmt.Sprintf("%s %s %s",
-				colorizeBundle(bundle),
+				ColorizeBundle(bundle),
 				color.CyanString(">"),
-				colorizeCluster(cluster)))
+				ColorizeCluster(cluster)))
 	}
 }
 
-func LoggerInstance(ctx context.Context, instance string) logr.Logger {
-	if !rootArgs.prettyLog {
+func LoggerInstance(ctx context.Context, instance string, prettify bool) logr.Logger {
+	if !prettify {
 		return LoggerFrom(ctx, "instance", instance)
 	}
-	return LoggerFrom(ctx, "caller", colorizeInstance(instance))
+	return LoggerFrom(ctx, "caller", ColorizeInstance(instance))
 }
 
-func LoggerBundleInstance(ctx context.Context, bundle, cluster, instance string) logr.Logger {
+func LoggerBundleInstance(ctx context.Context, bundle, cluster, instance string, prettify bool) logr.Logger {
 	switch cluster {
 	case apiv1.RuntimeDefaultName:
-		if !rootArgs.prettyLog {
+		if !prettify {
 			return LoggerFrom(ctx, "bundle", bundle, "instance", instance)
 		}
 		return LoggerFrom(ctx, "caller",
 			fmt.Sprintf("%s %s %s",
-				colorizeBundle(bundle),
+				ColorizeBundle(bundle),
 				color.CyanString(">"),
-				colorizeInstance(instance)))
+				ColorizeInstance(instance)))
 	default:
-		if !rootArgs.prettyLog {
+		if !prettify {
 			return LoggerFrom(ctx, "bundle", bundle, "cluster", cluster, "instance", instance)
 		}
 		return LoggerFrom(ctx, "caller",
 			fmt.Sprintf("%s %s %s %s %s",
-				colorizeBundle(bundle),
+				ColorizeBundle(bundle),
 				color.CyanString(">"),
-				colorizeCluster(cluster),
+				ColorizeCluster(cluster),
 				color.CyanString(">"),
-				colorizeInstance(instance)))
+				ColorizeInstance(instance)))
 
 	}
 }
 
-func LoggerRuntime(ctx context.Context, runtime, cluster string) logr.Logger {
+func LoggerRuntime(ctx context.Context, runtime, cluster string, prettify bool) logr.Logger {
 	switch cluster {
 	case apiv1.RuntimeDefaultName:
-		if !rootArgs.prettyLog {
+		if !prettify {
 			return LoggerFrom(ctx, "runtime", runtime)
 		}
-		return LoggerFrom(ctx, "caller", colorizeRuntime(runtime))
+		return LoggerFrom(ctx, "caller", ColorizeRuntime(runtime))
 	default:
-		if !rootArgs.prettyLog {
+		if !prettify {
 			return LoggerFrom(ctx, "runtime", runtime, "cluster", cluster)
 		}
 		return LoggerFrom(ctx, "caller",
-			fmt.Sprintf("%s %s %s", colorizeRuntime(runtime),
-				color.CyanString(">"), colorizeCluster(cluster)))
+			fmt.Sprintf("%s %s %s", ColorizeRuntime(runtime),
+				color.CyanString(">"), ColorizeCluster(cluster)))
 	}
 }
 
 // LoggerFrom returns a logr.Logger with predefined values from a context.Context.
 func LoggerFrom(ctx context.Context, keysAndValues ...interface{}) logr.Logger {
+	if logger.IsZero() {
+		logger = NewConsoleLogger(false, false)
+	}
 	newLogger := logger
 	if ctx != nil {
 		if l, err := logr.FromContext(ctx); err == nil {

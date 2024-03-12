@@ -25,6 +25,7 @@ import (
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
 
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
@@ -72,7 +73,7 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 
 	deleteArgs.name = args[0]
 
-	log := LoggerInstance(cmd.Context(), deleteArgs.name)
+	log := logger.LoggerInstance(cmd.Context(), deleteArgs.name, true)
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
@@ -97,7 +98,7 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 
 	if deleteArgs.dryrun {
 		for _, object := range objects {
-			log.Info(colorizeJoin(object, ssa.DeletedAction, dryRunClient))
+			log.Info(logger.ColorizeJoin(object, ssa.DeletedAction, logger.DryRunClient))
 		}
 		return nil
 	}
@@ -114,7 +115,7 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 			continue
 		}
 		cs.Add(*change)
-		log.Info(colorizeJoin(change))
+		log.Info(logger.ColorizeJoin(change))
 	}
 
 	if hasErrors {
@@ -129,7 +130,7 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 	if deleteArgs.wait && len(deletedObjects) > 0 {
 		waitOpts := ssa.DefaultWaitOptions()
 		waitOpts.Timeout = rootArgs.timeout
-		spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
+		spin := logger.StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 		err = sm.WaitForTermination(deletedObjects, waitOpts)
 		spin.Stop()
 		if err != nil {

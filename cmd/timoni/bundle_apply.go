@@ -29,15 +29,15 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/apply"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
@@ -191,7 +191,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 			return err
 		}
 
-		log := LoggerBundle(cmd.Context(), bundle.Name, cluster.Name)
+		log := logger.LoggerBundle(cmd.Context(), bundle.Name, cluster.Name, true)
 
 		if !bundleApplyArgs.overwriteOwnership {
 			err = bundleInstancesOwnershipConflicts(bundle.Instances)
@@ -201,7 +201,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		}
 
 		for _, instance := range bundle.Instances {
-			spin := StartSpinner(fmt.Sprintf("pulling %s", instance.Module.Repository))
+			spin := logger.StartSpinner(fmt.Sprintf("pulling %s", instance.Module.Repository))
 			pullErr := fetchBundleInstanceModule(ctxPull, instance, tmpDir)
 			spin.Stop()
 			if pullErr != nil {
@@ -216,18 +216,18 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 
 		startMsg := fmt.Sprintf("applying %v instance(s)", len(bundle.Instances))
 		if !cluster.IsDefault() {
-			startMsg = fmt.Sprintf("%s on %s", startMsg, colorizeSubject(cluster.Group))
+			startMsg = fmt.Sprintf("%s on %s", startMsg, logger.ColorizeSubject(cluster.Group))
 		}
 
 		if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
-			log.Info(fmt.Sprintf("%s %s", startMsg, colorizeDryRun("(server dry run)")))
+			log.Info(fmt.Sprintf("%s %s", startMsg, logger.ColorizeDryRun("(server dry run)")))
 		} else {
 			log.Info(startMsg)
 		}
 
 		for _, instance := range bundle.Instances {
 			instance.Cluster = cluster.Name
-			if err := applyBundleInstance(logr.NewContext(ctx, log), cuectx, instance, kubeVersion, tmpDir); err != nil {
+			if err := applyBundleInstance(logr.NewContext(ctx, log), cuectx, instance, kubeVersion, tmpDir, cmd.OutOrStdout()); err != nil {
 				return err
 			}
 		}
@@ -235,7 +235,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		elapsed := time.Since(start)
 		if bundleApplyArgs.dryrun || bundleApplyArgs.diff {
 			log.Info(fmt.Sprintf("applied successfully %s",
-				colorizeDryRun("(server dry run)")))
+				logger.ColorizeDryRun("(server dry run)")))
 		} else {
 			log.Info(fmt.Sprintf("applied successfully in %s", elapsed.Round(time.Second)))
 		}
@@ -280,8 +280,8 @@ func fetchBundleInstanceModule(ctx context.Context, instance *engine.BundleInsta
 	return nil
 }
 
-func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *engine.BundleInstance, kubeVersion string, rootDir string) error {
-	log := LoggerBundleInstance(ctx, instance.Bundle, instance.Cluster, instance.Name)
+func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *engine.BundleInstance, kubeVersion string, rootDir string, diffOutput io.Writer) error {
+	log := logger.LoggerBundleInstance(ctx, instance.Bundle, instance.Cluster, instance.Name, true)
 
 	modDir := path.Join(rootDir, instance.Name, "module")
 	builder := engine.NewModuleBuilder(
@@ -303,7 +303,7 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 	instance.Module.Name = modName
 
 	log.Info(fmt.Sprintf("applying module %s version %s",
-		colorizeSubject(instance.Module.Name), colorizeSubject(instance.Module.Version)))
+		logger.ColorizeSubject(instance.Module.Name), logger.ColorizeSubject(instance.Module.Version)))
 	err = builder.WriteValuesFileWithDefaults(instance.Values)
 	if err != nil {
 		return err
@@ -316,190 +316,35 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 		return describeErr(modDir, "build failed for "+instance.Name, err)
 	}
 
-	opts := applyInstanceOptions{
-		rootDir:            rootDir,
-		dryrun:             bundleApplyArgs.diff,
-		diff:               bundleApplyArgs.diff,
-		wait:               bundleApplyArgs.wait,
-		force:              bundleApplyArgs.force,
-		overwriteOwnership: bundleApplyArgs.overwriteOwnership,
+	opts := apply.Options{
+		Dir:                   rootDir,
+		DryRun:                bundleApplyArgs.dryrun,
+		Diff:                  bundleApplyArgs.diff,
+		Wait:                  bundleApplyArgs.wait,
+		Force:                 bundleApplyArgs.force,
+		OverwriteOwnership:    bundleApplyArgs.overwriteOwnership,
+		DiffOutput:            diffOutput,
+		KubeConfigFlags:       kubeconfigArgs,
+		OwnershipConflictHint: ownershipConflictHint,
+		// ProgressStart:         logger.StartSpinner,
 	}
-	return applyInstance(ctx, log, builder, buildResult, instance, opts, rootArgs.timeout)
+
+	return apply.ApplyInstance(ctx, log, builder, buildResult, instance, opts, rootArgs.timeout)
 }
 
-type applyInstanceOptions struct {
-	rootDir            string
-	dryrun             bool
-	diff               bool
-	wait               bool
-	force              bool
-	overwriteOwnership bool
-}
-
-func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, opts applyInstanceOptions, timeout time.Duration) error {
-	isStandaloneInstance := instance.Bundle == ""
-
-	finalValues, err := builder.GetDefaultValues()
+func saveReaderToFile(reader io.Reader) (string, error) {
+	f, err := os.CreateTemp("", "*.cue")
 	if err != nil {
-		return fmt.Errorf("failed to extract values: %w", err)
+		return "", errors.New("unable to create temp dir for stdin")
 	}
 
-	sets, err := builder.GetApplySets(buildResult)
-	if err != nil {
-		return fmt.Errorf("failed to extract objects: %w", err)
+	defer f.Close()
+
+	if _, err := io.Copy(f, reader); err != nil {
+		return "", fmt.Errorf("error writing stdin to file: %w", err)
 	}
 
-	var objects []*unstructured.Unstructured
-	for _, set := range sets {
-		objects = append(objects, set.Objects...)
-	}
-
-	rm, err := runtime.NewResourceManager(kubeconfigArgs)
-	if err != nil {
-		return err
-	}
-
-	rm.SetOwnerLabels(objects, instance.Name, instance.Namespace)
-
-	exists := false
-	sm := runtime.NewStorageManager(rm)
-	storedInstance, err := sm.Get(ctx, instance.Name, instance.Namespace)
-	if err == nil {
-		exists = true
-	}
-
-	nsExists, err := sm.NamespaceExists(ctx, instance.Namespace)
-	if err != nil {
-		return fmt.Errorf("instance init failed: %w", err)
-	}
-
-	if !opts.overwriteOwnership && exists && isStandaloneInstance {
-		if currentOwnerBundle := storedInstance.Labels[apiv1.BundleNameLabelKey]; currentOwnerBundle != "" {
-			return instancesOwnershipConflictsErr(fmt.Sprintf("instance \"%s\" exists and is managed by bundle \"%s\"", instance.Name, currentOwnerBundle))
-		}
-	}
-
-	im := runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, instance.Module)
-
-	if !isStandaloneInstance {
-		if im.Instance.Labels == nil {
-			im.Instance.Labels = make(map[string]string)
-		}
-		im.Instance.Labels[apiv1.BundleNameLabelKey] = instance.Bundle
-	}
-
-	if err := im.AddObjects(objects); err != nil {
-		return fmt.Errorf("adding objects to instance failed: %w", err)
-	}
-
-	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
-	if err != nil {
-		return fmt.Errorf("getting stale objects failed: %w", err)
-	}
-
-	if opts.dryrun || opts.diff {
-		if !nsExists {
-			log.Info(colorizeJoin(colorizeSubject("Namespace/"+instance.Namespace),
-				ssa.CreatedAction, dryRunServer))
-		}
-		if err := instanceDryRunDiff(
-			logr.NewContext(ctx, log),
-			rm,
-			objects,
-			staleObjects,
-			nsExists,
-			opts.rootDir,
-			opts.diff,
-		); err != nil {
-			return err
-		}
-
-		log.Info(colorizeJoin("applied successfully", colorizeDryRun("(server dry run)")))
-		return nil
-	}
-
-	if !exists {
-		log.Info(fmt.Sprintf("installing %s in namespace %s",
-			colorizeSubject(instance.Name), colorizeSubject(instance.Namespace)))
-
-		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
-			return fmt.Errorf("instance init failed: %w", err)
-		}
-
-		if !nsExists {
-			log.Info(colorizeJoin(colorizeSubject("Namespace/"+instance.Namespace), ssa.CreatedAction))
-		}
-	} else {
-		log.Info(fmt.Sprintf("upgrading %s in namespace %s",
-			colorizeSubject(instance.Name), colorizeSubject(instance.Namespace)))
-	}
-
-	applyOpts := runtime.ApplyOptions(opts.force, timeout)
-	applyOpts.WaitInterval = 5 * time.Second
-
-	waitOptions := ssa.WaitOptions{
-		Interval: applyOpts.WaitInterval,
-		Timeout:  timeout,
-		FailFast: true,
-	}
-
-	for _, set := range sets {
-		if len(sets) > 1 {
-			log.Info(fmt.Sprintf("applying %s", set.Name))
-		}
-
-		cs, err := rm.ApplyAllStaged(ctx, set.Objects, applyOpts)
-		if err != nil {
-			return err
-		}
-		for _, change := range cs.Entries {
-			log.Info(colorizeJoin(change))
-		}
-
-		if opts.wait {
-			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
-			err = rm.Wait(set.Objects, waitOptions)
-			spin.Stop()
-			if err != nil {
-				return err
-			}
-			log.Info(fmt.Sprintf("%s resources %s", set.Name, colorizeReady("ready")))
-		}
-	}
-
-	if images, err := builder.GetContainerImages(buildResult); err == nil {
-		im.Instance.Images = images
-	}
-
-	if err := sm.Apply(ctx, &im.Instance, true); err != nil {
-		return fmt.Errorf("storing instance failed: %w", err)
-	}
-
-	var deletedObjects []*unstructured.Unstructured
-	if len(staleObjects) > 0 {
-		deleteOpts := runtime.DeleteOptions(instance.Name, instance.Namespace)
-		changeSet, err := rm.DeleteAll(ctx, staleObjects, deleteOpts)
-		if err != nil {
-			return fmt.Errorf("pruning objects failed: %w", err)
-		}
-		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
-		for _, change := range changeSet.Entries {
-			log.Info(colorizeJoin(change))
-		}
-	}
-
-	if opts.wait {
-		if len(deletedObjects) > 0 {
-			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
-			err = rm.WaitForTermination(deletedObjects, waitOptions)
-			spin.Stop()
-			if err != nil {
-				return fmt.Errorf("waiting for termination failed: %w", err)
-			}
-		}
-	}
-
-	return nil
+	return f.Name(), nil
 }
 
 func bundleInstancesOwnershipConflicts(bundleInstances []*engine.BundleInstance) error {
@@ -524,27 +369,8 @@ func bundleInstancesOwnershipConflicts(bundleInstances []*engine.BundleInstance)
 		}
 	}
 	if len(conflicts) > 0 {
-		return instancesOwnershipConflictsErr(strings.Join(conflicts, "; "))
+		return apply.InstanceOwnershipConflictsErr(strings.Join(conflicts, "; "), ownershipConflictHint)
 	}
 
 	return nil
-}
-
-func saveReaderToFile(reader io.Reader) (string, error) {
-	f, err := os.CreateTemp("", "*.cue")
-	if err != nil {
-		return "", errors.New("unable to create temp dir for stdin")
-	}
-
-	defer f.Close()
-
-	if _, err := io.Copy(f, reader); err != nil {
-		return "", fmt.Errorf("error writing stdin to file: %w", err)
-	}
-
-	return f.Name(), nil
-}
-
-func instancesOwnershipConflictsErr(msg string) error {
-	return errors.New("instance ownership conflict encountered. Apply with \"--overwrite-ownership\" to gain instance ownership. Conflict: " + msg)
 }

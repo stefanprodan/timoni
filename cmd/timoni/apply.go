@@ -27,9 +27,11 @@ import (
 	"github.com/spf13/cobra"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/apply"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
@@ -111,6 +113,8 @@ type applyFlags struct {
 
 var applyArgs applyFlags
 
+const ownershipConflictHint = "Apply with \"--overwrite-ownership\" to gain instance ownership."
+
 func init() {
 	applyCmd.Flags().VarP(&applyArgs.version, applyArgs.version.Type(), applyArgs.version.Shorthand(), applyArgs.version.Description())
 	applyCmd.Flags().VarP(&applyArgs.pkg, applyArgs.pkg.Type(), applyArgs.pkg.Shorthand(), applyArgs.pkg.Description())
@@ -138,7 +142,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	applyArgs.name = args[0]
 	applyArgs.module = args[1]
 
-	log := LoggerInstance(cmd.Context(), applyArgs.name)
+	log := logger.LoggerInstance(cmd.Context(), applyArgs.name, true)
 
 	version := applyArgs.version.String()
 	if version == "" {
@@ -223,13 +227,17 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
-	opts := applyInstanceOptions{
-		rootDir:            tmpDir,
-		dryrun:             applyArgs.diff,
-		diff:               applyArgs.diff,
-		wait:               applyArgs.wait,
-		force:              applyArgs.force,
-		overwriteOwnership: applyArgs.overwriteOwnership,
+	opts := apply.Options{
+		Dir:                   tmpDir,
+		DryRun:                applyArgs.dryrun,
+		Diff:                  applyArgs.diff,
+		Wait:                  applyArgs.wait,
+		Force:                 applyArgs.force,
+		OverwriteOwnership:    applyArgs.overwriteOwnership,
+		DiffOutput:            cmd.OutOrStdout(),
+		KubeConfigFlags:       kubeconfigArgs,
+		OwnershipConflictHint: ownershipConflictHint,
+		// ProgressStart:      logger.StartSpinner,
 	}
 
 	bi := &engine.BundleInstance{
@@ -239,5 +247,5 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		Bundle:    "",
 	}
 
-	return applyInstance(ctx, log, builder, buildResult, bi, opts, rootArgs.timeout)
+	return apply.ApplyInstance(ctx, log, builder, buildResult, bi, opts, rootArgs.timeout)
 }
