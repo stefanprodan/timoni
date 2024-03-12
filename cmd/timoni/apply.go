@@ -33,6 +33,7 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
+	cueerrors "github.com/stefanprodan/timoni/internal/errors"
 	"github.com/stefanprodan/timoni/internal/flags"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
@@ -221,7 +222,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return describeErr(f.GetModuleRoot(), "build failed", err)
+		return cueerrors.Describe(f.GetModuleRoot(), "build failed", err)
 	}
 
 	finalValues, err := builder.GetDefaultValues()

@@ -23,12 +23,10 @@ import (
 	"os"
 	"sort"
 
-	"cuelang.org/go/cue/cuecontext"
 	"github.com/spf13/cobra"
 
-	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
-	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/runtime"
+	runtimebuild "github.com/stefanprodan/timoni/internal/runtime/build"
 )
 
 var runtimeBuildCmd = &cobra.Command{
@@ -79,7 +77,10 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 		defer os.Remove(stdinFile)
 	}
 
-	rt, err := buildRuntime(files)
+	runtimeBuildOpts := runtimebuild.Options{
+		KubeConfigFlags: kubeconfigArgs,
+	}
+	rt, err := runtimebuild.BuildFiles(runtimeBuildOpts, files...)
 	if err != nil {
 		return err
 	}
@@ -125,39 +126,4 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func buildRuntime(files []string) (*apiv1.Runtime, error) {
-	defaultRuntime := apiv1.DefaultRuntime(*kubeconfigArgs.Context)
-	if len(files) == 0 {
-		return defaultRuntime, nil
-	}
-
-	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(tmpDir)
-
-	ctx := cuecontext.New()
-	rb := engine.NewRuntimeBuilder(ctx, files)
-
-	if err := rb.InitWorkspace(tmpDir); err != nil {
-		return nil, describeErr(tmpDir, "failed to init runtime", err)
-	}
-
-	v, err := rb.Build()
-	if err != nil {
-		return nil, describeErr(tmpDir, "failed to parse runtime", err)
-	}
-
-	rt, err := rb.GetRuntime(v)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(rt.Clusters) == 0 {
-		rt.Clusters = defaultRuntime.Clusters
-	}
-	return rt, nil
 }

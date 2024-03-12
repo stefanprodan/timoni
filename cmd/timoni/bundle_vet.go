@@ -30,8 +30,10 @@ import (
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
+	cueerrors "github.com/stefanprodan/timoni/internal/errors"
 	"github.com/stefanprodan/timoni/internal/flags"
 	"github.com/stefanprodan/timoni/internal/runtime"
+	runtimebuild "github.com/stefanprodan/timoni/internal/runtime/build"
 )
 
 var bundleVetCmd = &cobra.Command{
@@ -113,7 +115,10 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 		maps.Copy(runtimeValues, engine.GetEnv())
 	}
 
-	rt, err := buildRuntime(bundleArgs.runtimeFiles)
+	runtimeBuildOpts := runtimebuild.Options{
+		KubeConfigFlags: kubeconfigArgs,
+	}
+	rt, err := runtimebuild.BuildFiles(runtimeBuildOpts, bundleArgs.runtimeFiles...)
 	if err != nil {
 		return err
 	}
@@ -156,12 +161,12 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		if err := bm.InitWorkspace(workspace, clusterValues); err != nil {
-			return describeErr(workspace, "failed to parse bundle", err)
+			return cueerrors.Describe(workspace, "failed to parse bundle", err)
 		}
 
 		v, err := bm.Build()
 		if err != nil {
-			return describeErr(workspace, "failed to build bundle", err)
+			return cueerrors.Describe(workspace, "failed to build bundle", err)
 		}
 
 		bundle, err := bm.GetBundle(v)

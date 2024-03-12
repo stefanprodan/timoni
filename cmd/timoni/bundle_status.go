@@ -29,6 +29,7 @@ import (
 
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/runtime"
+	runtimebuild "github.com/stefanprodan/timoni/internal/runtime/build"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
@@ -75,7 +76,10 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 		bundleStatusArgs.name = args[0]
 	}
 
-	rt, err := buildRuntime(bundleArgs.runtimeFiles)
+	runtimeBuildOpts := runtimebuild.Options{
+		KubeConfigFlags: kubeconfigArgs,
+	}
+	rt, err := runtimebuild.BuildFiles(runtimeBuildOpts, bundleArgs.runtimeFiles...)
 	if err != nil {
 		return err
 	}
