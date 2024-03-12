@@ -220,13 +220,24 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return describeErr(f.GetModuleRoot(), "build failed", err)
 	}
 
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+	defer cancel()
+
+	opts := applyInstanceOptions{
+		rootDir:            tmpDir,
+		dryrun:             applyArgs.diff,
+		diff:               applyArgs.diff,
+		wait:               applyArgs.wait,
+		force:              applyArgs.force,
+		overwriteOwnership: applyArgs.overwriteOwnership,
+	}
+
 	bi := &engine.BundleInstance{
 		Name:      applyArgs.name,
 		Namespace: *kubeconfigArgs.Namespace,
 		Module:    *mod,
+		Bundle:    "",
 	}
-	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
-	defer cancel()
 
-	return applyInstance(ctx, log, builder, buildResult, bi, tmpDir)
+	return applyInstance(ctx, log, builder, buildResult, bi, opts, rootArgs.timeout)
 }
