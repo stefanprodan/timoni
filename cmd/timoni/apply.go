@@ -22,13 +22,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/fluxcd/pkg/ssa"
-	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
@@ -224,155 +220,13 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		return describeErr(f.GetModuleRoot(), "build failed", err)
 	}
 
-	finalValues, err := builder.GetDefaultValues()
-	if err != nil {
-		return fmt.Errorf("failed to extract values: %w", err)
+	bi := &engine.BundleInstance{
+		Name:      applyArgs.name,
+		Namespace: *kubeconfigArgs.Namespace,
+		Module:    *mod,
 	}
-
-	applySets, err := builder.GetApplySets(buildResult)
-	if err != nil {
-		return fmt.Errorf("failed to extract objects: %w", err)
-	}
-
-	var objects []*unstructured.Unstructured
-	for _, set := range applySets {
-		objects = append(objects, set.Objects...)
-	}
-
-	rm, err := runtime.NewResourceManager(kubeconfigArgs)
-	if err != nil {
-		return err
-	}
-
-	rm.SetOwnerLabels(objects, applyArgs.name, *kubeconfigArgs.Namespace)
-
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
-	exists := false
-	sm := runtime.NewStorageManager(rm)
-	instance, err := sm.Get(ctx, applyArgs.name, *kubeconfigArgs.Namespace)
-	if err == nil {
-		exists = true
-	}
-
-	nsExists, err := sm.NamespaceExists(ctx, *kubeconfigArgs.Namespace)
-	if err != nil {
-		return fmt.Errorf("instance init failed: %w", err)
-	}
-
-	if !applyArgs.overwriteOwnership && exists {
-		err = instanceOwnershipConflicts(*instance)
-		if err != nil {
-			return err
-		}
-	}
-
-	im := runtime.NewInstanceManager(applyArgs.name, *kubeconfigArgs.Namespace, finalValues, *mod)
-
-	if err := im.AddObjects(objects); err != nil {
-		return fmt.Errorf("adding objects to instance failed: %w", err)
-	}
-
-	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
-	if err != nil {
-		return fmt.Errorf("getting stale objects failed: %w", err)
-	}
-
-	if applyArgs.dryrun || applyArgs.diff {
-		if !nsExists {
-			log.Info(colorizeJoin(colorizeNamespaceFromArgs(), ssa.CreatedAction, dryRunServer))
-		}
-		return instanceDryRunDiff(logr.NewContext(ctx, log), rm, objects, staleObjects, nsExists, tmpDir, applyArgs.diff)
-	}
-
-	if !exists {
-		log.Info(fmt.Sprintf("installing %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
-
-		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
-			return fmt.Errorf("instance init failed: %w", err)
-		}
-
-		if !nsExists {
-			log.Info(colorizeJoin(colorizeNamespaceFromArgs(), ssa.CreatedAction))
-		}
-	} else {
-		log.Info(fmt.Sprintf("upgrading %s in namespace %s", applyArgs.name, *kubeconfigArgs.Namespace))
-	}
-
-	applyOpts := runtime.ApplyOptions(applyArgs.force, rootArgs.timeout)
-	applyOpts.WaitInterval = 5 * time.Second
-
-	waitOptions := ssa.WaitOptions{
-		Interval: applyOpts.WaitInterval,
-		Timeout:  rootArgs.timeout,
-		FailFast: true,
-	}
-
-	for _, set := range applySets {
-		if len(applySets) > 1 {
-			log.Info(fmt.Sprintf("applying %s", set.Name))
-		}
-
-		cs, err := rm.ApplyAllStaged(ctx, set.Objects, applyOpts)
-		if err != nil {
-			return err
-		}
-		for _, change := range cs.Entries {
-			log.Info(colorizeJoin(change))
-		}
-
-		if applyArgs.wait {
-			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
-			err = rm.Wait(set.Objects, waitOptions)
-			spin.Stop()
-			if err != nil {
-				return err
-			}
-			log.Info("resources are ready")
-		}
-	}
-
-	if images, err := builder.GetContainerImages(buildResult); err == nil {
-		im.Instance.Images = images
-	}
-
-	if err := sm.Apply(ctx, &im.Instance, true); err != nil {
-		return fmt.Errorf("storing instance failed: %w", err)
-	}
-
-	var deletedObjects []*unstructured.Unstructured
-	if len(staleObjects) > 0 {
-		deleteOpts := runtime.DeleteOptions(applyArgs.name, *kubeconfigArgs.Namespace)
-		changeSet, err := rm.DeleteAll(ctx, staleObjects, deleteOpts)
-		if err != nil {
-			return fmt.Errorf("pruning objects failed: %w", err)
-		}
-		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
-		for _, change := range changeSet.Entries {
-			log.Info(colorizeJoin(change))
-		}
-	}
-
-	if applyArgs.wait {
-		if len(deletedObjects) > 0 {
-			spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
-			err = rm.WaitForTermination(deletedObjects, waitOptions)
-			spin.Stop()
-			if err != nil {
-				return fmt.Errorf("waiting for termination failed: %w", err)
-			}
-
-			log.Info("all resources are ready")
-		}
-	}
-
-	return nil
-}
-
-func instanceOwnershipConflicts(instance apiv1.Instance) error {
-	if currentOwnerBundle := instance.Labels[apiv1.BundleNameLabelKey]; currentOwnerBundle != "" {
-		return fmt.Errorf("instance ownership conflict encountered. Apply with \"--overwrite-ownership\" to gain instance ownership. Conflict: instance \"%s\" exists and is managed by bundle \"%s\"", instance.Name, currentOwnerBundle)
-	}
-	return nil
+	return applyInstance(ctx, log, builder, buildResult, bi, tmpDir)
 }

@@ -320,6 +320,8 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 }
 
 func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, rootDir string) error {
+	isStandaloneInstance := instance.Bundle != ""
+
 	finalValues, err := builder.GetDefaultValues()
 	if err != nil {
 		return fmt.Errorf("failed to extract values: %w", err)
@@ -344,7 +346,8 @@ func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 
 	exists := false
 	sm := runtime.NewStorageManager(rm)
-	if _, err = sm.Get(ctx, instance.Name, instance.Namespace); err == nil {
+	storedInstance, err := sm.Get(ctx, instance.Name, instance.Namespace)
+	if err == nil {
 		exists = true
 	}
 
@@ -353,12 +356,20 @@ func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 		return fmt.Errorf("instance init failed: %w", err)
 	}
 
+	if !applyArgs.overwriteOwnership && exists && isStandaloneInstance {
+		if currentOwnerBundle := storedInstance.Labels[apiv1.BundleNameLabelKey]; currentOwnerBundle != "" {
+			return instancesOwnershipConflictsErr(fmt.Sprintf("instance \"%s\" exists and is managed by bundle \"%s\"", instance.Name, currentOwnerBundle))
+		}
+	}
+
 	im := runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, instance.Module)
 
-	if im.Instance.Labels == nil {
-		im.Instance.Labels = make(map[string]string)
+	if isStandaloneInstance {
+		if im.Instance.Labels == nil {
+			im.Instance.Labels = make(map[string]string)
+		}
+		im.Instance.Labels[apiv1.BundleNameLabelKey] = instance.Bundle
 	}
-	im.Instance.Labels[apiv1.BundleNameLabelKey] = instance.Bundle
 
 	if err := im.AddObjects(objects); err != nil {
 		return fmt.Errorf("adding objects to instance failed: %w", err)
@@ -496,7 +507,7 @@ func bundleInstancesOwnershipConflicts(bundleInstances []*engine.BundleInstance)
 		}
 	}
 	if len(conflicts) > 0 {
-		return fmt.Errorf("instance ownership conflicts encountered. Apply with \"--overwrite-ownership\" to gain instance ownership. Conflicts: %s", strings.Join(conflicts, "; "))
+		return instancesOwnershipConflictsErr(strings.Join(conflicts, "; "))
 	}
 
 	return nil
@@ -515,4 +526,8 @@ func saveReaderToFile(reader io.Reader) (string, error) {
 	}
 
 	return f.Name(), nil
+}
+
+func instancesOwnershipConflictsErr(msg string) error {
+	return errors.New("instance ownership conflict encountered. Apply with \"--overwrite-ownership\" to gain instance ownership. Conflict: " + msg)
 }
