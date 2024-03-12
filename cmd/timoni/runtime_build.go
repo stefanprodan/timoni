@@ -25,6 +25,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
 	runtimebuild "github.com/stefanprodan/timoni/internal/runtime/build"
 )
@@ -94,7 +95,7 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, cluster := range clusters {
-		log := LoggerRuntime(cmd.Context(), rt.Name, cluster.Name)
+		log := logger.LoggerRuntime(cmd.Context(), rt.Name, cluster.Name, true)
 
 		kubeconfigArgs.Context = &cluster.KubeContext
 		rm, err := runtime.NewResourceManager(kubeconfigArgs)
@@ -117,7 +118,7 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 		sort.Strings(keys)
 
 		for _, k := range keys {
-			log.Info(fmt.Sprintf("%s: %s", colorizeSubject(k), values[k]))
+			log.Info(fmt.Sprintf("%s: %s", logger.ColorizeSubject(k), values[k]))
 		}
 
 		if len(values) == 0 {

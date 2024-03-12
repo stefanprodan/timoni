@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Stefan Prodan
+Copyright 2024 Stefan Prodan
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package dyff
 
 import (
 	"context"
@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/logger"
 )
 
 // DyffPrinter is a printer that prints dyff reports.
@@ -67,7 +68,7 @@ func (p *DyffPrinter) Print(w io.Writer, args ...interface{}) error {
 	return nil
 }
 
-func diffYAML(liveFile, mergedFile string, output io.Writer) error {
+func DiffYAML(liveFile, mergedFile string, output io.Writer) error {
 	from, to, err := ytbx.LoadFiles(liveFile, mergedFile)
 	if err != nil {
 		return fmt.Errorf("failed to load input files: %w", err)
@@ -85,20 +86,21 @@ func diffYAML(liveFile, mergedFile string, output io.Writer) error {
 	return printer.Print(output, report)
 }
 
-func instanceDryRunDiff(ctx context.Context,
+func InstanceDryRunDiff(ctx context.Context,
 	rm *ssa.ResourceManager,
 	objects []*unstructured.Unstructured,
 	staleObjects []*unstructured.Unstructured,
 	nsExists bool,
 	tmpDir string,
-	withDiff bool) error {
-	log := LoggerFrom(ctx)
+	withDiff bool,
+	w io.Writer) error {
+	log := logger.LoggerFrom(ctx)
 	diffOpts := ssa.DefaultDiffOptions()
 	sort.Sort(ssa.SortableUnstructureds(objects))
 
 	for _, r := range objects {
 		if !nsExists {
-			log.Info(colorizeJoin(r, ssa.CreatedAction, dryRunServer))
+			log.Info(logger.ColorizeJoin(r, ssa.CreatedAction, logger.DryRunServer))
 			continue
 		}
 
@@ -108,18 +110,18 @@ func instanceDryRunDiff(ctx context.Context,
 				if ssautil.AnyInMetadata(r, map[string]string{
 					apiv1.ForceAction: apiv1.EnabledValue,
 				}) {
-					log.Info(colorizeJoin(r, ssa.CreatedAction, dryRunServer))
+					log.Info(logger.ColorizeJoin(r, ssa.CreatedAction, logger.DryRunServer))
 				} else {
-					log.Error(nil, colorizeJoin(r, "immutable", dryRunServer))
+					log.Error(nil, logger.ColorizeJoin(r, "immutable", logger.DryRunServer))
 				}
 			} else {
-				log.Error(err, colorizeUnstructured(r))
+				log.Error(err, logger.ColorizeUnstructured(r))
 			}
 
 			continue
 		}
 
-		log.Info(colorizeJoin(change, dryRunServer))
+		log.Info(logger.ColorizeJoin(change, logger.DryRunServer))
 		if withDiff && change.Action == ssa.ConfiguredAction {
 			liveYAML, _ := yaml.Marshal(liveObject)
 			liveFile := filepath.Join(tmpDir, "live.yaml")
@@ -133,14 +135,14 @@ func instanceDryRunDiff(ctx context.Context,
 				return err
 			}
 
-			if err := diffYAML(liveFile, mergedFile, rootCmd.OutOrStdout()); err != nil {
+			if err := DiffYAML(liveFile, mergedFile, w); err != nil {
 				return err
 			}
 		}
 	}
 
 	for _, r := range staleObjects {
-		log.Info(colorizeJoin(r, ssa.DeletedAction, dryRunServer))
+		log.Info(logger.ColorizeJoin(r, ssa.DeletedAction, logger.DryRunServer))
 	}
 
 	return nil

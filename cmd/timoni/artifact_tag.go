@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
 )
 
@@ -62,10 +63,10 @@ func tagArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("at least one tag is required")
 	}
 
-	spin := StartSpinner("tagging artifact")
+	spin := logger.StartSpinner("tagging artifact")
 	defer spin.Stop()
 
-	log := LoggerFrom(cmd.Context())
+	log := logger.LoggerFrom(cmd.Context())
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
@@ -86,7 +87,7 @@ func tagArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, tag := range tagArtifactArgs.tags {
-		log.Info(fmt.Sprintf("tagged: %s", colorizeSubject(fmt.Sprintf("%s:%s", baseURL, tag))))
+		log.Info(fmt.Sprintf("tagged: %s", logger.ColorizeSubject(fmt.Sprintf("%s:%s", baseURL, tag))))
 	}
 
 	return nil

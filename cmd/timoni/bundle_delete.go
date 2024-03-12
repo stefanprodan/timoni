@@ -29,6 +29,7 @@ import (
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
 	runtimebuild "github.com/stefanprodan/timoni/internal/runtime/build"
 )
@@ -124,7 +125,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log := LoggerBundle(ctx, bundleDelArgs.name, cluster.Name)
+		log := logger.LoggerBundle(ctx, bundleDelArgs.name, cluster.Name, true)
 
 		if len(instances) == 0 {
 			log.Error(nil, "no instances found in bundle")
@@ -135,7 +136,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 		for index := len(instances) - 1; index >= 0; index-- {
 			instance := instances[index]
 			log.Info(fmt.Sprintf("deleting instance %s in namespace %s",
-				colorizeSubject(instance.Name), colorizeSubject(instance.Namespace)))
+				logger.ColorizeSubject(instance.Name), logger.ColorizeSubject(instance.Namespace)))
 			if err := deleteBundleInstance(ctx, &engine.BundleInstance{
 				Bundle:    bundleDelArgs.name,
 				Cluster:   cluster.Name,
@@ -150,7 +151,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 }
 
 func deleteBundleInstance(ctx context.Context, instance *engine.BundleInstance, wait bool, dryrun bool) error {
-	log := LoggerBundle(ctx, instance.Bundle, instance.Cluster)
+	log := logger.LoggerBundle(ctx, instance.Bundle, instance.Cluster, true)
 
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
@@ -176,7 +177,7 @@ func deleteBundleInstance(ctx context.Context, instance *engine.BundleInstance, 
 
 	if dryrun {
 		for _, object := range objects {
-			log.Info(colorizeJoin(object, ssa.DeletedAction, dryRunClient))
+			log.Info(logger.ColorizeJoin(object, ssa.DeletedAction, logger.DryRunClient))
 		}
 		return nil
 	}
@@ -192,7 +193,7 @@ func deleteBundleInstance(ctx context.Context, instance *engine.BundleInstance, 
 			continue
 		}
 		cs.Add(*change)
-		log.Info(colorizeJoin(change))
+		log.Info(logger.ColorizeJoin(change))
 	}
 
 	if hasErrors {
@@ -207,7 +208,7 @@ func deleteBundleInstance(ctx context.Context, instance *engine.BundleInstance, 
 	if wait && len(deletedObjects) > 0 {
 		waitOpts := ssa.DefaultWaitOptions()
 		waitOpts.Timeout = rootArgs.timeout
-		spin := StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
+		spin := logger.StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
 		err = sm.WaitForTermination(deletedObjects, waitOpts)
 		spin.Stop()
 		if err != nil {

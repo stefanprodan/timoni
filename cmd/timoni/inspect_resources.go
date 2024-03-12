@@ -81,7 +81,7 @@ func runInspectResourcesCmd(cmd *cobra.Command, args []string) error {
 	//}
 	//
 	//for _, meta := range metas {
-	//	fmt.Fprintln(cmd.OutOrStdout(), colorizeSubject(ssa.FmtObjMetadata(meta)))
+	//	fmt.Fprintln(cmd.OutOrStdout(), logger.ColorizeSubject(ssa.FmtObjMetadata(meta)))
 	//}
 
 	objects, err := iManager.ListObjects()

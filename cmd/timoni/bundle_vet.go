@@ -32,6 +32,7 @@ import (
 	"github.com/stefanprodan/timoni/internal/engine"
 	cueerrors "github.com/stefanprodan/timoni/internal/errors"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
 	runtimebuild "github.com/stefanprodan/timoni/internal/runtime/build"
 )
@@ -80,7 +81,7 @@ func init() {
 }
 
 func runBundleVetCmd(cmd *cobra.Command, args []string) error {
-	log := LoggerFrom(cmd.Context())
+	log := logger.LoggerFrom(cmd.Context())
 	files := bundleVetArgs.files
 	if len(files) == 0 {
 		return fmt.Errorf("no bundle provided with -f")
@@ -174,7 +175,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log = LoggerBundle(logr.NewContext(cmd.Context(), log), bundle.Name, apiv1.RuntimeDefaultName)
+		log = logger.LoggerBundle(logr.NewContext(cmd.Context(), log), bundle.Name, apiv1.RuntimeDefaultName, true)
 
 		if len(bundle.Instances) == 0 {
 			return fmt.Errorf("no instances found in bundle")
@@ -198,7 +199,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 				if i.Namespace == "" {
 					return fmt.Errorf("instance %s does not have a namespace", i.Name)
 				}
-				log := LoggerBundleInstance(logr.NewContext(cmd.Context(), log), bundle.Name, cluster.Name, i.Name)
+				log := logger.LoggerBundleInstance(logr.NewContext(cmd.Context(), log), bundle.Name, cluster.Name, i.Name, true)
 				log.Info("instance is valid")
 			}
 		}

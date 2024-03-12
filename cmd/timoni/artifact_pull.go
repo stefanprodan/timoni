@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
 )
 
@@ -105,7 +106,7 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	ociURL := args[0]
 
-	log := LoggerFrom(cmd.Context())
+	log := logger.LoggerFrom(cmd.Context())
 
 	if err := os.MkdirAll(pullArtifactArgs.output, os.ModePerm); err != nil {
 		return fmt.Errorf("invalid output path %s: %w", pullArtifactArgs.output, err)
@@ -125,7 +126,7 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	spin := StartSpinner("pulling artifact")
+	spin := logger.StartSpinner("pulling artifact")
 	defer spin.Stop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
@@ -138,7 +139,7 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	spin.Stop()
-	log.Info(fmt.Sprintf("extracted: %s", colorizeSubject(pullArtifactArgs.output)))
+	log.Info(fmt.Sprintf("extracted: %s", logger.ColorizeSubject(pullArtifactArgs.output)))
 
 	return nil
 }

@@ -26,6 +26,7 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
 )
 
@@ -118,7 +119,7 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		pushArtifactArgs.ignorePaths = append(pushArtifactArgs.ignorePaths, ps...)
 	}
 
-	log := LoggerFrom(cmd.Context())
+	log := logger.LoggerFrom(cmd.Context())
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
@@ -128,7 +129,7 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	oci.AppendGitMetadata(pushArtifactArgs.path, annotations)
 
-	spin := StartSpinner("pushing artifact")
+	spin := logger.StartSpinner("pushing artifact")
 	defer spin.Stop()
 
 	opts := oci.Options(ctx, pushArtifactArgs.creds.String(), rootArgs.registryInsecure)
@@ -164,8 +165,8 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	log.Info(fmt.Sprintf("artifact: %s", colorizeSubject(ociURL)))
-	log.Info(fmt.Sprintf("digest: %s", colorizeSubject(digest.DigestStr())))
+	log.Info(fmt.Sprintf("artifact: %s", logger.ColorizeSubject(ociURL)))
+	log.Info(fmt.Sprintf("digest: %s", logger.ColorizeSubject(digest.DigestStr())))
 
 	return nil
 }
