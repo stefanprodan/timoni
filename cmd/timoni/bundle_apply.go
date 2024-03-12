@@ -337,7 +337,7 @@ type applyInstanceOptions struct {
 }
 
 func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, opts applyInstanceOptions, timeout time.Duration) error {
-	isStandaloneInstance := instance.Bundle != ""
+	isStandaloneInstance := instance.Bundle == ""
 
 	finalValues, err := builder.GetDefaultValues()
 	if err != nil {
@@ -381,7 +381,7 @@ func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 
 	im := runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, instance.Module)
 
-	if isStandaloneInstance {
+	if !isStandaloneInstance {
 		if im.Instance.Labels == nil {
 			im.Instance.Labels = make(map[string]string)
 		}
