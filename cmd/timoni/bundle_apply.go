@@ -316,18 +316,22 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 		return describeErr(modDir, "build failed for "+instance.Name, err)
 	}
 
+	return applyInstance(ctx, log, builder, buildResult, instance, rootDir)
+}
+
+func applyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, rootDir string) error {
 	finalValues, err := builder.GetDefaultValues()
 	if err != nil {
 		return fmt.Errorf("failed to extract values: %w", err)
 	}
 
-	bundleApplySets, err := builder.GetApplySets(buildResult)
+	sets, err := builder.GetApplySets(buildResult)
 	if err != nil {
 		return fmt.Errorf("failed to extract objects: %w", err)
 	}
 
 	var objects []*unstructured.Unstructured
-	for _, set := range bundleApplySets {
+	for _, set := range sets {
 		objects = append(objects, set.Objects...)
 	}
 
@@ -411,8 +415,8 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 		FailFast: true,
 	}
 
-	for _, set := range bundleApplySets {
-		if len(bundleApplySets) > 1 {
+	for _, set := range sets {
+		if len(sets) > 1 {
 			log.Info(fmt.Sprintf("applying %s", set.Name))
 		}
 
