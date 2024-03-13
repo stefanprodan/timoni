@@ -77,7 +77,7 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 		initModArgs.path = "."
 	}
 
-	log := logger.LoggerFrom(cmd.Context())
+	log := LoggerFrom(cmd.Context())
 
 	if fs, err := os.Stat(initModArgs.path); err != nil || !fs.IsDir() {
 		return fmt.Errorf("path not found: %s", initModArgs.path)
