@@ -121,7 +121,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log := logger.LoggerBundle(ctx, bundleDelArgs.name, cluster.Name, true)
+		log := loggerBundle(ctx, bundleDelArgs.name, cluster.Name, true)
 
 		if len(instances) == 0 {
 			log.Error(nil, "no instances found in bundle")
@@ -147,7 +147,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 }
 
 func deleteBundleInstance(ctx context.Context, instance *engine.BundleInstance, wait bool, dryrun bool) error {
-	log := logger.LoggerBundle(ctx, instance.Bundle, instance.Cluster, true)
+	log := loggerBundle(ctx, instance.Bundle, instance.Cluster, true)
 
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {

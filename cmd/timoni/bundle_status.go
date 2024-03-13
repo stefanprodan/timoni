@@ -104,7 +104,7 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log := logger.LoggerBundle(ctx, bundleStatusArgs.name, cluster.Name, true)
+		log := loggerBundle(ctx, bundleStatusArgs.name, cluster.Name, true)
 
 		if len(instances) == 0 {
 			log.Error(nil, "no instances found in bundle")
@@ -113,7 +113,7 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		for _, instance := range instances {
-			log := logger.LoggerBundleInstance(ctx, bundleStatusArgs.name, cluster.Name, instance.Name, true)
+			log := loggerBundleInstance(ctx, bundleStatusArgs.name, cluster.Name, instance.Name, true)
 
 			log.Info(fmt.Sprintf("last applied %s",
 				logger.ColorizeSubject(instance.LastTransitionTime)))

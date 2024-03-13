@@ -66,7 +66,7 @@ func runStatusCmd(cmd *cobra.Command, args []string) error {
 
 	statusArgs.name = args[0]
 
-	log := logger.LoggerInstance(cmd.Context(), statusArgs.name, true)
+	log := loggerInstance(cmd.Context(), statusArgs.name, true)
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err

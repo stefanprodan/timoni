@@ -63,7 +63,7 @@ func runVendorK8sCmd(cmd *cobra.Command, args []string) error {
 		vendorK8sArgs.modRoot = args[0]
 	}
 
-	log := logger.LoggerFrom(cmd.Context())
+	log := LoggerFrom(cmd.Context())
 
 	// Make sure we're importing into a CUE module.
 	cueModDir := path.Join(vendorK8sArgs.modRoot, "cue.mod")

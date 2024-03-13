@@ -82,7 +82,7 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module not found at path %s", vetModArgs.path)
 	}
 
-	log := logger.LoggerFrom(cmd.Context())
+	log := LoggerFrom(cmd.Context())
 	cuectx := cuecontext.New()
 
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)

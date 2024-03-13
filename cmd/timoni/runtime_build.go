@@ -94,7 +94,7 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, cluster := range clusters {
-		log := logger.LoggerRuntime(cmd.Context(), rt.Name, cluster.Name, true)
+		log := loggerRuntime(cmd.Context(), rt.Name, cluster.Name, true)
 
 		kubeconfigArgs.Context = &cluster.KubeContext
 		rm, err := runtime.NewResourceManager(kubeconfigArgs)

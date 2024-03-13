@@ -124,7 +124,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module not found at path %s", pushModArgs.module)
 	}
 
-	log := logger.LoggerFrom(cmd.Context())
+	log := LoggerFrom(cmd.Context())
 
 	annotations, err := oci.ParseAnnotations(pushModArgs.annotations)
 	if err != nil {

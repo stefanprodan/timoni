@@ -106,7 +106,7 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	ociURL := args[0]
 
-	log := logger.LoggerFrom(cmd.Context())
+	log := LoggerFrom(cmd.Context())
 
 	if err := os.MkdirAll(pullArtifactArgs.output, os.ModePerm); err != nil {
 		return fmt.Errorf("invalid output path %s: %w", pullArtifactArgs.output, err)

@@ -66,7 +66,7 @@ func tagArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	spin := logger.StartSpinner("tagging artifact")
 	defer spin.Stop()
 
-	log := logger.LoggerFrom(cmd.Context())
+	log := LoggerFrom(cmd.Context())
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 

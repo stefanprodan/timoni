@@ -123,7 +123,7 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid output path %s: %w", pullModArgs.output, err)
 	}
 
-	log := logger.LoggerFrom(cmd.Context())
+	log := LoggerFrom(cmd.Context())
 
 	if pullModArgs.verify != "" {
 		err := oci.VerifyArtifact(log,

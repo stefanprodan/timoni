@@ -27,6 +27,7 @@ import (
 	"github.com/fluxcd/pkg/ssa"
 	ssaerr "github.com/fluxcd/pkg/ssa/errors"
 	ssautil "github.com/fluxcd/pkg/ssa/utils"
+	"github.com/go-logr/logr"
 	"github.com/gonvenience/ytbx"
 	"github.com/homeport/dyff/pkg/dyff"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -94,7 +95,7 @@ func InstanceDryRunDiff(ctx context.Context,
 	tmpDir string,
 	withDiff bool,
 	w io.Writer) error {
-	log := logger.LoggerFrom(ctx)
+	log := logr.FromContextOrDiscard(ctx)
 	diffOpts := ssa.DefaultDiffOptions()
 	sort.Sort(ssa.SortableUnstructureds(objects))
 

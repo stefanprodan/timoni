@@ -73,7 +73,7 @@ func runVendorCrdCmd(cmd *cobra.Command, args []string) error {
 		vendorCrdArgs.modRoot = args[0]
 	}
 
-	log := logger.LoggerFrom(cmd.Context())
+	log := LoggerFrom(cmd.Context())
 	cuectx := cuecontext.New()
 
 	// Make sure we're importing into a CUE module.

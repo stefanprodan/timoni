@@ -31,7 +31,6 @@ import (
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
-	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
@@ -142,7 +141,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	applyArgs.name = args[0]
 	applyArgs.module = args[1]
 
-	log := logger.LoggerInstance(cmd.Context(), applyArgs.name, true)
+	log := loggerInstance(cmd.Context(), applyArgs.name, true)
 
 	version := applyArgs.version.String()
 	if version == "" {

@@ -119,7 +119,7 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		pushArtifactArgs.ignorePaths = append(pushArtifactArgs.ignorePaths, ps...)
 	}
 
-	log := logger.LoggerFrom(cmd.Context())
+	log := LoggerFrom(cmd.Context())
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 

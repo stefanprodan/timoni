@@ -73,7 +73,7 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 
 	deleteArgs.name = args[0]
 
-	log := logger.LoggerInstance(cmd.Context(), deleteArgs.name, true)
+	log := loggerInstance(cmd.Context(), deleteArgs.name, true)
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
