@@ -57,8 +57,38 @@ type noopProgressStopper struct{}
 
 func (n *noopProgressStopper) Stop() {}
 
-func ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, opts Options, timeout time.Duration) error {
-	isStandaloneInstance := instance.Bundle == ""
+type InstanceApplier struct {
+	opts Options
+
+	instanceExists, namespaceExists, isStandaloneInstance bool
+
+	sets []engine.ResourceSet
+
+	currentObjects, staleObjects, deletedObjects []*unstructured.Unstructured
+
+	storageManager  *runtime.StorageManager
+	instanceManager *runtime.InstanceManager
+	resourceManager *ssa.ResourceManager
+
+	applyOptions ssa.ApplyOptions
+	waitOptions  ssa.WaitOptions
+}
+
+func applyInstanceInit(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, opts Options, timeout time.Duration) (*InstanceApplier, error) {
+	applier := &InstanceApplier{
+		opts:                 opts,
+		isStandaloneInstance: instance.Bundle == "",
+		currentObjects:       []*unstructured.Unstructured{},
+		staleObjects:         []*unstructured.Unstructured{},
+		deletedObjects:       []*unstructured.Unstructured{},
+		applyOptions:         runtime.ApplyOptions(opts.Force, timeout),
+		waitOptions: ssa.WaitOptions{
+			Interval: 5 * time.Second,
+			Timeout:  timeout,
+			FailFast: true,
+		},
+	}
+	applier.applyOptions.WaitInterval = applier.waitOptions.Interval
 
 	if opts.DiffOutput == nil {
 		opts.DiffOutput = io.Discard
@@ -73,77 +103,74 @@ func ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 
 	finalValues, err := builder.GetDefaultValues()
 	if err != nil {
-		return fmt.Errorf("failed to extract values: %w", err)
+		return nil, fmt.Errorf("failed to extract values: %w", err)
 	}
 
-	sets, err := builder.GetApplySets(buildResult)
+	applier.sets, err = builder.GetApplySets(buildResult)
 	if err != nil {
-		return fmt.Errorf("failed to extract objects: %w", err)
+		return nil, fmt.Errorf("failed to extract objects: %w", err)
 	}
 
-	var objects []*unstructured.Unstructured
-	for _, set := range sets {
-		objects = append(objects, set.Objects...)
+	for _, set := range applier.sets {
+		applier.currentObjects = append(applier.currentObjects, set.Objects...)
 	}
 
 	rm, err := runtime.NewResourceManager(opts.KubeConfigFlags)
 	if err != nil {
+		return nil, err
+	}
+
+	rm.SetOwnerLabels(applier.currentObjects, instance.Name, instance.Namespace)
+
+	applier.storageManager = runtime.NewStorageManager(rm)
+	storedInstance, err := applier.storageManager.Get(ctx, instance.Name, instance.Namespace)
+	if err == nil {
+		applier.instanceExists = true
+	}
+
+	applier.namespaceExists, err = applier.storageManager.NamespaceExists(ctx, instance.Namespace)
+	if err != nil {
+		return nil, fmt.Errorf("instance init failed: %w", err)
+	}
+
+	if !opts.OverwriteOwnership && applier.instanceExists && applier.isStandaloneInstance {
+		if currentOwnerBundle := storedInstance.Labels[apiv1.BundleNameLabelKey]; currentOwnerBundle != "" {
+			return nil, InstanceOwnershipConflictsErr(fmt.Sprintf("instance \"%s\" exists and is managed by bundle \"%s\"", instance.Name, currentOwnerBundle), "")
+		}
+	}
+
+	applier.instanceManager = runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, instance.Module)
+
+	if !applier.isStandaloneInstance {
+		if applier.instanceManager.Instance.Labels == nil {
+			applier.instanceManager.Instance.Labels = make(map[string]string)
+		}
+		applier.instanceManager.Instance.Labels[apiv1.BundleNameLabelKey] = instance.Bundle
+	}
+
+	if err := applier.instanceManager.AddObjects(applier.currentObjects); err != nil {
+		return nil, fmt.Errorf("adding objects to instance failed: %w", err)
+	}
+
+	applier.staleObjects, err = applier.storageManager.GetStaleObjects(ctx, &applier.instanceManager.Instance)
+	if err != nil {
+		return nil, fmt.Errorf("getting stale objects failed: %w", err)
+	}
+	return applier, nil
+}
+
+func ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, opts Options, timeout time.Duration) error {
+	applier, err := applyInstanceInit(ctx, log, builder, buildResult, instance, opts, timeout)
+	if err != nil {
 		return err
 	}
 
-	rm.SetOwnerLabels(objects, instance.Name, instance.Namespace)
-
-	exists := false
-	sm := runtime.NewStorageManager(rm)
-	storedInstance, err := sm.Get(ctx, instance.Name, instance.Namespace)
-	if err == nil {
-		exists = true
-	}
-
-	nsExists, err := sm.NamespaceExists(ctx, instance.Namespace)
-	if err != nil {
-		return fmt.Errorf("instance init failed: %w", err)
-	}
-
-	if !opts.OverwriteOwnership && exists && isStandaloneInstance {
-		if currentOwnerBundle := storedInstance.Labels[apiv1.BundleNameLabelKey]; currentOwnerBundle != "" {
-			return InstanceOwnershipConflictsErr(fmt.Sprintf("instance \"%s\" exists and is managed by bundle \"%s\"", instance.Name, currentOwnerBundle), "")
-		}
-	}
-
-	im := runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, instance.Module)
-
-	if !isStandaloneInstance {
-		if im.Instance.Labels == nil {
-			im.Instance.Labels = make(map[string]string)
-		}
-		im.Instance.Labels[apiv1.BundleNameLabelKey] = instance.Bundle
-	}
-
-	if err := im.AddObjects(objects); err != nil {
-		return fmt.Errorf("adding objects to instance failed: %w", err)
-	}
-
-	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
-	if err != nil {
-		return fmt.Errorf("getting stale objects failed: %w", err)
-	}
-
 	if opts.DryRun || opts.Diff {
-		if !nsExists {
+		if !applier.namespaceExists {
 			log.Info(logger.ColorizeJoin(logger.ColorizeSubject("Namespace/"+instance.Namespace),
 				ssa.CreatedAction, logger.DryRunServer))
 		}
-		if err := dyff.InstanceDryRunDiff(
-			logr.NewContext(ctx, log),
-			rm,
-			objects,
-			staleObjects,
-			nsExists,
-			opts.Dir,
-			opts.Diff,
-			opts.DiffOutput,
-		); err != nil {
+		if err := applier.DryRunDiff(logr.NewContext(ctx, log)); err != nil {
 			return err
 		}
 
@@ -151,15 +178,15 @@ func ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 		return nil
 	}
 
-	if !exists {
+	if !applier.instanceExists {
 		log.Info(fmt.Sprintf("installing %s in namespace %s",
 			logger.ColorizeSubject(instance.Name), logger.ColorizeSubject(instance.Namespace)))
 
-		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
+		if err := applier.storageManager.Apply(ctx, &applier.instanceManager.Instance, true); err != nil {
 			return fmt.Errorf("instance init failed: %w", err)
 		}
 
-		if !nsExists {
+		if !applier.namespaceExists {
 			log.Info(logger.ColorizeJoin(logger.ColorizeSubject("Namespace/"+instance.Namespace), ssa.CreatedAction))
 		}
 	} else {
@@ -167,21 +194,12 @@ func ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 			logger.ColorizeSubject(instance.Name), logger.ColorizeSubject(instance.Namespace)))
 	}
 
-	applyOpts := runtime.ApplyOptions(opts.Force, timeout)
-	applyOpts.WaitInterval = 5 * time.Second
-
-	waitOptions := ssa.WaitOptions{
-		Interval: applyOpts.WaitInterval,
-		Timeout:  timeout,
-		FailFast: true,
-	}
-
-	for _, set := range sets {
-		if len(sets) > 1 {
+	for _, set := range applier.sets {
+		if len(applier.sets) > 1 {
 			log.Info(fmt.Sprintf("applying %s", set.Name))
 		}
 
-		cs, err := rm.ApplyAllStaged(ctx, set.Objects, applyOpts)
+		cs, err := applier.ApplyAllStaged(ctx, set)
 		if err != nil {
 			return err
 		}
@@ -190,10 +208,8 @@ func ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 		}
 
 		if opts.Wait {
-			progress := opts.ProgressStart(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
-			err = rm.Wait(set.Objects, waitOptions)
-			progress.Stop()
-			if err != nil {
+			log.Info(fmt.Sprintf("%s resources %s", set.Name, logger.ColorizeReady("ready")))
+			if err := applier.Wait(ctx, set); err != nil {
 				return err
 			}
 			log.Info(fmt.Sprintf("%s resources %s", set.Name, logger.ColorizeReady("ready")))
@@ -201,30 +217,29 @@ func ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 	}
 
 	if images, err := builder.GetContainerImages(buildResult); err == nil {
-		im.Instance.Images = images
+		applier.instanceManager.Instance.Images = images
 	}
 
-	if err := sm.Apply(ctx, &im.Instance, true); err != nil {
+	if err := applier.storageManager.Apply(ctx, &applier.instanceManager.Instance, true); err != nil {
 		return fmt.Errorf("storing instance failed: %w", err)
 	}
 
-	var deletedObjects []*unstructured.Unstructured
-	if len(staleObjects) > 0 {
+	if len(applier.staleObjects) > 0 {
 		deleteOpts := runtime.DeleteOptions(instance.Name, instance.Namespace)
-		changeSet, err := rm.DeleteAll(ctx, staleObjects, deleteOpts)
+		changeSet, err := applier.resourceManager.DeleteAll(ctx, applier.staleObjects, deleteOpts)
 		if err != nil {
 			return fmt.Errorf("pruning objects failed: %w", err)
 		}
-		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
+		applier.deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
 		for _, change := range changeSet.Entries {
 			log.Info(logger.ColorizeJoin(change))
 		}
 	}
 
 	if opts.Wait {
-		if len(deletedObjects) > 0 {
+		if len(applier.deletedObjects) > 0 {
 			progress := opts.ProgressStart(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
-			err = rm.WaitForTermination(deletedObjects, waitOptions)
+			err = applier.resourceManager.WaitForTermination(applier.deletedObjects, waitOptions)
 			progress.Stop()
 			if err != nil {
 				return fmt.Errorf("waiting for termination failed: %w", err)
@@ -242,4 +257,28 @@ func InstanceOwnershipConflictsErr(description, hint string) error {
 	}
 	msg += " Conflict: " + description
 	return errors.New(msg)
+}
+
+func (a *InstanceApplier) ApplyAllStaged(ctx context.Context, set engine.ResourceSet) (*ssa.ChangeSet, error) {
+	return a.resourceManager.ApplyAllStaged(ctx, set.Objects, a.applyOptions)
+}
+
+func (a *InstanceApplier) Wait(ctx context.Context, set engine.ResourceSet) error {
+	progress := a.opts.ProgressStart(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
+	err := a.resourceManager.Wait(set.Objects, a.waitOptions)
+	progress.Stop()
+	return err
+}
+
+func (a *InstanceApplier) DryRunDiff(ctx context.Context) error {
+	return dyff.InstanceDryRunDiff(
+		ctx,
+		a.resourceManager,
+		a.currentObjects,
+		a.staleObjects,
+		a.namespaceExists,
+		a.opts.Dir,
+		a.opts.Diff,
+		a.opts.DiffOutput,
+	)
 }
