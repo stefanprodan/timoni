@@ -112,8 +112,6 @@ type applyFlags struct {
 
 var applyArgs applyFlags
 
-const ownershipConflictHint = "Apply with \"--overwrite-ownership\" to gain instance ownership."
-
 func init() {
 	applyCmd.Flags().VarP(&applyArgs.version, applyArgs.version.Type(), applyArgs.version.Shorthand(), applyArgs.version.Description())
 	applyCmd.Flags().VarP(&applyArgs.pkg, applyArgs.pkg.Type(), applyArgs.pkg.Shorthand(), applyArgs.pkg.Description())
@@ -226,25 +224,33 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
-	opts := apply.Options{
-		Dir:                   tmpDir,
-		DryRun:                applyArgs.dryrun,
-		Diff:                  applyArgs.diff,
-		Wait:                  applyArgs.wait,
-		Force:                 applyArgs.force,
-		OverwriteOwnership:    applyArgs.overwriteOwnership,
-		DiffOutput:            cmd.OutOrStdout(),
-		KubeConfigFlags:       kubeconfigArgs,
-		OwnershipConflictHint: ownershipConflictHint,
-		// ProgressStart:      logger.StartSpinner,
-	}
-
-	bi := &engine.BundleInstance{
+	instance := &engine.BundleInstance{
 		Name:      applyArgs.name,
 		Namespace: *kubeconfigArgs.Namespace,
 		Module:    *mod,
 		Bundle:    "",
 	}
 
-	return apply.ApplyInstance(ctx, log, builder, buildResult, bi, opts, rootArgs.timeout)
+	applier := apply.NewInstanceApplier(log,
+		&apply.CommonOptions{
+			Dir:                tmpDir,
+			Wait:               applyArgs.wait,
+			Force:              applyArgs.force,
+			OverwriteOwnership: applyArgs.overwriteOwnership,
+		},
+		rootArgs.timeout,
+	)
+	if err := applier.Init(ctx, builder, buildResult, instance, kubeconfigArgs); err != nil {
+		return annotateInstanceOwnershipConflictErr(err)
+	}
+	return applier.ApplyInstanceInteractively(ctx, log,
+		builder,
+		buildResult,
+		apply.InteractiveOptions{
+			DryRun:     applyArgs.dryrun,
+			Diff:       applyArgs.diff,
+			DiffOutput: cmd.OutOrStdout(),
+			// ProgressStart:      logger.StartSpinner,
+		},
+	)
 }

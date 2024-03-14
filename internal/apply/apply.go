@@ -18,15 +18,16 @@ package apply
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"cuelang.org/go/cue"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -36,114 +37,165 @@ import (
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
-type Options struct {
+type CommonOptions struct {
 	Dir                string
-	DryRun             bool
-	Diff               bool
 	Wait               bool
 	Force              bool
 	OverwriteOwnership bool
-	DiffOutput         io.Writer
-
-	KubeConfigFlags *genericclioptions.ConfigFlags
-
-	ProgressStart         func(string) ProgressStopper
-	OwnershipConflictHint string
 }
 
-type ProgressStopper interface{ Stop() }
+type InteractiveOptions struct {
+	DryRun     bool
+	Diff       bool
+	DiffOutput io.Writer
+
+	ProgressStart ProgressStarter
+}
+
+type InstanceApplier struct {
+	opts *CommonOptions
+
+	instanceExists bool
+
+	sets []engine.ResourceSet
+
+	currentObjects, staleObjects []*unstructured.Unstructured
+
+	storageManager  *runtime.StorageManager
+	instanceManager *runtime.InstanceManager
+	resourceManager *ssa.ResourceManager
+
+	applyOptions ssa.ApplyOptions
+	waitOptions  ssa.WaitOptions
+
+	progressStart ProgressStarter
+}
+
+type (
+	ProgressStarter func(string) ProgressStopper
+	ProgressStopper interface{ Stop() }
+)
 
 type noopProgressStopper struct{}
 
 func (n *noopProgressStopper) Stop() {}
 
-func ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, opts Options, timeout time.Duration) error {
-	isStandaloneInstance := instance.Bundle == ""
+type withChangeSetFunc func(context.Context, logr.Logger, *ssa.ChangeSet, *engine.ResourceSet) error
 
-	if opts.DiffOutput == nil {
-		opts.DiffOutput = io.Discard
-	}
-
-	if opts.ProgressStart == nil {
-		opts.ProgressStart = func(msg string) ProgressStopper {
+func NewInstanceApplier(log logr.Logger, opts *CommonOptions, timeout time.Duration) *InstanceApplier {
+	applier := &InstanceApplier{
+		opts:           opts,
+		currentObjects: []*unstructured.Unstructured{},
+		staleObjects:   []*unstructured.Unstructured{},
+		applyOptions:   runtime.ApplyOptions(opts.Force, timeout),
+		waitOptions: ssa.WaitOptions{
+			Interval: 5 * time.Second,
+			Timeout:  timeout,
+			FailFast: true,
+		},
+		progressStart: func(msg string) ProgressStopper {
 			log.Info(msg)
 			return &noopProgressStopper{}
-		}
+		},
 	}
+	applier.applyOptions.WaitInterval = applier.waitOptions.Interval
 
+	return applier
+}
+
+func (a *InstanceApplier) Init(ctx context.Context, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, rcg genericclioptions.RESTClientGetter) error {
 	finalValues, err := builder.GetDefaultValues()
 	if err != nil {
 		return fmt.Errorf("failed to extract values: %w", err)
 	}
 
-	sets, err := builder.GetApplySets(buildResult)
+	a.sets, err = builder.GetApplySets(buildResult)
 	if err != nil {
 		return fmt.Errorf("failed to extract objects: %w", err)
 	}
 
-	var objects []*unstructured.Unstructured
-	for _, set := range sets {
-		objects = append(objects, set.Objects...)
+	for _, set := range a.sets {
+		a.currentObjects = append(a.currentObjects, set.Objects...)
 	}
 
-	rm, err := runtime.NewResourceManager(opts.KubeConfigFlags)
+	a.resourceManager, err = runtime.NewResourceManager(rcg)
 	if err != nil {
 		return err
 	}
 
-	rm.SetOwnerLabels(objects, instance.Name, instance.Namespace)
+	a.resourceManager.SetOwnerLabels(a.currentObjects, instance.Name, instance.Namespace)
 
-	exists := false
-	sm := runtime.NewStorageManager(rm)
-	storedInstance, err := sm.Get(ctx, instance.Name, instance.Namespace)
+	a.storageManager = runtime.NewStorageManager(a.resourceManager)
+	storedInstance, err := a.storageManager.Get(ctx, instance.Name, instance.Namespace)
 	if err == nil {
-		exists = true
+		a.instanceExists = true
 	}
 
-	nsExists, err := sm.NamespaceExists(ctx, instance.Namespace)
-	if err != nil {
-		return fmt.Errorf("instance init failed: %w", err)
-	}
+	isStandaloneInstance := instance.Bundle == ""
 
-	if !opts.OverwriteOwnership && exists && isStandaloneInstance {
+	if !a.opts.OverwriteOwnership && a.instanceExists && isStandaloneInstance {
 		if currentOwnerBundle := storedInstance.Labels[apiv1.BundleNameLabelKey]; currentOwnerBundle != "" {
-			return InstanceOwnershipConflictsErr(fmt.Sprintf("instance \"%s\" exists and is managed by bundle \"%s\"", instance.Name, currentOwnerBundle), "")
+			return &InstanceOwnershipConflictErr{{
+				InstanceName:       instance.Name,
+				CurrentOwnerBundle: currentOwnerBundle,
+			}}
 		}
 	}
 
-	im := runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, instance.Module)
+	a.instanceManager = runtime.NewInstanceManager(instance.Name, instance.Namespace, finalValues, instance.Module)
 
 	if !isStandaloneInstance {
-		if im.Instance.Labels == nil {
-			im.Instance.Labels = make(map[string]string)
+		if a.instanceManager.Instance.Labels == nil {
+			a.instanceManager.Instance.Labels = make(map[string]string)
 		}
-		im.Instance.Labels[apiv1.BundleNameLabelKey] = instance.Bundle
+		a.instanceManager.Instance.Labels[apiv1.BundleNameLabelKey] = instance.Bundle
 	}
 
-	if err := im.AddObjects(objects); err != nil {
+	if err := a.instanceManager.AddObjects(a.currentObjects); err != nil {
 		return fmt.Errorf("adding objects to instance failed: %w", err)
 	}
 
-	staleObjects, err := sm.GetStaleObjects(ctx, &im.Instance)
+	a.staleObjects, err = a.storageManager.GetStaleObjects(ctx, &a.instanceManager.Instance)
 	if err != nil {
 		return fmt.Errorf("getting stale objects failed: %w", err)
 	}
+	return nil
+}
+
+func (a *InstanceApplier) ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, opts InteractiveOptions) error {
+	if !a.instanceExists {
+		if err := a.UpdateStoredInstance(ctx); err != nil {
+			return fmt.Errorf("instance init failed: %w", err)
+		}
+	}
+
+	return kerrors.NewAggregate([]error{
+		a.ApplyAllSets(ctx, log, a.Wait),
+		a.PostApplyInventory(ctx, builder, buildResult),
+		a.PostApplyPruneStaleObjects(ctx, log, a.WaitForTermination),
+	})
+}
+
+func (a *InstanceApplier) ApplyInstanceInteractively(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, opts InteractiveOptions) error {
+	if opts.DiffOutput == nil {
+		opts.DiffOutput = io.Discard
+	}
+
+	if opts.ProgressStart != nil {
+		a.progressStart = opts.ProgressStart
+	}
+
+	namespaceExists, err := a.NamespaceExists(ctx)
+	if err != nil {
+		return err
+	}
 
 	if opts.DryRun || opts.Diff {
-		if !nsExists {
-			log.Info(logger.ColorizeJoin(logger.ColorizeSubject("Namespace/"+instance.Namespace),
+		if !namespaceExists {
+			log.Info(logger.ColorizeJoin(logger.ColorizeSubject("Namespace/"+a.Namespace()),
 				ssa.CreatedAction, logger.DryRunServer))
 		}
-		if err := dyff.InstanceDryRunDiff(
-			logr.NewContext(ctx, log),
-			rm,
-			objects,
-			staleObjects,
-			nsExists,
-			opts.Dir,
-			opts.Diff,
-			opts.DiffOutput,
-		); err != nil {
+		if err := a.DryRunDiff(logr.NewContext(ctx, log), namespaceExists, opts); err != nil {
 			return err
 		}
 
@@ -151,95 +203,202 @@ func ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleB
 		return nil
 	}
 
-	if !exists {
+	if !a.instanceExists {
 		log.Info(fmt.Sprintf("installing %s in namespace %s",
-			logger.ColorizeSubject(instance.Name), logger.ColorizeSubject(instance.Namespace)))
+			logger.ColorizeSubject(a.Name()), logger.ColorizeSubject(a.Namespace())))
 
-		if err := sm.Apply(ctx, &im.Instance, true); err != nil {
+		if err := a.UpdateStoredInstance(ctx); err != nil {
 			return fmt.Errorf("instance init failed: %w", err)
 		}
 
-		if !nsExists {
-			log.Info(logger.ColorizeJoin(logger.ColorizeSubject("Namespace/"+instance.Namespace), ssa.CreatedAction))
+		if !namespaceExists {
+			log.Info(logger.ColorizeJoin(logger.ColorizeSubject("Namespace/"+a.Namespace()), ssa.CreatedAction))
 		}
 	} else {
 		log.Info(fmt.Sprintf("upgrading %s in namespace %s",
-			logger.ColorizeSubject(instance.Name), logger.ColorizeSubject(instance.Namespace)))
+			logger.ColorizeSubject(a.Name()), logger.ColorizeSubject(a.Namespace())))
 	}
 
-	applyOpts := runtime.ApplyOptions(opts.Force, timeout)
-	applyOpts.WaitInterval = 5 * time.Second
+	return kerrors.NewAggregate([]error{
+		a.ApplyAllSets(ctx, log, a.WaitInteractive),
+		a.PostApplyInventory(ctx, builder, buildResult),
+		a.PostApplyPruneStaleObjects(ctx, log, a.WaitForTerminationInteractive),
+	})
+}
 
-	waitOptions := ssa.WaitOptions{
-		Interval: applyOpts.WaitInterval,
-		Timeout:  timeout,
-		FailFast: true,
+func (a *InstanceApplier) Wait(ctx context.Context, log logr.Logger, _ *ssa.ChangeSet, rs *engine.ResourceSet) error {
+	doneMsg := ""
+	if rs != nil && rs.Name != "" {
+		doneMsg = fmt.Sprintf("%s resources ready", rs.Name)
 	}
+	return a.doWait(ctx, log, rs, "waiting for %d resource(s) to become ready", doneMsg)
+}
 
-	for _, set := range sets {
-		if len(sets) > 1 {
-			log.Info(fmt.Sprintf("applying %s", set.Name))
-		}
-
-		cs, err := rm.ApplyAllStaged(ctx, set.Objects, applyOpts)
-		if err != nil {
-			return err
-		}
-		for _, change := range cs.Entries {
-			log.Info(logger.ColorizeJoin(change))
-		}
-
-		if opts.Wait {
-			progress := opts.ProgressStart(fmt.Sprintf("waiting for %v resource(s) to become ready...", len(set.Objects)))
-			err = rm.Wait(set.Objects, waitOptions)
-			progress.Stop()
-			if err != nil {
-				return err
-			}
-			log.Info(fmt.Sprintf("%s resources %s", set.Name, logger.ColorizeReady("ready")))
-		}
+func (a *InstanceApplier) WaitInteractive(ctx context.Context, log logr.Logger, cs *ssa.ChangeSet, rs *engine.ResourceSet) error {
+	for _, change := range cs.Entries {
+		log.Info(logger.ColorizeJoin(change))
 	}
-
-	if images, err := builder.GetContainerImages(buildResult); err == nil {
-		im.Instance.Images = images
+	doneMsg := ""
+	if rs != nil && rs.Name != "" {
+		doneMsg = fmt.Sprintf("%s resources %s", rs.Name, logger.ColorizeReady("ready"))
 	}
+	return a.doWait(ctx, log, rs, "waiting for %d resource(s) to become ready...", doneMsg)
+}
 
-	if err := sm.Apply(ctx, &im.Instance, true); err != nil {
-		return fmt.Errorf("storing instance failed: %w", err)
+func (a *InstanceApplier) doWait(_ context.Context, log logr.Logger, rs *engine.ResourceSet, progressMsgFmt string, doneMsg string) error {
+	if !a.opts.Wait {
+		return nil
 	}
-
-	var deletedObjects []*unstructured.Unstructured
-	if len(staleObjects) > 0 {
-		deleteOpts := runtime.DeleteOptions(instance.Name, instance.Namespace)
-		changeSet, err := rm.DeleteAll(ctx, staleObjects, deleteOpts)
-		if err != nil {
-			return fmt.Errorf("pruning objects failed: %w", err)
-		}
-		deletedObjects = runtime.SelectObjectsFromSet(changeSet, ssa.DeletedAction)
-		for _, change := range changeSet.Entries {
-			log.Info(logger.ColorizeJoin(change))
-		}
+	progress := a.progressStart(fmt.Sprintf(progressMsgFmt, len(rs.Objects)))
+	err := a.resourceManager.Wait(rs.Objects, a.waitOptions)
+	progress.Stop()
+	if err != nil {
+		return err
 	}
-
-	if opts.Wait {
-		if len(deletedObjects) > 0 {
-			progress := opts.ProgressStart(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
-			err = rm.WaitForTermination(deletedObjects, waitOptions)
-			progress.Stop()
-			if err != nil {
-				return fmt.Errorf("waiting for termination failed: %w", err)
-			}
-		}
+	if doneMsg != "" {
+		doneMsg = "resources are ready"
 	}
-
+	log.Info(doneMsg)
 	return nil
 }
 
-func InstanceOwnershipConflictsErr(description, hint string) error {
-	msg := "instance ownership conflict encountered."
-	if hint != "" {
-		msg += " " + hint
+func (a *InstanceApplier) WaitForTermination(ctx context.Context, log logr.Logger, cs *ssa.ChangeSet, _ *engine.ResourceSet) error {
+	return a.doWaitForTermination(ctx, log, cs, "waiting for %d resource(s) to be finalized")
+}
+
+func (a *InstanceApplier) WaitForTerminationInteractive(ctx context.Context, log logr.Logger, cs *ssa.ChangeSet, _ *engine.ResourceSet) error {
+	for _, change := range cs.Entries {
+		log.Info(logger.ColorizeJoin(change))
 	}
-	msg += " Conflict: " + description
-	return errors.New(msg)
+	return a.doWaitForTermination(ctx, log, cs, "waiting for %d resource(s) to be finalized...")
+}
+
+func (a *InstanceApplier) doWaitForTermination(_ context.Context, log logr.Logger, cs *ssa.ChangeSet, progressMsgFmt string) error {
+	if !a.opts.Wait {
+		return nil
+	}
+	deletedObjects := runtime.SelectObjectsFromSet(cs, ssa.DeletedAction)
+	if len(deletedObjects) == 0 {
+		return nil
+	}
+	progress := a.progressStart(fmt.Sprintf(progressMsgFmt, len(deletedObjects)))
+	err := a.resourceManager.WaitForTermination(deletedObjects, a.waitOptions)
+	progress.Stop()
+	if err != nil {
+		return fmt.Errorf("waiting for termination failed: %w", err)
+	}
+	return nil
+}
+
+func (a *InstanceApplier) ApplyAllSets(ctx context.Context, log logr.Logger, withChangeSet withChangeSetFunc) error {
+	if !a.instanceExists {
+		if err := a.UpdateStoredInstance(ctx); err != nil {
+			return fmt.Errorf("instance init failed: %w", err)
+		}
+	}
+
+	multiSet := len(a.sets) > 1
+	for s := range a.sets {
+		set := a.sets[s]
+		if multiSet {
+			log.Info(fmt.Sprintf("applying %s", set.Name))
+		}
+
+		cs, err := a.ApplyAllStaged(ctx, set)
+		if err != nil {
+			return err
+		}
+
+		if withChangeSet != nil {
+			if err := withChangeSet(ctx, log, cs, &set); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (a *InstanceApplier) PostApplyPruneStaleObjects(ctx context.Context, log logr.Logger, withChangeSet withChangeSetFunc) error {
+	if len(a.staleObjects) == 0 {
+		return nil
+	}
+	deleteOpts := runtime.DeleteOptions(a.Name(), a.Namespace())
+	cs, err := a.resourceManager.DeleteAll(ctx, a.staleObjects, deleteOpts)
+	if err != nil {
+		return fmt.Errorf("pruning objects failed: %w", err)
+	}
+	if withChangeSet != nil {
+		if err := withChangeSet(ctx, log, cs, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *InstanceApplier) PostApplyInventory(ctx context.Context, builder *engine.ModuleBuilder, buildResult cue.Value) error {
+	a.UpdateImages(builder, buildResult)
+	if err := a.UpdateStoredInstance(ctx); err != nil {
+		return fmt.Errorf("storing instance failed: %w", err)
+	}
+	return nil
+}
+
+func (a *InstanceApplier) UpdateStoredInstance(ctx context.Context) error {
+	return a.storageManager.Apply(ctx, &a.instanceManager.Instance, true)
+}
+
+func (a *InstanceApplier) UpdateImages(builder *engine.ModuleBuilder, buildResult cue.Value) {
+	if images, err := builder.GetContainerImages(buildResult); err == nil {
+		a.instanceManager.Instance.Images = images
+	}
+}
+
+func (a *InstanceApplier) Name() string { return a.instanceManager.Instance.Name }
+
+func (a *InstanceApplier) Namespace() string { return a.instanceManager.Instance.Namespace }
+
+func (a *InstanceApplier) NamespaceExists(ctx context.Context) (bool, error) {
+	ok, err := a.storageManager.NamespaceExists(ctx, a.Namespace())
+	if err != nil {
+		return false, fmt.Errorf("cannot determine if namespace %q already exists: %w", a.Namespace(), err)
+	}
+	return ok, nil
+}
+
+type InstanceOwnershipConflict struct{ InstanceName, CurrentOwnerBundle string }
+type InstanceOwnershipConflictErr []InstanceOwnershipConflict
+
+func (e *InstanceOwnershipConflictErr) Error() string {
+	s := &strings.Builder{}
+	s.WriteString("instance ownership conflict encountered. ")
+	s.WriteString("Conflict: ")
+	numConflicts := len(*e)
+	for i, c := range *e {
+		if c.CurrentOwnerBundle != "" {
+			s.WriteString(fmt.Sprintf("instance %q exists and is managed by bundle %q", c.InstanceName, c.CurrentOwnerBundle))
+		} else {
+			s.WriteString(fmt.Sprintf("instance %q exists and is managed by no bundle", c.InstanceName))
+		}
+		if numConflicts > 1 && i != numConflicts {
+			s.WriteString("; ")
+		}
+	}
+	return s.String()
+}
+
+func (a *InstanceApplier) ApplyAllStaged(ctx context.Context, set engine.ResourceSet) (*ssa.ChangeSet, error) {
+	return a.resourceManager.ApplyAllStaged(ctx, set.Objects, a.applyOptions)
+}
+
+func (a *InstanceApplier) DryRunDiff(ctx context.Context, namespaceExists bool, opts InteractiveOptions) error {
+	return dyff.InstanceDryRunDiff(
+		ctx,
+		a.resourceManager,
+		a.currentObjects,
+		a.staleObjects,
+		namespaceExists,
+		a.opts.Dir,
+		opts.Diff,
+		opts.DiffOutput,
+	)
 }

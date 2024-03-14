@@ -24,7 +24,6 @@ import (
 	"maps"
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	"cuelang.org/go/cue"
@@ -196,7 +195,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		if !bundleApplyArgs.overwriteOwnership {
 			err = bundleInstancesOwnershipConflicts(bundle.Instances)
 			if err != nil {
-				return err
+				return annotateInstanceOwnershipConflictErr(err)
 			}
 		}
 
@@ -316,20 +315,37 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 		return describeErr(modDir, "build failed for "+instance.Name, err)
 	}
 
-	opts := apply.Options{
-		Dir:                   rootDir,
-		DryRun:                bundleApplyArgs.dryrun,
-		Diff:                  bundleApplyArgs.diff,
-		Wait:                  bundleApplyArgs.wait,
-		Force:                 bundleApplyArgs.force,
-		OverwriteOwnership:    bundleApplyArgs.overwriteOwnership,
-		DiffOutput:            diffOutput,
-		KubeConfigFlags:       kubeconfigArgs,
-		OwnershipConflictHint: ownershipConflictHint,
-		// ProgressStart:         logger.StartSpinner,
+	applier := apply.NewInstanceApplier(log,
+		&apply.CommonOptions{
+			Dir:                rootDir,
+			Wait:               bundleApplyArgs.wait,
+			Force:              bundleApplyArgs.force,
+			OverwriteOwnership: bundleApplyArgs.overwriteOwnership,
+		},
+		rootArgs.timeout,
+	)
+
+	if err := applier.Init(ctx, builder, buildResult, instance, kubeconfigArgs); err != nil {
+		return annotateInstanceOwnershipConflictErr(err)
 	}
 
-	return apply.ApplyInstance(ctx, log, builder, buildResult, instance, opts, rootArgs.timeout)
+	return applier.ApplyInstanceInteractively(ctx, log,
+		builder,
+		buildResult,
+		apply.InteractiveOptions{
+			DryRun:     bundleApplyArgs.dryrun,
+			Diff:       bundleApplyArgs.diff,
+			DiffOutput: diffOutput,
+			// ProgressStart:      logger.StartSpinner,
+		},
+	)
+}
+
+func annotateInstanceOwnershipConflictErr(err error) error {
+	if errors.Is(err, &apply.InstanceOwnershipConflictErr{}) {
+		return fmt.Errorf("%s %s", err, "Apply with \"--overwrite-ownership\" to gain instance ownership.")
+	}
+	return err
 }
 
 func saveReaderToFile(reader io.Reader) (string, error) {
@@ -348,7 +364,7 @@ func saveReaderToFile(reader io.Reader) (string, error) {
 }
 
 func bundleInstancesOwnershipConflicts(bundleInstances []*engine.BundleInstance) error {
-	var conflicts []string
+	var conflicts apply.InstanceOwnershipConflictErr
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
@@ -361,16 +377,17 @@ func bundleInstancesOwnershipConflicts(bundleInstances []*engine.BundleInstance)
 	for _, instance := range bundleInstances {
 		if existingInstance, err := sm.Get(ctx, instance.Name, instance.Namespace); err == nil {
 			currentOwnerBundle := existingInstance.Labels[apiv1.BundleNameLabelKey]
-			if currentOwnerBundle == "" {
-				conflicts = append(conflicts, fmt.Sprintf("instance \"%s\" exists and is managed by no bundle", instance.Name))
-			} else if currentOwnerBundle != instance.Bundle {
-				conflicts = append(conflicts, fmt.Sprintf("instance \"%s\" exists and is managed by another bundle \"%s\"", instance.Name, currentOwnerBundle))
+			if currentOwnerBundle == "" || currentOwnerBundle != instance.Bundle {
+				conflicts = append(conflicts, apply.InstanceOwnershipConflict{
+					InstanceName:       instance.Name,
+					CurrentOwnerBundle: currentOwnerBundle,
+				})
 			}
 		}
 	}
-	if len(conflicts) > 0 {
-		return apply.InstanceOwnershipConflictsErr(strings.Join(conflicts, "; "), ownershipConflictHint)
-	}
 
+	if len(conflicts) > 0 {
+		return &conflicts
+	}
 	return nil
 }
