@@ -35,6 +35,7 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
+	cueerrors "github.com/stefanprodan/timoni/internal/errors"
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
@@ -126,12 +127,12 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return describeErr(f.GetModuleRoot(), "validation failed", err)
+		return cueerrors.Describe(f.GetModuleRoot(), "validation failed", err)
 	}
 
 	rows, err := builder.GetConfigDoc(buildResult)
 	if err != nil {
-		return describeErr(f.GetModuleRoot(), "failed to get config structure", err)
+		return cueerrors.Describe(f.GetModuleRoot(), "failed to get config structure", err)
 	}
 
 	header := []string{"Key", "Type", "Default", "Description"}
@@ -146,7 +147,7 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 
 		err = os.Rename(tmpFile, configShowModArgs.output)
 		if err != nil {
-			return describeErr(f.GetModuleRoot(), "Unable to rename file", err)
+			return cueerrors.Describe(f.GetModuleRoot(), "Unable to rename file", err)
 		}
 	}
 
@@ -168,10 +169,10 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 			inputFile, err = os.Create(readFile)
 
 			if err != nil {
-				return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
+				return "", cueerrors.Describe(f.GetModuleRoot(), "Unable to create the temporary output file", err)
 			}
 		} else {
-			return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
+			return "", cueerrors.Describe(f.GetModuleRoot(), "Unable to create the temporary output file", err)
 		}
 	}
 	defer inputFile.Close()
@@ -179,7 +180,7 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 	// open the output file
 	outputFile, err := os.Create(tmpFileName)
 	if err != nil {
-		return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
+		return "", cueerrors.Describe(f.GetModuleRoot(), "Unable to create the temporary output file", err)
 	}
 	defer outputFile.Close()
 
@@ -200,7 +201,7 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 
 			matched, err := regexp.MatchString(`^\|.*\|$`, line)
 			if err != nil {
-				return "", describeErr(f.GetModuleRoot(), "Regex Match for table content failed", err)
+				return "", cueerrors.Describe(f.GetModuleRoot(), "Regex Match for table content failed", err)
 			}
 
 			if configSection && !foundTable && matched {
@@ -224,7 +225,7 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 
 	err = outputWriter.Flush()
 	if err != nil {
-		return "", describeErr(f.GetModuleRoot(), "Failed to Flush Writer", err)
+		return "", cueerrors.Describe(f.GetModuleRoot(), "Failed to Flush Writer", err)
 	}
 
 	return tmpFileName, nil

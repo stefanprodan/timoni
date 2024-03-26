@@ -23,12 +23,11 @@ import (
 	"os"
 	"sort"
 
-	"cuelang.org/go/cue/cuecontext"
 	"github.com/spf13/cobra"
 
-	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
-	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
+	runtimebuild "github.com/stefanprodan/timoni/internal/runtime/build"
 )
 
 var runtimeBuildCmd = &cobra.Command{
@@ -79,7 +78,10 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 		defer os.Remove(stdinFile)
 	}
 
-	rt, err := buildRuntime(files)
+	runtimeBuildOpts := runtimebuild.Options{
+		KubeConfigFlags: kubeconfigArgs,
+	}
+	rt, err := runtimebuild.BuildFiles(runtimeBuildOpts, files...)
 	if err != nil {
 		return err
 	}
@@ -93,7 +95,7 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, cluster := range clusters {
-		log := LoggerRuntime(cmd.Context(), rt.Name, cluster.Name)
+		log := loggerRuntime(cmd.Context(), rt.Name, cluster.Name, true)
 
 		kubeconfigArgs.Context = &cluster.KubeContext
 		rm, err := runtime.NewResourceManager(kubeconfigArgs)
@@ -116,7 +118,7 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 		sort.Strings(keys)
 
 		for _, k := range keys {
-			log.Info(fmt.Sprintf("%s: %s", colorizeSubject(k), values[k]))
+			log.Info(fmt.Sprintf("%s: %s", logger.ColorizeSubject(k), values[k]))
 		}
 
 		if len(values) == 0 {
@@ -125,39 +127,4 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func buildRuntime(files []string) (*apiv1.Runtime, error) {
-	defaultRuntime := apiv1.DefaultRuntime(*kubeconfigArgs.Context)
-	if len(files) == 0 {
-		return defaultRuntime, nil
-	}
-
-	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(tmpDir)
-
-	ctx := cuecontext.New()
-	rb := engine.NewRuntimeBuilder(ctx, files)
-
-	if err := rb.InitWorkspace(tmpDir); err != nil {
-		return nil, describeErr(tmpDir, "failed to init runtime", err)
-	}
-
-	v, err := rb.Build()
-	if err != nil {
-		return nil, describeErr(tmpDir, "failed to parse runtime", err)
-	}
-
-	rt, err := rb.GetRuntime(v)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(rt.Clusters) == 0 {
-		rt.Clusters = defaultRuntime.Clusters
-	}
-	return rt, nil
 }

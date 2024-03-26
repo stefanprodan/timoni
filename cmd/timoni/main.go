@@ -29,6 +29,8 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/stefanprodan/timoni/internal/logger"
 )
 
 var (
@@ -46,12 +48,12 @@ var rootCmd = &cobra.Command{
 		// Initialize the console logger just before running
 		// a command only if one wasn't provided. This allows other
 		// callers (e.g. unit tests) to inject their own logger ahead of time.
-		if logger.IsZero() {
-			logger = NewConsoleLogger()
+		if cliLogger.IsZero() {
+			cliLogger = logger.NewConsoleLogger(true, true)
 		}
 
 		// Inject the logger in the command context.
-		ctx := logr.NewContext(context.Background(), logger)
+		ctx := logr.NewContext(context.Background(), cliLogger)
 		cmd.SetContext(ctx)
 	},
 }
@@ -70,7 +72,7 @@ var (
 		coloredLog: !color.NoColor,
 		timeout:    5 * time.Minute,
 	}
-	logger         logr.Logger
+	cliLogger      logr.Logger
 	kubeconfigArgs = genericclioptions.NewConfigFlags(false)
 )
 
@@ -80,7 +82,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&rootArgs.prettyLog, "log-pretty", rootArgs.prettyLog,
 		"Adds timestamps to the logs.")
 	rootCmd.PersistentFlags().BoolVar(&rootArgs.coloredLog, "log-color", rootArgs.coloredLog,
-		"Adds colorized output to the logs. (defaults to false when no tty)")
+		"Adds logger.Colorized output to the logs. (defaults to false when no tty)")
 	rootCmd.PersistentFlags().StringVar(&rootArgs.cacheDir, "cache-dir", "",
 		"Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to \"$HOME/.timoni/cache\")")
 	rootCmd.PersistentFlags().BoolVar(&rootArgs.registryInsecure, "registry-insecure", false,
@@ -98,13 +100,13 @@ func main() {
 	if err := rootCmd.Execute(); err != nil {
 		// Ensure a logger is initialized even if the rootCmd
 		// failed before running its hooks.
-		if logger.IsZero() {
-			logger = NewConsoleLogger()
-		}
+		if cliLogger.IsZero() {
+			cliLogger = logger.NewConsoleLogger(true, true)
 
+		}
 		// Set the logger err to nil to pretty print
 		// the error message on multiple lines.
-		logger.Error(nil, err.Error())
+		cliLogger.Error(nil, err.Error())
 		os.Exit(1)
 	}
 }

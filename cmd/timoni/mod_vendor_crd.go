@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/logger"
 )
 
 var vendorCrdCmd = &cobra.Command{
@@ -81,7 +82,7 @@ func runVendorCrdCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cue.mod not found in the module path %s", vendorCrdArgs.modRoot)
 	}
 
-	spin := StartSpinner("importing schemas")
+	spin := logger.StartSpinner("importing schemas")
 	defer spin.Stop()
 
 	// Load the YAML manifest into memory either from disk or by fetching the file over HTTPS.
@@ -160,7 +161,7 @@ func runVendorCrdCmd(cmd *cobra.Command, args []string) error {
 
 	// Write the definitions to the module's 'cue.mod/gen' dir.
 	for _, k := range keys {
-		log.Info(fmt.Sprintf("schemas vendored: %s", colorizeSubject(k)))
+		log.Info(fmt.Sprintf("schemas vendored: %s", logger.ColorizeSubject(k)))
 
 		dstDir := path.Join(cueModDir, "gen", k)
 		if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
