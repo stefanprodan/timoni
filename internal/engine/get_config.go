@@ -156,24 +156,21 @@ func getField(v cue.Value) []string {
 	}
 
 	if !noDoc {
-		defaultVal, _ := v.Default()
-		valueBytes, _ := defaultVal.MarshalJSON()
+		fieldType := strings.ReplaceAll(fmt.Sprintf("%v", v), "\n", "")
+		fieldType = strings.ReplaceAll(fieldType, "|", "\\|")
+		fieldType = strings.ReplaceAll(fieldType, "\":", "\": ")
+		fieldType = strings.ReplaceAll(fieldType, "\":[", "\": [")
+		fieldType = strings.ReplaceAll(fieldType, "},", "}, ")
 
-		value := strings.ReplaceAll(string(valueBytes), "\":", "\": ")
-		value = strings.ReplaceAll(value, "\":[", "\": [")
-		value = strings.ReplaceAll(value, "},", "}, ")
-		value = strings.ReplaceAll(value, "|", "\\|")
-
-		if len(value) == 0 {
-			value = " "
+		if len(fieldType) == 0 {
+			fieldType = " "
 		}
 
 		field := strings.Replace(v.Path().String(), "timoni.instance.config.", "", 1)
 		match := labelDomain.FindStringSubmatch(field)
 
 		row = append(row, fmt.Sprintf("`%s:`", strings.ReplaceAll(match[1], ".", ": ")+match[2]))
-		row = append(row, fmt.Sprintf("`%s`", strings.ReplaceAll(fmt.Sprintf("%v", v), "\n", "<br>")))
-		row = append(row, fmt.Sprintf("`%s`", value))
+		row = append(row, fmt.Sprintf("`%s`", fieldType))
 		row = append(row, fmt.Sprintf("%s", doc))
 	}
 

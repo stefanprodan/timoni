@@ -130,7 +130,7 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		return describeErr(f.GetModuleRoot(), "failed to get config structure", err)
 	}
 
-	header := []string{"Key", "Type", "Default", "Description"}
+	header := []string{"Key", "Type", "Description"}
 
 	if configShowModArgs.output == "" {
 		printMarkDownTable(rootCmd.OutOrStdout(), header, rows)
