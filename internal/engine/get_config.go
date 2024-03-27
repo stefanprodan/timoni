@@ -158,7 +158,6 @@ func getField(v cue.Value) []string {
 	if !noDoc {
 		defaultVal, _ := v.Default()
 		valueBytes, _ := defaultVal.MarshalJSON()
-		valueType := strings.ReplaceAll(v.IncompleteKind().String(), "|", "\\|")
 
 		value := strings.ReplaceAll(string(valueBytes), "\":", "\": ")
 		value = strings.ReplaceAll(value, "\":[", "\": [")
@@ -173,7 +172,7 @@ func getField(v cue.Value) []string {
 		match := labelDomain.FindStringSubmatch(field)
 
 		row = append(row, fmt.Sprintf("`%s:`", strings.ReplaceAll(match[1], ".", ": ")+match[2]))
-		row = append(row, fmt.Sprintf("`%s`", valueType))
+		row = append(row, fmt.Sprintf("`%s`", strings.ReplaceAll(fmt.Sprintf("%v", v), "\n", "<br>")))
 		row = append(row, fmt.Sprintf("`%s`", value))
 		row = append(row, fmt.Sprintf("%s", doc))
 	}
