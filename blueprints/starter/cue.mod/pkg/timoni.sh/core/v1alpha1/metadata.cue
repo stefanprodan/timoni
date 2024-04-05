@@ -52,6 +52,11 @@ import "strings"
 	#LabelSelector: #Labels & {
 		(#StdLabelName): name
 	}
+
+	// Finalizers are namespaced keys that tell Kubernetes to wait until specific conditions
+	// are met before it fully deletes resources marked for deletion.
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/
+	finalizers?: [...string]
 }
 
 // MetaComponent generates the Kubernetes object metadata for a module namespaced component.
