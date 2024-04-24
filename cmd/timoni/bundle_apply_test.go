@@ -155,8 +155,8 @@ bundle: {
 
 		_, err = executeCommandWithIn("bundle apply -f - -p main --wait", strings.NewReader(anotherBundleData))
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by another bundle \"%s\"", "frontend", bundleName)))
-		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by another bundle \"%s\"", "backend", bundleName)))
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance %q exists and is managed by another bundle %q", "frontend", bundleName)))
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance %q exists and is managed by another bundle %q", "backend", bundleName)))
 	})
 
 	t.Run("fails to create instances from partially overlapping bundle", func(t *testing.T) {
@@ -247,7 +247,7 @@ bundle: {
 
 		_, err = executeCommandWithIn("bundle apply -f - -p main --wait", strings.NewReader(bundleData))
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by no bundle", instanceName)))
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is not managed by any bundle", instanceName)))
 	})
 }
 

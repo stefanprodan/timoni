@@ -85,9 +85,9 @@ func (e *InstanceOwnershipConflictErr) Error() string {
 	numConflicts := len(*e)
 	for i, c := range *e {
 		if c.CurrentOwnerBundle != "" {
-			s.WriteString(fmt.Sprintf("instance %q exists and is managed by bundle %q", c.InstanceName, c.CurrentOwnerBundle))
+			s.WriteString(fmt.Sprintf("instance %q exists and is managed by another bundle %q", c.InstanceName, c.CurrentOwnerBundle))
 		} else {
-			s.WriteString(fmt.Sprintf("instance %q exists and is managed by no bundle", c.InstanceName))
+			s.WriteString(fmt.Sprintf("instance %q exists and is not managed by any bundle", c.InstanceName))
 		}
 		if numConflicts > 1 && i != numConflicts {
 			s.WriteString("; ")
