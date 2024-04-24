@@ -30,6 +30,7 @@ import (
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/reconciler"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
@@ -239,10 +240,10 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 			OverwriteOwnership: applyArgs.overwriteOwnership,
 		},
 		&reconciler.InteractiveOptions{
-			DryRun:     applyArgs.dryrun,
-			Diff:       applyArgs.diff,
-			DiffOutput: cmd.OutOrStdout(),
-			// ProgressStart:      logger.StartSpinner,
+			DryRun:        applyArgs.dryrun,
+			Diff:          applyArgs.diff,
+			DiffOutput:    cmd.OutOrStdout(),
+			ProgressStart: logger.StartSpinner,
 		},
 		rootArgs.timeout,
 	)

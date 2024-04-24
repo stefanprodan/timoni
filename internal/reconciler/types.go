@@ -42,7 +42,7 @@ type InteractiveOptions struct {
 	Diff       bool
 	DiffOutput io.Writer
 
-	ProgressStart ProgressStarter
+	ProgressStart func(string) interface{ Stop() }
 }
 
 type Reconciler struct {
@@ -61,18 +61,13 @@ type Reconciler struct {
 	applyOptions ssa.ApplyOptions
 	waitOptions  ssa.WaitOptions
 
-	progressStartFn ProgressStarter
+	progressStartFn func(string) interface{ Stop() }
 }
 
 type InteractiveReconciler struct {
 	*Reconciler
 	*InteractiveOptions
 }
-
-type (
-	ProgressStarter func(string) ProgressStopper
-	ProgressStopper interface{ Stop() }
-)
 
 type noopProgressStopper struct{}
 

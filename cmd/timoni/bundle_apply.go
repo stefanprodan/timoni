@@ -323,10 +323,10 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 			OverwriteOwnership: bundleApplyArgs.overwriteOwnership,
 		},
 		&reconciler.InteractiveOptions{
-			DryRun:     bundleApplyArgs.dryrun,
-			Diff:       bundleApplyArgs.diff,
-			DiffOutput: diffOutput,
-			// ProgressStart:      logger.StartSpinner,
+			DryRun:        bundleApplyArgs.dryrun,
+			Diff:          bundleApplyArgs.diff,
+			DiffOutput:    diffOutput,
+			ProgressStart: logger.StartSpinner,
 		},
 		rootArgs.timeout,
 	)

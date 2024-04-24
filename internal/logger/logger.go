@@ -196,7 +196,7 @@ func ColorizeCluster(cluster string) string {
 }
 
 // StartSpinner starts a spinner with the given message.
-func StartSpinner(msg string) *spinner.Spinner {
+func StartSpinner(msg string) interface{ Stop() } {
 	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond, spinner.WithWriter(os.Stderr))
 	s.Suffix = " " + msg
 	s.Start()
