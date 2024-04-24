@@ -27,10 +27,10 @@ import (
 	"github.com/spf13/cobra"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
-	"github.com/stefanprodan/timoni/internal/apply"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/reconciler"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
@@ -231,26 +231,26 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		Bundle:    "",
 	}
 
-	applier := apply.NewInstanceApplier(log,
-		&apply.CommonOptions{
+	r := reconciler.NewInteractiveReconciler(log,
+		&reconciler.CommonOptions{
 			Dir:                tmpDir,
 			Wait:               applyArgs.wait,
 			Force:              applyArgs.force,
 			OverwriteOwnership: applyArgs.overwriteOwnership,
 		},
-		rootArgs.timeout,
-	)
-	if err := applier.Init(ctx, builder, buildResult, instance, kubeconfigArgs); err != nil {
-		return annotateInstanceOwnershipConflictErr(err)
-	}
-	return applier.ApplyInstanceInteractively(ctx, log,
-		builder,
-		buildResult,
-		apply.InteractiveOptions{
+		&reconciler.InteractiveOptions{
 			DryRun:     applyArgs.dryrun,
 			Diff:       applyArgs.diff,
 			DiffOutput: cmd.OutOrStdout(),
 			// ProgressStart:      logger.StartSpinner,
 		},
+		rootArgs.timeout,
+	)
+	if err := r.Init(ctx, builder, buildResult, instance, kubeconfigArgs); err != nil {
+		return annotateInstanceOwnershipConflictErr(err)
+	}
+	return r.ApplyInstance(ctx, log,
+		builder,
+		buildResult,
 	)
 }

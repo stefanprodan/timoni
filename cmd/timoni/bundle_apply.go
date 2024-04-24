@@ -32,11 +32,11 @@ import (
 	"github.com/spf13/cobra"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
-	"github.com/stefanprodan/timoni/internal/apply"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
 	"github.com/stefanprodan/timoni/internal/logger"
+	"github.com/stefanprodan/timoni/internal/reconciler"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
@@ -315,34 +315,34 @@ func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *eng
 		return describeErr(modDir, "build failed for "+instance.Name, err)
 	}
 
-	applier := apply.NewInstanceApplier(log,
-		&apply.CommonOptions{
+	r := reconciler.NewInteractiveReconciler(log,
+		&reconciler.CommonOptions{
 			Dir:                rootDir,
 			Wait:               bundleApplyArgs.wait,
 			Force:              bundleApplyArgs.force,
 			OverwriteOwnership: bundleApplyArgs.overwriteOwnership,
 		},
-		rootArgs.timeout,
-	)
-
-	if err := applier.Init(ctx, builder, buildResult, instance, kubeconfigArgs); err != nil {
-		return annotateInstanceOwnershipConflictErr(err)
-	}
-
-	return applier.ApplyInstanceInteractively(ctx, log,
-		builder,
-		buildResult,
-		apply.InteractiveOptions{
+		&reconciler.InteractiveOptions{
 			DryRun:     bundleApplyArgs.dryrun,
 			Diff:       bundleApplyArgs.diff,
 			DiffOutput: diffOutput,
 			// ProgressStart:      logger.StartSpinner,
 		},
+		rootArgs.timeout,
+	)
+
+	if err := r.Init(ctx, builder, buildResult, instance, kubeconfigArgs); err != nil {
+		return annotateInstanceOwnershipConflictErr(err)
+	}
+
+	return r.ApplyInstance(ctx, log,
+		builder,
+		buildResult,
 	)
 }
 
 func annotateInstanceOwnershipConflictErr(err error) error {
-	if errors.Is(err, &apply.InstanceOwnershipConflictErr{}) {
+	if errors.Is(err, &reconciler.InstanceOwnershipConflictErr{}) {
 		return fmt.Errorf("%s %s", err, "Apply with \"--overwrite-ownership\" to gain instance ownership.")
 	}
 	return err
@@ -364,7 +364,7 @@ func saveReaderToFile(reader io.Reader) (string, error) {
 }
 
 func bundleInstancesOwnershipConflicts(bundleInstances []*engine.BundleInstance) error {
-	var conflicts apply.InstanceOwnershipConflictErr
+	var conflicts reconciler.InstanceOwnershipConflictErr
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
@@ -378,7 +378,7 @@ func bundleInstancesOwnershipConflicts(bundleInstances []*engine.BundleInstance)
 		if existingInstance, err := sm.Get(ctx, instance.Name, instance.Namespace); err == nil {
 			currentOwnerBundle := existingInstance.Labels[apiv1.BundleNameLabelKey]
 			if currentOwnerBundle == "" || currentOwnerBundle != instance.Bundle {
-				conflicts = append(conflicts, apply.InstanceOwnershipConflict{
+				conflicts = append(conflicts, reconciler.InstanceOwnershipConflict{
 					InstanceName:       instance.Name,
 					CurrentOwnerBundle: currentOwnerBundle,
 				})
