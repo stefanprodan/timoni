@@ -25,8 +25,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version-file: 'go.mod'
-          cache: true
+          go-version: 1.22.x
+          cache: false
       - name: Setup Syft
         uses: anchore/sbom-action/download-syft@ab5d7b5f48981941c4c5d6bf33aeb98fe3bae38c # v0.15.10
       - name: Run GoReleaser
@@ -113,7 +113,7 @@ jobs:
       actions: read # To read the workflow path.
       id-token: write # To sign the provenance.
       contents: write # To add assets to a release.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.10.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
     with:
       provenance-name: "timoni_${{ needs.goreleaser.outputs.version }}_provenance.intoto.jsonl"
       base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
