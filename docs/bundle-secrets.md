@@ -105,7 +105,7 @@ bundle: {
 }
 ```
 
-In the above example, we define a CUE hidden filed `_secrets`, where we set the
+In the above example, we define a CUE hidden field `_secrets`, where we set the
 runtime secrets mappings. Then in the instance values, we use string interpolation
 to set the `redisURL` containing the secrets.
 
