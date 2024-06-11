@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package dyff
 
 import (
 	"bytes"
@@ -42,7 +42,7 @@ func TestDiffYAML(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	buf := new(bytes.Buffer)
-	err = diffYAML(liveFile.Name(), mergedFile.Name(), buf)
+	err = DiffYAML(liveFile.Name(), mergedFile.Name(), buf)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(buf.String()).To(ContainSubstring("name: test-pod-merged"))
 }

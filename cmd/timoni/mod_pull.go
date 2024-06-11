@@ -26,6 +26,7 @@ import (
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
 )
 
@@ -141,7 +142,7 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
-	spin := StartSpinner(fmt.Sprintf("pulling %s", ociURL))
+	spin := logger.StartSpinner(fmt.Sprintf("pulling %s", ociURL))
 	opts := oci.Options(ctx, pullModArgs.creds.String(), rootArgs.registryInsecure)
 	err := oci.PullArtifact(ociURL, pullModArgs.output, apiv1.AnyContentType, opts)
 	spin.Stop()
@@ -149,7 +150,7 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log.Info(fmt.Sprintf("extracted: %s", colorizeSubject(pullModArgs.output)))
+	log.Info(fmt.Sprintf("extracted: %s", logger.ColorizeSubject(pullModArgs.output)))
 
 	return nil
 }

@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -103,7 +104,7 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log := LoggerBundle(ctx, bundleStatusArgs.name, cluster.Name)
+		log := loggerBundle(ctx, bundleStatusArgs.name, cluster.Name, true)
 
 		if len(instances) == 0 {
 			log.Error(nil, "no instances found in bundle")
@@ -112,18 +113,18 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		for _, instance := range instances {
-			log := LoggerBundleInstance(ctx, bundleStatusArgs.name, cluster.Name, instance.Name)
+			log := loggerBundleInstance(ctx, bundleStatusArgs.name, cluster.Name, instance.Name, true)
 
 			log.Info(fmt.Sprintf("last applied %s",
-				colorizeSubject(instance.LastTransitionTime)))
+				logger.ColorizeSubject(instance.LastTransitionTime)))
 			log.Info(fmt.Sprintf("module %s",
-				colorizeSubject(instance.Module.Repository+":"+instance.Module.Version)))
+				logger.ColorizeSubject(instance.Module.Repository+":"+instance.Module.Version)))
 			log.Info(fmt.Sprintf("digest %s",
-				colorizeSubject(instance.Module.Digest)))
+				logger.ColorizeSubject(instance.Module.Digest)))
 
 			for _, image := range instance.Images {
 				log.Info(fmt.Sprintf("container image %s",
-					colorizeSubject(image)))
+					logger.ColorizeSubject(image)))
 			}
 
 			im := runtime.InstanceManager{Instance: apiv1.Instance{Inventory: instance.Inventory}}
@@ -137,23 +138,23 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 				err = rm.Client().Get(ctx, client.ObjectKeyFromObject(obj), obj)
 				if err != nil {
 					if apierrors.IsNotFound(err) {
-						log.Error(err, colorizeJoin(obj, errors.New("NotFound")))
+						log.Error(err, logger.ColorizeJoin(obj, errors.New("NotFound")))
 						failed = true
 
 						continue
 					}
-					log.Error(err, colorizeJoin(obj, errors.New("Unknown")))
+					log.Error(err, logger.ColorizeJoin(obj, errors.New("Unknown")))
 					failed = true
 					continue
 				}
 
 				res, err := status.Compute(obj)
 				if err != nil {
-					log.Error(err, colorizeJoin(obj, errors.New("Failed")))
+					log.Error(err, logger.ColorizeJoin(obj, errors.New("Failed")))
 					failed = true
 					continue
 				}
-				log.Info(colorizeJoin(obj, res.Status, "-", res.Message))
+				log.Info(logger.ColorizeJoin(obj, res.Status, "-", res.Message))
 			}
 		}
 	}

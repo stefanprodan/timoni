@@ -235,7 +235,7 @@ bundle: {
 			modPath,
 		))
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by bundle \"%s\"", instanceName, bundleName)))
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("instance \"%s\" exists and is managed by another bundle \"%s\"", instanceName, bundleName)))
 
 		output, err := executeCommand(fmt.Sprintf("ls -n %[1]s", namespace))
 		g.Expect(err).ToNot(HaveOccurred())

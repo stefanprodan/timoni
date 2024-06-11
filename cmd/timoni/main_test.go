@@ -107,8 +107,8 @@ func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 		zerolog.LevelFieldName,
 	}
 	zl := zerolog.New(zcfg)
-	logger = zerologr.New(&zl)
-	runtimeLog.SetLogger(logger)
+	cliLogger = zerologr.New(&zl)
+	runtimeLog.SetLogger(cliLogger)
 
 	_, err = rootCmd.ExecuteC()
 	result := buf.String()

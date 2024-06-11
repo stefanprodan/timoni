@@ -26,6 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -65,7 +66,7 @@ func runStatusCmd(cmd *cobra.Command, args []string) error {
 
 	statusArgs.name = args[0]
 
-	log := LoggerInstance(cmd.Context(), statusArgs.name)
+	log := loggerInstance(cmd.Context(), statusArgs.name, true)
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
@@ -81,15 +82,15 @@ func runStatusCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Info(fmt.Sprintf("last applied %s",
-		colorizeSubject(instance.LastTransitionTime)))
+		logger.ColorizeSubject(instance.LastTransitionTime)))
 	log.Info(fmt.Sprintf("module %s",
-		colorizeSubject(instance.Module.Repository+":"+instance.Module.Version)))
+		logger.ColorizeSubject(instance.Module.Repository+":"+instance.Module.Version)))
 	log.Info(fmt.Sprintf("digest %s",
-		colorizeSubject(instance.Module.Digest)))
+		logger.ColorizeSubject(instance.Module.Digest)))
 
 	for _, image := range instance.Images {
 		log.Info(fmt.Sprintf("container image %s",
-			colorizeSubject(image)))
+			logger.ColorizeSubject(image)))
 	}
 
 	tm := runtime.InstanceManager{Instance: apiv1.Instance{Inventory: instance.Inventory}}
@@ -103,19 +104,19 @@ func runStatusCmd(cmd *cobra.Command, args []string) error {
 		err = rm.Client().Get(ctx, client.ObjectKeyFromObject(obj), obj)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Error(err, colorizeJoin(obj, errors.New("NotFound")))
+				log.Error(err, logger.ColorizeJoin(obj, errors.New("NotFound")))
 				continue
 			}
-			log.Error(err, colorizeJoin(obj, errors.New("Unknown")))
+			log.Error(err, logger.ColorizeJoin(obj, errors.New("Unknown")))
 			continue
 		}
 
 		res, err := status.Compute(obj)
 		if err != nil {
-			log.Error(err, colorizeJoin(obj, errors.New("Failed")))
+			log.Error(err, logger.ColorizeJoin(obj, errors.New("Failed")))
 			continue
 		}
-		log.Info(colorizeJoin(obj, res.Status, "-", res.Message))
+		log.Info(logger.ColorizeJoin(obj, res.Status, "-", res.Message))
 	}
 
 	return nil

@@ -29,6 +29,7 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
 )
 
@@ -142,7 +143,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	pushModArgs.ignorePaths = append(pushModArgs.ignorePaths, ps...)
 
-	spin := StartSpinner("pushing module")
+	spin := logger.StartSpinner("pushing module")
 	defer spin.Stop()
 
 	opts := oci.Options(ctx, pushModArgs.creds.String(), rootArgs.registryInsecure)
@@ -201,8 +202,8 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		log.Info(fmt.Sprintf("artifact: %s", colorizeSubject(ociURL)))
-		log.Info(fmt.Sprintf("digest: %s", colorizeSubject(digest.DigestStr())))
+		log.Info(fmt.Sprintf("artifact: %s", logger.ColorizeSubject(ociURL)))
+		log.Info(fmt.Sprintf("digest: %s", logger.ColorizeSubject(digest.DigestStr())))
 	}
 
 	return nil

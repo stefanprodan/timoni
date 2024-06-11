@@ -28,6 +28,7 @@ import (
 	"github.com/spf13/cobra"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
 )
 
@@ -98,7 +99,7 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 		templateName = "blueprint"
 	}
 
-	spin := StartSpinner(fmt.Sprintf("pulling template from %s", templateURL))
+	spin := logger.StartSpinner(fmt.Sprintf("pulling template from %s", templateURL))
 	defer spin.Stop()
 
 	opts := oci.Options(ctx, "", rootArgs.registryInsecure)

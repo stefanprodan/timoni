@@ -34,6 +34,7 @@ import (
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/logger"
 )
 
 var vetModCmd = &cobra.Command{
@@ -179,7 +180,7 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 
 	for _, object := range objects {
 		log.Info(fmt.Sprintf("%s %s",
-			colorizeSubject(ssautil.FmtUnstructured(object)), colorizeInfo("valid resource")))
+			logger.ColorizeSubject(ssautil.FmtUnstructured(object)), logger.ColorizeInfo("valid resource")))
 	}
 
 	images, err := builder.GetContainerImages(buildResult)
@@ -195,15 +196,15 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 
 		if !strings.Contains(image, "@sha") {
 			log.Info(fmt.Sprintf("%s %s",
-				colorizeSubject(image), colorizeWarning("valid image (digest missing)")))
+				logger.ColorizeSubject(image), logger.ColorizeWarning("valid image (digest missing)")))
 		} else {
 			log.Info(fmt.Sprintf("%s %s",
-				colorizeSubject(image), colorizeInfo("valid image")))
+				logger.ColorizeSubject(image), logger.ColorizeInfo("valid image")))
 		}
 	}
 
 	log.Info(fmt.Sprintf("%s %s",
-		colorizeSubject(mod.Name), colorizeInfo("valid module")))
+		logger.ColorizeSubject(mod.Name), logger.ColorizeInfo("valid module")))
 
 	return nil
 }
