@@ -51,12 +51,12 @@ sboms:
       - "{{ .ProjectName }}_{{ .Version }}_sbom.spdx.json"
 brews:
   - name: timoni
-    tap:
+    repository:
       owner: stefanprodan
       name: homebrew-tap
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    folder: Formula
+    directory: Formula
     homepage: "https://timoni.sh"
     description: "Timoni CLI"
     dependencies:
