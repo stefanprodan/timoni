@@ -113,7 +113,7 @@ func (r *Reconciler) Init(ctx context.Context, builder *engine.ModuleBuilder, bu
 	return nil
 }
 
-func (r *Reconciler) ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value, opts InteractiveOptions) error {
+func (r *Reconciler) ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value) error {
 	if !r.instanceExists {
 		if err := r.UpdateStoredInstance(ctx); err != nil {
 			return fmt.Errorf("instance init failed: %w", err)
