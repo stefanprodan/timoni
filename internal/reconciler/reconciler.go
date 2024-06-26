@@ -174,12 +174,6 @@ func (r *Reconciler) doWaitForTermination(_ context.Context, _ logr.Logger, cs *
 }
 
 func (r *Reconciler) ApplyAllSets(ctx context.Context, log logr.Logger, withChangeSet withChangeSetFunc) error {
-	if !r.instanceExists {
-		if err := r.UpdateStoredInstance(ctx); err != nil {
-			return fmt.Errorf("instance init failed: %w", err)
-		}
-	}
-
 	multiSet := len(r.sets) > 1
 	for s := range r.sets {
 		set := r.sets[s]
