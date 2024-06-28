@@ -159,10 +159,11 @@ func (b *ModuleBuilder) SetVersionInfo(moduleVersion, kubeVersion string) {
 func (b *ModuleBuilder) Build(tags ...string) (cue.Value, error) {
 	var value cue.Value
 	cfg := &load.Config{
-		ModuleRoot: b.moduleRoot,
-		Package:    b.pkgName,
-		Dir:        b.pkgPath,
-		DataFiles:  true,
+		AcceptLegacyModules: true,
+		ModuleRoot:          b.moduleRoot,
+		Package:             b.pkgName,
+		Dir:                 b.pkgPath,
+		DataFiles:           true,
 		Tags: []string{
 			"name=" + b.name,
 			"namespace=" + b.namespace,
