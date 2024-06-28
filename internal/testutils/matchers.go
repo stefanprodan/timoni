@@ -217,13 +217,13 @@ func BeClosed() types.GomegaMatcher {
 //	Expect(myThing.Sprocket).Should(Equal("foo"))
 //	Expect(myThing.IsValid()).Should(BeTrue())
 func Receive(args ...interface{}) types.GomegaMatcher {
-	var arg interface{}
+	var arg []interface{}
 	if len(args) > 0 {
-		arg = args[0]
+		arg = append(arg, args...)
 	}
 
 	return &matchers.ReceiveMatcher{
-		Arg: arg,
+		Args: arg,
 	}
 }
 
