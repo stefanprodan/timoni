@@ -147,7 +147,7 @@ func TestConvertCRD(t *testing.T) {
 			required: ["foo"]
 			`,
 			expect: `{
-	foo: string
+	foo!: string
 }`,
 		},
 		{
@@ -161,7 +161,7 @@ func TestConvertCRD(t *testing.T) {
 			required: ["foo"]
 			additionalProperties: false`,
 			expect: `{
-	foo: string
+	foo!: string
 }`,
 		},
 		{
@@ -176,7 +176,7 @@ func TestConvertCRD(t *testing.T) {
 			required: ["foo"]
 			`,
 			expect: `{
-	foo: string
+	foo!: string
 	...
 }`,
 		},
@@ -210,8 +210,8 @@ func TestConvertCRD(t *testing.T) {
 			required: ["foo", "nest"]
 			`,
 			expect: `{
-	foo: string
-	nest: {
+	foo!: string
+	nest!: {
 		innerField?: string
 		nestnest?: {
 			nestnestnest?: {
@@ -240,8 +240,8 @@ func TestConvertCRD(t *testing.T) {
 			required: ["foo", "nest"]
 			`,
 			expect: `{
-	foo: string
-	nest: {
+	foo!: string
+	nest!: {
 		innerField?: string
 	}
 }`,
@@ -264,8 +264,8 @@ func TestConvertCRD(t *testing.T) {
 			required: ["foo", "nest"]
 			additionalProperties: false`,
 			expect: `{
-	foo: string
-	nest: {
+	foo!: string
+	nest!: {
 		innerField?: string
 	}
 }`,
@@ -288,8 +288,8 @@ func TestConvertCRD(t *testing.T) {
 			required: ["foo", "nest"]
 			`,
 			expect: `{
-	foo: string
-	nest: {
+	foo!: string
+	nest!: {
 		innerField?: string
 	}
 	...
@@ -328,7 +328,7 @@ func TestConvertCRD(t *testing.T) {
 			expect: `{
 	resources?: {
 		claims?: [...{
-			name: string
+			name!: string
 		}]
 	}
 	spec?: {
