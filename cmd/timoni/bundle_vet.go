@@ -159,7 +159,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 			return describeErr(workspace, "failed to parse bundle", err)
 		}
 
-		v, err := bm.Build()
+		v, err := bm.Build(workspace)
 		if err != nil {
 			return describeErr(workspace, "failed to build bundle", err)
 		}

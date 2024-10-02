@@ -37,6 +37,7 @@ import (
 type BundleBuilder struct {
 	ctx               *cue.Context
 	files             []string
+	workspaceFiles    map[string][]string
 	mapSourceToOrigin map[string]string
 	injector          *RuntimeInjector
 }
@@ -63,6 +64,7 @@ func NewBundleBuilder(ctx *cue.Context, files []string) *BundleBuilder {
 	b := &BundleBuilder{
 		ctx:               ctx,
 		files:             files,
+		workspaceFiles:    make(map[string][]string),
 		mapSourceToOrigin: make(map[string]string, len(files)),
 		injector:          NewRuntimeInjector(ctx),
 	}
@@ -116,26 +118,26 @@ func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string
 		files = append(files, dstFile)
 	}
 
-	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.files)+1))
+	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.workspaceFiles[workspace])+1))
 	files = append(files, schemaFile)
 	if err := os.WriteFile(schemaFile, []byte(apiv1.BundleSchema), os.ModePerm); err != nil {
 		return err
 	}
 
-	b.files = files
+	b.workspaceFiles[workspace] = files
 	return nil
 }
 
 // Build builds a CUE instance for the specified files and returns the CUE value.
 // A workspace must be initialised with InitWorkspace before calling this function.
-func (b *BundleBuilder) Build() (cue.Value, error) {
+func (b *BundleBuilder) Build(workspace string) (cue.Value, error) {
 	var value cue.Value
 	cfg := &load.Config{
 		Package:   "_",
 		DataFiles: true,
 	}
 
-	ix := load.Instances(b.files, cfg)
+	ix := load.Instances(b.workspaceFiles[workspace], cfg)
 	if len(ix) == 0 {
 		return value, fmt.Errorf("no instances found")
 	}

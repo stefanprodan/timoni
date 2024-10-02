@@ -180,7 +180,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 			return describeErr(workspace, "failed to parse bundle", err)
 		}
 
-		v, err := bm.Build()
+		v, err := bm.Build(workspace)
 		if err != nil {
 			return describeErr(tmpDir, "failed to build bundle", err)
 		}
