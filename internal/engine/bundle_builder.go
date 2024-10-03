@@ -37,7 +37,7 @@ import (
 type BundleBuilder struct {
 	ctx               *cue.Context
 	files             []string
-	workspaceFiles    map[string][]string
+	workspacesFiles   map[string][]string
 	mapSourceToOrigin map[string]string
 	injector          *RuntimeInjector
 }
@@ -64,7 +64,7 @@ func NewBundleBuilder(ctx *cue.Context, files []string) *BundleBuilder {
 	b := &BundleBuilder{
 		ctx:               ctx,
 		files:             files,
-		workspaceFiles:    make(map[string][]string),
+		workspacesFiles:   make(map[string][]string),
 		mapSourceToOrigin: make(map[string]string, len(files)),
 		injector:          NewRuntimeInjector(ctx),
 	}
@@ -118,13 +118,13 @@ func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string
 		files = append(files, dstFile)
 	}
 
-	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.workspaceFiles[workspace])+1))
+	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.workspacesFiles[workspace])+1))
 	files = append(files, schemaFile)
 	if err := os.WriteFile(schemaFile, []byte(apiv1.BundleSchema), os.ModePerm); err != nil {
 		return err
 	}
 
-	b.workspaceFiles[workspace] = files
+	b.workspacesFiles[workspace] = files
 	return nil
 }
 
@@ -137,7 +137,7 @@ func (b *BundleBuilder) Build(workspace string) (cue.Value, error) {
 		DataFiles: true,
 	}
 
-	ix := load.Instances(b.workspaceFiles[workspace], cfg)
+	ix := load.Instances(b.workspacesFiles[workspace], cfg)
 	if len(ix) == 0 {
 		return value, fmt.Errorf("no instances found")
 	}
