@@ -201,7 +201,7 @@ func (s *StorageManager) ListNamespaces(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	res := make([]string, len(nsList.Items))
+	res := make([]string, 0, len(nsList.Items))
 	for _, ns := range nsList.Items {
 		res = append(res, ns.Name)
 	}
