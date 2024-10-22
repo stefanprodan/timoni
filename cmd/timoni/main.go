@@ -49,7 +49,7 @@ var rootCmd = &cobra.Command{
 		// a command only if one wasn't provided. This allows other
 		// callers (e.g. unit tests) to inject their own logger ahead of time.
 		if cliLogger.IsZero() {
-			cliLogger = logger.NewConsoleLogger(true, true)
+			cliLogger = logger.NewConsoleLogger(rootArgs.coloredLog, rootArgs.prettyLog)
 		}
 
 		// Inject the logger in the command context.
