@@ -85,7 +85,7 @@ import "strings"
 	// the same namespace as the Certificate. If the issuer is
 	// cluster-scoped, it can be used from any namespace.
 	// The `name` field of the reference must always be specified.
-	issuerRef: {
+	issuerRef!: {
 		// Group of the resource being referred to.
 		group?: string
 
@@ -93,7 +93,7 @@ import "strings"
 		kind?: string
 
 		// Name of the resource being referred to.
-		name: string
+		name!: string
 	}
 
 	// The PEM-encoded X.509 certificate signing request to be
@@ -105,7 +105,7 @@ import "strings"
 	// If the CSR has a ExtKeyUsage extension, its extended key
 	// usages must match the extended key usages in the `usages`
 	// field of this CertificateRequest.
-	request: string
+	request!: string
 
 	// UID contains the uid of the user that created the
 	// CertificateRequest. Populated by the cert-manager webhook on

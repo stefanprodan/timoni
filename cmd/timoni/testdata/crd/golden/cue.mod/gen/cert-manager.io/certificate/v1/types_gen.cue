@@ -57,7 +57,7 @@ import "strings"
 	additionalOutputFormats?: [...{
 		// Type is the name of the format type that should be written to
 		// the Certificate's target Secret.
-		type: "DER" | "CombinedPEM"
+		type!: "DER" | "CombinedPEM"
 	}]
 
 	// Requested common name X509 certificate subject attribute. More
@@ -108,7 +108,7 @@ import "strings"
 	// the same namespace as the Certificate. If the issuer is
 	// cluster-scoped, it can be used from any namespace.
 	// The `name` field of the reference must always be specified.
-	issuerRef: {
+	issuerRef!: {
 		// Group of the resource being referred to.
 		group?: string
 
@@ -116,7 +116,7 @@ import "strings"
 		kind?: string
 
 		// Name of the resource being referred to.
-		name: string
+		name!: string
 	}
 
 	// Additional keystore output formats to be stored in the
@@ -134,11 +134,11 @@ import "strings"
 			// Secret resource, encrypted using the password stored in
 			// `passwordSecretRef` containing the issuing Certificate
 			// Authority
-			create: bool
+			create!: bool
 
 			// PasswordSecretRef is a reference to a key in a Secret resource
 			// containing the password used to encrypt the JKS keystore.
-			passwordSecretRef: {
+			passwordSecretRef!: {
 				// The key of the entry in the Secret resource's `data` field to
 				// be used. Some instances of this field may be defaulted, in
 				// others it may be required.
@@ -146,7 +146,7 @@ import "strings"
 
 				// Name of the resource being referred to. More info:
 				// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-				name: string
+				name!: string
 			}
 		}
 
@@ -162,11 +162,11 @@ import "strings"
 			// Secret resource, encrypted using the password stored in
 			// `passwordSecretRef` containing the issuing Certificate
 			// Authority
-			create: bool
+			create!: bool
 
 			// PasswordSecretRef is a reference to a key in a Secret resource
 			// containing the password used to encrypt the PKCS12 keystore.
-			passwordSecretRef: {
+			passwordSecretRef!: {
 				// The key of the entry in the Secret resource's `data` field to
 				// be used. Some instances of this field may be defaulted, in
 				// others it may be required.
@@ -174,7 +174,7 @@ import "strings"
 
 				// Name of the resource being referred to. More info:
 				// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-				name: string
+				name!: string
 			}
 		}
 	}
@@ -268,7 +268,7 @@ import "strings"
 	// with a private key and certificate, signed by the denoted
 	// issuer. The Secret resource lives in the same namespace as the
 	// Certificate resource.
-	secretName: string
+	secretName!: string
 
 	// Defines annotations and labels to be copied to the
 	// Certificate's Secret. Labels and annotations on the Secret
