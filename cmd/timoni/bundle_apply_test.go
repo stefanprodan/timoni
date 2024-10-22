@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	. "github.com/onsi/gomega"
+	cp "github.com/otiai10/copy"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -590,5 +591,166 @@ runtime: {
 		_, err := executeCommandWithIn(cmd, strings.NewReader(bundleData))
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("no cluster found"))
+	})
+}
+
+func Test_BundleApply_Runtime_LocalModule_WithRelativePath(t *testing.T) {
+	g := NewWithT(t)
+
+	bundleName := "my-bundle"
+	modPath := "testdata/module"
+	namespace := rnd("my-ns", 5)
+	modVer := "1.0.0"
+
+	bundleCue := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		app: {
+			module: {
+				url:     "file://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+		}
+	}
+}
+`, bundleName, modPath, modVer, namespace)
+
+	// Copy testdata/module/ to /tmpdir/testdata/module/
+	// This is needed because `bundlePath` below will be `tmpdir/bundle.cue`
+	// which means the `file://./testdata/module/` will be normalized to /tmpdir/testdata/module
+	bundleTmpDir := t.TempDir()
+	g.Expect(cp.Copy(modPath, filepath.Join(bundleTmpDir, modPath))).To(Succeed())
+
+	bundlePath := filepath.Join(bundleTmpDir, "bundle.cue")
+	err := os.WriteFile(bundlePath, []byte(bundleCue), 0644)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	runtimeCue := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "test"
+	clusters: {
+		"test": {
+			group:       "testing"
+			kubeContext: "envtest"
+		}
+		"staging": {
+			group:       "staging"
+			kubeContext: "envtest"
+		}
+	}
+}
+`
+
+	runtimePath := filepath.Join(t.TempDir(), "runtime.cue")
+	err = os.WriteFile(runtimePath, []byte(runtimeCue), 0644)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Run("creates instances from concrete bundle file and concrete runtime file", func(t *testing.T) {
+		g := NewWithT(t)
+
+		cmd := fmt.Sprintf("bundle apply -p main --wait -f=%s -r=%s",
+			bundlePath,
+			runtimePath,
+		)
+
+		output, err := executeCommand(cmd)
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+	})
+
+	t.Run("creates instances from stdin bundle and concrete runtime file", func(t *testing.T) {
+		g := NewWithT(t)
+
+		cmd := fmt.Sprintf("bundle apply -p main --wait -f- -r=%s",
+			runtimePath,
+		)
+
+		output, err := executeCommandWithIn(cmd, strings.NewReader(bundleCue))
+		g.Expect(err).To(HaveOccurred())
+		t.Log("\n", output)
+	})
+}
+
+func Test_BundleApply_Runtime_LocalModule_WithAbsolutePath(t *testing.T) {
+	g := NewWithT(t)
+
+	// Copy testdata/module/ to /tmpdir/testdata/module/
+	// modPath will become an absolute path `/tmpdir/testdata/module/`
+	bundleTmpDir := t.TempDir()
+	g.Expect(cp.Copy("testdata/module", filepath.Join(bundleTmpDir, "testdata/module"))).To(Succeed())
+
+	bundleName := "my-bundle"
+	modPath := filepath.Join(bundleTmpDir, "testdata/module")
+	namespace := rnd("my-ns", 5)
+	modVer := "1.0.0"
+
+	bundleCue := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		app: {
+			module: {
+				url:     "file://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+		}
+	}
+}
+`, bundleName, modPath, modVer, namespace)
+
+	bundlePath := filepath.Join(bundleTmpDir, "bundle.cue")
+	err := os.WriteFile(bundlePath, []byte(bundleCue), 0644)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	runtimeCue := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "test"
+	clusters: {
+		"test": {
+			group:       "testing"
+			kubeContext: "envtest"
+		}
+		"staging": {
+			group:       "staging"
+			kubeContext: "envtest"
+		}
+	}
+}
+`
+
+	runtimePath := filepath.Join(t.TempDir(), "runtime.cue")
+	err = os.WriteFile(runtimePath, []byte(runtimeCue), 0644)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Run("creates instances from concrete bundle file and concrete runtime file", func(t *testing.T) {
+		g := NewWithT(t)
+
+		cmd := fmt.Sprintf("bundle apply -p main --wait -f=%s -r=%s",
+			bundlePath,
+			runtimePath,
+		)
+
+		output, err := executeCommand(cmd)
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+	})
+
+	t.Run("creates instances from stdin bundle and concrete runtime file", func(t *testing.T) {
+		g := NewWithT(t)
+
+		cmd := fmt.Sprintf("bundle apply -p main --wait -f- -r=%s",
+			runtimePath,
+		)
+
+		output, err := executeCommandWithIn(cmd, strings.NewReader(bundleCue))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
 	})
 }

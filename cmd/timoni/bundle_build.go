@@ -145,7 +145,7 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		return describeErr(tmpDir, "failed to parse bundle", err)
 	}
 
-	v, err := bm.Build()
+	v, err := bm.Build(tmpDir)
 	if err != nil {
 		return describeErr(tmpDir, "failed to build bundle", err)
 	}

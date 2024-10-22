@@ -35,8 +35,9 @@ import (
 
 // RuntimeBuilder compiles CUE definitions to Go Runtime objects.
 type RuntimeBuilder struct {
-	ctx   *cue.Context
-	files []string
+	ctx             *cue.Context
+	files           []string
+	workspacesFiles map[string][]string
 }
 
 // NewRuntimeBuilder creates a RuntimeBuilder for the given module and package.
@@ -45,8 +46,9 @@ func NewRuntimeBuilder(ctx *cue.Context, files []string) *RuntimeBuilder {
 		ctx = cuecontext.New()
 	}
 	b := &RuntimeBuilder{
-		ctx:   ctx,
-		files: files,
+		ctx:             ctx,
+		files:           files,
+		workspacesFiles: make(map[string][]string),
 	}
 	return b
 }
@@ -96,26 +98,26 @@ func (b *RuntimeBuilder) InitWorkspace(workspace string) error {
 		files = append(files, dstFile)
 	}
 
-	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.files)+1))
+	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.workspacesFiles[workspace])+1))
 	files = append(files, schemaFile)
 	if err := os.WriteFile(schemaFile, []byte(apiv1.RuntimeSchema), os.ModePerm); err != nil {
 		return err
 	}
 
-	b.files = files
+	b.workspacesFiles[workspace] = files
 	return nil
 }
 
 // Build builds a CUE instance for the specified files and returns the CUE value.
 // A workspace must be initialised with InitWorkspace before calling this function.
-func (b *RuntimeBuilder) Build() (cue.Value, error) {
+func (b *RuntimeBuilder) Build(workspace string) (cue.Value, error) {
 	var value cue.Value
 	cfg := &load.Config{
 		Package:   "_",
 		DataFiles: true,
 	}
 
-	ix := load.Instances(b.files, cfg)
+	ix := load.Instances(b.workspacesFiles[workspace], cfg)
 	if len(ix) == 0 {
 		return value, fmt.Errorf("no instances found")
 	}

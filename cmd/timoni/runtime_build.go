@@ -147,7 +147,7 @@ func buildRuntime(files []string) (*apiv1.Runtime, error) {
 		return nil, describeErr(tmpDir, "failed to init runtime", err)
 	}
 
-	v, err := rb.Build()
+	v, err := rb.Build(tmpDir)
 	if err != nil {
 		return nil, describeErr(tmpDir, "failed to parse runtime", err)
 	}
