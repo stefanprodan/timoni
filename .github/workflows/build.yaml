@@ -18,12 +18,11 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version-file: 'go.mod'
-          cache: true
+          go-version: 1.23.x
       - name: Setup CUE
         uses: cue-lang/setup-cue@a93fa358375740cd8b0078f76355512b9208acb1 # main
         with:
-          version: v0.8.1
+          version: v0.9.2
       - name: Run tests
         run: make test
       - name: Run linter
