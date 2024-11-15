@@ -69,7 +69,7 @@ brews:
       bash_output = Utils.safe_popen_read(bin/"timoni", "completion", "bash")
       (bash_completion/"timoni").write bash_output
       zsh_output = Utils.safe_popen_read(bin/"timoni", "completion", "zsh")
-      (zsh_completion/"timoni").write zsh_output
+      (zsh_completion/"_timoni").write zsh_output
       fish_output = Utils.safe_popen_read(bin/"timoni", "completion", "fish")
       (fish_completion/"timoni.fish").write fish_output
     test: |
