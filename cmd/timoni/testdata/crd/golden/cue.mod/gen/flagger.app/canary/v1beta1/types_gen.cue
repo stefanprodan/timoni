@@ -89,7 +89,7 @@ import (
 
 		// A/B testing match conditions
 		match?: [...{
-			headers?: {
+			headers?: close({
 				[string]: matchN(1, [{
 					exact!: _
 				}, {
@@ -107,10 +107,10 @@ import (
 					regex?:  string
 					suffix?: string
 				}
-			}
+			})
 
 			// Query parameters for matching.
-			queryParams?: {
+			queryParams?: close({
 				[string]: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 					exact!: _
 				}, null | bool | number | string | [...] | {
@@ -131,13 +131,13 @@ import (
 					// (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
-			}
+			})
 
 			// Applicable only when the 'mesh' gateway is included in the
 			// service.gateways list
-			sourceLabels?: {
+			sourceLabels?: close({
 				[string]: string
-			}
+			})
 		}]
 
 		// Max traffic weight routed to canary
@@ -165,9 +165,9 @@ import (
 
 			// Additional variables to be used in the metrics query (key-value
 			// pairs)
-			templateVariables?: {
+			templateVariables?: close({
 				[string]: string
-			}
+			})
 
 			// Max value accepted for this metric
 			threshold?: number
@@ -219,9 +219,9 @@ import (
 		// Webhook list for this canary
 		webhooks?: [...{
 			// Metadata (key-value pairs) for this webhook
-			metadata?: {
+			metadata?: close({
 				[string]: string
-			}
+			})
 
 			// Mute all alerts for the webhook
 			muteAlert?: bool
@@ -248,9 +248,9 @@ import (
 		apiVersion!: string
 		kind!:       "HorizontalPodAutoscaler" | "ScaledObject"
 		name!:       string
-		primaryScalerQueries?: {
+		primaryScalerQueries?: close({
 			[string]: string
-		}
+		})
 		primaryScalerReplicas?: {
 			maxReplicas?: number
 			minReplicas?: number
@@ -287,12 +287,12 @@ import (
 	service!: {
 		// Metadata to add to the apex service
 		apex?: {
-			annotations?: {
+			annotations?: close({
 				[string]: string
-			}
-			labels?: {
+			})
+			labels?: close({
 				[string]: string
-			}
+			})
 		}
 
 		// Application protocol of the port
@@ -303,12 +303,12 @@ import (
 
 		// Metadata to add to the canary service
 		canary?: {
-			annotations?: {
+			annotations?: close({
 				[string]: string
-			}
-			labels?: {
+			})
+			labels?: close({
 				[string]: string
-			}
+			})
 		}
 
 		// Istio Cross-Origin Resource Sharing policy (CORS)
@@ -361,22 +361,22 @@ import (
 		// Headers operations
 		headers?: {
 			request?: {
-				add?: {
+				add?: close({
 					[string]: string
-				}
+				})
 				remove?: [...string]
-				set?: {
+				set?: close({
 					[string]: string
-				}
+				})
 			}
 			response?: {
-				add?: {
+				add?: close({
 					[string]: string
-				}
+				})
 				remove?: [...string]
-				set?: {
+				set?: close({
 					[string]: string
-				}
+				})
 			}
 		}
 
@@ -408,7 +408,7 @@ import (
 
 			// Names of gateways where the rule should be applied.
 			gateways?: [...string]
-			headers?: {
+			headers?: close({
 				[string]: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 					exact!: _
 				}, null | bool | number | string | [...] | {
@@ -429,7 +429,7 @@ import (
 					// (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
-			}
+			})
 
 			// Flag to specify whether the URI matching should be
 			// case-insensitive.
@@ -462,7 +462,7 @@ import (
 			port?: int
 
 			// Query parameters for matching.
-			queryParams?: {
+			queryParams?: close({
 				[string]: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 					exact!: _
 				}, null | bool | number | string | [...] | {
@@ -483,7 +483,7 @@ import (
 					// (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
-			}
+			})
 			scheme?: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 				exact!: _
 			}, null | bool | number | string | [...] | {
@@ -504,9 +504,9 @@ import (
 				// (https://github.com/google/re2/wiki/Syntax).
 				regex?: string
 			}
-			sourceLabels?: {
+			sourceLabels?: close({
 				[string]: string
-			}
+			})
 
 			// Source namespace constraining the applicability of a rule to
 			// workloads in that namespace.
@@ -534,7 +534,7 @@ import (
 
 			// withoutHeader has the same syntax with the header, but has
 			// opposite meaning.
-			withoutHeaders?: {
+			withoutHeaders?: close({
 				[string]: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 					exact!: _
 				}, null | bool | number | string | [...] | {
@@ -555,7 +555,7 @@ import (
 					// (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
-			}
+			})
 		}]
 
 		// AppMesh mesh name
@@ -588,18 +588,18 @@ import (
 
 		// Metadata to add to the primary service
 		primary?: {
-			annotations?: {
+			annotations?: close({
 				[string]: string
-			}
-			labels?: {
+			})
+			labels?: close({
 				[string]: string
-			}
+			})
 		}
 
 		// Retry policy for HTTP requests
 		retries?: {
 			// Number of retries for a given request
-			attempts?: int
+			attempts?: int32
 
 			// Timeout per retry attempt for a given request
 			perTryTimeout?: string
@@ -631,17 +631,17 @@ import (
 					h2UpgradePolicy?: "DEFAULT" | "DO_NOT_UPGRADE" | "UPGRADE"
 
 					// Maximum number of pending HTTP requests to a destination.
-					http1MaxPendingRequests?: int
+					http1MaxPendingRequests?: int32
 
 					// Maximum number of requests to a backend.
-					http2MaxRequests?: int
+					http2MaxRequests?: int32
 
 					// The idle timeout for upstream connection pool connections.
 					idleTimeout?: string
 
 					// Maximum number of requests per connection to a backend.
-					maxRequestsPerConnection?: int
-					maxRetries?:               int
+					maxRequestsPerConnection?: int32
+					maxRetries?:               int32
 				}
 			}
 
@@ -689,9 +689,9 @@ import (
 						from?: string
 
 						// Map of upstream localities to traffic distribution weights.
-						to?: {
+						to?: close({
 							[string]: int
-						}
+						})
 					}]
 
 					// enable locality load balancing, this is DestinationRule-level
@@ -720,16 +720,16 @@ import (
 				// Number of 5xx errors before a host is ejected from the
 				// connection pool.
 				consecutive5xxErrors?: int
-				consecutiveErrors?:    int
+				consecutiveErrors?:    int32
 
 				// Number of gateway errors before a host is ejected from the
 				// connection pool.
-				consecutiveGatewayErrors?: int
+				consecutiveGatewayErrors?: int32
 
 				// Time interval between ejection sweep analysis.
 				interval?:           string
-				maxEjectionPercent?: int
-				minHealthPercent?:   int
+				maxEjectionPercent?: int32
+				minHealthPercent?:   int32
 			}
 
 			// Istio TLS related settings for connections to the upstream

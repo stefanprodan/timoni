@@ -261,7 +261,7 @@ import "strings"
 	// If set, revisionHistoryLimit must be a value of `1` or greater.
 	// If unset (`nil`), revisions will not be garbage collected.
 	// Default value is `nil`.
-	revisionHistoryLimit?: int
+	revisionHistoryLimit?: int32
 
 	// Name of the Secret resource that will be automatically created
 	// and managed by this Certificate resource. It will be populated
@@ -279,15 +279,15 @@ import "strings"
 	secretTemplate?: {
 		// Annotations is a key value map to be copied to the target
 		// Kubernetes Secret.
-		annotations?: {
+		annotations?: close({
 			[string]: string
-		}
+		})
 
 		// Labels is a key value map to be copied to the target Kubernetes
 		// Secret.
-		labels?: {
+		labels?: close({
 			[string]: string
-		}
+		})
 	}
 
 	// Requested set of X509 certificate subject attributes. More

@@ -393,9 +393,9 @@ import "strings"
 			gatewayHTTPRoute?: {
 				// Custom labels that will be applied to HTTPRoutes created by
 				// cert-manager while solving HTTP-01 challenges.
-				labels?: {
+				labels?: close({
 					[string]: string
-				}
+				})
 
 				// When solving an HTTP-01 challenge, cert-manager creates an
 				// HTTPRoute. cert-manager needs to know which parentRefs should
@@ -535,15 +535,15 @@ import "strings"
 					metadata?: {
 						// Annotations that should be added to the created ACME HTTP01
 						// solver ingress.
-						annotations?: {
+						annotations?: close({
 							[string]: string
-						}
+						})
 
 						// Labels that should be added to the created ACME HTTP01 solver
 						// ingress.
-						labels?: {
+						labels?: close({
 							[string]: string
-						}
+						})
 					}
 				}
 
@@ -565,15 +565,15 @@ import "strings"
 					metadata?: {
 						// Annotations that should be added to the create ACME HTTP01
 						// solver pods.
-						annotations?: {
+						annotations?: close({
 							[string]: string
-						}
+						})
 
 						// Labels that should be added to the created ACME HTTP01 solver
 						// pods.
-						labels?: {
+						labels?: close({
 							[string]: string
-						}
+						})
 					}
 
 					// PodSpec defines overrides for the HTTP01 challenge solver pod.
@@ -637,7 +637,7 @@ import "strings"
 
 									// Weight associated with matching the corresponding
 									// nodeSelectorTerm, in the range 1-100.
-									weight!: int
+									weight!: int32
 								}]
 								requiredDuringSchedulingIgnoredDuringExecution?: {
 									// Required. A list of node selector terms. The terms are ORed.
@@ -723,9 +723,9 @@ import "strings"
 											// matchExpressions, whose key field is "key", the operator is
 											// "In", and the values array contains only "value". The
 											// requirements are ANDed.
-											matchLabels?: {
+											matchLabels?: close({
 												[string]: string
-											}
+											})
 										}
 
 										// A label query over the set of namespaces that the term applies
@@ -757,9 +757,9 @@ import "strings"
 											// matchExpressions, whose key field is "key", the operator is
 											// "In", and the values array contains only "value". The
 											// requirements are ANDed.
-											matchLabels?: {
+											matchLabels?: close({
 												[string]: string
-											}
+											})
 										}
 
 										// namespaces specifies a static list of namespace names that the
@@ -780,7 +780,7 @@ import "strings"
 
 									// weight associated with matching the corresponding
 									// podAffinityTerm, in the range 1-100.
-									weight!: int
+									weight!: int32
 								}]
 
 								// If the affinity requirements specified by this field are not
@@ -817,9 +817,9 @@ import "strings"
 										// matchExpressions, whose key field is "key", the operator is
 										// "In", and the values array contains only "value". The
 										// requirements are ANDed.
-										matchLabels?: {
+										matchLabels?: close({
 											[string]: string
-										}
+										})
 									}
 
 									// A label query over the set of namespaces that the term applies
@@ -851,9 +851,9 @@ import "strings"
 										// matchExpressions, whose key field is "key", the operator is
 										// "In", and the values array contains only "value". The
 										// requirements are ANDed.
-										matchLabels?: {
+										matchLabels?: close({
 											[string]: string
-										}
+										})
 									}
 
 									// namespaces specifies a static list of namespace names that the
@@ -916,9 +916,9 @@ import "strings"
 											// matchExpressions, whose key field is "key", the operator is
 											// "In", and the values array contains only "value". The
 											// requirements are ANDed.
-											matchLabels?: {
+											matchLabels?: close({
 												[string]: string
-											}
+											})
 										}
 
 										// A label query over the set of namespaces that the term applies
@@ -950,9 +950,9 @@ import "strings"
 											// matchExpressions, whose key field is "key", the operator is
 											// "In", and the values array contains only "value". The
 											// requirements are ANDed.
-											matchLabels?: {
+											matchLabels?: close({
 												[string]: string
-											}
+											})
 										}
 
 										// namespaces specifies a static list of namespace names that the
@@ -973,7 +973,7 @@ import "strings"
 
 									// weight associated with matching the corresponding
 									// podAffinityTerm, in the range 1-100.
-									weight!: int
+									weight!: int32
 								}]
 
 								// If the anti-affinity requirements specified by this field are
@@ -1010,9 +1010,9 @@ import "strings"
 										// matchExpressions, whose key field is "key", the operator is
 										// "In", and the values array contains only "value". The
 										// requirements are ANDed.
-										matchLabels?: {
+										matchLabels?: close({
 											[string]: string
-										}
+										})
 									}
 
 									// A label query over the set of namespaces that the term applies
@@ -1044,9 +1044,9 @@ import "strings"
 										// matchExpressions, whose key field is "key", the operator is
 										// "In", and the values array contains only "value". The
 										// requirements are ANDed.
-										matchLabels?: {
+										matchLabels?: close({
 											[string]: string
-										}
+										})
 									}
 
 									// namespaces specifies a static list of namespace names that the
@@ -1079,9 +1079,9 @@ import "strings"
 						// fit on a node. Selector which must match a node's labels for
 						// the pod to be scheduled on that node. More info:
 						// https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-						nodeSelector?: {
+						nodeSelector?: close({
 							[string]: string
-						}
+						})
 
 						// If specified, the pod's priorityClassName.
 						priorityClassName?: string
@@ -1114,7 +1114,7 @@ import "strings"
 							// means tolerate the taint forever (do not evict). Zero and
 							// negative values will be treated as 0 (evict immediately) by
 							// the system.
-							tolerationSeconds?: int
+							tolerationSeconds?: int64
 
 							// Value is the taint value the toleration matches to. If the
 							// operator is Exists, the value should be empty, otherwise just
@@ -1159,9 +1159,9 @@ import "strings"
 
 			// A label selector that is used to refine the set of
 			// certificate's that this challenge solver will apply to.
-			matchLabels?: {
+			matchLabels?: close({
 				[string]: string
-			}
+			})
 		}
 	}
 
