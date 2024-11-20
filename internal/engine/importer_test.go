@@ -160,9 +160,9 @@ func TestConvertCRD(t *testing.T) {
 			}
 			required: ["foo"]
 			additionalProperties: false`,
-			expect: `{
+			expect: `close({
 	foo!: string
-}`,
+})`,
 		},
 		{
 			name: "root-xk-preserve",
@@ -263,12 +263,12 @@ func TestConvertCRD(t *testing.T) {
 			}
 			required: ["foo", "nest"]
 			additionalProperties: false`,
-			expect: `{
+			expect: `close({
 	foo!: string
-	nest!: {
+	nest!: close({
 		innerField?: string
-	}
-}`,
+	})
+})`,
 		},
 		{
 			name: "nested-root-xk-preserve",
