@@ -25,6 +25,7 @@ import (
 
 	"github.com/mattn/go-shellwords"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 )
 
 func TestVendorCrd(t *testing.T) {
@@ -32,25 +33,32 @@ func TestVendorCrd(t *testing.T) {
 	// make install
 	// cd cmd/timoni/
 	// timoni mod vendor crd testdata/crd/golden/ -f testdata/crd/source/cert-manager.crds.yaml
+	// timoni mod vendor crd testdata/crd/golden/ -f testdata/crd/source/flagger.crds.yaml
 	goldenPath := "testdata/crd/golden/cue.mod/"
-	crdPath := "testdata/crd/source/cert-manager.crds.yaml"
 
 	tmpDir := t.TempDir()
 	genPath := path.Join(tmpDir, "cue.mod")
 
 	g := NewWithT(t)
+
 	err := os.MkdirAll(genPath, os.ModePerm)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	output, err := executeCommand(fmt.Sprintf(
-		"mod vendor crd %s -f %s",
-		tmpDir,
-		crdPath,
-	))
-	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(output).To(ContainSubstring("cert-manager.io/issuer/v1"))
+	for crdPath, outputMatcher := range map[string]types.GomegaMatcher{
+		"testdata/crd/source/cert-manager.crds.yaml": ContainSubstring("cert-manager.io/issuer/v1"),
+		"testdata/crd/source/flagger.crds.yaml":      ContainSubstring("flagger.app/canary/v1beta1"),
+	} {
+		output, err := executeCommand(fmt.Sprintf(
+			"mod vendor crd %s -f %s",
+			tmpDir,
+			crdPath,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).To(outputMatcher)
+	}
 
 	diffArgs := fmt.Sprintf("--no-pager diff --no-index %s %s", genPath, goldenPath)
+
 	args, err := shellwords.Parse(diffArgs)
 	g.Expect(err).ToNot(HaveOccurred())
 
