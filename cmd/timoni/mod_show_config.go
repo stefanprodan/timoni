@@ -124,17 +124,13 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("build failed: %w", err)
 	}
 
-	buildResult, err := builder.Build()
-	if err != nil {
-		return describeErr(f.GetModuleRoot(), "validation failed", err)
-	}
+	rows, err := builder.GetConfigDoc()
 
-	rows, err := builder.GetConfigDoc(buildResult)
 	if err != nil {
 		return describeErr(f.GetModuleRoot(), "failed to get config structure", err)
 	}
 
-	header := []string{"Key", "Type", "Default", "Description"}
+	header := []string{"Key", "Type", "Description"}
 
 	if configShowModArgs.output == "" {
 		printMarkDownTable(rootCmd.OutOrStdout(), header, rows)
