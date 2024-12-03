@@ -102,6 +102,7 @@ type applyFlags struct {
 	module             string
 	version            flags.Version
 	pkg                flags.Package
+	digest             flags.Digest
 	valuesFiles        []string
 	dryrun             bool
 	diff               bool
@@ -116,6 +117,7 @@ var applyArgs applyFlags
 func init() {
 	applyCmd.Flags().VarP(&applyArgs.version, applyArgs.version.Type(), applyArgs.version.Shorthand(), applyArgs.version.Description())
 	applyCmd.Flags().VarP(&applyArgs.pkg, applyArgs.pkg.Type(), applyArgs.pkg.Shorthand(), applyArgs.pkg.Description())
+	applyCmd.Flags().VarP(&applyArgs.digest, applyArgs.digest.Type(), applyArgs.digest.Shorthand(), applyArgs.digest.Description())
 	applyCmd.Flags().StringSliceVarP(&applyArgs.valuesFiles, "values", "f", nil,
 		"The local path to values files (cue, yaml or json format).")
 	applyCmd.Flags().BoolVar(&applyArgs.force, "force", false,
@@ -143,12 +145,20 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	log := loggerInstance(cmd.Context(), applyArgs.name, true)
 
 	version := applyArgs.version.String()
+	digest := applyArgs.digest.String()
 	if version == "" {
 		version = apiv1.LatestVersion
+		if digest != "" {
+			version = fmt.Sprintf("@%s", digest)
+		}
 	}
 
 	if strings.HasPrefix(applyArgs.module, apiv1.ArtifactPrefix) {
-		log.Info(fmt.Sprintf("pulling %s:%s", applyArgs.module, version))
+		img := fmt.Sprintf("%s:%s", applyArgs.module, version)
+		if strings.HasPrefix(version, "@") {
+			img = fmt.Sprintf("%s%s", applyArgs.module, version)
+		}
+		log.Info(fmt.Sprintf("pulling %s", img))
 	} else {
 		log.Info(fmt.Sprintf("building %s", applyArgs.module))
 	}
@@ -177,6 +187,10 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	mod, err := f.Fetch()
 	if err != nil {
 		return err
+	}
+
+	if digest != "" && mod.Digest != digest {
+		return fmt.Errorf("digest mismatch, expected %s got %s", digest, mod.Digest)
 	}
 
 	cuectx := cuecontext.New()
