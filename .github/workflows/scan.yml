@@ -28,10 +28,10 @@ jobs:
             **/go.sum
             **/go.mod
       - name: Init
-        uses: github/codeql-action/init@662472033e021d55d94146f66f6058822b0b39fd # v3.27.0
+        uses: github/codeql-action/init@aa578102511db1f4524ed59b8cc2bae4f6e88195 # v3.27.6
         with:
           languages: go
       - name: Build
-        uses: github/codeql-action/autobuild@662472033e021d55d94146f66f6058822b0b39fd # v3.27.0
+        uses: github/codeql-action/autobuild@aa578102511db1f4524ed59b8cc2bae4f6e88195 # v3.27.6
       - name: Analyze
-        uses: github/codeql-action/analyze@662472033e021d55d94146f66f6058822b0b39fd # v3.27.0
+        uses: github/codeql-action/analyze@aa578102511db1f4524ed59b8cc2bae4f6e88195 # v3.27.6
