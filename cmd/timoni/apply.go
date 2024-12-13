@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -25,6 +26,7 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
@@ -103,6 +105,7 @@ type applyFlags struct {
 	version            flags.Version
 	pkg                flags.Package
 	valuesFiles        []string
+	valuesOverrides    []string
 	dryrun             bool
 	diff               bool
 	wait               bool
@@ -118,6 +121,8 @@ func init() {
 	applyCmd.Flags().VarP(&applyArgs.pkg, applyArgs.pkg.Type(), applyArgs.pkg.Shorthand(), applyArgs.pkg.Description())
 	applyCmd.Flags().StringSliceVarP(&applyArgs.valuesFiles, "values", "f", nil,
 		"The local path to values files (cue, yaml or json format).")
+	applyCmd.Flags().StringSliceVar(&applyArgs.valuesOverrides, "set", nil,
+		"Set values on the command line. Can specify multiple or separate values with commas: key1=val1,key2=val2")
 	applyCmd.Flags().BoolVar(&applyArgs.force, "force", false,
 		"Recreate immutable Kubernetes resources.")
 	applyCmd.Flags().BoolVar(&applyArgs.overwriteOwnership, "overwrite-ownership", false,
@@ -204,6 +209,52 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		err = builder.MergeValuesFile(valuesCue)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(applyArgs.valuesOverrides) > 0 {
+		// First, gather all path -> string value mappings.
+		pathToString := make(map[string]string)
+		for _, arg := range applyArgs.valuesOverrides {
+			for _, kv := range strings.Split(arg, ",") {
+				s := strings.SplitN(kv, "=", 2)
+				k := strings.TrimSpace(s[0])
+				v := strings.TrimSpace(s[1])
+				pathToString[k] = v
+			}
+		}
+		// Now convert string values to typed values leveraging the YAML parser.
+		pathToValue := make(map[string]any)
+		var parsedValue struct {
+			Value any `yaml:"value"`
+		}
+		for k, v := range pathToString {
+			err := yaml.Unmarshal([]byte(fmt.Sprintf("value: %s", v)), &parsedValue)
+			if err != nil {
+				return fmt.Errorf("failed to parse value %s for key %s with type: %w", v, k, err)
+			}
+			pathToValue[k] = parsedValue.Value
+		}
+		// Convert the path -> value mappings to a CUE file.
+		// TODO: Support list indexes in keys and non-scalar values.
+		var buf bytes.Buffer
+		for k, v := range pathToValue {
+			buf.WriteString("values: ")
+			for _, piece := range strings.Split(k, ".") {
+				buf.WriteString(fmt.Sprintf("%s: ", piece))
+			}
+			switch v := v.(type) {
+			case string:
+				buf.WriteString(fmt.Sprintf("%q\n", v))
+			default:
+				buf.WriteString(fmt.Sprintf("%v\n", v))
+			}
+		}
+		valuesCue := [][]byte{buf.Bytes()}
+		// Finally, merge the CUE values file into the module.
 		err = builder.MergeValuesFile(valuesCue)
 		if err != nil {
 			return err
