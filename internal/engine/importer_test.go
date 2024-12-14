@@ -114,8 +114,8 @@ func TestConvertCRD(t *testing.T) {
 										metadata: {
 												type: "object"
 										}
-										spec: { 
-											%s 
+										spec: {
+											%s
 										}
 									}
 							}
