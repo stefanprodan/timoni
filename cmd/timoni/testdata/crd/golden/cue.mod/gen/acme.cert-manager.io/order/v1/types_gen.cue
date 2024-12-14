@@ -21,7 +21,7 @@ import "strings"
 	// CamelCase. More info:
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	kind: "Order"
-	metadata: {
+	metadata!: {
 		name!: strings.MaxRunes(253) & strings.MinRunes(1) & {
 			string
 		}
@@ -64,7 +64,7 @@ import "strings"
 	// not exist, processing will be retried. If the Issuer is not an
 	// 'ACME' Issuer, an error will be returned and the Order will be
 	// marked as failed.
-	issuerRef: {
+	issuerRef!: {
 		// Group of the resource being referred to.
 		group?: string
 
@@ -72,11 +72,11 @@ import "strings"
 		kind?: string
 
 		// Name of the resource being referred to.
-		name: string
+		name!: string
 	}
 
 	// Certificate signing request bytes in DER encoding. This will be
 	// used when finalizing the order. This field must be set on the
 	// order.
-	request: string
+	request!: string
 }

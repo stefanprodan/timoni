@@ -91,7 +91,7 @@ import "strings"
 
 			// keyID is the ID of the CA key that the External Account is
 			// bound to.
-			keyID: string
+			keyID!: string
 
 			// keySecretRef is a Secret Key Selector referencing a data item
 			// in a Kubernetes Secret which holds the symmetric MAC key of
@@ -100,7 +100,7 @@ import "strings"
 			// be confused with the key data itself, or indeed with the
 			// External Account Binding keyID above. The secret key stored in
 			// the Secret **must** be un-padded, base64 URL encoded data.
-			keySecretRef: {
+			keySecretRef!: {
 				// The key of the entry in the Secret resource's `data` field to
 				// be used. Some instances of this field may be defaulted, in
 				// others it may be required.
@@ -108,7 +108,7 @@ import "strings"
 
 				// Name of the resource being referred to. More info:
 				// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-				name: string
+				name!: string
 			}
 		}
 
@@ -127,7 +127,7 @@ import "strings"
 		// private key. Optionally, a `key` may be specified to select a
 		// specific entry within the named Secret resource. If `key` is
 		// not specified, a default of `tls.key` will be used.
-		privateKeySecretRef: {
+		privateKeySecretRef!: {
 			// The key of the entry in the Secret resource's `data` field to
 			// be used. Some instances of this field may be defaulted, in
 			// others it may be required.
@@ -135,7 +135,7 @@ import "strings"
 
 			// Name of the resource being referred to. More info:
 			// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-			name: string
+			name!: string
 		}
 
 		// Server is the URL used to access the ACME server's 'directory'
@@ -143,7 +143,7 @@ import "strings"
 		// you would use:
 		// "https://acme-staging-v02.api.letsencrypt.org/directory". Only
 		// ACME v2 endpoints (i.e. RFC 8555) are supported.
-		server: string
+		server!: string
 
 		// INSECURE: Enables or disables validation of the ACME server TLS
 		// certificate. If true, requests to the ACME server will not
@@ -169,7 +169,7 @@ import "strings"
 				acmeDNS?: {
 					// A reference to a specific 'key' within a Secret resource. In
 					// some instances, `key` is a required field.
-					accountSecretRef: {
+					accountSecretRef!: {
 						// The key of the entry in the Secret resource's `data` field to
 						// be used. Some instances of this field may be defaulted, in
 						// others it may be required.
@@ -177,9 +177,9 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
-					host: string
+					host!: string
 				}
 
 				// Use the Akamai DNS zone management API to manage DNS01
@@ -187,7 +187,7 @@ import "strings"
 				akamai?: {
 					// A reference to a specific 'key' within a Secret resource. In
 					// some instances, `key` is a required field.
-					accessTokenSecretRef: {
+					accessTokenSecretRef!: {
 						// The key of the entry in the Secret resource's `data` field to
 						// be used. Some instances of this field may be defaulted, in
 						// others it may be required.
@@ -195,12 +195,12 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
 
 					// A reference to a specific 'key' within a Secret resource. In
 					// some instances, `key` is a required field.
-					clientSecretSecretRef: {
+					clientSecretSecretRef!: {
 						// The key of the entry in the Secret resource's `data` field to
 						// be used. Some instances of this field may be defaulted, in
 						// others it may be required.
@@ -208,12 +208,12 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
 
 					// A reference to a specific 'key' within a Secret resource. In
 					// some instances, `key` is a required field.
-					clientTokenSecretRef: {
+					clientTokenSecretRef!: {
 						// The key of the entry in the Secret resource's `data` field to
 						// be used. Some instances of this field may be defaulted, in
 						// others it may be required.
@@ -221,9 +221,9 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
-					serviceConsumerDomain: string
+					serviceConsumerDomain!: string
 				}
 
 				// Use the Microsoft Azure DNS API to manage DNS01 challenge
@@ -241,7 +241,7 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
 
 					// name of the Azure environment (default AzurePublicCloud)
@@ -263,10 +263,10 @@ import "strings"
 					}
 
 					// resource group the DNS zone is located in
-					resourceGroupName: string
+					resourceGroupName!: string
 
 					// ID of the Azure subscription
-					subscriptionID: string
+					subscriptionID!: string
 
 					// when specifying ClientID and ClientSecret then this field is
 					// also needed
@@ -279,7 +279,7 @@ import "strings"
 					// which Cloud DNS zone the challenge record has to be created.
 					// If left empty cert-manager will automatically choose a zone.
 					hostedZoneName?: string
-					project:         string
+					project!:        string
 
 					// A reference to a specific 'key' within a Secret resource. In
 					// some instances, `key` is a required field.
@@ -291,7 +291,7 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
 				}
 
@@ -308,7 +308,7 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
 
 					// API token used to authenticate with Cloudflare.
@@ -320,7 +320,7 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
 
 					// Email of the account, only required when using API key based
@@ -334,7 +334,7 @@ import "strings"
 				digitalocean?: {
 					// A reference to a specific 'key' within a Secret resource. In
 					// some instances, `key` is a required field.
-					tokenSecretRef: {
+					tokenSecretRef!: {
 						// The key of the entry in the Secret resource's `data` field to
 						// be used. Some instances of this field may be defaulted, in
 						// others it may be required.
@@ -342,7 +342,7 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
 				}
 
@@ -354,7 +354,7 @@ import "strings"
 					// supporting RFC2136 in the form host:port. If the host is an
 					// IPv6 address it must be enclosed in square brackets (e.g
 					// [2001:db8::1]) ; port is optional. This field is required.
-					nameserver: string
+					nameserver!: string
 
 					// The TSIG Algorithm configured in the DNS supporting RFC2136.
 					// Used only when ``tsigSecretSecretRef`` and ``tsigKeyName`` are
@@ -376,7 +376,7 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
 				}
 
@@ -403,7 +403,7 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
 
 					// If set, the provider will manage only this zone in Route53 and
@@ -413,7 +413,7 @@ import "strings"
 
 					// Always set the region when using AccessKeyID and
 					// SecretAccessKey
-					region: string
+					region!: string
 
 					// Role is a Role ARN which the Route53 provider will assume using
 					// either the explicit credentials AccessKeyID/SecretAccessKey or
@@ -433,7 +433,7 @@ import "strings"
 
 						// Name of the resource being referred to. More info:
 						// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-						name: string
+						name!: string
 					}
 				}
 
@@ -454,12 +454,12 @@ import "strings"
 					// ChallengePayload resources to the webhook apiserver. This
 					// should be the same as the GroupName specified in the webhook
 					// provider implementation.
-					groupName: string
+					groupName!: string
 
 					// The name of the solver to use, as defined in the webhook
 					// provider implementation. This will typically be the name of
 					// the provider, e.g. 'cloudflare'.
-					solverName: string
+					solverName!: string
 				}
 			}
 
@@ -477,9 +477,9 @@ import "strings"
 				gatewayHTTPRoute?: {
 					// Custom labels that will be applied to HTTPRoutes created by
 					// cert-manager while solving HTTP-01 challenges.
-					labels?: {
+					labels?: close({
 						[string]: string
-					}
+					})
 
 					// When solving an HTTP-01 challenge, cert-manager creates an
 					// HTTPRoute. cert-manager needs to know which parentRefs should
@@ -503,7 +503,7 @@ import "strings"
 
 						// Name is the name of the referent.
 						// Support: Core
-						name: strings.MaxRunes(253) & strings.MinRunes(1)
+						name!: strings.MaxRunes(253) & strings.MinRunes(1)
 
 						// Namespace is the namespace of the referent. When unspecified,
 						// this refers to the local namespace of the Route.
@@ -619,15 +619,15 @@ import "strings"
 						metadata?: {
 							// Annotations that should be added to the created ACME HTTP01
 							// solver ingress.
-							annotations?: {
+							annotations?: close({
 								[string]: string
-							}
+							})
 
 							// Labels that should be added to the created ACME HTTP01 solver
 							// ingress.
-							labels?: {
+							labels?: close({
 								[string]: string
-							}
+							})
 						}
 					}
 
@@ -649,15 +649,15 @@ import "strings"
 						metadata?: {
 							// Annotations that should be added to the create ACME HTTP01
 							// solver pods.
-							annotations?: {
+							annotations?: close({
 								[string]: string
-							}
+							})
 
 							// Labels that should be added to the created ACME HTTP01 solver
 							// pods.
-							labels?: {
+							labels?: close({
 								[string]: string
-							}
+							})
 						}
 
 						// PodSpec defines overrides for the HTTP01 challenge solver pod.
@@ -681,15 +681,15 @@ import "strings"
 									// sum are the most preferred.
 									preferredDuringSchedulingIgnoredDuringExecution?: [...{
 										// A node selector term, associated with the corresponding weight.
-										preference: {
+										preference!: {
 											// A list of node selector requirements by node's labels.
 											matchExpressions?: [...{
 												// The label key that the selector applies to.
-												key: string
+												key!: string
 
 												// Represents a key's relationship to a set of values. Valid
 												// operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-												operator: string
+												operator!: string
 
 												// An array of string values. If the operator is In or NotIn, the
 												// values array must be non-empty. If the operator is Exists or
@@ -703,11 +703,11 @@ import "strings"
 											// A list of node selector requirements by node's fields.
 											matchFields?: [...{
 												// The label key that the selector applies to.
-												key: string
+												key!: string
 
 												// Represents a key's relationship to a set of values. Valid
 												// operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-												operator: string
+												operator!: string
 
 												// An array of string values. If the operator is In or NotIn, the
 												// values array must be non-empty. If the operator is Exists or
@@ -721,19 +721,19 @@ import "strings"
 
 										// Weight associated with matching the corresponding
 										// nodeSelectorTerm, in the range 1-100.
-										weight: int
+										weight!: int32
 									}]
 									requiredDuringSchedulingIgnoredDuringExecution?: {
 										// Required. A list of node selector terms. The terms are ORed.
-										nodeSelectorTerms: [...{
+										nodeSelectorTerms!: [...{
 											// A list of node selector requirements by node's labels.
 											matchExpressions?: [...{
 												// The label key that the selector applies to.
-												key: string
+												key!: string
 
 												// Represents a key's relationship to a set of values. Valid
 												// operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-												operator: string
+												operator!: string
 
 												// An array of string values. If the operator is In or NotIn, the
 												// values array must be non-empty. If the operator is Exists or
@@ -747,11 +747,11 @@ import "strings"
 											// A list of node selector requirements by node's fields.
 											matchFields?: [...{
 												// The label key that the selector applies to.
-												key: string
+												key!: string
 
 												// Represents a key's relationship to a set of values. Valid
 												// operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-												operator: string
+												operator!: string
 
 												// An array of string values. If the operator is In or NotIn, the
 												// values array must be non-empty. If the operator is Exists or
@@ -782,18 +782,18 @@ import "strings"
 									preferredDuringSchedulingIgnoredDuringExecution?: [...{
 										// Required. A pod affinity term, associated with the
 										// corresponding weight.
-										podAffinityTerm: {
+										podAffinityTerm!: {
 											// A label query over a set of resources, in this case pods.
 											labelSelector?: {
 												// matchExpressions is a list of label selector requirements. The
 												// requirements are ANDed.
 												matchExpressions?: [...{
 													// key is the label key that the selector applies to.
-													key: string
+													key!: string
 
 													// operator represents a key's relationship to a set of values.
 													// Valid operators are In, NotIn, Exists and DoesNotExist.
-													operator: string
+													operator!: string
 
 													// values is an array of string values. If the operator is In or
 													// NotIn, the values array must be non-empty. If the operator is
@@ -807,9 +807,9 @@ import "strings"
 												// matchExpressions, whose key field is "key", the operator is
 												// "In", and the values array contains only "value". The
 												// requirements are ANDed.
-												matchLabels?: {
+												matchLabels?: close({
 													[string]: string
-												}
+												})
 											}
 
 											// A label query over the set of namespaces that the term applies
@@ -823,11 +823,11 @@ import "strings"
 												// requirements are ANDed.
 												matchExpressions?: [...{
 													// key is the label key that the selector applies to.
-													key: string
+													key!: string
 
 													// operator represents a key's relationship to a set of values.
 													// Valid operators are In, NotIn, Exists and DoesNotExist.
-													operator: string
+													operator!: string
 
 													// values is an array of string values. If the operator is In or
 													// NotIn, the values array must be non-empty. If the operator is
@@ -841,9 +841,9 @@ import "strings"
 												// matchExpressions, whose key field is "key", the operator is
 												// "In", and the values array contains only "value". The
 												// requirements are ANDed.
-												matchLabels?: {
+												matchLabels?: close({
 													[string]: string
-												}
+												})
 											}
 
 											// namespaces specifies a static list of namespace names that the
@@ -859,12 +859,12 @@ import "strings"
 											// running on a node whose value of the label with key
 											// topologyKey matches that of any node on which any of the
 											// selected pods is running. Empty topologyKey is not allowed.
-											topologyKey: string
+											topologyKey!: string
 										}
 
 										// weight associated with matching the corresponding
 										// podAffinityTerm, in the range 1-100.
-										weight: int
+										weight!: int32
 									}]
 
 									// If the affinity requirements specified by this field are not
@@ -883,11 +883,11 @@ import "strings"
 											// requirements are ANDed.
 											matchExpressions?: [...{
 												// key is the label key that the selector applies to.
-												key: string
+												key!: string
 
 												// operator represents a key's relationship to a set of values.
 												// Valid operators are In, NotIn, Exists and DoesNotExist.
-												operator: string
+												operator!: string
 
 												// values is an array of string values. If the operator is In or
 												// NotIn, the values array must be non-empty. If the operator is
@@ -901,9 +901,9 @@ import "strings"
 											// matchExpressions, whose key field is "key", the operator is
 											// "In", and the values array contains only "value". The
 											// requirements are ANDed.
-											matchLabels?: {
+											matchLabels?: close({
 												[string]: string
-											}
+											})
 										}
 
 										// A label query over the set of namespaces that the term applies
@@ -917,11 +917,11 @@ import "strings"
 											// requirements are ANDed.
 											matchExpressions?: [...{
 												// key is the label key that the selector applies to.
-												key: string
+												key!: string
 
 												// operator represents a key's relationship to a set of values.
 												// Valid operators are In, NotIn, Exists and DoesNotExist.
-												operator: string
+												operator!: string
 
 												// values is an array of string values. If the operator is In or
 												// NotIn, the values array must be non-empty. If the operator is
@@ -935,9 +935,9 @@ import "strings"
 											// matchExpressions, whose key field is "key", the operator is
 											// "In", and the values array contains only "value". The
 											// requirements are ANDed.
-											matchLabels?: {
+											matchLabels?: close({
 												[string]: string
-											}
+											})
 										}
 
 										// namespaces specifies a static list of namespace names that the
@@ -953,7 +953,7 @@ import "strings"
 										// running on a node whose value of the label with key
 										// topologyKey matches that of any node on which any of the
 										// selected pods is running. Empty topologyKey is not allowed.
-										topologyKey: string
+										topologyKey!: string
 									}]
 								}
 
@@ -975,18 +975,18 @@ import "strings"
 									preferredDuringSchedulingIgnoredDuringExecution?: [...{
 										// Required. A pod affinity term, associated with the
 										// corresponding weight.
-										podAffinityTerm: {
+										podAffinityTerm!: {
 											// A label query over a set of resources, in this case pods.
 											labelSelector?: {
 												// matchExpressions is a list of label selector requirements. The
 												// requirements are ANDed.
 												matchExpressions?: [...{
 													// key is the label key that the selector applies to.
-													key: string
+													key!: string
 
 													// operator represents a key's relationship to a set of values.
 													// Valid operators are In, NotIn, Exists and DoesNotExist.
-													operator: string
+													operator!: string
 
 													// values is an array of string values. If the operator is In or
 													// NotIn, the values array must be non-empty. If the operator is
@@ -1000,9 +1000,9 @@ import "strings"
 												// matchExpressions, whose key field is "key", the operator is
 												// "In", and the values array contains only "value". The
 												// requirements are ANDed.
-												matchLabels?: {
+												matchLabels?: close({
 													[string]: string
-												}
+												})
 											}
 
 											// A label query over the set of namespaces that the term applies
@@ -1016,11 +1016,11 @@ import "strings"
 												// requirements are ANDed.
 												matchExpressions?: [...{
 													// key is the label key that the selector applies to.
-													key: string
+													key!: string
 
 													// operator represents a key's relationship to a set of values.
 													// Valid operators are In, NotIn, Exists and DoesNotExist.
-													operator: string
+													operator!: string
 
 													// values is an array of string values. If the operator is In or
 													// NotIn, the values array must be non-empty. If the operator is
@@ -1034,9 +1034,9 @@ import "strings"
 												// matchExpressions, whose key field is "key", the operator is
 												// "In", and the values array contains only "value". The
 												// requirements are ANDed.
-												matchLabels?: {
+												matchLabels?: close({
 													[string]: string
-												}
+												})
 											}
 
 											// namespaces specifies a static list of namespace names that the
@@ -1052,12 +1052,12 @@ import "strings"
 											// running on a node whose value of the label with key
 											// topologyKey matches that of any node on which any of the
 											// selected pods is running. Empty topologyKey is not allowed.
-											topologyKey: string
+											topologyKey!: string
 										}
 
 										// weight associated with matching the corresponding
 										// podAffinityTerm, in the range 1-100.
-										weight: int
+										weight!: int32
 									}]
 
 									// If the anti-affinity requirements specified by this field are
@@ -1076,11 +1076,11 @@ import "strings"
 											// requirements are ANDed.
 											matchExpressions?: [...{
 												// key is the label key that the selector applies to.
-												key: string
+												key!: string
 
 												// operator represents a key's relationship to a set of values.
 												// Valid operators are In, NotIn, Exists and DoesNotExist.
-												operator: string
+												operator!: string
 
 												// values is an array of string values. If the operator is In or
 												// NotIn, the values array must be non-empty. If the operator is
@@ -1094,9 +1094,9 @@ import "strings"
 											// matchExpressions, whose key field is "key", the operator is
 											// "In", and the values array contains only "value". The
 											// requirements are ANDed.
-											matchLabels?: {
+											matchLabels?: close({
 												[string]: string
-											}
+											})
 										}
 
 										// A label query over the set of namespaces that the term applies
@@ -1110,11 +1110,11 @@ import "strings"
 											// requirements are ANDed.
 											matchExpressions?: [...{
 												// key is the label key that the selector applies to.
-												key: string
+												key!: string
 
 												// operator represents a key's relationship to a set of values.
 												// Valid operators are In, NotIn, Exists and DoesNotExist.
-												operator: string
+												operator!: string
 
 												// values is an array of string values. If the operator is In or
 												// NotIn, the values array must be non-empty. If the operator is
@@ -1128,9 +1128,9 @@ import "strings"
 											// matchExpressions, whose key field is "key", the operator is
 											// "In", and the values array contains only "value". The
 											// requirements are ANDed.
-											matchLabels?: {
+											matchLabels?: close({
 												[string]: string
-											}
+											})
 										}
 
 										// namespaces specifies a static list of namespace names that the
@@ -1146,7 +1146,7 @@ import "strings"
 										// running on a node whose value of the label with key
 										// topologyKey matches that of any node on which any of the
 										// selected pods is running. Empty topologyKey is not allowed.
-										topologyKey: string
+										topologyKey!: string
 									}]
 								}
 							}
@@ -1163,9 +1163,9 @@ import "strings"
 							// fit on a node. Selector which must match a node's labels for
 							// the pod to be scheduled on that node. More info:
 							// https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-							nodeSelector?: {
+							nodeSelector?: close({
 								[string]: string
-							}
+							})
 
 							// If specified, the pod's priorityClassName.
 							priorityClassName?: string
@@ -1198,7 +1198,7 @@ import "strings"
 								// means tolerate the taint forever (do not evict). Zero and
 								// negative values will be treated as 0 (evict immediately) by
 								// the system.
-								tolerationSeconds?: int
+								tolerationSeconds?: int64
 
 								// Value is the taint value the toleration matches to. If the
 								// operator is Exists, the value should be empty, otherwise just
@@ -1243,9 +1243,9 @@ import "strings"
 
 				// A label selector that is used to refine the set of
 				// certificate's that this challenge solver will apply to.
-				matchLabels?: {
+				matchLabels?: close({
 					[string]: string
-				}
+				})
 			}
 		}]
 	}
@@ -1270,7 +1270,7 @@ import "strings"
 
 		// SecretName is the name of the secret used to sign Certificates
 		// issued by this Issuer.
-		secretName: string
+		secretName!: string
 	}
 	selfSigned?: {
 		// The CRL distribution points is an X.509 v3 certificate
@@ -1285,24 +1285,24 @@ import "strings"
 	vault?: {
 		// Auth configures how cert-manager authenticates with the Vault
 		// server.
-		auth: {
+		auth!: {
 			// AppRole authenticates with Vault using the App Role auth
 			// mechanism, with the role and secret stored in a Kubernetes
 			// Secret resource.
 			appRole?: {
 				// Path where the App Role authentication backend is mounted in
 				// Vault, e.g: "approle"
-				path: string
+				path!: string
 
 				// RoleID configured in the App Role authentication backend when
 				// setting up the authentication backend in Vault.
-				roleId: string
+				roleId!: string
 
 				// Reference to a key in a Secret that contains the App Role
 				// secret used to authenticate with Vault. The `key` field must
 				// be specified and denotes which entry within the Secret
 				// resource is used as the app role secret.
-				secretRef: {
+				secretRef!: {
 					// The key of the entry in the Secret resource's `data` field to
 					// be used. Some instances of this field may be defaulted, in
 					// others it may be required.
@@ -1310,7 +1310,7 @@ import "strings"
 
 					// Name of the resource being referred to. More info:
 					// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-					name: string
+					name!: string
 				}
 			}
 
@@ -1328,7 +1328,7 @@ import "strings"
 				// A required field containing the Vault Role to assume. A Role
 				// binds a Kubernetes ServiceAccount with a set of Vault
 				// policies.
-				role: string
+				role!: string
 
 				// The required Secret field containing a Kubernetes
 				// ServiceAccount JWT used for authenticating with Vault. Use of
@@ -1341,11 +1341,11 @@ import "strings"
 
 					// Name of the resource being referred to. More info:
 					// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-					name: string
+					name!: string
 				}
 				serviceAccountRef?: {
 					// Name of the ServiceAccount used to request a token.
-					name: string
+					name!: string
 				}
 			}
 
@@ -1358,7 +1358,7 @@ import "strings"
 
 				// Name of the resource being referred to. More info:
 				// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-				name: string
+				name!: string
 			}
 		}
 
@@ -1386,7 +1386,7 @@ import "strings"
 
 			// Name of the resource being referred to. More info:
 			// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-			name: string
+			name!: string
 		}
 
 		// Name of the vault namespace. Namespaces is a set of features
@@ -1398,11 +1398,11 @@ import "strings"
 
 		// Path is the mount path of the Vault PKI backend's `sign`
 		// endpoint, e.g: "my_pki_mount/sign/my-role-name".
-		path: string
+		path!: string
 
 		// Server is the connection address for the Vault server, e.g:
 		// "https://vault.example.com:8200".
-		server: string
+		server!: string
 	}
 
 	// Venafi configures this issuer to sign certificates using a
@@ -1413,7 +1413,7 @@ import "strings"
 		cloud?: {
 			// APITokenSecretRef is a secret key selector for the Venafi Cloud
 			// API token.
-			apiTokenSecretRef: {
+			apiTokenSecretRef!: {
 				// The key of the entry in the Secret resource's `data` field to
 				// be used. Some instances of this field may be defaulted, in
 				// others it may be required.
@@ -1421,7 +1421,7 @@ import "strings"
 
 				// Name of the resource being referred to. More info:
 				// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-				name: string
+				name!: string
 			}
 
 			// URL is the base URL for Venafi Cloud. Defaults to
@@ -1438,20 +1438,20 @@ import "strings"
 			// certificate bundle in the cert-manager controller container is
 			// used to validate the chain.
 			caBundle?: string
-			credentialsRef: {
+			credentialsRef!: {
 				// Name of the resource being referred to. More info:
 				// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-				name: string
+				name!: string
 			}
 
 			// URL is the base URL for the vedsdk endpoint of the Venafi TPP
 			// instance, for example: "https://tpp.example.com/vedsdk".
-			url: string
+			url!: string
 		}
 
 		// Zone is the Venafi Policy Zone to use for this issuer. All
 		// requests made to the Venafi platform will be restricted by the
 		// named zone policy. This field is required.
-		zone: string
+		zone!: string
 	}
 }
