@@ -72,6 +72,7 @@ type buildFlags struct {
 	module      string
 	version     flags.Version
 	pkg         flags.Package
+	digest      flags.Digest
 	valuesFiles []string
 	output      string
 	creds       flags.Credentials
@@ -82,6 +83,7 @@ var buildArgs buildFlags
 func init() {
 	buildCmd.Flags().VarP(&buildArgs.version, buildArgs.version.Type(), buildArgs.version.Shorthand(), buildArgs.version.Description())
 	buildCmd.Flags().VarP(&buildArgs.pkg, buildArgs.pkg.Type(), buildArgs.pkg.Shorthand(), buildArgs.pkg.Description())
+	buildCmd.Flags().VarP(&buildArgs.digest, buildArgs.digest.Type(), buildArgs.digest.Shorthand(), buildArgs.digest.Description())
 	buildCmd.Flags().StringSliceVarP(&buildArgs.valuesFiles, "values", "f", nil,
 		"The local path to values files (cue, yaml or json format).")
 	buildCmd.Flags().StringVarP(&buildArgs.output, "output", "o", "yaml",
@@ -100,8 +102,12 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	buildArgs.module = args[1]
 
 	version := buildArgs.version.String()
+	digest := buildArgs.digest.String()
 	if version == "" {
 		version = apiv1.LatestVersion
+		if digest != "" {
+			version = fmt.Sprintf("@%s", digest)
+		}
 	}
 
 	ctx := cuecontext.New()
@@ -130,6 +136,10 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	mod, err := f.Fetch()
 	if err != nil {
 		return err
+	}
+
+	if digest != "" && mod.Digest != digest {
+		return fmt.Errorf("digest mismatch, expected %s got %s", digest, mod.Digest)
 	}
 
 	builder := engine.NewModuleBuilder(
