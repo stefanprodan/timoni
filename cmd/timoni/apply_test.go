@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -178,6 +179,76 @@ func TestApply(t *testing.T) {
 		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(serverCM), serverCM)
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+	})
+}
+
+func TestApply_WithDigest(t *testing.T) {
+	g := NewWithT(t)
+
+	instanceName := "frontend"
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+	modVer := "1.0.0"
+
+	// Push the module to registry
+	pushOut, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s -o json",
+		modPath,
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	// Parse digest
+	var mod struct {
+		Digest string `json:"digest"`
+	}
+	err = json.Unmarshal([]byte(pushOut), &mod)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(mod.Digest).ToNot(BeEmpty())
+
+	t.Run("apply succeeds if digest matches", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := executeCommand(fmt.Sprintf(
+			"apply -n %s %s oci://%s -v %s -d %s -p main --wait",
+			namespace,
+			instanceName,
+			modURL,
+			modVer,
+			mod.Digest,
+		))
+		g.Expect(err).NotTo(HaveOccurred())
+	})
+
+	t.Run("apply with digest succeeds without version", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := executeCommand(fmt.Sprintf(
+			"apply -n %s %s oci://%s -d %s -p main --wait",
+			namespace,
+			instanceName,
+			modURL,
+			mod.Digest,
+		))
+		g.Expect(err).NotTo(HaveOccurred())
+	})
+
+	t.Run("apply errors out if digest differs", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := executeCommand(fmt.Sprintf(
+			"apply -n %s %s oci://%s -v %s -d %s -p main --wait",
+			namespace,
+			instanceName,
+			modURL,
+			modVer,
+			"sha256:123456", // wrong digest
+		))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("digest mismatch, expected sha256:123456 got %s", mod.Digest)))
 	})
 }
 

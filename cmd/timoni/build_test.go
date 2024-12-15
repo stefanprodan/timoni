@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -227,5 +228,75 @@ func TestBuild(t *testing.T) {
 		g.Expect(output).To(BeEmpty())
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("timoni.kubeMinorVersion: invalid value"))
+	})
+}
+
+func TestBuild_WithDigest(t *testing.T) {
+	g := NewWithT(t)
+
+	instanceName := "frontend"
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+	modVer := "1.0.0"
+
+	// Push the module to registry
+	pushOut, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s -o json",
+		modPath,
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	// Parse digest
+	var mod struct {
+		Digest string `json:"digest"`
+	}
+	err = json.Unmarshal([]byte(pushOut), &mod)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(mod.Digest).ToNot(BeEmpty())
+
+	t.Run("build succeeds if digest matches", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s oci://%s -v %s -d %s -p main -o yaml",
+			namespace,
+			instanceName,
+			modURL,
+			modVer,
+			mod.Digest,
+		))
+		g.Expect(err).NotTo(HaveOccurred())
+	})
+
+	t.Run("build with digest succeeds without version", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s oci://%s -d %s -p main -o yaml",
+			namespace,
+			instanceName,
+			modURL,
+			mod.Digest,
+		))
+		g.Expect(err).NotTo(HaveOccurred())
+	})
+
+	t.Run("build errors out if digest differs", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s oci://%s -v %s -d %s -p main -o yaml",
+			namespace,
+			instanceName,
+			modURL,
+			modVer,
+			"sha256:123456", // wrong digest
+		))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("digest mismatch, expected sha256:123456 got %s", mod.Digest)))
 	})
 }
