@@ -239,7 +239,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
-	instance := &engine.BundleInstance{
+	instance := &apiv1.BundleInstance{
 		Name:      applyArgs.name,
 		Namespace: *kubeconfigArgs.Namespace,
 		Module:    *mod,

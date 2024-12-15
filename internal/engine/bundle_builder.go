@@ -42,20 +42,6 @@ type BundleBuilder struct {
 	injector          *RuntimeInjector
 }
 
-type Bundle struct {
-	Name      string
-	Instances []*BundleInstance
-}
-
-type BundleInstance struct {
-	Bundle    string
-	Cluster   string
-	Name      string
-	Namespace string
-	Module    apiv1.ModuleReference
-	Values    cue.Value
-}
-
 // NewBundleBuilder creates a BundleBuilder for the given module and package.
 func NewBundleBuilder(ctx *cue.Context, files []string) *BundleBuilder {
 	if ctx == nil {
@@ -172,7 +158,7 @@ func (b *BundleBuilder) getInstanceUrl(v cue.Value) string {
 }
 
 // GetBundle returns a Bundle from the bundle CUE value.
-func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
+func (b *BundleBuilder) GetBundle(v cue.Value) (*apiv1.Bundle, error) {
 	bundleNameValue := v.LookupPath(cue.ParsePath(apiv1.BundleName.String()))
 	bundleName, err := bundleNameValue.String()
 	if err != nil {
@@ -184,7 +170,7 @@ func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
 		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.BundleInstancesSelector.String(), instances.Err())
 	}
 
-	var list []*BundleInstance
+	var list []*apiv1.BundleInstance
 	iter, err := instances.Fields(cue.Concrete(true))
 	if err != nil {
 		return nil, err
@@ -208,7 +194,7 @@ func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
 
 		values := expr.LookupPath(cue.ParsePath(apiv1.BundleValuesSelector.String()))
 
-		list = append(list, &BundleInstance{
+		list = append(list, &apiv1.BundleInstance{
 			Bundle:    bundleName,
 			Name:      name,
 			Namespace: namespace,
@@ -221,7 +207,7 @@ func (b *BundleBuilder) GetBundle(v cue.Value) (*Bundle, error) {
 		})
 	}
 
-	return &Bundle{
+	return &apiv1.Bundle{
 		Name:      bundleName,
 		Instances: list,
 	}, nil

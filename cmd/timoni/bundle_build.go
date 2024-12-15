@@ -187,7 +187,7 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func buildBundleInstance(cuectx *cue.Context, instance *engine.BundleInstance, rootDir string) (string, error) {
+func buildBundleInstance(cuectx *cue.Context, instance *apiv1.BundleInstance, rootDir string) (string, error) {
 	modDir := path.Join(rootDir, instance.Name, "module")
 
 	builder := engine.NewModuleBuilder(

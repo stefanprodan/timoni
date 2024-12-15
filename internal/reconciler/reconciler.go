@@ -54,7 +54,7 @@ func NewReconciler(log logr.Logger, opts *CommonOptions, timeout time.Duration) 
 	return reconciler
 }
 
-func (r *Reconciler) Init(ctx context.Context, builder *engine.ModuleBuilder, buildResult cue.Value, instance *engine.BundleInstance, rcg genericclioptions.RESTClientGetter) error {
+func (r *Reconciler) Init(ctx context.Context, builder *engine.ModuleBuilder, buildResult cue.Value, instance *apiv1.BundleInstance, rcg genericclioptions.RESTClientGetter) error {
 	finalValues, err := builder.GetDefaultValues()
 	if err != nil {
 		return fmt.Errorf("failed to extract values: %w", err)
