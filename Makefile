@@ -8,11 +8,11 @@ REPOSITORY_ROOT := $(shell git rev-parse --show-toplevel)
 BIN_DIR := $(REPOSITORY_ROOT)/bin
 
 # API gen tool
-CONTROLLER_GEN_VERSION ?= v0.14.0
+CONTROLLER_GEN_VERSION ?= v0.16.1
 
 # Kubernetes env test
 ENVTEST_ARCH?=amd64
-ENVTEST_KUBERNETES_VERSION?=1.28
+ENVTEST_KUBERNETES_VERSION?=1.30
 
 all: test build
 
