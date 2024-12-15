@@ -23,6 +23,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/fluxcd/pkg/ssa"
+	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -127,20 +128,30 @@ func (r *Reconciler) ApplyInstance(ctx context.Context, log logr.Logger, builder
 	})
 }
 
-func (a *Reconciler) Wait(ctx context.Context, log logr.Logger, _ *ssa.ChangeSet, rs *engine.ResourceSet) error {
+func (r *Reconciler) Wait(ctx context.Context, log logr.Logger, _ *ssa.ChangeSet, rs *engine.ResourceSet) error {
 	doneMsg := ""
 	if rs != nil && rs.Name != "" {
 		doneMsg = fmt.Sprintf("%s resources ready", rs.Name)
 	}
-	return a.doWait(ctx, log, rs, "waiting for %d resource(s) to become ready", doneMsg)
+	return r.doWait(ctx, log, rs, "waiting for %d resource(s) to become ready", doneMsg)
 }
 
 func (r *Reconciler) doWait(_ context.Context, log logr.Logger, rs *engine.ResourceSet, progressMsgFmt string, doneMsg string) error {
-	if !r.opts.Wait {
+	if !r.opts.Wait || rs == nil || len(rs.Objects) == 0 {
 		return nil
 	}
-	progress := r.progressStartFn(fmt.Sprintf(progressMsgFmt, len(rs.Objects)))
-	err := r.resourceManager.Wait(rs.Objects, r.waitOptions)
+
+	var waitForObjects []*unstructured.Unstructured
+	for _, obj := range rs.Objects {
+		if !ssautil.AnyInMetadata(obj, map[string]string{
+			apiv1.WaitAction: apiv1.DisabledValue,
+		}) {
+			waitForObjects = append(waitForObjects, obj)
+		}
+	}
+
+	progress := r.progressStartFn(fmt.Sprintf(progressMsgFmt, len(waitForObjects)))
+	err := r.resourceManager.Wait(waitForObjects, r.waitOptions)
 	progress.Stop()
 	if err != nil {
 		return err
