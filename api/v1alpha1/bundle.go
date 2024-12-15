@@ -16,6 +16,8 @@ limitations under the License.
 
 package v1alpha1
 
+import "cuelang.org/go/cue"
+
 const (
 	// BundleAPIVersionSelector is the CUE path for the Timoni's bundle API version.
 	BundleAPIVersionSelector Selector = "bundle.apiVersion"
@@ -66,3 +68,35 @@ import "strings"
 
 bundle: #Bundle
 `
+
+// Bundle holds the information about the bundle name and the list of instances.
+// +k8s:deepcopy-gen=false
+type Bundle struct {
+	// Name is the name of the bundle.
+	Name string `json:"name"`
+
+	// Instances is a list of instances defined in the bundle.
+	Instances []*BundleInstance `json:"instances"`
+}
+
+// BundleInstance holds the information about the instance name, namespace, module and values.
+// +k8s:deepcopy-gen=false
+type BundleInstance struct {
+	// Bundle is the name of the bundle this instance belongs to.
+	Bundle string `json:"bundle"`
+
+	// Cluster is the name of the cluster this instance belongs to.
+	Cluster string `json:"cluster,omitempty"`
+
+	// Name is the name of the instance.
+	Name string `json:"name"`
+
+	// Namespace is the namespace where the instance will be installed.
+	Namespace string `json:"namespace"`
+
+	// Module is a reference to the module's artifact in the registry.
+	Module ModuleReference `json:"module"`
+
+	// Values hold the user-supplied configuration of this instance.
+	Values cue.Value `json:"values,omitempty"`
+}

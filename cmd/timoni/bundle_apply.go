@@ -242,7 +242,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func fetchBundleInstanceModule(ctx context.Context, instance *engine.BundleInstance, rootDir string) error {
+func fetchBundleInstanceModule(ctx context.Context, instance *apiv1.BundleInstance, rootDir string) error {
 	modDir := path.Join(rootDir, instance.Name)
 	if err := os.MkdirAll(modDir, os.ModePerm); err != nil {
 		return err
@@ -279,7 +279,7 @@ func fetchBundleInstanceModule(ctx context.Context, instance *engine.BundleInsta
 	return nil
 }
 
-func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *engine.BundleInstance, kubeVersion string, rootDir string, diffOutput io.Writer) error {
+func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *apiv1.BundleInstance, kubeVersion string, rootDir string, diffOutput io.Writer) error {
 	log := loggerBundleInstance(ctx, instance.Bundle, instance.Cluster, instance.Name, true)
 
 	modDir := path.Join(rootDir, instance.Name, "module")
@@ -363,7 +363,7 @@ func saveReaderToFile(reader io.Reader) (string, error) {
 	return f.Name(), nil
 }
 
-func bundleInstancesOwnershipConflicts(bundleInstances []*engine.BundleInstance) error {
+func bundleInstancesOwnershipConflicts(bundleInstances []*apiv1.BundleInstance) error {
 	var conflicts reconciler.InstanceOwnershipConflictErr
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
