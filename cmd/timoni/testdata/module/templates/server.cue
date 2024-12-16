@@ -1,19 +1,19 @@
 package templates
 
+import (
+	timoniv1 "timoni.sh/core/v1alpha1"
+)
+
 #ServerConfig: {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "v1"
 	kind:       "ConfigMap"
-	metadata: {
-		name:      "\(_config.metadata.name)-server"
-		namespace: _config.metadata.namespace
-		labels:    _config.metadata.labels
-		if _config.metadata.annotations != _|_ {
-			annotations: _config.metadata.annotations
-		}
+	metadata: timoniv1.#MetaComponent & {
+		#Meta:      #config.metadata
+		#Component: "server"
 	}
 	data: {
-		hostname: "\(_config.domain)"
+		hostname: "\(#config.domain)"
 		port:     "9090"
 	}
 }

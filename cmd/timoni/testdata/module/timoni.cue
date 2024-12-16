@@ -5,9 +5,6 @@
 package main
 
 import (
-	"strconv"
-	"strings"
-
 	templates "timoni.sh/test/templates"
 )
 
@@ -44,10 +41,6 @@ timoni: {
 			kubeVersion: string @tag(kv, var=kubeVersion)
 		}
 	}
-
-	// Enforce minimum Kubernetes version.
-	kubeMinorVersion: int & >=20
-	kubeMinorVersion: strconv.Atoi(strings.Split(instance.config.kubeVersion, ".")[1])
 
 	// Pass Kubernetes resources outputted by the instance
 	// to Timoni's multi-step apply.

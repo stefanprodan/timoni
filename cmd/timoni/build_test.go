@@ -227,7 +227,7 @@ func TestBuild(t *testing.T) {
 		))
 		g.Expect(output).To(BeEmpty())
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(ContainSubstring("timoni.kubeMinorVersion: invalid value"))
+		g.Expect(err.Error()).To(ContainSubstring("invalid value 19"))
 	})
 }
 
