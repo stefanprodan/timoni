@@ -405,13 +405,15 @@ func TestApply_GlobalResources(t *testing.T) {
 			namespace,
 			name,
 			modPath,
-		), strings.NewReader("values: ns: enabled: true"))
+		), strings.NewReader("values: globals: enabled: true"))
 		g.Expect(err).ToNot(HaveOccurred())
 		t.Log("\n", output)
 
 		ns := nsObj.DeepCopy()
 		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(ns), ns)
 		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(output).To(ContainSubstring(fmt.Sprintf("ClusterRole/%s-readonly", name)))
 	})
 
 	t.Run("uninstalls instance", func(t *testing.T) {
