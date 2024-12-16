@@ -1,14 +1,15 @@
 package templates
 
+import (
+	timoniv1 "timoni.sh/core/v1alpha1"
+)
+
 #Namespace: {
-	_config:    #Config
+	#config:    #Config
 	apiVersion: "v1"
 	kind:       "Namespace"
-	metadata: {
-		name:      "\(_config.metadata.name)-ns"
-		labels:    _config.metadata.labels
-		if _config.metadata.annotations != _|_ {
-			annotations: _config.metadata.annotations
-		}
+	metadata: timoniv1.#MetaClusterComponent & {
+		#Meta:      #config.metadata
+		#Component: "ns"
 	}
 }
