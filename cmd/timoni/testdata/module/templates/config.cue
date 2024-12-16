@@ -42,7 +42,7 @@ import (
 	domain: *"example.internal" | string
 
 	// +nodoc
-	ns: {
+	globals: {
 		enabled: *false | bool
 	}
 
@@ -61,8 +61,10 @@ import (
 			"\(config.metadata.name)-server": #ServerConfig & {#config: config}
 		}
 
-		if config.ns.enabled {
+		if config.globals.enabled {
 			"\(config.metadata.name)-ns": #Namespace & {#config: config}
+			"\(config.metadata.name)-cr": #ClusterRole & {#config: config}
+
 		}
 	}
 }

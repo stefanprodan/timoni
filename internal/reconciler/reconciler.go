@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
@@ -101,6 +102,17 @@ func (r *Reconciler) Init(ctx context.Context, builder *engine.ModuleBuilder, bu
 			r.instanceManager.Instance.Labels = make(map[string]string)
 		}
 		r.instanceManager.Instance.Labels[apiv1.BundleNameLabelKey] = instance.Bundle
+	}
+
+	for _, obj := range r.currentObjects {
+		// If the object is not namespaced, we need to remove the metadata.namespace field.
+		if obj.GetNamespace() != "" {
+			if namespaced, err := apiutil.IsObjectNamespaced(obj,
+				r.resourceManager.Client().Scheme(),
+				r.resourceManager.Client().RESTMapper()); err == nil && !namespaced {
+				obj.SetNamespace("")
+			}
+		}
 	}
 
 	if err := r.instanceManager.AddObjects(r.currentObjects); err != nil {
