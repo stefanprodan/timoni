@@ -1,0 +1,3649 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Timoni is a package manager for Kubernetes powered by CUE lang.
+">
+      
+      
+        <meta name="author" content="Stefan Prodan">
+      
+      
+        <link rel="canonical" href="https://timoni.sh/bundle/">
+      
+      
+        <link rel="prev" href="../comparison/">
+      
+      
+        <link rel="next" href="../bundle-runtime/">
+      
+      
+      <link rel="icon" href="../images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
+    
+    
+      
+        <title>Bundle files - Timoni</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.bcfcd587.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+
+<meta property="og:url" content="https://timoni.sh/bundle/">
+<meta property="og:image" content="https://timoni.sh/images/logo_card.png">
+<meta property="og:image:alt" content="timoni.sh">
+<meta property="og:image:type" content="image/png">
+
+<meta property="og:title" content="Bundle files">
+<meta property="og:description" content="Timoni is a package manager for Kubernetes powered by CUE lang.
+">
+
+
+<meta name="twitter:site" content="@stefanprodan">
+<meta name="twitter:creator" content="@stefanprodan">
+<meta name="twitter:image:alt" content="timoni.sh">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timoni.sh/images/logo.png">
+<meta property="twitter:title" content="Bundle files">
+<meta property="twitter:description" content="Timoni is a package manager for Kubernetes powered by CUE lang.
+">
+
+
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#bundle" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Timoni" class="md-header__button md-logo" aria-label="Timoni" data-md-component="logo">
+      
+  <img src="../images/logo_indigo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Timoni
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Bundle files
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/stefanprodan/timoni" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    stefanprodan/timoni
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../quickstart/" class="md-tabs__link">
+          
+  
+  Documentation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../cue/introduction/" class="md-tabs__link">
+          
+  
+  CUE Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../cmd/timoni/" class="md-tabs__link">
+          
+  
+  CLI Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Timoni" class="md-nav__button md-logo" aria-label="Timoni" data-md-component="logo">
+      
+  <img src="../images/logo_indigo.svg" alt="logo">
+
+    </a>
+    Timoni
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/stefanprodan/timoni" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    stefanprodan/timoni
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Documentation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Documentation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Concepts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparison/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Compared to other tools
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    App Delivery
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            App Delivery
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Bundle files
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Bundle files
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-a-bundle-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      Writing a Bundle spec
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing a Bundle spec">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      API version
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Name
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instances" class="md-nav__link">
+    <span class="md-ellipsis">
+      Instances
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      Instance Module
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instance Module">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#url" class="md-nav__link">
+    <span class="md-ellipsis">
+      URL
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      Digest
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      Instance Namespace
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      Instance Values
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instance Values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values-from-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values from runtime
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#working-with-bundles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Working with Bundles
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Working with Bundles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-and-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install and Upgrade
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diff-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diff Upgrade
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#force-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Force Upgrade
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transfer-ownership" class="md-nav__link">
+    <span class="md-ellipsis">
+      Transfer ownership
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      Status
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-values-from-json-and-yaml-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use values from JSON and YAML files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      Uninstall
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#garbage-collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Garbage collection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#readiness-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Readiness checks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vetting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vetting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#format" class="md-nav__link">
+    <span class="md-ellipsis">
+      Format
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#referencing-local-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Referencing local modules
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bundle-runtime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Bundle runtime
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bundle-distribution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Bundle distribution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bundle-secrets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Bundle secrets injection
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bundle-multi-cluster/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Multi-cluster deployments
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_6" id="__nav_2_6_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    App Packaging
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            App Packaging
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../module/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Module specification
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_7" id="__nav_2_7_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Integrations
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_7">
+            <span class="md-nav__icon md-icon"></span>
+            Integrations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../github-actions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GitHub Actions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flux-aio/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Flux AIO Distribution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flux-helm-interop/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Helm Interoperability
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gitops-flux/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GitOps with Flux
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    CUE Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            CUE Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/introduction/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/walkthrough/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CUE Walkthrough
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Module Development
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Module Development
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/module/initialization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Get started with modules
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/module/immutable-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Immutable ConfigMaps and Secrets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/module/custom-resources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Add custom resources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/module/semver-constraints/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster version constraints
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/module/apply-behavior/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Control the apply behavior
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/module/test-jobs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Run tests with Kubernetes Jobs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/module/import-resources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Import resources from YAML
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Module Distribution
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            Module Distribution
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/module/publishing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Publishing module versions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/module/signing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Signing and Verification
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cue/module/github-actions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GitHub Actions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    CLI Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            CLI Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_version/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni version
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Instance
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            Instance
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_apply/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni apply
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_build/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni build
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_delete/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni delete
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_list/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni list
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_inspect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni inspect
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_inspect_module/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni inspect module
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_inspect_values/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni inspect values
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_inspect_resources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni inspect resources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_status/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni status
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Module
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Module
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni mod
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_init/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni mod init
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_push/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni mod push
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_pull/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni mod pull
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_list/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni mod list
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_vet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni mod vet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_vendor/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni mod vendor
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_vendor_k8s/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni mod vendor k8s
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_mod_vendor_crd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni mod vendor crd
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Bundle
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            Bundle
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_bundle/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni bundle
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_bundle_apply/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni bundle apply
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_bundle_build/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni bundle build
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_bundle_delete/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni bundle delete
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_bundle_status/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni bundle status
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_bundle_vet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni bundle vet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Runtime
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            Runtime
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_runtime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni runtime
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_runtime_build/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni runtime build
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Registry
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
+            <span class="md-nav__icon md-icon"></span>
+            Registry
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_registry/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni registry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_registry_login/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni registry login
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_registry_logout/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni registry logout
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_8" id="__nav_4_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Artifact
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_8">
+            <span class="md-nav__icon md-icon"></span>
+            Artifact
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_artifact/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni artifact
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_artifact_list/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni artifact list
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_artifact_push/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni artifact push
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_artifact_pull/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni artifact pull
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_artifact_tag/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni artifact tag
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_9" id="__nav_4_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Completion
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_9">
+            <span class="md-nav__icon md-icon"></span>
+            Completion
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_completion/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni completion
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_completion_bash/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni completion bash
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_completion_fish/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni completion fish
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_completion_powershell/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni completion powershell
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cmd/timoni_completion_zsh/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timoni completion zsh
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-a-bundle-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      Writing a Bundle spec
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing a Bundle spec">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      API version
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Name
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instances" class="md-nav__link">
+    <span class="md-ellipsis">
+      Instances
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      Instance Module
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instance Module">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#url" class="md-nav__link">
+    <span class="md-ellipsis">
+      URL
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      Digest
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      Instance Namespace
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instance-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      Instance Values
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instance Values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#values-from-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      Values from runtime
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#working-with-bundles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Working with Bundles
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Working with Bundles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-and-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install and Upgrade
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diff-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diff Upgrade
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#force-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Force Upgrade
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transfer-ownership" class="md-nav__link">
+    <span class="md-ellipsis">
+      Transfer ownership
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      Status
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-values-from-json-and-yaml-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use values from JSON and YAML files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      Uninstall
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#garbage-collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Garbage collection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#readiness-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Readiness checks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vetting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vetting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#format" class="md-nav__link">
+    <span class="md-ellipsis">
+      Format
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#referencing-local-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Referencing local modules
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="bundle">Bundle</h1>
+<p>Timoni bundles offer a declarative way of managing the lifecycle
+of applications and their infra dependencies.</p>
+<p>A Timoni bundle is a CUE file for defining a group of instances
+together with their values and module references.</p>
+<h2 id="example">Example</h2>
+<p>The following is an example of a Bundle that defines a Redis
+master-replica cluster and a podinfo instance connected to the Redis instance.</p>
+<div class="highlight"><pre><span></span><code><span class="nx">bundle</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1alpha1&quot;</span>
+<span class="w">    </span><span class="nx">name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;podinfo&quot;</span>
+<span class="w">    </span><span class="nx">instances</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">redis</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">module</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">url</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;oci://ghcr.io/stefanprodan/modules/redis&quot;</span>
+<span class="w">                </span><span class="nx">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;7.2.4&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">            </span><span class="nx">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;podinfo&quot;</span>
+<span class="w">            </span><span class="nx">values</span><span class="p">:</span><span class="w"> </span><span class="nx">maxmemory</span><span class="p">:</span><span class="w"> </span><span class="mi">256</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="nx">podinfo</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">module</span><span class="p">:</span><span class="w"> </span><span class="nx">url</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;oci://ghcr.io/stefanprodan/modules/podinfo&quot;</span>
+<span class="w">            </span><span class="nx">module</span><span class="p">:</span><span class="w"> </span><span class="nx">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;6.5.4&quot;</span>
+<span class="w">            </span><span class="nx">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;podinfo&quot;</span>
+<span class="w">            </span><span class="nx">values</span><span class="p">:</span><span class="w"> </span><span class="nx">caching</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">enabled</span><span class="p">:</span><span class="w">  </span><span class="kc">true</span>
+<span class="w">                </span><span class="nx">redisURL</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tcp://redis:6379&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>For the above example, Timoni performs the following actions at apply time:</p>
+<ul>
+<li>Validates that the Bundle definition is in conformance with the API version specified by <code>apiVersion</code>.</li>
+<li>For each instance, it fetches the module version from the registry using the <code>module.url</code>
+  as the artifact repository address and the <code>module.version</code> as the artifact tag.</li>
+<li>Creates the Kubernetes namespaces if they don't exist.</li>
+<li>For each instance, it builds, validates and creates the Kubernetes resources using the specified <code>values</code>.</li>
+<li>The list of managed resources along with the module reference and values are stored in the cluster in a
+  Kubernetes Secret, in the same namespace with the instance.</li>
+<li>If an instance already exists, Timoni performs a server-side apply dry-run to detect changes and
+  applies only the resources with divergent state.</li>
+<li>If previously applied resources are missing from the current revision, these
+  resources are deleted from the cluster.</li>
+<li>Waits for each instance's resources to become ready.</li>
+</ul>
+<p>You can run this example by saving the Bundle into <code>podinfo.bundle.cue</code>.</p>
+<p>Apply the Bundle on the cluster:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">command</label><label for="__tabbed_1_2">output</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>podinfo.bundle.cue
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>applying instance redis
+pulling oci://ghcr.io/stefanprodan/modules/redis:7.2.4
+using module timoni.sh/redis version 7.2.4
+installing redis in namespace podinfo
+Namespace/podinfo created
+applying master
+ServiceAccount/podinfo/redis created
+ConfigMap/podinfo/redis created
+Service/podinfo/redis created
+Deployment/podinfo/redis-master created
+PersistentVolumeClaim/podinfo/redis-master created
+waiting for 5 resource(s) to become ready...
+resources are ready
+applying replica
+Service/podinfo/redis-readonly created
+Deployment/podinfo/redis-replica created
+waiting for 2 resource(s) to become ready...
+resources are ready
+applying instance podinfo
+pulling oci://ghcr.io/stefanprodan/modules/podinfo:6.5.4
+using module timoni.sh/podinfo version 6.5.4
+installing podinfo in namespace podinfo
+ServiceAccount/podinfo/podinfo created
+Service/podinfo/podinfo created
+Deployment/podinfo/podinfo created
+waiting for 3 resource(s) to become ready...
+resources are ready
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Build the Bundle and print the resulting Kubernetes resources for all the Bundle's instances:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">command</label><label for="__tabbed_2_2">output</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>podinfo.bundle.cue
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>---
+# Instance: redis
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+labels:
+  app.kubernetes.io/part-of: redis
+  app.kubernetes.io/version: 7.2.4
+name: redis
+namespace: podinfo
+---
+# Redis deployments omitted for brevity
+---
+# Instance: podinfo
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+labels:
+  app.kubernetes.io/name: podinfo
+  app.kubernetes.io/version: 6.5.4
+name: podinfo
+namespace: podinfo
+---
+# Podinfo deployment omitted for brevity
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>List the managed resources from a bundle and their rollout status:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">command</label><label for="__tabbed_3_2">output</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>status<span class="w"> </span>-f<span class="w"> </span>podinfo.bundle.cue
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>last applied 2024-03-03T20:21:19Z
+module oci://ghcr.io/stefanprodan/modules/redis:7.2.4
+digest: sha256:8cf531365742c7cab9628909dfe16958550853f7c994284eacad64f169f4c74a
+ServiceAccount/podinfo/redis Current Resource is current
+ConfigMap/podinfo/redis Current Resource is always ready
+Service/podinfo/redis Current Service is ready
+Service/podinfo/redis-readonly Current Service is ready
+Deployment/podinfo/redis-master Current Deployment is available. Replicas: 1
+Deployment/podinfo/redis-replica Current Deployment is available. Replicas: 1
+PersistentVolumeClaim/podinfo/redis-master Current PVC is Bound
+
+last applied 2024-03-03T20:21:19Z
+module oci://ghcr.io/stefanprodan/modules/podinfo:6.5.4
+digest: sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365
+ServiceAccount/podinfo/podinfo Current Resource is always ready
+Service/podinfo/podinfo Current Service is ready
+Deployment/podinfo/podinfo Current Deployment is available. Replicas: 1
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>List the instances in Bundle <code>podinfo</code> across all namespaces:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">command</label><label for="__tabbed_4_2">output</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>list<span class="w"> </span>--bundle<span class="w"> </span>podinfo<span class="w"> </span>-A
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>NAME    NAMESPACE         MODULE                                          VERSION LAST APPLIED          BUNDLE
+podinfo podinfo           oci://ghcr.io/stefanprodan/modules/podinfo      6.5.4   2024-03-03T16:20:07Z  podinfo
+redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        7.2.4   2024-03-03T16:20:00Z  podinfo
+</code></pre></div>
+</div>
+</div>
+</div>
+<h2 id="writing-a-bundle-spec">Writing a Bundle spec</h2>
+<p>A Bundle file must contain a definition that matches the following schema:</p>
+<div class="highlight"><pre><span></span><code><span class="err">#</span><span class="nx">Bundle</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">name</span><span class="p">:</span><span class="w">       </span><span class="kt">string</span>
+<span class="w">    </span><span class="nx">instances</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="kt">string</span><span class="p">]:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">module</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">url</span><span class="p">:</span><span class="w">     </span><span class="kt">string</span>
+<span class="w">            </span><span class="nx">digest</span><span class="err">?</span><span class="p">:</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">            </span><span class="nx">version</span><span class="p">:</span><span class="w"> </span><span class="o">*</span><span class="s">&quot;latest&quot;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="nx">namespace</span><span class="p">:</span><span class="w"> </span><span class="kt">string</span>
+<span class="w">        </span><span class="nx">values</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="o">...</span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Bundle files can contain arithmetic
+<a href="https://cuelang.org/docs/tutorials/tour/expressions/operators/">operations</a>,
+<a href="https://cuelang.org/docs/tutorials/tour/expressions/interpolation/">string interpolation</a>
+and everything else that CUE <a href="https://cuelang.org/docs/references/spec/">std lib</a> supports.</p>
+<h3 id="api-version">API version</h3>
+<p>The <code>apiVersion</code> is a required field that specifies the version of the Bundle schema.</p>
+<p>Currently, the only supported value is <code>v1alpha1</code>.</p>
+<h3 id="name">Name</h3>
+<p>The <code>name</code> is a required field used to track the ownership of instances deployed to a Kubernetes cluster.</p>
+<p>Note that Bundles should have unique names per cluster, using the same name for different bundles
+will result in <a href="#transfer-ownership">ownership conflict</a>.</p>
+<h3 id="instances">Instances</h3>
+<p>The <code>instances</code> array is a required field that specifies the list of Instances part of this Bundle.</p>
+<p>A Bundle must contain at least one instance with the following required fields:</p>
+<div class="highlight"><pre><span></span><code><span class="nx">bundle</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1alpha1&quot;</span>
+<span class="w">    </span><span class="nx">name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;podinfo&quot;</span>
+<span class="w">    </span><span class="nx">instances</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">podinfo</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">module</span><span class="p">:</span><span class="w"> </span><span class="nx">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;oci://ghcr.io/stefanprodan/modules/podinfo&quot;</span>
+<span class="w">            </span><span class="nx">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;podinfo&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="instance-module">Instance Module</h3>
+<p>The <code>instance.module</code> is a required field that specifies the OCI URL, version and/or digest
+of the instance's module.</p>
+<h4 id="url">URL</h4>
+<p>The <code>instance.module.url</code> is a required field that specifies the source of the module.
+It can be either an OCI repository address (preferred) or a local path to a module (useful during development).</p>
+<p>When using an OCI repository, the <code>url</code> field must be in the format <code>oci://&lt;registry-host&gt;/&lt;repo-name&gt;</code>.</p>
+<p>When using a Local path, the <code>url</code> field must be in the format <code>file://path/to/module</code>.</p>
+<div class="admonition tip relative paths">
+<p class="admonition-title">Tip</p>
+<p>Relative paths are always computed relatively to the path of the bundle file containing the value.</p>
+</div>
+<h4 id="version">Version</h4>
+<p>The <code>instance.module.version</code> is an optional field that specifies the version number of the module.
+The version number must follow <a href="../cue/module/publishing/#version-format">Timoni's semantic versioning</a>.
+When not specified, the version defaults to <code>latest</code>, which pulls the module OCI artifact tagged as latest.</p>
+<div class="highlight"><pre><span></span><code><span class="nx">module</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">url</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;oci://ghcr.io/stefanprodan/modules/podinfo&quot;</span>
+<span class="w">    </span><span class="nx">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;6.5.4&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Default version</p>
+<p>When not specified, the version defaults to <code>latest</code>, which pulls the module OCI artifact tagged as latest.
+Note that using <code>version: "latest"</code> is not recommended for production system, unless you also specify a digest.  </p>
+</div>
+<h4 id="digest">Digest</h4>
+<p>The <code>instance.module.digest</code> is an optional field that specifies the OCI digest of the module.</p>
+<div class="highlight"><pre><span></span><code><span class="nx">module</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">url</span><span class="p">:</span><span class="w">    </span><span class="s">&quot;oci://ghcr.io/stefanprodan/modules/podinfo&quot;</span>
+<span class="w">    </span><span class="nx">digest</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When both the version number and the digest are specified, Timoni will verify that the
+upstream digest of the version matches the specified <code>instance.module.digest</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nx">module</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">url</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;oci://ghcr.io/stefanprodan/modules/podinfo&quot;</span>
+<span class="w">    </span><span class="nx">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;6.5.4&quot;</span>
+<span class="w">    </span><span class="nx">digest</span><span class="p">:</span><span class="w">  </span><span class="s">&quot;sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>If the version is set to <code>latest</code> and a digest is specified, Timoni will ignore the version
+and will pull the module by its OCI digest.</p>
+<h3 id="instance-namespace">Instance Namespace</h3>
+<p>The <code>instance.namespace</code> is a required field that specifies the Kubernetes namespace where the instance is created.</p>
+<p>If the specified namespace does not exist, Timoni will first create the namespace,
+then it will apply the instance's resources in that namespace.</p>
+<h3 id="instance-values">Instance Values</h3>
+<p>The <code>instance.values</code> is an optional field that specifies custom values used to configure the instance.</p>
+<p>At apply time, Timoni merges the custom values with the defaults,
+validates the final values against the config schema and creates the instance.</p>
+<h4 id="values-from-runtime">Values from runtime</h4>
+<p>The <code>@timoni(runtime:[string|number|bool]:[VAR_NAME])</code> CUE attribute can be placed next
+to a field to set its value from the <a href="../bundle-runtime/">Runtime</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="nx">values</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">host</span><span class="p">:</span><span class="w">    </span><span class="s">&quot;example.com&quot;</span><span class="w"> </span><span class="err">@</span><span class="nx">timoni</span><span class="p">(</span><span class="nx">runtime</span><span class="p">:</span><span class="kt">string</span><span class="p">:</span><span class="nx">MY_HOST</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">          </span><span class="err">@</span><span class="nx">timoni</span><span class="p">(</span><span class="nx">runtime</span><span class="p">:</span><span class="kt">bool</span><span class="p">:</span><span class="nx">MY_ENABLED</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">score</span><span class="p">:</span><span class="w">   </span><span class="mi">1</span><span class="w">             </span><span class="err">@</span><span class="nx">timoni</span><span class="p">(</span><span class="nx">runtime</span><span class="p">:</span><span class="nx">number</span><span class="p">:</span><span class="nx">MY_SCORE</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>To make a Runtime attribute required, the field value can be set to its type:</p>
+<div class="highlight"><pre><span></span><code><span class="nx">values</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">host</span><span class="p">:</span><span class="w">    </span><span class="kt">string</span><span class="w"> </span><span class="err">@</span><span class="nx">timoni</span><span class="p">(</span><span class="nx">runtime</span><span class="p">:</span><span class="kt">string</span><span class="p">:</span><span class="nx">MY_HOST</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">enabled</span><span class="p">:</span><span class="w"> </span><span class="kt">bool</span><span class="w">   </span><span class="err">@</span><span class="nx">timoni</span><span class="p">(</span><span class="nx">runtime</span><span class="p">:</span><span class="kt">bool</span><span class="p">:</span><span class="nx">MY_ENABLED</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">score</span><span class="p">:</span><span class="w">   </span><span class="kt">int</span><span class="w">    </span><span class="err">@</span><span class="nx">timoni</span><span class="p">(</span><span class="nx">runtime</span><span class="p">:</span><span class="nx">number</span><span class="p">:</span><span class="nx">MY_SCORE</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The Runtime values can come from Kubernetes API and/or from the environment variables,
+for more details please see the <a href="../bundle-runtime/">Bundle Runtime documentation</a>.</p>
+<h2 id="working-with-bundles">Working with Bundles</h2>
+<h3 id="install-and-upgrade">Install and Upgrade</h3>
+<p>To install or upgrade the instances defined in a Bundle file,
+you can use the <code>timoni bundle apply</code> command.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>bundle.cue
+</code></pre></div>
+<p>The apply command performs the following actions for each instance:</p>
+<ul>
+<li>Pulls the module version from the specified container registry.</li>
+<li>If the registry is private, uses the credentials found in <code>~/.docker/config.json</code>.</li>
+<li>If the registry credentials are specified with <code>--creds</code>, these take priority over the docker ones.</li>
+<li>Merges the custom values supplied in the Bundle with the default values found in the module.</li>
+<li>Builds the module by passing the instance name, namespace and values.</li>
+<li>Labels the resulting Kubernetes resources with the instance name and namespace.</li>
+<li>Creates the instance namespace if it doesn't exist.</li>
+<li>Applies the Kubernetes resources on the cluster.</li>
+<li>Creates or updates the instance inventory with the last applied resources IDs.</li>
+</ul>
+<h3 id="diff-upgrade">Diff Upgrade</h3>
+<p>After editing a bundle file, you can review the changes that will
+be made on the cluster with <code>timoni bundle apply --diff</code>.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>apply<span class="w"> </span>--dry-run<span class="w"> </span>--diff<span class="w"> </span>-f<span class="w"> </span>bundle.cue
+</code></pre></div>
+<h3 id="force-upgrade">Force Upgrade</h3>
+<p>If an upgrade contains changes to immutable fields, such as changing the image
+tag of a Kubernetes Job, you need to set the <code>--force</code> flag.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>apply<span class="w"> </span>--force<span class="w"> </span>-f<span class="w"> </span>bundle.cue
+</code></pre></div>
+<p>With <code>--force</code>, Timoni will recreate only the resources that contain changes
+to immutable fields.</p>
+<h3 id="transfer-ownership">Transfer ownership</h3>
+<p>If an install or upgrade involves Instances already created, either separately or as a part of another Bundle,
+the operation will fail.
+To transfer ownership to the current Bundle, you need to set the <code>--overwrite-ownership</code> flag.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>apply<span class="w"> </span>--overwrite-ownership<span class="w"> </span>-f<span class="w"> </span>bundle.cue
+</code></pre></div>
+<h3 id="status">Status</h3>
+<p>To list the current status of the managed resources for each
+instance including the last applied date, the module url and digest,
+you can use the <code>timoni bundle status</code>.</p>
+<p>Example using the bundle name:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>status<span class="w"> </span>my-bundle
+</code></pre></div>
+<p>Example using a bundle CUE file:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>status<span class="w"> </span>-f<span class="w"> </span>bundle.cue
+</code></pre></div>
+<h3 id="build">Build</h3>
+<p>To build the instances defined in a Bundle file and print the resulting Kubernetes resources,
+you can use the <code>timoni bundle build</code> command.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>bundle.cue
+</code></pre></div>
+<h3 id="use-values-from-json-and-yaml-files">Use values from JSON and YAML files</h3>
+<p>A bundle can be defined in multiple files of different formats:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>bundle.cue<span class="w"> </span>-f<span class="w"> </span>extras1.json<span class="w"> </span>-f<span class="w"> </span>extras2.yaml
+</code></pre></div>
+<p>Timoni extracts the CUE values from the JSON and YAML files,
+and unifies them with the bundle value. Note that setting the
+same field in multiple files is not supported.</p>
+<p>Timoni supports the following extensions: <code>.cue</code>, <code>.json</code>, <code>.yml</code>, <code>.yaml</code>.</p>
+<h3 id="uninstall">Uninstall</h3>
+<p>To uninstall all the instances belonging to a Bundle,
+you can use the <code>timoni bundle delete</code> command.</p>
+<p>Example using the bundle name:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>delete<span class="w"> </span>my-bundle
+</code></pre></div>
+<p>Example using a bundle CUE file:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>delete<span class="w"> </span>-f<span class="w"> </span>bundle.cue
+</code></pre></div>
+<p>Timoni will search the cluster and delete all the instances having
+the <code>bundle.timoni.sh/name: &lt;name&gt;</code> label matching the given bundle name.
+The instances are uninstalled in reverse order,
+first created instance is last to be deleted.</p>
+<h3 id="garbage-collection">Garbage collection</h3>
+<p>Timoni's garbage collector keeps track of the applied resources and prunes the Kubernetes
+objects that were previously applied but are missing from the current revision.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>apply<span class="w"> </span>--prune<span class="w"> </span>-f<span class="w"> </span>bundle.cue
+</code></pre></div>
+<p>To prevent the garbage collector from deleting certain
+resources such as Kubernetes Persistent Volumes,
+these resources can be annotated with <code>action.timoni.sh/prune: "disabled"</code>.</p>
+<p>The garbage collection is enabled by default, to opt-out set <code>--prune=false</code>.</p>
+<h3 id="readiness-checks">Readiness checks</h3>
+<p>By default, Timoni applies the instances in order, and will wait for
+each instance's resources to become ready, before moving to the next instance.</p>
+<p>The readiness check is performed for the Kubernetes resources with the following types:</p>
+<ul>
+<li>Kubernetes built-in kinds: Deployment, DaemonSet, StatefulSet,
+  PersistentVolumeClaim, Pod, PodDisruptionBudget, Job, CronJob, Service,
+  Secret, ConfigMap, CustomResourceDefinition</li>
+<li>Custom resources that are compatible
+  with <a href="https://github.com/kubernetes-sigs/cli-utils/tree/master/pkg/kstatus">kstatus</a></li>
+</ul>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>apply<span class="w"> </span>--wait<span class="w"> </span>--timeout<span class="o">=</span>5m<span class="w"> </span>-f<span class="w"> </span>bundle.cue
+</code></pre></div>
+<p>With <code>--timeout</code>, Timoni will retry the readiness checks until the specified
+timeout period expires. If an instance's resource fails to become ready,
+the apply command will exit with an error.</p>
+<p>The readiness check is enabled by default, to opt-out set <code>--wait=false</code>.</p>
+<h3 id="vetting">Vetting</h3>
+<p>To verify that one or more CUE files contain a valid Bundle definition,
+you can use the <code>timoni bundle vet</code> command.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>vet<span class="w"> </span>-f<span class="w"> </span>bundle.cue<span class="w"> </span>-f<span class="w"> </span>extras.cue
+</code></pre></div>
+<p>If the validation passes, Timoni will list all the instances found in the computed bundle.</p>
+<p>When <code>--print-value</code> is specified, Timoni will write the Bundle computed value to stdout.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>timoni<span class="w"> </span>bundle<span class="w"> </span>vet<span class="w"> </span>-f<span class="w"> </span>bundle.cue<span class="w"> </span>--runtime-from-env<span class="w"> </span>--print-value
+</code></pre></div>
+<p>Printing the computed value is particular useful when debugging runtime attributes.</p>
+<h3 id="format">Format</h3>
+<p>To format Bundle files, you can use the <code>cue fmt</code> command.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>cue<span class="w"> </span>fmt<span class="w"> </span>bundle.cue
+</code></pre></div>
+<h3 id="referencing-local-modules">Referencing local modules</h3>
+<p>When developing and testing Timoni Modules, you can reference them
+from a Bundle file using relative local paths.</p>
+<p>Example repo structure:</p>
+<div class="highlight"><pre><span></span><code>├──<span class="w"> </span>modules
+│<span class="w">   </span>├──<span class="w"> </span>app1
+│<span class="w">   </span>└──<span class="w"> </span>app2
+└──<span class="w"> </span>bundles
+<span class="w">    </span>└──<span class="w"> </span>apps-test.cue
+</code></pre></div>
+<p>Example Bundle file:</p>
+<div class="highlight"><pre><span></span><code><span class="nx">bundle</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1alpha1&quot;</span>
+<span class="w">    </span><span class="nx">name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;apps-test&quot;</span>
+<span class="w">    </span><span class="nx">instances</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s">&quot;app1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">module</span><span class="p">:</span><span class="w"> </span><span class="nx">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file://../modules/app1&quot;</span>
+<span class="w">            </span><span class="nx">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;app1&quot;</span>
+<span class="w">            </span><span class="nx">values</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="o">...</span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="s">&quot;app2&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">module</span><span class="p">:</span><span class="w"> </span><span class="nx">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file://../modules/app2&quot;</span>
+<span class="w">            </span><span class="nx">namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;app2&quot;</span>
+<span class="w">            </span><span class="nx">values</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="o">...</span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When using local paths, the <code>url</code> field must be in the format <code>file://path/to/module</code>
+and the module path is computed relatively to the path of the bundle file location.</p>
+<p>Note that when using local modules, the module's version and digest are ignored, as these
+are only relevant when pulling modules from a container registry.
+All instances created from modules referenced with local paths have
+the module version set to <code>0.0.0-devel</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright © 2024 Stefan Prodan
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://cloud-native.slack.com/team/ULPRMFH38" target="_blank" rel="noopener" title="cloud-native.slack.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M94.12 315.1c0 25.9-21.16 47.06-47.06 47.06S0 341 0 315.1c0-25.9 21.16-47.06 47.06-47.06h47.06v47.06zm23.72 0c0-25.9 21.16-47.06 47.06-47.06s47.06 21.16 47.06 47.06v117.84c0 25.9-21.16 47.06-47.06 47.06s-47.06-21.16-47.06-47.06V315.1zm47.06-188.98c-25.9 0-47.06-21.16-47.06-47.06S139 32 164.9 32s47.06 21.16 47.06 47.06v47.06H164.9zm0 23.72c25.9 0 47.06 21.16 47.06 47.06s-21.16 47.06-47.06 47.06H47.06C21.16 243.96 0 222.8 0 196.9s21.16-47.06 47.06-47.06H164.9zm188.98 47.06c0-25.9 21.16-47.06 47.06-47.06 25.9 0 47.06 21.16 47.06 47.06s-21.16 47.06-47.06 47.06h-47.06V196.9zm-23.72 0c0 25.9-21.16 47.06-47.06 47.06-25.9 0-47.06-21.16-47.06-47.06V79.06c0-25.9 21.16-47.06 47.06-47.06 25.9 0 47.06 21.16 47.06 47.06V196.9zM283.1 385.88c25.9 0 47.06 21.16 47.06 47.06 0 25.9-21.16 47.06-47.06 47.06-25.9 0-47.06-21.16-47.06-47.06v-47.06h47.06zm0-23.72c-25.9 0-47.06-21.16-47.06-47.06 0-25.9 21.16-47.06 47.06-47.06h117.84c25.9 0 47.06 21.16 47.06 47.06 0 25.9-21.16 47.06-47.06 47.06H283.1z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/stefanprodan" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M64 32C28.7 32 0 60.7 0 96v320c0 35.3 28.7 64 64 64h320c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zm297.1 84L257.3 234.6 379.4 396h-95.6L209 298.1 123.3 396H75.8l111-126.9L69.7 116h98l67.7 89.5 78.2-89.5h47.5zm-37.8 251.6L153.4 142.9h-28.3l171.8 224.7h26.3z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://linkedin.com/in/stefanprodan" target="_blank" rel="noopener" title="linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "navigation.sections", "navigation.top", "navigation.tabs"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.1e8ae164.min.js"></script>
+      
+    
+  </body>
+</html>
