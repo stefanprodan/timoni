@@ -183,7 +183,9 @@ Timoni maintains a local cache of modules pulled from remote container registrie
 Cashing is meant to reduce network traffic for sequential pull operations and speeds up
 applying bundles which refer to modules with identical layers.
 
-The default cache location is `$HOME/.timoni/cache` and be changed with the `--cache-dir` global flag.
+The default cache location is `$HOME/.timoni/cache` and can be changed with either the
+`--cache-dir` global flag or `TIMONI_CACHE_DIR` environment variable. The global flag
+takes precedence over the environment variable.
 
 If the home directory is not writable, caching can be disabled by
 setting the `TIMONI_CACHING=false` environment variable.
