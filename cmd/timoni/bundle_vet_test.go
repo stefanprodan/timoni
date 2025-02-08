@@ -257,14 +257,14 @@ bundle:
 			}
 			namespace: "podinfo"
 			values: {
+				autoscaling: {
+					enabled: true
+				}
 				caching: {
 					enabled:  true
 					redisURL: "tcp://:password@test.host:6379"
 				}
 				monitoring: {
-					enabled: true
-				}
-				autoscaling: {
 					enabled: true
 				}
 			}
@@ -362,11 +362,11 @@ runtime: {
 			}
 			namespace: "fleet-test"
 			values: {
-				message:  "Hello from cluster staging"
-				replicas: 2
+				message: "Hello from cluster staging"
 				test: {
 					enabled: true
 				}
+				replicas: 2
 			}
 		}
 	}
@@ -382,11 +382,11 @@ runtime: {
 			}
 			namespace: "fleet-test"
 			values: {
-				message:  "Hello from cluster production"
-				replicas: 3
+				message: "Hello from cluster production"
 				test: {
 					enabled: true
 				}
+				replicas: 3
 			}
 		}
 	}

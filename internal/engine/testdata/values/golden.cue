@@ -1,14 +1,14 @@
 values: {
 	securityContext: {
-		seccompProfile: {
-			type: "RuntimeDefault"
-		}
-		readOnlyRootFilesystem:   false
 		allowPrivilegeEscalation: false
-		runAsNonRoot:             true
 		capabilities: {
 			add: ["NET_BIND_SERVICE"]
 			drop: ["ALL"]
+		}
+		readOnlyRootFilesystem: false
+		runAsNonRoot:           true
+		seccompProfile: {
+			type: "RuntimeDefault"
 		}
 	}
 	resources: {
