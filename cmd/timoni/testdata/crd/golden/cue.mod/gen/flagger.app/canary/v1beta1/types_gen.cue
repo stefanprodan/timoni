@@ -201,7 +201,7 @@ import (
 
 			// MaxAge indicates the number of seconds until the session
 			// affinity cookie will expire.
-			maxAge?: number | *86400
+			maxAge?: number
 		}
 
 		// Incremental traffic step weight for the analysis phase
@@ -343,9 +343,13 @@ import (
 
 		// The list of parent Gateways for a HTTPRoute
 		gatewayRefs?: list.MaxItems(32) & [...{
-			group?: strings.MaxRunes(253) & =~"^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$" | *"gateway.networking.k8s.io"
-			kind?:  strings.MaxRunes(63) & strings.MinRunes(1) & =~"^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$" | *"Gateway"
-			name!:  strings.MaxRunes(253) & strings.MinRunes(1)
+			group?: strings.MaxRunes(253) & {
+				=~"^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+			}
+			kind?: strings.MaxRunes(63) & strings.MinRunes(1) & {
+				=~"^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$"
+			}
+			name!: strings.MaxRunes(253) & strings.MinRunes(1)
 			namespace?: strings.MaxRunes(63) & strings.MinRunes(1) & {
 				=~"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
 			}
@@ -564,9 +568,13 @@ import (
 		// Mirror defines a schema for a filter that mirrors requests.
 		mirror?: [...{
 			backendRef?: {
-				group?: strings.MaxRunes(253) & =~"^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$" | *""
-				kind?:  strings.MaxRunes(63) & strings.MinRunes(1) & =~"^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$" | *"Service"
-				name!:  strings.MaxRunes(253) & strings.MinRunes(1)
+				group?: strings.MaxRunes(253) & {
+					=~"^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+				}
+				kind?: strings.MaxRunes(63) & strings.MinRunes(1) & {
+					=~"^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$"
+				}
+				name!: strings.MaxRunes(253) & strings.MinRunes(1)
 				namespace?: strings.MaxRunes(63) & strings.MinRunes(1) & {
 					=~"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
 				}

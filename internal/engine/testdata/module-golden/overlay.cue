@@ -7,7 +7,7 @@ objects: [{
 	}
 	data: {
 		url:           "https://test.internal"
-		kubeVersion:   "1.25.3"
 		moduleVersion: "0.0.0-devel"
+		kubeVersion:   "1.25.3"
 	}
 }]

@@ -492,14 +492,18 @@ import "strings"
 						// group (such as for a "Service" kind referent), Group must be
 						// explicitly set to "" (empty string).
 						// Support: Core
-						group?: strings.MaxRunes(253) & =~"^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$" | *"gateway.networking.k8s.io"
+						group?: strings.MaxRunes(253) & {
+							=~"^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+						}
 
 						// Kind is kind of the referent.
 						// There are two kinds of parent resources with "Core" support:
 						// * Gateway (Gateway conformance profile) * Service (Mesh
 						// conformance profile, experimental, ClusterIP Services only)
 						// Support for other resources is Implementation-Specific.
-						kind?: strings.MaxRunes(63) & strings.MinRunes(1) & =~"^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$" | *"Gateway"
+						kind?: strings.MaxRunes(63) & strings.MinRunes(1) & {
+							=~"^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$"
+						}
 
 						// Name is the name of the referent.
 						// Support: Core
