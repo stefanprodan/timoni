@@ -118,11 +118,17 @@ func setCacheDir() {
 		return
 	}
 	if rootArgs.cacheDir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return
+		cacheDir := os.Getenv("TIMONI_CACHE_DIR")
+
+		if cacheDir == "" {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return
+			}
+			rootArgs.cacheDir = path.Join(home, ".timoni/cache")
+		} else {
+			rootArgs.cacheDir = cacheDir
 		}
-		rootArgs.cacheDir = path.Join(home, ".timoni/cache")
 	}
 
 	if err := os.MkdirAll(rootArgs.cacheDir, os.ModePerm); err != nil {
