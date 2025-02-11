@@ -6,7 +6,7 @@ require (
 	cuelang.org/go v0.12.0
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/briandowns/spinner v1.23.2
-	github.com/distribution/distribution/v3 v3.0.0-rc.2
+	github.com/distribution/distribution/v3 v3.0.0-rc.3
 	github.com/fatih/color v1.18.0
 	github.com/fluxcd/cli-utils v0.36.0-flux.12
 	github.com/fluxcd/pkg/sourceignore v0.11.0
