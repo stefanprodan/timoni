@@ -471,14 +471,12 @@ objects that were previously applied but are missing from the current revision.
 Example:
 
 ```shell
-timoni bundle apply --prune -f bundle.cue
+timoni bundle apply -f bundle.cue
 ```
 
 To prevent the garbage collector from deleting certain
 resources such as Kubernetes Persistent Volumes,
 these resources can be annotated with `action.timoni.sh/prune: "disabled"`.
-
-The garbage collection is enabled by default, to opt-out set `--prune=false`.
 
 ### Readiness checks
 
