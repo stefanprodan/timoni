@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+
+<meta property="og:url" content="{{ page.canonical_url }}">
+<meta property="og:image" content="https://timoni.sh/images/logo_card.png">
+<meta property="og:image:alt" content="timoni.sh">
+<meta property="og:image:type" content="image/png">
+{% if page.is_homepage %}
+<meta property="og:title" content="{{ config.site_name }}">
+<meta property="og:description" content="{{ config.site_description }}">
+{% else %}
+<meta property="og:title" content="{{ page.title }}">
+<meta property="og:description" content="{{ config.site_description }}">
+{% endif %}
+
+<meta name="twitter:site" content="@stefanprodan">
+<meta name="twitter:creator" content="@stefanprodan">
+<meta name="twitter:image:alt" content="timoni.sh">
+{% if page.is_homepage %}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://timoni.sh/images/logo_card.png">
+<meta property="twitter:title" content="{{ config.site_name }}">
+<meta property="twitter:description" content="{{ config.site_description }}">
+{% else %}
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://timoni.sh/images/logo.png">
+<meta property="twitter:title" content="{{ page.title }}">
+<meta property="twitter:description" content="{{ config.site_description }}">
+{% endif %}
+
+{% endblock %}
