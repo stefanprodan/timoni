@@ -181,14 +181,14 @@ To upgrade Flux to a specific version, you can specify the version in the `modul
 ```cue
 module: {
     url:     "oci://ghcr.io/stefanprodan/modules/flux-aio"
-    version: "2.2.3-0"
+    version: "2.5.0-0"
 }
 ```
 
 !!! tip "Flux AIO versioning"
 
     The versioning of the AIO distribution follows semver with the following format:
-    `<flux version>-<distribution release number>`, e.g. `2.2.3-0`.
+    `<flux version>-<distribution release number>`, e.g. `2.5.0-3`.
     
     To list all available versions of the `flux-aio` module, you can use the `timoni mod ls` command,
     or you can check the [flux-aio release page](https://github.com/stefanprodan/flux-aio/releases).
@@ -368,6 +368,44 @@ the configuration of the Git HTTPS URL, auth token, branch, path, interval, heal
     
     ```shell
     timoni bundle apply -f podinfo.cue --runtime-from-env
+    ```
+
+=== "GitHub App auth"
+
+    To configure Flux to sync with a private GitHub repository using GitHub App authentication:
+    
+    ```cue
+    bundle: {
+        apiVersion: "v1alpha1"
+        name:       "cluster-addons"
+        instances: {
+            "flux-system": {
+                module: url: "oci://ghcr.io/stefanprodan/modules/flux-git-sync"
+                namespace: "flux-system"
+                values: {
+                    git: {
+                        url:  "https://github.com/org/repo"
+                        ref:  "refs/heads/main"
+                        path: "./deploy/cluster-addons"
+                    }
+                    github: {
+                        appID:             "123"
+                        appInstallationID: "234"
+                        appPrivateKey:     string @timoni(runtime:string:GITHUB_APP_PEM)
+                    }
+                }
+            }
+        }
+    }
+    ```
+    
+    Export the `GITHUB_APP_PEM` env var and apply the bundle
+    using the `--runtime-from-env` flag:
+    
+    ```shell
+    export GITHUB_APP_PEM=$(cat path/to/app.private-key.pem)
+    
+    timoni bundle apply -f cluster-addons.cue --runtime-from-env
     ```
 
 === "Self-hosted repository"
