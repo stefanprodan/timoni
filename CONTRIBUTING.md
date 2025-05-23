@@ -19,8 +19,8 @@ contribution.
 
 Prerequisites:
 
-* go >= 1.21
-* cue >= 0.6
+* go >= 1.24
+* cue >= 0.13
 * make >= 4.4
 
 Run the test suite with:
