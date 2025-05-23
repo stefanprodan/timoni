@@ -25,7 +25,7 @@ test: tidy generate fmt vet install-envtest ## Run the Go tests.
 	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./... -coverprofile cover.out
 
 tidy: ## Tidy Go modules.
-	rm -f go.sum; go mod tidy -compat=1.23
+	rm -f go.sum; go mod tidy -compat=1.24
 
 fmt: ## Format Go code.
 	go fmt ./...
