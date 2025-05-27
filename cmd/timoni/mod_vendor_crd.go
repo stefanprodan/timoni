@@ -31,6 +31,7 @@ import (
 	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
 	"github.com/stefanprodan/timoni/internal/engine"
@@ -134,6 +135,15 @@ func runVendorCrdCmd(cmd *cobra.Command, args []string) error {
 	}
 	for _, object := range objects {
 		if object.GetKind() == "CustomResourceDefinition" {
+			// Remove the 'status' field from the CRD schema as it is a read-only field.
+			if versions, found, err := unstructured.NestedSlice(object.Object, "spec", "versions"); err == nil && found {
+				for i := range versions {
+					unstructured.RemoveNestedField(versions[i].(map[string]interface{}), "schema", "openAPIV3Schema", "properties", "status")
+				}
+				if err := unstructured.SetNestedSlice(object.Object, versions, "spec", "versions"); err != nil {
+					return fmt.Errorf("mutating versions in CRD failed: %w", err)
+				}
+			}
 			builder.WriteString("---\n")
 			data, err := yaml.Marshal(object)
 			if err != nil {

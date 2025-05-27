@@ -62,9 +62,9 @@ import "strings"
 	// Extra contains extra attributes of the user that created the
 	// CertificateRequest. Populated by the cert-manager webhook on
 	// creation and immutable.
-	extra?: close({
+	extra?: {
 		[string]: [...string]
-	})
+	}
 
 	// Groups contains group membership of the user that created the
 	// CertificateRequest. Populated by the cert-manager webhook on

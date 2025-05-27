@@ -89,7 +89,7 @@ import (
 
 		// A/B testing match conditions
 		match?: [...{
-			headers?: close({
+			headers?: {
 				[string]: matchN(1, [{
 					exact!: _
 				}, {
@@ -107,10 +107,10 @@ import (
 					regex?:  string
 					suffix?: string
 				}
-			})
+			}
 
 			// Query parameters for matching.
-			queryParams?: close({
+			queryParams?: {
 				[string]: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 					exact!: _
 				}, null | bool | number | string | [...] | {
@@ -131,13 +131,13 @@ import (
 					// (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
-			})
+			}
 
 			// Applicable only when the 'mesh' gateway is included in the
 			// service.gateways list
-			sourceLabels?: close({
+			sourceLabels?: {
 				[string]: string
-			})
+			}
 		}]
 
 		// Max traffic weight routed to canary
@@ -165,9 +165,9 @@ import (
 
 			// Additional variables to be used in the metrics query (key-value
 			// pairs)
-			templateVariables?: close({
+			templateVariables?: {
 				[string]: string
-			})
+			}
 
 			// Max value accepted for this metric
 			threshold?: number
@@ -219,9 +219,9 @@ import (
 		// Webhook list for this canary
 		webhooks?: [...{
 			// Metadata (key-value pairs) for this webhook
-			metadata?: close({
+			metadata?: {
 				[string]: string
-			})
+			}
 
 			// Mute all alerts for the webhook
 			muteAlert?: bool
@@ -248,9 +248,9 @@ import (
 		apiVersion!: string
 		kind!:       "HorizontalPodAutoscaler" | "ScaledObject"
 		name!:       string
-		primaryScalerQueries?: close({
+		primaryScalerQueries?: {
 			[string]: string
-		})
+		}
 		primaryScalerReplicas?: {
 			maxReplicas?: number
 			minReplicas?: number
@@ -287,12 +287,12 @@ import (
 	service!: {
 		// Metadata to add to the apex service
 		apex?: {
-			annotations?: close({
+			annotations?: {
 				[string]: string
-			})
-			labels?: close({
+			}
+			labels?: {
 				[string]: string
-			})
+			}
 		}
 
 		// Application protocol of the port
@@ -303,12 +303,12 @@ import (
 
 		// Metadata to add to the canary service
 		canary?: {
-			annotations?: close({
+			annotations?: {
 				[string]: string
-			})
-			labels?: close({
+			}
+			labels?: {
 				[string]: string
-			})
+			}
 		}
 
 		// Istio Cross-Origin Resource Sharing policy (CORS)
@@ -365,22 +365,22 @@ import (
 		// Headers operations
 		headers?: {
 			request?: {
-				add?: close({
+				add?: {
 					[string]: string
-				})
+				}
 				remove?: [...string]
-				set?: close({
+				set?: {
 					[string]: string
-				})
+				}
 			}
 			response?: {
-				add?: close({
+				add?: {
 					[string]: string
-				})
+				}
 				remove?: [...string]
-				set?: close({
+				set?: {
 					[string]: string
-				})
+				}
 			}
 		}
 
@@ -412,7 +412,7 @@ import (
 
 			// Names of gateways where the rule should be applied.
 			gateways?: [...string]
-			headers?: close({
+			headers?: {
 				[string]: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 					exact!: _
 				}, null | bool | number | string | [...] | {
@@ -433,7 +433,7 @@ import (
 					// (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
-			})
+			}
 
 			// Flag to specify whether the URI matching should be
 			// case-insensitive.
@@ -466,7 +466,7 @@ import (
 			port?: int
 
 			// Query parameters for matching.
-			queryParams?: close({
+			queryParams?: {
 				[string]: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 					exact!: _
 				}, null | bool | number | string | [...] | {
@@ -487,7 +487,7 @@ import (
 					// (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
-			})
+			}
 			scheme?: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 				exact!: _
 			}, null | bool | number | string | [...] | {
@@ -508,9 +508,9 @@ import (
 				// (https://github.com/google/re2/wiki/Syntax).
 				regex?: string
 			}
-			sourceLabels?: close({
+			sourceLabels?: {
 				[string]: string
-			})
+			}
 
 			// Source namespace constraining the applicability of a rule to
 			// workloads in that namespace.
@@ -538,7 +538,7 @@ import (
 
 			// withoutHeader has the same syntax with the header, but has
 			// opposite meaning.
-			withoutHeaders?: close({
+			withoutHeaders?: {
 				[string]: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 					exact!: _
 				}, null | bool | number | string | [...] | {
@@ -559,7 +559,7 @@ import (
 					// (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
-			})
+			}
 		}]
 
 		// AppMesh mesh name
@@ -596,12 +596,12 @@ import (
 
 		// Metadata to add to the primary service
 		primary?: {
-			annotations?: close({
+			annotations?: {
 				[string]: string
-			})
-			labels?: close({
+			}
+			labels?: {
 				[string]: string
-			})
+			}
 		}
 
 		// Retry policy for HTTP requests
@@ -697,9 +697,9 @@ import (
 						from?: string
 
 						// Map of upstream localities to traffic distribution weights.
-						to?: close({
+						to?: {
 							[string]: int
-						})
+						}
 					}]
 
 					// enable locality load balancing, this is DestinationRule-level

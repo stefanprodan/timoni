@@ -279,15 +279,15 @@ import "strings"
 	secretTemplate?: {
 		// Annotations is a key value map to be copied to the target
 		// Kubernetes Secret.
-		annotations?: close({
+		annotations?: {
 			[string]: string
-		})
+		}
 
 		// Labels is a key value map to be copied to the target Kubernetes
 		// Secret.
-		labels?: close({
+		labels?: {
 			[string]: string
-		})
+		}
 	}
 
 	// Requested set of X509 certificate subject attributes. More
