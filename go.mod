@@ -10,16 +10,16 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/fluxcd/cli-utils v0.36.0-flux.13
 	github.com/fluxcd/pkg/sourceignore v0.12.0
-	github.com/fluxcd/pkg/ssa v0.45.0
+	github.com/fluxcd/pkg/ssa v0.48.0
 	github.com/fluxcd/pkg/tar v0.12.0
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zerologr v1.2.3
-	github.com/gonvenience/ytbx v1.4.6
+	github.com/gonvenience/ytbx v1.4.7
 	github.com/google/go-cmp v0.7.0
-	github.com/google/go-containerregistry v0.20.3
+	github.com/google/go-containerregistry v0.20.5
 	github.com/hashicorp/go-cleanhttp v0.5.2
-	github.com/homeport/dyff v1.9.4
+	github.com/homeport/dyff v1.10.1
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/gomega v1.37.0
@@ -33,7 +33,7 @@ require (
 	k8s.io/apimachinery v0.33.0
 	k8s.io/cli-runtime v0.33.0
 	k8s.io/client-go v0.33.0
-	sigs.k8s.io/controller-runtime v0.20.4
+	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -51,14 +51,14 @@ require (
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.16.3 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/cli v27.5.0+incompatible // indirect
+	github.com/docker/cli v28.1.1+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker-credential-helpers v0.8.2 // indirect
+	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
@@ -78,6 +78,7 @@ require (
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gonvenience/bunt v1.4.0 // indirect
+	github.com/gonvenience/idem v0.0.1 // indirect
 	github.com/gonvenience/neat v1.3.15 // indirect
 	github.com/gonvenience/term v1.0.3 // indirect
 	github.com/gonvenience/text v1.0.8 // indirect
@@ -139,15 +140,15 @@ require (
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/texttheater/golang-levenshtein v1.0.1 // indirect
-	github.com/vbatts/tar-split v0.11.6 // indirect
+	github.com/vbatts/tar-split v0.12.1 // indirect
 	github.com/virtuald/go-ordered-json v0.0.0-20170621173500-b18e6e673d74 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/bridges/prometheus v0.57.0 // indirect
 	go.opentelemetry.io/contrib/exporters/autoexport v0.57.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.58.0 // indirect
-	go.opentelemetry.io/otel v1.34.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
+	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.8.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.8.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.32.0 // indirect
@@ -160,11 +161,11 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.32.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.32.0 // indirect
 	go.opentelemetry.io/otel/log v0.8.0 // indirect
-	go.opentelemetry.io/otel/metric v1.34.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.33.0 // indirect
+	go.opentelemetry.io/otel/metric v1.35.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.8.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
-	go.opentelemetry.io/otel/trace v1.34.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
+	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.4.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/mod v0.24.0 // indirect
