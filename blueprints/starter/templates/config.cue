@@ -9,13 +9,16 @@ import (
 #Config: {
 	// The kubeVersion is a required field, set at apply-time
 	// via timoni.cue by querying the user's Kubernetes API.
+	// +nodoc
 	kubeVersion!: string
 	// Using the kubeVersion you can enforce a minimum Kubernetes minor version.
 	// By default, the minimum Kubernetes version is set to 1.20.
+	// +nodoc
 	clusterVersion: timoniv1.#SemVer & {#Version: kubeVersion, #Minimum: "1.20.0"}
 
 	// The moduleVersion is set from the user-supplied module version.
 	// This field is used for the `app.kubernetes.io/version` label.
+	// +nodoc
 	moduleVersion!: string
 
 	// The Kubernetes metadata common to all resources.
