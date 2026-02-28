@@ -28,8 +28,8 @@ jobs:
       - name: Setup Kubernetes
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
-          version: v0.26.0
-          node_image: kindest/node:v1.32.0
+          version: v0.31.0
+          node_image: kindest/node:v1.35.1
           cluster_name: kind
       - name: Install
         run: make install
@@ -80,7 +80,7 @@ jobs:
       - name: Setup Kubernetes
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
-          version: v0.25.0
+          version: v0.31.0
           cluster_name: kind
       - name: Install
         run: make install
