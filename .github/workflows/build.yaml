@@ -18,11 +18,11 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.24.x
+          go-version: 1.25.x
       - name: Setup CUE
         uses: cue-lang/setup-cue@a93fa358375740cd8b0078f76355512b9208acb1 # main
         with:
-          version: v0.13.0
+          version: v0.15.4
       - name: Run tests
         run: make test
       - name: Run linter
