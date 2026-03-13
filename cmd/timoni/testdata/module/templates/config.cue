@@ -23,11 +23,9 @@ import (
 		"app.kubernetes.io/team": team
 	}
 
-	// +nodoc
 	client: {
 		enabled: *true | bool
 
-		// +nodoc
 		image: timoniv1.#Image & {
 			repository: *"cgr.dev/chainguard/timoni" | string
 			tag:        *"latest-dev" | string
@@ -35,13 +33,11 @@ import (
 		}
 	}
 
-	// +nodoc
 	server: {
 		enabled: *true | bool
 	}
 	domain: *"example.internal" | string
 
-	// +nodoc
 	globals: {
 		enabled: *false | bool
 	}

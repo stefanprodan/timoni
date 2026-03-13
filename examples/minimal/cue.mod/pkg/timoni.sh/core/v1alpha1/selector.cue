@@ -15,5 +15,8 @@ package v1alpha1
 	labels: #Labels
 
 	// Standard Kubernetes label: app name.
-	labels: (#StdLabelName): #Name
+	labels: {
+		// +nodoc
+		(#StdLabelName): #Name
+	}
 }
