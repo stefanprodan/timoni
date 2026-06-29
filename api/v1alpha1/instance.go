@@ -35,18 +35,6 @@ const (
 	ValuesSelector Selector = "values"
 )
 
-// InstanceSchema defines the v1alpha1 CUE schema for Timoni's instance API.
-const InstanceSchema = `
-#Timoni: {
-	apiVersion: string & =~"^v1alpha1$"
-	instance: {...}
-	apply: [string]: [...]
-	kubeMinorVersion?: int
-}
-
-timoni: #Timoni
-`
-
 // Instance holds the information about the module, values
 // and the list of the managed Kubernetes resources.
 type Instance struct {

@@ -1,3 +1,6 @@
 examples/**/templates/*.cue -linguist-documentation
 examples/bundles -linguist-documentation
 blueprints/**/cue.mod/** linguist-vendored
+
+# Pin CUE schemas to LF so embedded files parse consistently across platforms.
+*.cue text eol=lf

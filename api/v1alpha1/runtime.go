@@ -46,29 +46,6 @@ const (
 	RuntimeValuesSelector Selector = "runtime.values"
 )
 
-// RuntimeSchema defines the v1alpha1 CUE schema for Timoni's runtime API.
-const RuntimeSchema = `
-import "strings"
-
-#RuntimeValue: {
-	query: string
-	for: {[string & =~"^(([A-Za-z0-9][-A-Za-z0-9_]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)]: string}
-	optional: *false | bool
-}
-
-#Runtime: {
-	apiVersion: string & =~"^v1alpha1$"
-	name:       string & =~"^(([A-Za-z0-9][-A-Za-z0-9_]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)
-
-	clusters?: [string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)]: {
-		group!:       string
-		kubeContext!: string
-	}
-	
-	values?: [...#RuntimeValue]
-}
-`
-
 // RuntimeAttribute holds the runtime var name and type.
 type RuntimeAttribute struct {
 	Name string

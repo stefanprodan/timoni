@@ -47,28 +47,6 @@ const (
 	BundleNameLabelKey = "bundle.timoni.sh/name"
 )
 
-// BundleSchema defines the v1alpha1 CUE schema for Timoni's bundle API.
-// TODO: switch to go:embed when this is available https://github.com/cue-lang/cue/issues/607
-const BundleSchema = `
-import "strings"
-
-#Bundle: {
-	apiVersion: string & =~"^v1alpha1$"
-	name:       string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)
-	instances: [string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)]: {
-		module: close({
-			url:     string & =~"^(oci|file)://.*$"
-			version: *"latest" | string
-			digest?: string
-		})
-		namespace: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)
-		values: {...}
-	}
-}
-
-bundle: #Bundle
-`
-
 // Bundle holds the information about the bundle name and the list of instances.
 // +k8s:deepcopy-gen=false
 type Bundle struct {

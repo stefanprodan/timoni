@@ -49,6 +49,20 @@ The Timoni's CUE schemas are included in the modules generated with `timoni mod 
 - `#SemVer` - Schema for validating semantic versions and enforcing
   a minimum major and/or minor version.
 
+### Timoni API
+
+These schemas describe Timoni's own APIs and are the single source of truth
+used by the `timoni` CLI to validate bundles, runtimes and instances.
+They are exposed here so that they can be imported and reused in CUE projects.
+
+- `#Bundle` - Schema for validating a Timoni [Bundle](https://timoni.sh/bundle/),
+  i.e. the set of instances applied to a cluster.
+- `#Runtime` - Schema for validating a Timoni [Runtime](https://timoni.sh/bundle-runtime/),
+  i.e. the target clusters and the values fetched from their resources.
+- `#RuntimeValue` - Schema for a single Runtime value query.
+- `#Timoni` - Schema for a module's instance, holding the instance
+  configuration and the Kubernetes resources to apply.
+
 ## Vendoring
 
 To update a module's schemas to the latest version,
