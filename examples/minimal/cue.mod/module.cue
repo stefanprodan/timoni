@@ -1,2 +1,2 @@
 module: "timoni.sh/minimal"
-language: version: "v0.15.0"
+language: version: "v0.17.0"
