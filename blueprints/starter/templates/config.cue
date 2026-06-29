@@ -82,8 +82,8 @@ import (
 		privileged:               *false | true
 		capabilities:
 		{
-			drop: *["ALL"] | [string]
-			add: *["CHOWN", "NET_BIND_SERVICE", "SETGID", "SETUID"] | [string]
+			drop: *["ALL"] | [...string]
+			add: *["CHOWN", "NET_BIND_SERVICE", "SETGID", "SETUID"] | [...string]
 		}
 	}
 
