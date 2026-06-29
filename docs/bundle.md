@@ -213,12 +213,19 @@ Currently, the only supported value is `v1alpha1`.
 
 The `name` is a required field used to track the ownership of instances deployed to a Kubernetes cluster.
 
+The name must be a lowercase identifier (alphanumeric characters, `-`, `_` and `.`,
+starting and ending with an alphanumeric character) of at most 63 characters.
+
 Note that Bundles should have unique names per cluster, using the same name for different bundles
 will result in [ownership conflict](#transfer-ownership).
 
 ### Instances
 
 The `instances` array is a required field that specifies the list of Instances part of this Bundle.
+
+Each instance name (the `instances` map key) must be a lowercase identifier
+(alphanumeric characters, `-`, `_` and `.`, starting and ending with an alphanumeric
+character) of at most 63 characters, as it is used to name the instance's Kubernetes resources.
 
 A Bundle must contain at least one instance with the following required fields:
 
@@ -299,6 +306,9 @@ and will pull the module by its OCI digest.
 ### Instance Namespace
 
 The `instance.namespace` is a required field that specifies the Kubernetes namespace where the instance is created.
+
+The namespace must be a lowercase identifier (alphanumeric characters, `-`, `_` and `.`,
+starting and ending with an alphanumeric character) of at most 63 characters.
 
 If the specified namespace does not exist, Timoni will first create the namespace,
 then it will apply the instance's resources in that namespace.

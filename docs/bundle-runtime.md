@@ -159,12 +159,18 @@ Currently, the only supported value is `v1alpha1`.
 
 The `name` is a required field used to identify the Runtime.
 
+The name must be a lowercase identifier (alphanumeric characters, `-` and `_`,
+starting and ending with an alphanumeric character) of at most 63 characters.
+
 ### Clusters
 
 The `clusters` field is for defining the target clusters and
 environments (group of clusters) where a Bundle is applied.
 
 A cluster entry must specify the `group` and `kubeContext` fields.
+The cluster name (the `clusters` map key) must be a lowercase identifier
+(alphanumeric characters, `-`, `_` and `.`, starting and ending with an
+alphanumeric character) of at most 63 characters.
 The `kubeContext` value must match a context name from the `.kube/config` file.
 
 !!! tip "Default cluster"
