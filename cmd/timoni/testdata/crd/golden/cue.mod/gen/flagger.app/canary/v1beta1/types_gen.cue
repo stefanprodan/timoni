@@ -11,17 +11,15 @@ import (
 
 // Canary is the Schema for the Canary API.
 #Canary: {
-	// APIVersion defines the versioned schema of this representation
-	// of an object. Servers should convert recognized schemas to the
-	// latest internal value, and may reject unrecognized values.
-	// More info:
+	// APIVersion defines the versioned schema of this representation of an object.
+	// Servers should convert recognized schemas to the latest internal value, and
+	// may reject unrecognized values. More info:
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 	apiVersion: "flagger.app/v1beta1"
 
-	// Kind is a string value representing the REST resource this
-	// object represents. Servers may infer this from the endpoint
-	// the client submits requests to. Cannot be updated. In
-	// CamelCase. More info:
+	// Kind is a string value representing the REST resource this object represents.
+	// Servers may infer this from the endpoint the client submits requests to.
+	// Cannot be updated. In CamelCase. More info:
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	kind: "Canary"
 	metadata!: {
@@ -77,8 +75,7 @@ import (
 			severity?: "" | "info" | "warn" | "error"
 		}]
 
-		// Percentage of pods that need to be available to consider canary
-		// as ready
+		// Percentage of pods that need to be available to consider canary as ready
 		canaryReadyThreshold?: number
 
 		// Schedule interval for this canary
@@ -102,8 +99,7 @@ import (
 					exact?:  string
 					prefix?: string
 
-					// RE2 style regex-based match
-					// (https://github.com/google/re2/wiki/Syntax)
+					// RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax)
 					regex?:  string
 					suffix?: string
 				}
@@ -127,14 +123,12 @@ import (
 					exact?:  string
 					prefix?: string
 
-					// RE2 style regex-based match
-					// (https://github.com/google/re2/wiki/Syntax).
+					// RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
 			}
 
-			// Applicable only when the 'mesh' gateway is included in the
-			// service.gateways list
+			// Applicable only when the 'mesh' gateway is included in the service.gateways list
 			sourceLabels?: {
 				[string]: string
 			}
@@ -163,8 +157,7 @@ import (
 				namespace?: string
 			}
 
-			// Additional variables to be used in the metrics query (key-value
-			// pairs)
+			// Additional variables to be used in the metrics query (key-value pairs)
 			templateVariables?: {
 				[string]: string
 			}
@@ -188,19 +181,15 @@ import (
 		// Weight of traffic to be mirrored
 		mirrorWeight?: number
 
-		// Percentage of pods that need to be available to consider
-		// primary as ready
+		// Percentage of pods that need to be available to consider primary as ready
 		primaryReadyThreshold?: number
 
-		// SessionAffinity represents the session affinity settings for a
-		// canary run.
+		// SessionAffinity represents the session affinity settings for a canary run.
 		sessionAffinity?: {
-			// CookieName is the key that will be used for the session
-			// affinity cookie.
+			// CookieName is the key that will be used for the session affinity cookie.
 			cookieName!: string
 
-			// MaxAge indicates the number of seconds until the session
-			// affinity cookie will expire.
+			// MaxAge indicates the number of seconds until the session affinity cookie will expire.
 			maxAge?: number
 		}
 
@@ -353,7 +342,7 @@ import (
 			namespace?: strings.MaxRunes(63) & strings.MinRunes(1) & {
 				=~"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
 			}
-			port?: uint16 & >=1
+			port?: uint & >=1 & <=65535
 			sectionName?: strings.MaxRunes(253) & strings.MinRunes(1) & {
 				=~"^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
 			}
@@ -405,8 +394,7 @@ import (
 				exact?:  string
 				prefix?: string
 
-				// RE2 style regex-based match
-				// (https://github.com/google/re2/wiki/Syntax).
+				// RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
 				regex?: string
 			}
 
@@ -429,14 +417,12 @@ import (
 					exact?:  string
 					prefix?: string
 
-					// RE2 style regex-based match
-					// (https://github.com/google/re2/wiki/Syntax).
+					// RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
 			}
 
-			// Flag to specify whether the URI matching should be
-			// case-insensitive.
+			// Flag to specify whether the URI matching should be case-insensitive.
 			ignoreUriCase?: bool
 			method?: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 				exact!: _
@@ -454,8 +440,7 @@ import (
 				exact?:  string
 				prefix?: string
 
-				// RE2 style regex-based match
-				// (https://github.com/google/re2/wiki/Syntax).
+				// RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
 				regex?: string
 			}
 
@@ -483,8 +468,7 @@ import (
 					exact?:  string
 					prefix?: string
 
-					// RE2 style regex-based match
-					// (https://github.com/google/re2/wiki/Syntax).
+					// RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
 			}
@@ -504,16 +488,14 @@ import (
 				exact?:  string
 				prefix?: string
 
-				// RE2 style regex-based match
-				// (https://github.com/google/re2/wiki/Syntax).
+				// RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
 				regex?: string
 			}
 			sourceLabels?: {
 				[string]: string
 			}
 
-			// Source namespace constraining the applicability of a rule to
-			// workloads in that namespace.
+			// Source namespace constraining the applicability of a rule to workloads in that namespace.
 			sourceNamespace?: string
 			uri?: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 				exact!: _
@@ -531,13 +513,11 @@ import (
 				exact?:  string
 				prefix?: string
 
-				// RE2 style regex-based match
-				// (https://github.com/google/re2/wiki/Syntax).
+				// RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
 				regex?: string
 			}
 
-			// withoutHeader has the same syntax with the header, but has
-			// opposite meaning.
+			// withoutHeader has the same syntax with the header, but has opposite meaning.
 			withoutHeaders?: {
 				[string]: matchN(1, [matchN(0, [matchN(>=1, [null | bool | number | string | [...] | {
 					exact!: _
@@ -555,8 +535,7 @@ import (
 					exact?:  string
 					prefix?: string
 
-					// RE2 style regex-based match
-					// (https://github.com/google/re2/wiki/Syntax).
+					// RE2 style regex-based match (https://github.com/google/re2/wiki/Syntax).
 					regex?: string
 				}
 			}
@@ -578,7 +557,7 @@ import (
 				namespace?: strings.MaxRunes(63) & strings.MinRunes(1) & {
 					=~"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
 				}
-				port?: uint16 & >=1
+				port?: uint & >=1 & <=65535
 			}
 		}]
 
@@ -634,8 +613,7 @@ import (
 			connectionPool?: {
 				// HTTP connection pool settings.
 				http?: {
-					// Specify if http1.1 connection should be upgraded to http2 for
-					// the associated destination.
+					// Specify if http1.1 connection should be upgraded to http2 for the associated destination.
 					h2UpgradePolicy?: "DEFAULT" | "DO_NOT_UPGRADE" | "UPGRADE"
 
 					// Maximum number of pending HTTP requests to a destination.
@@ -702,8 +680,8 @@ import (
 						}
 					}]
 
-					// enable locality load balancing, this is DestinationRule-level
-					// and will override mesh wide settings in entirety.
+					// enable locality load balancing, this is DestinationRule-level and will
+					// override mesh wide settings in entirety.
 					enabled?: bool
 
 					// Optional: only failover or distribute can be set.
@@ -719,19 +697,16 @@ import (
 				warmupDurationSecs?: string
 			}
 
-			// Settings controlling eviction of unhealthy hosts from the load
-			// balancing pool.
+			// Settings controlling eviction of unhealthy hosts from the load balancing pool.
 			outlierDetection?: {
 				// Minimum ejection duration.
 				baseEjectionTime?: string
 
-				// Number of 5xx errors before a host is ejected from the
-				// connection pool.
+				// Number of 5xx errors before a host is ejected from the connection pool.
 				consecutive5xxErrors?: int
 				consecutiveErrors?:    int32
 
-				// Number of gateway errors before a host is ejected from the
-				// connection pool.
+				// Number of gateway errors before a host is ejected from the connection pool.
 				consecutiveGatewayErrors?: int32
 
 				// Time interval between ejection sweep analysis.
@@ -740,8 +715,7 @@ import (
 				minHealthPercent?:   int32
 			}
 
-			// Istio TLS related settings for connections to the upstream
-			// service
+			// Istio TLS related settings for connections to the upstream service
 			tls?: {
 				caCertificates?: string
 
