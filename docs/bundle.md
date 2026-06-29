@@ -437,6 +437,9 @@ Example:
 timoni bundle build -f bundle.cue
 ```
 
+To write the generated manifests to disk as a directory tree instead of printing them
+to stdout, see [Export manifests to directory](#export-manifests-to-directory).
+
 ### Use values from JSON and YAML files
 
 A bundle can be defined in multiple files of different formats:
@@ -589,3 +592,58 @@ Note that when using local modules, the module's version and digest are ignored,
 are only relevant when pulling modules from a container registry.
 All instances created from modules referenced with local paths have
 the module version set to `0.0.0-devel`.
+
+### Export manifests to directory
+
+By default, `timoni bundle build` prints the resulting Kubernetes resources of all
+instances to stdout. To write the manifests as files on disk, use the `--output-dir` flag.
+
+For example, given a bundle with two instances:
+
+```cue
+bundle: {
+	apiVersion: "v1alpha1"
+	name:       "podinfo"
+	instances: {
+		frontend: {
+			module: url: "oci://ghcr.io/stefanprodan/modules/podinfo"
+			namespace: "frontend"
+		}
+		backend: {
+			module: url: "oci://ghcr.io/stefanprodan/modules/podinfo"
+			namespace: "backend"
+		}
+	}
+}
+```
+
+Build the bundle to a directory:
+
+```shell
+timoni bundle build -f podinfo.cue --output-dir ./manifests
+```
+
+Timoni writes the manifests as a directory tree with one subdirectory per instance,
+and inside each, one file per Kubernetes resource:
+
+```text
+manifests
+├── backend
+│   ├── apps_v1_deployment_backend.yaml
+│   ├── v1_service_backend.yaml
+│   └── v1_serviceaccount_backend.yaml
+└── frontend
+    ├── apps_v1_deployment_frontend.yaml
+    ├── v1_service_frontend.yaml
+    └── v1_serviceaccount_frontend.yaml
+```
+
+The file names follow the same convention as `kustomize build -o <dir>`:
+`<group>_<version>_<kind>_<name>.yaml`, lowercased, with the group omitted for
+core resources (e.g. `v1_service_backend.yaml`). When an instance's resources
+span more than one namespace, the file name is prefixed with the namespace
+(`<namespace>_<group>_<version>_<kind>_<name>.yaml`) to avoid collisions.
+
+The output directory is created if it does not exist. Existing files with the same
+name are overwritten, but files that are no longer generated are not removed,
+so you may want to point `--output-dir` at a clean directory.
