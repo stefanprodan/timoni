@@ -278,3 +278,60 @@ func getObjectByName(objs []*unstructured.Unstructured, name string) (*unstructu
 	}
 	return nil, fmt.Errorf("object with name '%s' does not exist", name)
 }
+
+func Test_BundleBuild_RejectsUppercaseNames(t *testing.T) {
+	// Each bundle is valid except for a single uppercase identifier, so the
+	// only reason the build can fail is the rejected name.
+	tests := map[string]string{
+		"uppercase instance name": `
+bundle: {
+	apiVersion: "v1alpha1"
+	name:       "my-bundle"
+	instances: {
+		"Frontend": {
+			module: url: "file://testdata/module"
+			namespace: "apps"
+			values: team: "test"
+		}
+	}
+}`,
+		"uppercase namespace": `
+bundle: {
+	apiVersion: "v1alpha1"
+	name:       "my-bundle"
+	instances: {
+		"frontend": {
+			module: url: "file://testdata/module"
+			namespace: "Apps"
+			values: team: "test"
+		}
+	}
+}`,
+		"uppercase bundle name": `
+bundle: {
+	apiVersion: "v1alpha1"
+	name:       "My-Bundle"
+	instances: {
+		"frontend": {
+			module: url: "file://testdata/module"
+			namespace: "apps"
+			values: team: "test"
+		}
+	}
+}`,
+	}
+
+	for name, bundleCue := range tests {
+		t.Run(name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			wd := t.TempDir()
+			cuePath := filepath.Join(wd, "bundle.cue")
+			g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
+			g.Expect(engine.CopyModule("testdata/module", filepath.Join(wd, "testdata/module"))).ToNot(HaveOccurred())
+
+			_, err := executeCommand(fmt.Sprintf("bundle build -f %s -p main", cuePath))
+			g.Expect(err).To(HaveOccurred())
+		})
+	}
+}

@@ -17,9 +17,9 @@ import "strings"
 // the target clusters and the values fetched from their resources.
 #Runtime: {
 	apiVersion: string & =~"^v1alpha1$"
-	name:       string & =~"^(([A-Za-z0-9][-A-Za-z0-9_]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)
+	name:       string & =~"^(([a-z0-9][-a-z0-9_]*)?[a-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)
 
-	clusters?: [string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)]: {
+	clusters?: [string & =~"^(([a-z0-9][-a-z0-9_.]*)?[a-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)]: {
 		group!:       string
 		kubeContext!: string
 	}
