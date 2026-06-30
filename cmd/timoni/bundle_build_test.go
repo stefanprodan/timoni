@@ -335,3 +335,194 @@ bundle: {
 		})
 	}
 }
+
+func Test_BundleBuild_OutputDir(t *testing.T) {
+	g := NewWithT(t)
+
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+
+	bundleCue := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "my-bundle"
+	instances: {
+		backend: {
+			module: {
+				url: "file://%[1]s"
+			}
+			namespace: "%[2]s"
+			values: team: "test"
+		}
+		frontend: {
+			module: {
+				url: "file://%[1]s"
+			}
+			namespace: "%[2]s"
+			values: {
+				team: "test"
+				server: enabled: false
+			}
+		}
+	}
+}
+`, modPath, namespace)
+
+	wd := t.TempDir()
+	cuePath := filepath.Join(wd, "bundle.cue")
+	g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
+	g.Expect(engine.CopyModule(modPath, filepath.Join(wd, modPath))).ToNot(HaveOccurred())
+
+	outDir := filepath.Join(wd, "out")
+	_, err := executeCommand(fmt.Sprintf(
+		"bundle build -f %s -p main --output-dir %s",
+		cuePath, outDir,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	// One directory per instance.
+	for _, instance := range []string{"backend", "frontend"} {
+		info, err := os.Stat(filepath.Join(outDir, instance))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(info.IsDir()).To(BeTrue())
+	}
+
+	// One file per resource, named like 'kustomize build -o <dir>'.
+	// The backend instance has both the client and server enabled.
+	backendNames, err := manifestFileNames(filepath.Join(outDir, "backend"))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(backendNames).To(ConsistOf(
+		"v1_configmap_backend-client.yaml",
+		"v1_configmap_backend-server.yaml",
+	))
+
+	// The frontend instance has the server disabled.
+	frontendNames, err := manifestFileNames(filepath.Join(outDir, "frontend"))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(frontendNames).To(ConsistOf("v1_configmap_frontend-client.yaml"))
+
+	// The written manifest parses and carries the instance namespace.
+	data, err := os.ReadFile(filepath.Join(outDir, "backend", "v1_configmap_backend-client.yaml"))
+	g.Expect(err).ToNot(HaveOccurred())
+	objects, err := ssautil.ReadObjects(strings.NewReader(string(data)))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(objects).To(HaveLen(1))
+	g.Expect(objects[0].GetKind()).To(Equal("ConfigMap"))
+	g.Expect(objects[0].GetName()).To(Equal("backend-client"))
+	g.Expect(objects[0].GetNamespace()).To(ContainSubstring(namespace))
+}
+
+func Test_BundleBuild_OutputDir_MultiNamespace(t *testing.T) {
+	g := NewWithT(t)
+
+	modPath := "testdata/module"
+	namespace := "apps"
+
+	// Enabling globals makes the module emit a cluster-scoped Namespace and a
+	// ClusterRole pinned to the 'default' namespace, so the instance spans more
+	// than one namespace and the file names get a namespace prefix.
+	bundleCue := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "my-bundle"
+	instances: {
+		backend: {
+			module: {
+				url: "file://%[1]s"
+			}
+			namespace: "%[2]s"
+			values: {
+				team: "test"
+				globals: enabled: true
+			}
+		}
+	}
+}
+`, modPath, namespace)
+
+	wd := t.TempDir()
+	cuePath := filepath.Join(wd, "bundle.cue")
+	g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
+	g.Expect(engine.CopyModule(modPath, filepath.Join(wd, modPath))).ToNot(HaveOccurred())
+
+	outDir := filepath.Join(wd, "out")
+	_, err := executeCommand(fmt.Sprintf(
+		"bundle build -f %s -p main --output-dir %s",
+		cuePath, outDir,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	names, err := manifestFileNames(filepath.Join(outDir, "backend"))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	// Namespaced resources are prefixed with their namespace (the instance
+	// namespace for the ConfigMaps, 'default' for the ClusterRole), while the
+	// cluster-scoped Namespace stays unprefixed.
+	g.Expect(names).To(ConsistOf(
+		"apps_v1_configmap_backend-client.yaml",
+		"apps_v1_configmap_backend-server.yaml",
+		"default_rbac.authorization.k8s.io_v1_clusterrole_backend-readonly.yaml",
+		"v1_namespace_backend-ns.yaml",
+	))
+}
+
+func Test_resourceFileName(t *testing.T) {
+	newObj := func(apiVersion, kind, namespace, name string) *unstructured.Unstructured {
+		obj := &unstructured.Unstructured{}
+		obj.SetAPIVersion(apiVersion)
+		obj.SetKind(kind)
+		if namespace != "" {
+			obj.SetNamespace(namespace)
+		}
+		obj.SetName(name)
+		return obj
+	}
+
+	tests := []struct {
+		name          string
+		obj           *unstructured.Unstructured
+		withNamespace bool
+		want          string
+	}{
+		{
+			name: "core group omits the empty group and lowercases",
+			obj:  newObj("v1", "ConfigMap", "apps", "My-CM"),
+			want: "v1_configmap_my-cm.yaml",
+		},
+		{
+			name: "named group",
+			obj:  newObj("apps/v1", "Deployment", "apps", "web"),
+			want: "apps_v1_deployment_web.yaml",
+		},
+		{
+			name: "dotted group is preserved",
+			obj:  newObj("rbac.authorization.k8s.io/v1", "ClusterRole", "", "admin"),
+			want: "rbac.authorization.k8s.io_v1_clusterrole_admin.yaml",
+		},
+		{
+			name:          "namespace prefix is added when requested",
+			obj:           newObj("v1", "Service", "prod", "api"),
+			withNamespace: true,
+			want:          "prod_v1_service_api.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			g.Expect(resourceFileName(tt.obj, tt.withNamespace)).To(Equal(tt.want))
+		})
+	}
+}
+
+func manifestFileNames(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+	return names, nil
+}

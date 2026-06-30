@@ -23,6 +23,7 @@ import (
 	"maps"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -45,20 +46,25 @@ var bundleBuildCmd = &cobra.Command{
 	Short:   "Build and print the resulting Kubernetes resources for all instances from a Bundle",
 	Long: `The bundle build command builds and prints the resulting Kubernetes resources for all instances defined in a Bundle.
 `,
-	Example: `  # Build all instances from a bundle
+	Example: `  # Build all instances from a bundle and print the manifests to stdout
   timoni bundle build -f bundle.cue
 
   # Pass secret values from stdin
   cat ./bundle_secrets.cue | timoni bundle build -f ./bundle.cue -f -
+
+  # Write the manifests as a directory tree, one directory per instance
+  # and one file per resource, named like 'kustomize build -o <dir>'
+  timoni bundle build -f bundle.cue --output-dir ./manifests
 `,
 	Args: cobra.NoArgs,
 	RunE: runBundleBuildCmd,
 }
 
 type bundleBuildFlags struct {
-	pkg   flags.Package
-	files []string
-	creds flags.Credentials
+	pkg       flags.Package
+	files     []string
+	creds     flags.Credentials
+	outputDir string
 }
 
 var bundleBuildArgs bundleBuildFlags
@@ -68,6 +74,8 @@ func init() {
 	bundleBuildCmd.Flags().StringSliceVarP(&bundleBuildArgs.files, "file", "f", nil,
 		"The local path to bundle.cue files.")
 	bundleBuildCmd.Flags().Var(&bundleBuildArgs.creds, bundleBuildArgs.creds.Type(), bundleBuildArgs.creds.Description())
+	bundleBuildCmd.Flags().StringVar(&bundleBuildArgs.outputDir, "output-dir", "",
+		"The path to a directory where the manifests are written as a tree, one directory per instance and one file per resource.")
 	bundleCmd.AddCommand(bundleBuildCmd)
 }
 
@@ -155,8 +163,6 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	var sb strings.Builder
-
 	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
 	defer cancel()
 
@@ -166,17 +172,26 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	for i, instance := range bundle.Instances {
-		sb.WriteString("---\n")
-		sb.WriteString(fmt.Sprintf("# Instance: %s\n", instance.Name))
-		sb.WriteString("---\n")
+	if bundleBuildArgs.outputDir != "" {
+		return writeBundleInstancesToDir(cmd, ctx, bundle.Instances, tmpDir)
+	}
 
-		instance, err := buildBundleInstance(ctx, instance, tmpDir)
+	var sb strings.Builder
+	for i, instance := range bundle.Instances {
+		objects, err := buildBundleInstanceObjects(ctx, instance, tmpDir)
 		if err != nil {
 			return err
 		}
 
-		sb.WriteString(instance)
+		manifests, err := marshalObjectsToYAML(objects)
+		if err != nil {
+			return err
+		}
+
+		sb.WriteString("---\n")
+		sb.WriteString(fmt.Sprintf("# Instance: %s\n", instance.Name))
+		sb.WriteString("---\n")
+		sb.WriteString(manifests)
 		if i < len(bundle.Instances)-1 {
 			sb.WriteString("\n")
 		}
@@ -187,7 +202,90 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func buildBundleInstance(cuectx *cue.Context, instance *apiv1.BundleInstance, rootDir string) (string, error) {
+// writeBundleInstancesToDir writes the resources of each instance to the
+// output directory as a tree: one directory per instance and one file per
+// resource, named with the same convention as 'kustomize build -o <dir>'.
+func writeBundleInstancesToDir(cmd *cobra.Command, cuectx *cue.Context, instances []*apiv1.BundleInstance, rootDir string) error {
+	outputDir := bundleBuildArgs.outputDir
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	log := LoggerFrom(cmd.Context())
+	for _, instance := range instances {
+		objects, err := buildBundleInstanceObjects(cuectx, instance, rootDir)
+		if err != nil {
+			return err
+		}
+
+		instanceDir := filepath.Join(outputDir, instance.Name)
+		if err := os.MkdirAll(instanceDir, 0o755); err != nil {
+			return fmt.Errorf("failed to create instance directory: %w", err)
+		}
+
+		// Prefix the file names with the namespace only when the instance's
+		// namespaced resources span more than one namespace, matching the
+		// behaviour of kustomize.
+		//
+		// The resource scope is approximated by the presence of
+		// metadata.namespace rather than the true cluster/namespaced scope
+		// (kustomize resolves this from type info). A cluster-scoped object
+		// that carries a stray namespace is therefore counted here and can
+		// enable the prefix for the whole instance. This is acceptable for
+		// Timoni's offline builds, where no REST mapper is available to
+		// resolve resource scopes.
+		namespaces := make(map[string]struct{})
+		for _, obj := range objects {
+			if ns := obj.GetNamespace(); ns != "" {
+				namespaces[ns] = struct{}{}
+			}
+		}
+		withNamespace := len(namespaces) > 1
+
+		for _, obj := range objects {
+			data, err := yaml.Marshal(obj)
+			if err != nil {
+				return fmt.Errorf("converting objects failed: %w", err)
+			}
+
+			fileName := resourceFileName(obj, withNamespace && obj.GetNamespace() != "")
+			if err := os.WriteFile(filepath.Join(instanceDir, fileName), data, 0o644); err != nil {
+				return fmt.Errorf("failed to write manifest: %w", err)
+			}
+		}
+
+		log.Info(fmt.Sprintf("exported %d resources to %s", len(objects), instanceDir))
+	}
+
+	return nil
+}
+
+// resourceFileName returns the manifest file name for an object using the
+// same convention as 'kustomize build -o <dir>':
+// '<group>_<version>_<kind>_<name>.yaml', lowercased, with empty GVK fields
+// omitted and an optional '<namespace>_' prefix.
+func resourceFileName(obj *unstructured.Unstructured, withNamespace bool) string {
+	gvk := obj.GroupVersionKind()
+
+	parts := make([]string, 0, 3)
+	if gvk.Group != "" {
+		parts = append(parts, gvk.Group)
+	}
+	if gvk.Version != "" {
+		parts = append(parts, gvk.Version)
+	}
+	parts = append(parts, gvk.Kind)
+
+	fileName := strings.ToLower(strings.Join(parts, "_")) + "_" + strings.ToLower(obj.GetName()) + ".yaml"
+	if withNamespace {
+		fileName = strings.ToLower(obj.GetNamespace()) + "_" + fileName
+	}
+	return fileName
+}
+
+// buildBundleInstanceObjects builds an instance and returns its sorted
+// Kubernetes objects.
+func buildBundleInstanceObjects(cuectx *cue.Context, instance *apiv1.BundleInstance, rootDir string) ([]*unstructured.Unstructured, error) {
 	modDir := path.Join(rootDir, instance.Name, "module")
 
 	builder := engine.NewModuleBuilder(
@@ -199,30 +297,29 @@ func buildBundleInstance(cuectx *cue.Context, instance *apiv1.BundleInstance, ro
 	)
 
 	if err := builder.WriteSchemaFile(); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	modName, err := builder.GetModuleName()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	instance.Module.Name = modName
 
-	err = builder.WriteValuesFileWithDefaults(instance.Values)
-	if err != nil {
-		return "", err
+	if err := builder.WriteValuesFileWithDefaults(instance.Values); err != nil {
+		return nil, err
 	}
 
 	builder.SetVersionInfo(instance.Module.Version, "")
 
 	buildResult, err := builder.Build()
 	if err != nil {
-		return "", describeErr(modDir, "build failed for "+instance.Name, err)
+		return nil, describeErr(modDir, "build failed for "+instance.Name, err)
 	}
 
 	bundleBuildSets, err := builder.GetApplySets(buildResult)
 	if err != nil {
-		return "", fmt.Errorf("failed to extract objects: %w", err)
+		return nil, fmt.Errorf("failed to extract objects: %w", err)
 	}
 
 	var objects []*unstructured.Unstructured
@@ -231,8 +328,12 @@ func buildBundleInstance(cuectx *cue.Context, instance *apiv1.BundleInstance, ro
 	}
 	sort.Sort(ssa.SortableUnstructureds(objects))
 
-	var sb strings.Builder
+	return objects, nil
+}
 
+// marshalObjectsToYAML marshals the objects to a multi-document YAML string.
+func marshalObjectsToYAML(objects []*unstructured.Unstructured) (string, error) {
+	var sb strings.Builder
 	for i, r := range objects {
 		data, err := yaml.Marshal(r)
 		if err != nil {
