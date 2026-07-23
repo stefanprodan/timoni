@@ -1,7 +1,7 @@
 cuelabs.dev/go/oci/ociregistry v0.0.0-20260601085548-328ff8e2c943 h1:XUtzi/yWlmuy8V6kkmVbbmirmUqcFe9Ce3gmEaHXf1Q=
 cuelabs.dev/go/oci/ociregistry v0.0.0-20260601085548-328ff8e2c943/go.mod h1:WjmQxb+W6nVNCgj8nXrF24lIz95AHwnSl36tpjDZSU8=
-cuelang.org/go v0.17.0 h1:PrijS5ofUD01yiG11w74I04laXKLaBiMhEYvdt8Gb/A=
-cuelang.org/go v0.17.0/go.mod h1:xlly/o1wSLvxOsi5vkQGieU0rLOt7TvUIizOFtnxHRU=
+cuelang.org/go v0.17.1 h1:liOkxZDqTHrzq0USJX+6bMYOZ5PSf+wzvQr15AHpDCQ=
+cuelang.org/go v0.17.1/go.mod h1:xlly/o1wSLvxOsi5vkQGieU0rLOt7TvUIizOFtnxHRU=
 github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 h1:L/gRVlceqvL25UVaW/CKtUDjefjrs0SPonmDGUVOYP0=
 github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
