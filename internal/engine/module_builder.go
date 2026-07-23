@@ -41,7 +41,7 @@ const (
 	DefaultDevelVersion = "0.0.0-devel"
 
 	// The default Kubernetes version must be kept in sync with go.mod.
-	defaultKubeVersion = "1.36.2"
+	defaultKubeVersion = "1.36.3"
 )
 
 // ModuleBuilder compiles CUE definitions to Kubernetes objects.
