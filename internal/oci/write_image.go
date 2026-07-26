@@ -38,11 +38,19 @@ const (
 	FormatLayout  LocalFormat = "oci-layout"
 )
 
-// WriteImage writes an image to a new OCI layout or archive.
+// Validate reports whether the local OCI output format is supported.
+func (f LocalFormat) Validate() error {
+	if f != FormatLayout && f != FormatArchive {
+		return fmt.Errorf("unsupported OCI output format %q", f)
+	}
+	return nil
+}
+
+// WriteImage validates and writes an image to a new OCI layout or archive.
 // References become OCI layout descriptor names.
 func WriteImage(image gcrv1.Image, destination string, format LocalFormat, references []string) error {
-	if format != FormatLayout && format != FormatArchive {
-		return fmt.Errorf("unsupported OCI output format %q", format)
+	if err := format.Validate(); err != nil {
+		return err
 	}
 	for _, ref := range references {
 		if ref == "" {
