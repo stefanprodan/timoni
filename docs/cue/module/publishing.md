@@ -20,8 +20,9 @@ The artifacts are annotated with OCI
 - `org.opencontainers.image.source: <MODULE GIT URL>`
 - `org.opencontainers.image.revision: <MODULE GIT SHA>`
 
-To enable reproducible builds, Timoni tries to determine the module's
-last modified date, the source URL and source revision from the Git metadata.
+For reproducible builds, Timoni preserves explicit creation, source and
+revision annotations, then uses `SOURCE_DATE_EPOCH` or the Git commit time for
+the creation date. Git source and revision metadata are added when available.
 
 ## Version format
 
@@ -39,6 +40,21 @@ The supported formats are:
 - `X.Y.Z-alpha.N` - denotes an alpha pre-release e.g. `2.0.0-alpha.1`
 - `X.Y.Z-beta.N` - denotes a beta pre-release e.g. `2.0.0-beta.1`
 - `X.Y.Z-rc.N` - denotes a releases candidate e.g. `2.0.0-rc.1`
+
+## Building modules without a registry
+
+[timoni mod build](../../cmd/timoni_mod_build.md) writes the same ordered
+vendor and module layers as `timoni mod push`, without registry or network
+access:
+
+```shell
+timoni mod build ./modules/my-app -v 1.0.0 -o ./my-app-1.0.0.oci.tar
+skopeo copy oci-archive:./my-app-1.0.0.oci.tar docker://ghcr.io/org/modules/app:1.0.0
+```
+
+The version is required and becomes the manifest version annotation and local
+reference name. Use `--format=oci-layout` for directory output.
+Local outputs are unsigned; existing output paths are rejected.
 
 ## Publishing module versions
 

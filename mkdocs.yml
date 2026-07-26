@@ -132,6 +132,7 @@ nav:
           - cmd/timoni_status.md
       - Module:
           - cmd/timoni_mod.md
+          - cmd/timoni_mod_build.md
           - cmd/timoni_mod_init.md
           - cmd/timoni_mod_push.md
           - cmd/timoni_mod_pull.md
@@ -156,6 +157,7 @@ nav:
           - cmd/timoni_registry_logout.md
       - Artifact:
           - cmd/timoni_artifact.md
+          - cmd/timoni_artifact_build.md
           - cmd/timoni_artifact_list.md
           - cmd/timoni_artifact_push.md
           - cmd/timoni_artifact_pull.md

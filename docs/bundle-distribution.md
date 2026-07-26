@@ -18,8 +18,23 @@ The artifacts are annotated with OCI
 - `org.opencontainers.image.revision: <GIT COMMIT SHA>`
 - `org.opencontainers.image.created: <GIT COMMIT DATE>`
 
-To enable reproducible builds, Timoni tries to determine the 
-source, revision and created date from the Git metadata.
+For reproducible builds, Timoni preserves explicit annotations, then uses
+`SOURCE_DATE_EPOCH` or the Git commit time for the creation date. Git source
+and revision metadata are added when available.
+
+## Building artifacts without a registry
+
+[timoni artifact build](cmd/timoni_artifact_build.md) writes a deterministic
+OCI archive without registry or network access:
+
+```shell
+timoni artifact build -f ./my-app/bundles -t 1.0.0 -o ./bundle-1.0.0.oci.tar
+skopeo copy oci-archive:./bundle-1.0.0.oci.tar docker://ghcr.io/org/bundles:1.0.0
+```
+
+Use `--format=oci-layout` for directory output. Tags are optional and repeated
+`--tag` flags add reference names for the same manifest.
+Local outputs are unsigned; existing output paths are rejected.
 
 ## Publishing bundles to container registries
 
