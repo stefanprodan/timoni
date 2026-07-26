@@ -18,102 +18,30 @@ package oci
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
-	"github.com/google/go-containerregistry/pkg/compression"
 	"github.com/google/go-containerregistry/pkg/crane"
-	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/empty"
-	"github.com/google/go-containerregistry/pkg/v1/mutate"
-	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/google/go-containerregistry/pkg/v1/types"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-// PushModule performs the following operations:
-// - packages the Timoni module's vendored schemas in a dedicated tar+gzip layer
-// - packages the Timoni module's templates, values, etc in a 2nd tar+gzip layer
-// - adds both layers to an OpenContainers artifact
-// - annotates the artifact with the given annotations
-// - uploads the module's artifact in the container registry
-// - returns the digest URL of the upstream artifact
+// PushModule builds and pushes ordered vendor and module layers, then returns
+// the module's digest URL.
 func PushModule(ociURL, contentPath string, ignorePaths []string, annotations map[string]string, opts []crane.Option) (string, error) {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return "", err
 	}
 
-	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+	build, err := BuildModuleImage(contentPath, ignorePaths, annotations)
 	if err != nil {
 		return "", err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer build.Close()
 
-	img := mutate.MediaType(empty.Image, types.OCIManifestSchema1)
-	img = mutate.ConfigMediaType(img, apiv1.ConfigMediaType)
-	img = mutate.Annotations(img, annotations).(gcrv1.Image)
-
-	tgzVendor := filepath.Join(tmpDir, "vendor.tgz")
-	vendorIgnorePaths := []string{"/*", "!/cue.mod"}
-	if err := BuildArtifact(tgzVendor, contentPath, vendorIgnorePaths); err != nil {
-		return "", fmt.Errorf("packging vendor layer failed: %w", err)
-	}
-
-	layerVendor, err := tarball.LayerFromFile(tgzVendor,
-		tarball.WithMediaType(apiv1.ContentMediaType),
-		tarball.WithCompression(compression.GZip),
-		tarball.WithCompressedCaching,
-	)
-	if err != nil {
-		return "", fmt.Errorf("creating vendor layer failed: %w", err)
-	}
-
-	img, err = mutate.Append(img, mutate.Addendum{
-		Layer: layerVendor,
-		Annotations: map[string]string{
-			apiv1.ContentTypeAnnotation: apiv1.TimoniModVendorContentType,
-		},
-	})
-	if err != nil {
-		return "", fmt.Errorf("appending vendor layer to artifact failed: %w", err)
-	}
-
-	tgzModule := filepath.Join(tmpDir, "module.tgz")
-	ignorePaths = append(ignorePaths, "cue.mod/")
-	if err := BuildArtifact(tgzModule, contentPath, ignorePaths); err != nil {
-		return "", fmt.Errorf("packging module layer failed: %w", err)
-	}
-
-	layerModule, err := tarball.LayerFromFile(tgzModule,
-		tarball.WithMediaType(apiv1.ContentMediaType),
-		tarball.WithCompression(compression.GZip),
-		tarball.WithCompressedCaching,
-	)
-	if err != nil {
-		return "", fmt.Errorf("creating module layer failed: %w", err)
-	}
-
-	img, err = mutate.Append(img, mutate.Addendum{
-		Layer: layerModule,
-		Annotations: map[string]string{
-			apiv1.ContentTypeAnnotation: apiv1.TimoniModContentType,
-		},
-	})
-	if err != nil {
-		return "", fmt.Errorf("appending module layer to artifact failed: %w", err)
-	}
-
-	if err := crane.Push(img, ref.String(), opts...); err != nil {
+	if err := crane.Push(build.Image, ref.String(), opts...); err != nil {
 		return "", fmt.Errorf("pushing artifact failed: %w", err)
 	}
 
-	digest, err := img.Digest()
-	if err != nil {
-		return "", fmt.Errorf("parsing artifact digest failed: %w", err)
-	}
-
-	digestURL := ref.Context().Digest(digest.String()).String()
+	digestURL := ref.Context().Digest(build.Digest.String()).String()
 	return fmt.Sprintf("%s%s", apiv1.ArtifactPrefix, digestURL), nil
 }
