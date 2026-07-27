@@ -92,3 +92,6 @@ When you change behavior — flags, apply/prune/wait semantics, the `action.timo
 - Instance, namespace, and runtime names are restricted to lowercase (RFC 1123).
 - New code and tests should follow the patterns in existing siblings; commands almost always come with an envtest-backed `_test.go` using the `internal/testutils` helpers.
 - Code changes should be accompanied by a corresponding change to the docs.
+- Add Go doc comments for new functions and types.
+- After modifying a function or type, update its doc comment.
+- Add in-line comments for complex logic but don't comment obvious code.

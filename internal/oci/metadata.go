@@ -19,7 +19,9 @@ package oci
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -27,54 +29,63 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-// ParseAnnotations parses the command args in the format key=value
-// and returns the OpenContainers annotations.
+// ParseAnnotations parses key=value pairs and preserves additional equals signs
+// in values.
 func ParseAnnotations(args []string) (map[string]string, error) {
 	annotations := map[string]string{}
 	for _, annotation := range args {
-		kv := strings.Split(annotation, "=")
-		if len(kv) != 2 {
+		key, value, found := strings.Cut(annotation, "=")
+		if !found {
 			return annotations, fmt.Errorf("invalid annotation %s, must be in the format key=value", annotation)
 		}
-		annotations[kv[0]] = kv[1]
+		annotations[key] = value
 	}
 
 	return annotations, nil
 }
 
-// AppendGitMetadata sets the OpenContainers source, revision and created annotations
-// from the Git metadata. If the git binary or the .git dir are missing, the created
-// date is set to the current UTC date, and the source and revision are not appended.
+// AppendGitMetadata fills missing creation, source, and revision annotations.
+// Creation uses SOURCE_DATE_EPOCH before Git commit time; Git failures are ignored.
 func AppendGitMetadata(repoPath string, annotations map[string]string) {
+	if info, err := os.Stat(repoPath); err == nil && !info.IsDir() {
+		repoPath = filepath.Dir(repoPath)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	tsCmd := exec.CommandContext(ctx, "git", "--no-pager", "log", "-1", `--format=%ct`)
-	tsCmd.Dir = repoPath
-	if ts, err := tsCmd.Output(); err == nil && len(ts) > 1 {
-		if i, err := strconv.ParseInt(strings.TrimSuffix(string(ts), "\n"), 10, 64); err == nil {
-			d := time.Unix(i, 0)
-			annotations[apiv1.CreatedAnnotation] = d.Format(time.RFC3339)
+	if _, found := annotations[apiv1.CreatedAnnotation]; !found {
+		if epoch := os.Getenv("SOURCE_DATE_EPOCH"); epoch != "" {
+			if seconds, err := strconv.ParseInt(epoch, 10, 64); err == nil {
+				annotations[apiv1.CreatedAnnotation] = time.Unix(seconds, 0).UTC().Format(time.RFC3339)
+			}
 		}
-	} else {
-		ct := time.Now().UTC()
-		annotations[apiv1.CreatedAnnotation] = ct.Format(time.RFC3339)
-		return
+		if _, found := annotations[apiv1.CreatedAnnotation]; !found {
+			if ts, err := gitOutput(ctx, repoPath, "--no-pager", "log", "-1", "--format=%ct"); err == nil {
+				if seconds, err := strconv.ParseInt(ts, 10, 64); err == nil {
+					annotations[apiv1.CreatedAnnotation] = time.Unix(seconds, 0).UTC().Format(time.RFC3339)
+				}
+			}
+		}
 	}
 
 	if _, found := annotations[apiv1.SourceAnnotation]; !found {
-		urlCmd := exec.CommandContext(ctx, "git", "config", "--get", "remote.origin.url")
-		urlCmd.Dir = repoPath
-		if repo, err := urlCmd.Output(); err == nil && len(repo) > 1 {
-			annotations[apiv1.SourceAnnotation] = strings.TrimSuffix(string(repo), "\n")
+		if repo, err := gitOutput(ctx, repoPath, "config", "--get", "remote.origin.url"); err == nil {
+			annotations[apiv1.SourceAnnotation] = repo
 		}
 	}
 
 	if _, found := annotations[apiv1.RevisionAnnotation]; !found {
-		shaCmd := exec.CommandContext(ctx, "git", "show", "-s", "--format=%H")
-		shaCmd.Dir = repoPath
-		if commit, err := shaCmd.Output(); err == nil && len(commit) > 1 {
-			annotations[apiv1.RevisionAnnotation] = strings.TrimSuffix(string(commit), "\n")
+		if commit, err := gitOutput(ctx, repoPath, "show", "-s", "--format=%H"); err == nil {
+			annotations[apiv1.RevisionAnnotation] = commit
 		}
 	}
+}
+
+// gitOutput runs Git in dir and returns trimmed standard output.
+func gitOutput(ctx context.Context, dir string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	return strings.TrimSpace(string(out)), err
 }

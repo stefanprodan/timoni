@@ -130,6 +130,7 @@ func resetCmdArgs() {
 	listArgs = listFlags{}
 	pullModArgs = pullModFlags{}
 	pushModArgs = pushModFlags{}
+	buildModArgs = buildModFlags{format: "oci-archive"}
 	bundleArgs = bundleFlags{}
 	bundleApplyArgs = bundleApplyFlags{}
 	bundleVetArgs = bundleVetFlags{}
@@ -138,6 +139,11 @@ func resetCmdArgs() {
 	vendorCrdArgs = vendorCrdFlags{}
 	vendorK8sArgs = vendorK8sFlags{}
 	pushArtifactArgs = pushArtifactFlags{}
+	buildArtifactArgs = buildArtifactFlags{
+		path:        ".",
+		format:      "oci-archive",
+		contentType: "generic",
+	}
 	pullArtifactArgs = pullArtifactFlags{}
 	runtimeBuildArgs = runtimeBuildFlags{}
 }
