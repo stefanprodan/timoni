@@ -78,3 +78,13 @@ func Test_BuildModValidatesFormatBeforeSource(t *testing.T) {
 	_, err := executeCommand("mod build missing -v 1.0.0 -o output --format invalid")
 	g.Expect(err).To(MatchError("unsupported OCI output format \"invalid\""))
 }
+
+func Test_BuildModRejectsBuildMetadataVersion(t *testing.T) {
+	g := NewWithT(t)
+	output := filepath.Join(t.TempDir(), "module.tar")
+	_, err := executeCommand(fmt.Sprintf(
+		"mod build testdata/module -v 1.0.0+demo -o %s",
+		output,
+	))
+	g.Expect(err).To(MatchError(ContainSubstring("version build metadata is not supported")))
+}

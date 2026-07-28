@@ -93,3 +93,16 @@ func Test_PushMod(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(manifest.Annotations[apiv1.VersionAnnotation]).To(BeEquivalentTo(newVer))
 }
+
+func Test_PushModRejectsBuildMetadataVersion(t *testing.T) {
+	g := NewWithT(t)
+	modPath := "testdata/module"
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v 1.0.0+demo",
+		modPath,
+		modURL,
+	))
+	g.Expect(err).To(MatchError(ContainSubstring("version build metadata is not supported")))
+}
