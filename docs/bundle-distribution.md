@@ -124,7 +124,7 @@ If the artifact was signed using Cosign keyless, you can verify it with:
 timoni artifact pull oci://docker.io/org/app:latest \
   --verify cosign \
   --certificate-identity-regexp="^https://github.com/org/.*$" \
-  --certificate-oidc-issuer-regex="^https://token.actions.githubusercontent.com.*$"
+  --certificate-oidc-issuer-regexp="^https://token.actions.githubusercontent.com.*$"
 ```
 
 The above command will extract all the files from the remote artifact into the current directory.
