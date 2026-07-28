@@ -22,7 +22,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -38,6 +40,9 @@ const (
 	FormatLayout  LocalFormat = "oci-layout"
 )
 
+// localReferenceName matches Timoni's local reference-name syntax.
+var localReferenceName = regexp.MustCompile(`^[A-Za-z0-9]+(?:(?:[-._:@/+]|--)[A-Za-z0-9]+)*$`)
+
 // Validate reports whether the local OCI output format is supported.
 func (f LocalFormat) Validate() error {
 	if f != FormatLayout && f != FormatArchive {
@@ -47,14 +52,17 @@ func (f LocalFormat) Validate() error {
 }
 
 // WriteImage validates and writes an image to a new OCI layout or archive.
-// References become OCI layout descriptor names.
+// References become OCI layout descriptor names and must use Timoni's local syntax.
 func WriteImage(image gcrv1.Image, destination string, format LocalFormat, references []string) error {
 	if err := format.Validate(); err != nil {
 		return err
 	}
 	for _, ref := range references {
-		if ref == "" {
+		if strings.TrimSpace(ref) == "" {
 			return fmt.Errorf("OCI reference cannot be empty")
+		}
+		if !localReferenceName.MatchString(ref) {
+			return fmt.Errorf("invalid local OCI reference %q", ref)
 		}
 	}
 
@@ -107,8 +115,11 @@ func writeLayout(destination string, image gcrv1.Image, references []string) (er
 	return nil
 }
 
-// writeArchive creates a deterministic archive and removes it if writing fails.
+// writeArchive creates parent directories, writes a deterministic archive, and removes it if writing fails.
 func writeArchive(layoutPath, destination string) (err error) {
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		return fmt.Errorf("creating output parent: %w", err)
+	}
 	output, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
 		return fmt.Errorf("creating output archive: %w", err)

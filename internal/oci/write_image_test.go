@@ -38,10 +38,11 @@ func TestWriteImage(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	defer build.Close()
 
-	t.Run("layout with optional references", func(t *testing.T) {
+	t.Run("layout with local references", func(t *testing.T) {
 		g := NewWithT(t)
 		dst := filepath.Join(t.TempDir(), "nested", "artifact")
-		g.Expect(WriteImage(build.Image, dst, FormatLayout, []string{"1.0.0", "latest"})).To(Succeed())
+		references := []string{"1.0.0", "latest", "release/1.0.0", "release+candidate", "release@candidate", "release:candidate", "release--candidate"}
+		g.Expect(WriteImage(build.Image, dst, FormatLayout, references)).To(Succeed())
 
 		path, err := layout.FromPath(dst)
 		g.Expect(err).ToNot(HaveOccurred())
@@ -49,10 +50,10 @@ func TestWriteImage(t *testing.T) {
 		g.Expect(err).ToNot(HaveOccurred())
 		manifest, err := index.IndexManifest()
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(manifest.Manifests).To(HaveLen(2))
-		for i, tag := range []string{"1.0.0", "latest"} {
+		g.Expect(manifest.Manifests).To(HaveLen(len(references)))
+		for i, reference := range references {
 			g.Expect(manifest.Manifests[i].Digest).To(Equal(build.Digest))
-			g.Expect(manifest.Manifests[i].Annotations).To(HaveKeyWithValue("org.opencontainers.image.ref.name", tag))
+			g.Expect(manifest.Manifests[i].Annotations).To(HaveKeyWithValue("org.opencontainers.image.ref.name", reference))
 		}
 	})
 
@@ -69,6 +70,14 @@ func TestWriteImage(t *testing.T) {
 		secondBytes, err := os.ReadFile(second)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(bytes.Equal(firstBytes, secondBytes)).To(BeTrue())
+	})
+
+	t.Run("archive creates missing parent", func(t *testing.T) {
+		g := NewWithT(t)
+		dst := filepath.Join(t.TempDir(), "nested", "artifact.tar")
+
+		g.Expect(WriteImage(build.Image, dst, FormatArchive, nil)).To(Succeed())
+		g.Expect(dst).To(BeAnExistingFile())
 	})
 
 	t.Run("existing archive remains untouched", func(t *testing.T) {
@@ -98,13 +107,27 @@ func TestWriteImage(t *testing.T) {
 	t.Run("invalid references leave no output", func(t *testing.T) {
 		for _, format := range []LocalFormat{FormatArchive, FormatLayout} {
 			t.Run(string(format), func(t *testing.T) {
-				g := NewWithT(t)
-				dst := filepath.Join(t.TempDir(), "artifact")
+				for _, tc := range []struct {
+					reference string
+					expect    string
+				}{
+					{"", "OCI reference cannot be empty"},
+					{"  ", "OCI reference cannot be empty"},
+					{"release candidate", "invalid local OCI reference"},
+					{"release\ncandidate", "invalid local OCI reference"},
+					{"-release", "invalid local OCI reference"},
+					{"release-", "invalid local OCI reference"},
+					{"release..candidate", "invalid local OCI reference"},
+					{"release---candidate", "invalid local OCI reference"},
+				} {
+					g := NewWithT(t)
+					dst := filepath.Join(t.TempDir(), "nested", "artifact")
 
-				err := WriteImage(build.Image, dst, format, []string{"valid", ""})
-				g.Expect(err).To(MatchError(ContainSubstring("OCI reference cannot be empty")))
-				_, statErr := os.Lstat(dst)
-				g.Expect(os.IsNotExist(statErr)).To(BeTrue())
+					err := WriteImage(build.Image, dst, format, []string{"valid", tc.reference})
+					g.Expect(err).To(MatchError(ContainSubstring(tc.expect)))
+					_, statErr := os.Lstat(filepath.Dir(dst))
+					g.Expect(os.IsNotExist(statErr)).To(BeTrue())
+				}
 			})
 		}
 	})
