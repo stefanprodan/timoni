@@ -18,12 +18,16 @@ package oci
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
+
+// ociTag matches the OCI Distribution tag grammar.
+var ociTag = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$`)
 
 // ParseArtifactURL validates the OpenContainers URL and returns the address of the artifact.
 func ParseArtifactURL(ociURL string) (string, error) {
@@ -55,6 +59,15 @@ func ParseDigest(ociURL string) (name.Digest, error) {
 	return name.NewDigest(ref.String())
 }
 
+// ValidateTag reports whether tag follows the OCI Distribution tag grammar.
+func ValidateTag(tag string) error {
+	if !ociTag.MatchString(tag) {
+		return fmt.Errorf("invalid OCI tag %q", tag)
+	}
+	return nil
+}
+
+// parseArtifactRef validates an OpenContainers artifact reference.
 func parseArtifactRef(ociURL string) (name.Reference, error) {
 	if !strings.HasPrefix(ociURL, apiv1.ArtifactPrefix) {
 		return nil, fmt.Errorf("URL must be in format 'oci://<domain>/<org>/<repo>'")
@@ -64,6 +77,11 @@ func parseArtifactRef(ociURL string) (name.Reference, error) {
 	ref, err := name.ParseReference(url)
 	if err != nil {
 		return nil, fmt.Errorf("'%s' invalid URL: %w", ociURL, err)
+	}
+	if tag, ok := ref.(name.Tag); ok {
+		if err := ValidateTag(tag.TagStr()); err != nil {
+			return nil, fmt.Errorf("'%s' invalid URL: %w", ociURL, err)
+		}
 	}
 
 	return ref, nil

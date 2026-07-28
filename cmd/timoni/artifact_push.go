@@ -92,6 +92,7 @@ func init() {
 	artifactCmd.AddCommand(pushArtifactCmd)
 }
 
+// pushArtifactCmdRun validates tags, builds, and pushes an OCI artifact.
 func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("repository URL is required")
@@ -99,6 +100,12 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 
 	if len(pushArtifactArgs.tags) == 0 {
 		return fmt.Errorf("at least one tag is required")
+	}
+
+	for _, tag := range pushArtifactArgs.tags {
+		if err := oci.ValidateTag(tag); err != nil {
+			return err
+		}
 	}
 
 	fi, err := os.Stat(pushArtifactArgs.path)

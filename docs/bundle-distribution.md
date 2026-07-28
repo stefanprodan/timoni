@@ -48,6 +48,8 @@ When publishing bundles with [timoni artifact push](cmd/timoni_artifact_push.md)
 - attach custom metadata such as licenses, Git source and documentation links using the `--annotation` flag
 - sign the artifact using either with a [Cosign](https://github.com/sigstore/cosign) static key or Cosign keyless using the `--sign` flag
 
+Registry tags must follow the OCI Distribution tag grammar.
+
 ### Push and sign example
 
 Login to the container registry:

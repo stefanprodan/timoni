@@ -53,6 +53,7 @@ func init() {
 	artifactCmd.AddCommand(tagArtifactCmd)
 }
 
+// tagArtifactCmdRun validates tags and adds them to an OCI artifact.
 func tagArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("artifact URL is required")
@@ -61,6 +62,11 @@ func tagArtifactCmdRun(cmd *cobra.Command, args []string) error {
 
 	if len(tagArtifactArgs.tags) == 0 {
 		return fmt.Errorf("at least one tag is required")
+	}
+	for _, tag := range tagArtifactArgs.tags {
+		if err := oci.ValidateTag(tag); err != nil {
+			return err
+		}
 	}
 
 	spin := logger.StartSpinner("tagging artifact")

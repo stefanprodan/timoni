@@ -65,3 +65,10 @@ func Test_TagArtifact(t *testing.T) {
 	_, err = crane.Pull(fmt.Sprintf("%s", aURL))
 	g.Expect(err).ToNot(HaveOccurred())
 }
+
+func TestTagArtifactRejectsInvalidTagsBeforeRegistry(t *testing.T) {
+	g := NewWithT(t)
+
+	_, err := executeCommand("artifact tag oci://registry.example.com/org/artifact:1.0.0 -t 1.0.1 -t .invalid")
+	g.Expect(err).To(MatchError(ContainSubstring("invalid OCI tag")))
+}
