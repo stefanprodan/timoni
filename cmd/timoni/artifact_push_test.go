@@ -79,3 +79,10 @@ func Test_PushArtifact(t *testing.T) {
 	g.Expect(manifest.Layers[0].MediaType).To(BeEquivalentTo(apiv1.ContentMediaType))
 	g.Expect(manifest.Layers[0].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo("generic"))
 }
+
+func TestPushArtifactRejectsInvalidTagsBeforeInput(t *testing.T) {
+	g := NewWithT(t)
+
+	_, err := executeCommand("artifact push oci://registry.example.com/org/artifact -f /does/not/exist -t 1.0.0 -t .invalid")
+	g.Expect(err).To(MatchError(ContainSubstring("invalid OCI tag")))
+}

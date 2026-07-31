@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Stefan Prodan
+Copyright 2026 Stefan Prodan
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,18 +17,14 @@ limitations under the License.
 package oci
 
 import (
-	"github.com/google/go-containerregistry/pkg/crane"
+	"testing"
+
+	. "github.com/onsi/gomega"
 )
 
-// TagArtifact validates and adds the tag to the remote OpenContainers artifact.
-func TagArtifact(ociURL, tag string, opts []crane.Option) error {
-	if err := ValidateTag(tag); err != nil {
-		return err
-	}
-	ref, err := parseArtifactRef(ociURL)
-	if err != nil {
-		return err
-	}
+func TestTagArtifactRejectsInvalidTagBeforeURL(t *testing.T) {
+	g := NewWithT(t)
 
-	return crane.Tag(ref.String(), tag, opts...)
+	err := TagArtifact("not an OCI URL", ".invalid", nil)
+	g.Expect(err).To(MatchError(ContainSubstring("invalid OCI tag")))
 }
