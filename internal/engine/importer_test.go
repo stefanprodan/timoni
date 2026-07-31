@@ -394,6 +394,79 @@ func TestConvertCRD(t *testing.T) {
 	}
 }`,
 		},
+		{
+			name: "map-value-xk-preserve",
+			spec: `type: "object"
+			properties: {
+				policies: {
+					additionalProperties: {
+						properties: module: type: "string"
+						required: ["module"]
+						type: "object"
+						"x-kubernetes-preserve-unknown-fields": true
+					}
+					type: "object"
+				}
+			}
+			`,
+			expect: `{
+	policies?: {
+		[string]: {
+			module!: string
+			...
+		}
+	}
+}`,
+		},
+		{
+			name: "map-value-nested-xk-preserve",
+			spec: `type: "object"
+			properties: {
+				flags: {
+					additionalProperties: {
+						properties: {
+							state: type: "string"
+							variants: {
+								type: "object"
+								"x-kubernetes-preserve-unknown-fields": true
+							}
+						}
+						type: "object"
+					}
+					type: "object"
+				}
+			}
+			`,
+			expect: `{
+	flags?: {
+		[string]: {
+			state?: string
+			variants?: {
+				...
+			}
+		}
+	}
+}`,
+		},
+		{
+			name: "map-value-untyped-xk-preserve",
+			spec: `type: "object"
+			properties: {
+				inputs: {
+					items: {
+						additionalProperties: "x-kubernetes-preserve-unknown-fields": true
+						type: "object"
+					}
+					type: "array"
+				}
+			}
+			`,
+			expect: `{
+	inputs?: [...{
+		[string]: _
+	}]
+}`,
+		},
 	}
 
 	for _, item := range table {
@@ -422,4 +495,12 @@ func TestConvertCRD(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPreservePathMatchesSelectorTypes(t *testing.T) {
+	g := NewWithT(t)
+	suffix := cue.Str("variants")
+
+	g.Expect(preservePathMatches(cue.MakePath(cue.AnyString, suffix), cue.MakePath(cue.Index(0), suffix))).To(BeFalse())
+	g.Expect(preservePathMatches(cue.MakePath(cue.AnyIndex, suffix), cue.MakePath(cue.Str("key"), suffix))).To(BeFalse())
 }
