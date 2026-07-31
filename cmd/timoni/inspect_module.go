@@ -29,6 +29,7 @@ import (
 
 var inspectModuleCmd = &cobra.Command{
 	Use:   "module [INSTANCE NAME]",
+	Args:  cobra.MaximumNArgs(1),
 	Short: "Print the module information of an instance",
 	Example: `  # Print the module info
   timoni -n default inspect module app

@@ -28,6 +28,7 @@ import (
 
 var inspectResourcesCmd = &cobra.Command{
 	Use:   "resources [INSTANCE NAME]",
+	Args:  cobra.MaximumNArgs(1),
 	Short: "Print the Kubernetes objects managed by an instance",
 	Example: `  # Print the managed resources
   timoni -n default inspect resources app

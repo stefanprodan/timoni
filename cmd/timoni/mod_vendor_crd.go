@@ -40,6 +40,7 @@ import (
 
 var vendorCrdCmd = &cobra.Command{
 	Use:     "crd [MODULE PATH]",
+	Args:    cobra.MaximumNArgs(1),
 	Aliases: []string{"crds"},
 	Short:   "Vendor Kubernetes CRD CUE schemas",
 	Example: `  # Vendor CUE schemas generated from Kubernetes CRDs included in a local YAML file

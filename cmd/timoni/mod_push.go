@@ -34,6 +34,7 @@ import (
 
 var pushModCmd = &cobra.Command{
 	Use:   "push [MODULE PATH] [MODULE URL]",
+	Args:  cobra.MaximumNArgs(2),
 	Short: "Push a module to a container registry",
 	Long: `The push command packages the module as an OCI artifact and pushes it to the
 container registry using the version as the image tag.`,

@@ -44,6 +44,7 @@ import (
 
 var buildCmd = &cobra.Command{
 	Use:     "build [INSTANCE NAME] [MODULE URL]",
+	Args:    cobra.MaximumNArgs(2),
 	Aliases: []string{"template"},
 	Short:   "Build an instance from a module and print the resulting Kubernetes resources",
 	Example: `  # Build an instance from a local module

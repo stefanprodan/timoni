@@ -32,6 +32,7 @@ import (
 
 var vendorK8sCmd = &cobra.Command{
 	Use:   "k8s [MODULE PATH]",
+	Args:  cobra.MaximumNArgs(1),
 	Short: "Vendor Kubernetes API CUE schemas",
 	Example: `  # Vendor CUE schemas generated from the latest Kubernetes GA APIs
   timoni mod vendor k8s

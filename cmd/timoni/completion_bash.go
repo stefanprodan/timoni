@@ -24,6 +24,7 @@ import (
 
 var completionBashCmd = &cobra.Command{
 	Use:   "bash",
+	Args:  cobra.NoArgs,
 	Short: "Generates bash completion scripts",
 	Example: `To load completion run
 

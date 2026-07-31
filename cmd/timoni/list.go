@@ -31,6 +31,7 @@ import (
 
 var listCmd = &cobra.Command{
 	Use:     "list",
+	Args:    cobra.NoArgs,
 	Aliases: []string{"ls"},
 	Short:   "Prints a table of instances and their module version",
 	Example: ` # List all instances in a namespace

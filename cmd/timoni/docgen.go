@@ -41,6 +41,7 @@ var (
 
 var docgenCmd = &cobra.Command{
 	Use:    "docgen",
+	Args:   cobra.NoArgs,
 	Short:  "Generate the documentation for the CLI commands.",
 	Hidden: true,
 	RunE:   docgenCmdRun,
