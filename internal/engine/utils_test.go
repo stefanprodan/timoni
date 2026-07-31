@@ -25,6 +25,7 @@ import (
 	"strings"
 	"testing"
 
+	"cuelang.org/go/cue/cuecontext"
 	. "github.com/onsi/gomega"
 )
 
@@ -68,4 +69,11 @@ func TestIsFileUrl(t *testing.T) {
 	g := NewWithT(t)
 	g.Expect(IsFileUrl("file://afile.txt")).To(BeTrueBecause("file:// is a file URL"))
 	g.Expect(IsFileUrl("oci://foo/bar")).To(BeFalseBecause("oci:// is not a file URL"))
+}
+
+func TestExtractValueFromBytesLookupError(t *testing.T) {
+	g := NewWithT(t)
+
+	_, err := ExtractValueFromBytes(cuecontext.New(), []byte("other: true"), "values")
+	g.Expect(err).To(MatchError(ContainSubstring("not found")))
 }
