@@ -75,5 +75,5 @@ func TestExtractValueFromBytesLookupError(t *testing.T) {
 	g := NewWithT(t)
 
 	_, err := ExtractValueFromBytes(cuecontext.New(), []byte("other: true"), "values")
-	g.Expect(err).To(HaveOccurred())
+	g.Expect(err).To(MatchError(ContainSubstring("not found")))
 }
