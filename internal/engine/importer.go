@@ -127,6 +127,8 @@ type VersionedSchema struct {
 	Schema cue.Value
 }
 
+// convertCRD converts a CRD CUE value into naming metadata and versioned CUE
+// schemas, applying supported Kubernetes extensions.
 func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 	cc := &IntermediateCRD{
 		Schemas: make([]VersionedSchema, 0),
@@ -215,7 +217,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 			panic("unreachable")
 		}
 
-		// construct a map of all the paths that have x-kubernetes-embedded-resource: true defined
+		// Collect all paths with x-kubernetes-preserve-unknown-fields: true.
 		yodoc, err := yaml.Encode(doc)
 		if err != nil {
 			return nil, fmt.Errorf("error encoding intermediate openapi doc to yaml bytes: %w", err)
@@ -225,7 +227,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 			return nil, fmt.Errorf("could not load openapi3 document for version %s: %w", ver, err)
 		}
 
-		preserve := make(map[string]bool)
+		preserve := make([]cue.Path, 0)
 		var rootosch *openapi3.Schema
 		if rref, has := odoc.Components.Schemas[kname]; !has {
 			return nil, fmt.Errorf("could not find root schema for version %s at expected path components.schemas.%s", ver, kname)
@@ -235,10 +237,20 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 
 		var walkfn func(path []cue.Selector, sch *openapi3.Schema) error
 		walkfn = func(path []cue.Selector, sch *openapi3.Schema) error {
-			_, has := sch.Extensions["x-kubernetes-preserve-unknown-fields"]
-			preserve[cue.MakePath(path...).String()] = has
+			preserveUnknownFields, _ := sch.Extensions["x-kubernetes-preserve-unknown-fields"].(bool)
+			if preserveUnknownFields {
+				preserve = append(preserve, cue.MakePath(path...))
+			}
 			for name, prop := range sch.Properties {
-				if err := walkfn(append(path, cue.Str(name)), prop.Value); err != nil {
+				// Limit capacity so sibling paths cannot overwrite each other during recursion.
+				nextPath := append(path[:len(path):len(path)], cue.Str(name))
+				if err := walkfn(nextPath, prop.Value); err != nil {
+					return err
+				}
+			}
+			if sch.Items != nil {
+				nextPath := append(path[:len(path):len(path)], cue.AnyIndex)
+				if err := walkfn(nextPath, sch.Items.Value); err != nil {
 					return err
 				}
 			}
@@ -256,8 +268,6 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		// 'x-kubernetes-preserve-unknown-fields: true'.
 		// Note that this implementation is only correct for CUE inputs that do not contain references.
 		// It is safe to use in this context because CRDs already have that invariant.
-		var stack []ast.Node
-		var pathstack []cue.Selector
 		astutil.Apply(schast, func(c astutil.Cursor) bool {
 			// Skip the root
 			if c.Parent() == nil {
@@ -266,27 +276,10 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 
 			switch x := c.Node().(type) {
 			case *ast.StructLit:
-				psel, pc := parentPath(c)
-				// Finding the parent-of-parent in this way is questionable.
-				// pathTo will hop up the tree a potentially large number of
-				// levels until it finds an *ast.Field or *ast.ListLit...but
-				// who knows what's between here and there?
-				_, ppc := parentPath(pc)
-				var i int
-				if ppc != nil {
-					for i = len(stack); i > 0 && stack[i-1] != ppc.Node(); i-- {
-					}
-				}
-				stack = append(stack[:i], pc.Node())
-				pathstack = append(pathstack[:i], psel)
-
-				// Risk not closing up fields that are not marked with 'x-kubernetes-preserve-unknown-fields: true'
-				// if the current field name matches a path that is marked with preserve unknown.
-				// TODO: find a way to fix parentPath when arrays are involved.
-				currentPath := cue.MakePath(pathstack...).String()
+				currentPath := structPath(c)
 				found := false
-				for k, ok := range preserve {
-					if strings.HasSuffix(k, currentPath) && ok {
+				for _, path := range preserve {
+					if preservePathMatches(path, currentPath) {
 						found = true
 						break
 					}
@@ -404,4 +397,41 @@ func parentPath(c astutil.Cursor) (cue.Selector, astutil.Cursor) {
 	}
 
 	return cue.Selector{}, nil
+}
+
+// structPath returns the CUE path to a struct literal from its AST parents.
+func structPath(c astutil.Cursor) cue.Path {
+	var selectors []cue.Selector
+	for {
+		selector, parent := parentPath(c)
+		if parent == nil {
+			break
+		}
+		selectors = append(selectors, selector)
+		c = parent
+	}
+	for i, j := 0, len(selectors)-1; i < j; i, j = i+1, j-1 {
+		selectors[i], selectors[j] = selectors[j], selectors[i]
+	}
+	return cue.MakePath(selectors...)
+}
+
+// preservePathMatches reports whether current is a suffix of preserved, treating AnyIndex as a wildcard.
+func preservePathMatches(preserved, current cue.Path) bool {
+	pattern := preserved.Selectors()
+	actual := current.Selectors()
+	if len(pattern) < len(actual) {
+		return false
+	}
+	for i := 1; i <= len(actual); i++ {
+		want := pattern[len(pattern)-i]
+		got := actual[len(actual)-i]
+		if want.String() == cue.AnyIndex.String() && got.Type().LabelType() == cue.IndexLabel {
+			continue
+		}
+		if want.String() != got.String() {
+			return false
+		}
+	}
+	return true
 }
