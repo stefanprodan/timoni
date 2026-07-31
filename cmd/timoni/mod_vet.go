@@ -39,6 +39,7 @@ import (
 
 var vetModCmd = &cobra.Command{
 	Use:     "vet [MODULE PATH]",
+	Args:    cobra.MaximumNArgs(1),
 	Aliases: []string{"lint"},
 	Short:   "Validate a local module",
 	Long:    `The vet command builds the local module and validates the resulting Kubernetes objects.`,

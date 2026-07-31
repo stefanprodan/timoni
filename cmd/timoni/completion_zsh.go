@@ -24,6 +24,7 @@ import (
 
 var completionZshCmd = &cobra.Command{
 	Use:   "zsh",
+	Args:  cobra.NoArgs,
 	Short: "Generates zsh completion scripts",
 	Example: `To load completion run
 

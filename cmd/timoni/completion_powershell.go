@@ -24,6 +24,7 @@ import (
 
 var completionPowerShellCmd = &cobra.Command{
 	Use:   "powershell",
+	Args:  cobra.NoArgs,
 	Short: "Generates powershell completion scripts",
 	Example: `To load completion run
 

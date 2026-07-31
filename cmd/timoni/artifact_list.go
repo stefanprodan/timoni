@@ -29,6 +29,7 @@ import (
 
 var listArtifactCmd = &cobra.Command{
 	Use:     "list [ARTIFACT URL]",
+	Args:    cobra.MaximumNArgs(1),
 	Aliases: []string{"ls"},
 	Short:   "List the tags of an artifact",
 	Long:    `The list command prints a table with the artifact tags and their digests.`,

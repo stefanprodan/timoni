@@ -31,6 +31,7 @@ import (
 
 var deleteCmd = &cobra.Command{
 	Use:     "delete [INSTANCE NAME]",
+	Args:    cobra.MaximumNArgs(1),
 	Aliases: []string{"uninstall"},
 	Short:   "Uninstall a module instance from the cluster",
 	Example: `  # Uninstall the app module from the default namespace

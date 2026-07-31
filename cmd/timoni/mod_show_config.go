@@ -40,6 +40,7 @@ import (
 
 var configShowModCmd = &cobra.Command{
 	Use:   "config [MODULE PATH]",
+	Args:  cobra.MaximumNArgs(1),
 	Short: "Output the #Config structure of a local module",
 	Long:  `The config command parses the local module configuration structure and outputs the information to stdout.`,
 	Example: `  # print the config of a module in the current directory

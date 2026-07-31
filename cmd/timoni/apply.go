@@ -37,6 +37,7 @@ import (
 
 var applyCmd = &cobra.Command{
 	Use:     "apply [INSTANCE NAME] [MODULE URL]",
+	Args:    cobra.MaximumNArgs(2),
 	Aliases: []string{"install", "upgrade"},
 	Short:   "Install or upgrade a module instance",
 	Long: `The apply command installs or upgrades a module instance on the Kubernetes cluster.

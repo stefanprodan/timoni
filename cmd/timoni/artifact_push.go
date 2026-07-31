@@ -32,6 +32,7 @@ import (
 
 var pushArtifactCmd = &cobra.Command{
 	Use:   "push [REPOSITORY URL]",
+	Args:  cobra.MaximumNArgs(1),
 	Short: "Push a directory contents to a container registry",
 	Long: `The push command packages a directory contents as an OCI artifact and pushes
 it to the container registry. If the directory contains a timoni.ignore file,

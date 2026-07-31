@@ -36,6 +36,7 @@ import (
 
 var bundleStatusCmd = &cobra.Command{
 	Use:   "status [BUNDLE NAME]",
+	Args:  cobra.MaximumNArgs(1),
 	Short: "Displays the current status of Kubernetes resources managed by the bundle instances",
 	Example: `  # Show the status of the resources managed by a bundle
   timoni bundle status -f bundle.cue
