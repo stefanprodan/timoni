@@ -4,8 +4,8 @@ package main
 
 values: {
 	image: {
-		repository: "cgr.dev/chainguard/redis"
-		tag:        "7.2.4"
-		digest:     "sha256:6cf3066237a604fcf3e716aa9423cdd15383db49049bb594a337a97ca862ca50"
+		repository: "docker.io/redis"
+		tag:        "8.10.0-alpine"
+		digest:     "sha256:5cca2f8a01ef2264c52dac86f14ec6a5abe973a93331e1b62522cfc5e63e4691"
 	}
 }
