@@ -106,7 +106,7 @@ func init() {
 	modCmd.AddCommand(pushModCmd)
 }
 
-// pushModCmdRun validates the module version, builds, and pushes a module artifact.
+// pushModCmdRun validates inputs, builds, and pushes a module artifact.
 func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("module and URL are required")
@@ -116,6 +116,11 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	version := pushModArgs.version.String()
 	if err := flags.ValidateModuleVersion(version); err != nil {
 		return err
+	}
+	if pushModArgs.sign != "" {
+		if err := oci.ValidateSigningProvider(pushModArgs.sign); err != nil {
+			return err
+		}
 	}
 
 	ociURL := fmt.Sprintf("%s:%s", args[1], version)
