@@ -31,7 +31,7 @@ timoni -n apps build podinfo oci://ghcr.io/stefanprodan/modules/podinfo \
   --values ./staging-values.cue | \
 flux push artifact oci://registry.internal/podinfo:staging \
   --source="http://github.com/stefanprodan/podinfo" \
-  --revision="6.3.4" \
+  --revision="6.14.1" \
   --path=-
 ```
 
@@ -41,7 +41,7 @@ You can also use a Timoni bundle to generate the Kubernetes manifests:
 timoni bundle build -f podinfo.cue | \
 flux push artifact oci://registry.internal/podinfo:staging \
   --source="http://github.com/stefanprodan/podinfo" \
-  --revision="6.3.4" \
+  --revision="6.14.1" \
   --path=-
 ```
 

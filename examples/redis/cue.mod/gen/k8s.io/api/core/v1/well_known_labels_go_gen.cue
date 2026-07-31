@@ -4,9 +4,13 @@
 
 package v1
 
-#LabelHostname:       "kubernetes.io/hostname"
-#LabelTopologyZone:   "topology.kubernetes.io/zone"
-#LabelTopologyRegion: "topology.kubernetes.io/region"
+#LabelHostname: "kubernetes.io/hostname"
+
+// Label value is the network location of kube-apiserver stored as <ip:port>
+// Stored in APIServer Identity lease objects to view what address is used for peer proxy
+#AnnotationPeerAdvertiseAddress: "kubernetes.io/peer-advertise-address"
+#LabelTopologyZone:              "topology.kubernetes.io/zone"
+#LabelTopologyRegion:            "topology.kubernetes.io/region"
 
 // These label have been deprecated since 1.17, but will be supported for
 // the foreseeable future, to accommodate things like long-lived PVs that

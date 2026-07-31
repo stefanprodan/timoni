@@ -45,7 +45,7 @@ in a new namespace:
 
     ```text
     pulling oci://ghcr.io/stefanprodan/modules/podinfo:latest
-    using module timoni.sh/podinfo version 6.5.4
+    using module timoni.sh/podinfo version 6.14.0
     installing podinfo in namespace test
     Namespace/test created
     ServiceAccount/test/podinfo created
@@ -75,7 +75,7 @@ You can list all instances in a cluster with:
 
     ```text
     NAME   	NAMESPACE	MODULE                                    	VERSION	LAST APPLIED        	BUNDLE 
-    podinfo	test     	oci://ghcr.io/stefanprodan/modules/podinfo	6.5.4  	2024-01-20T19:51:17Z	- 
+    podinfo	test     	oci://ghcr.io/stefanprodan/modules/podinfo	6.14.0  	2024-01-20T19:51:17Z	- 
     ```
 
 To see the status of the Kubernetes resources managed by an instance:
@@ -90,10 +90,10 @@ To see the status of the Kubernetes resources managed by an instance:
 
     ```text
     last applied 2024-01-20T19:51:17Z
-    module oci://ghcr.io/stefanprodan/modules/podinfo:6.5.4
-    digest sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365
+    module oci://ghcr.io/stefanprodan/modules/podinfo:6.14.0
+    digest sha256:32082e8ac0bba9ee2a3f95534f52c94f5a41dc642bb396c73b04fa18aff147d7
     container image ghcr.io/curl/curl-container/curl-multi:master
-    container image ghcr.io/stefanprodan/podinfo:6.5.4
+    container image ghcr.io/stefanprodan/podinfo:6.14.0
     ServiceAccount/test/podinfo Current - Resource is current
     Service/test/podinfo Current - Service is ready
     Deployment/test/podinfo Current - Deployment is available. Replicas: 1
@@ -112,10 +112,10 @@ For example, to list the module URL, version and OCI digest of the podinfo insta
 === "output"
 
     ```text
-    digest: sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365
+    digest: sha256:32082e8ac0bba9ee2a3f95534f52c94f5a41dc642bb396c73b04fa18aff147d7
     name: timoni.sh/podinfo
     repository: oci://ghcr.io/stefanprodan/modules/podinfo
-    version: 6.5.4
+    version: 6.14.0
     ```
 
 To learn more about the available commands, use `timoni inspect --help`.
@@ -150,7 +150,7 @@ Apply the config to the podinfo module to perform an upgrade:
 
     ```text
     pulling oci://ghcr.io/stefanprodan/modules/podinfo:latest
-    using module timoni.sh/podinfo version 6.5.4
+    using module timoni.sh/podinfo version 6.14.1
     upgrading podinfo in namespace test
     ServiceAccount/test/podinfo unchanged
     Service/test/podinfo unchanged
@@ -203,14 +203,14 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.2.4"
+				version: "8.10.0"
 			}
 			namespace: "podinfo"
 			values: maxmemory: 256
 		}
 		podinfo: {
 			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-			module: version: "6.5.4"
+			module: version: "6.14.1"
 			namespace: "podinfo"
 			values: caching: {
 				enabled:  true

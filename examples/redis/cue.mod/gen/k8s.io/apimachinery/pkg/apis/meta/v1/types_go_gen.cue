@@ -76,7 +76,27 @@ import (
 	// The intended use of the remainingItemCount is *estimating* the size of a collection. Clients
 	// should not rely on the remainingItemCount to be set or to be exact.
 	// +optional
-	remainingItemCount?: null | int64 @go(RemainingItemCount,*int64) @protobuf(4,bytes,opt)
+	remainingItemCount?: int64 @go(RemainingItemCount,*int64) @protobuf(4,bytes,opt)
+
+	// shardInfo is set when the list is a filtered subset of the full collection,
+	// as selected by a shard selector on the request. It echoes back the selector
+	// so clients can verify which shard they received and merge sharded responses.
+	// Clients should not cache sharded list responses as a full representation
+	// of the collection.
+	//
+	// This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+	// +featureGate=ShardedListAndWatch
+	// +optional
+	shardInfo?: #ShardInfo @go(ShardInfo,*ShardInfo) @protobuf(5,bytes,opt)
+}
+
+// ShardInfo describes the shard selector that was applied to produce a list response.
+// Its presence on a list response indicates the list is a filtered subset.
+#ShardInfo: {
+	// selector is the shard selector string from the request, echoed back so clients
+	// can verify which shard they received and merge responses from multiple shards.
+	// +required
+	selector: string @go(Selector) @protobuf(1,bytes,opt)
 }
 
 #ObjectNameField: "metadata.name"
@@ -92,7 +112,7 @@ import (
 	// automatically. Name is primarily intended for creation idempotence and configuration
 	// definition.
 	// Cannot be updated.
-	// More info: http://kubernetes.io/docs/user-guide/identifiers#names
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
 	// +optional
 	name?: string @go(Name) @protobuf(1,bytes,opt)
 
@@ -118,7 +138,7 @@ import (
 	//
 	// Must be a DNS_LABEL.
 	// Cannot be updated.
-	// More info: http://kubernetes.io/docs/user-guide/namespaces
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces
 	// +optional
 	namespace?: string @go(Namespace) @protobuf(3,bytes,opt)
 
@@ -132,7 +152,7 @@ import (
 	//
 	// Populated by the system.
 	// Read-only.
-	// More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids
 	// +optional
 	uid?: types.#UID @go(UID) @protobuf(5,bytes,opt,casttype=k8s.io/kubernetes/pkg/types.UID)
 
@@ -184,26 +204,26 @@ import (
 	// Read-only.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
-	deletionTimestamp?: null | #Time @go(DeletionTimestamp,*Time) @protobuf(9,bytes,opt)
+	deletionTimestamp?: #Time @go(DeletionTimestamp,*Time) @protobuf(9,bytes,opt)
 
 	// Number of seconds allowed for this object to gracefully terminate before
 	// it will be removed from the system. Only set when deletionTimestamp is also set.
 	// May only be shortened.
 	// Read-only.
 	// +optional
-	deletionGracePeriodSeconds?: null | int64 @go(DeletionGracePeriodSeconds,*int64) @protobuf(10,varint,opt)
+	deletionGracePeriodSeconds?: int64 @go(DeletionGracePeriodSeconds,*int64) @protobuf(10,varint,opt)
 
 	// Map of string keys and values that can be used to organize and categorize
 	// (scope and select) objects. May match selectors of replication controllers
 	// and services.
-	// More info: http://kubernetes.io/docs/user-guide/labels
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
 	// +optional
 	labels?: {[string]: string} @go(Labels,map[string]string) @protobuf(11,bytes,rep)
 
 	// Annotations is an unstructured key value map stored with a resource that may be
 	// set by external tools to store and retrieve arbitrary metadata. They are not
 	// queryable and should be preserved when modifying objects.
-	// More info: http://kubernetes.io/docs/user-guide/annotations
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations
 	// +optional
 	annotations?: {[string]: string} @go(Annotations,map[string]string) @protobuf(12,bytes,rep)
 
@@ -214,6 +234,8 @@ import (
 	// +optional
 	// +patchMergeKey=uid
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=uid
 	ownerReferences?: [...#OwnerReference] @go(OwnerReferences,[]OwnerReference) @protobuf(13,bytes,rep)
 
 	// Must be empty before the object is deleted from the registry. Each entry
@@ -231,6 +253,7 @@ import (
 	// are not vulnerable to ordering changes in the list.
 	// +optional
 	// +patchStrategy=merge
+	// +listType=set
 	finalizers?: [...string] @go(Finalizers,[]string) @protobuf(14,bytes,rep)
 
 	// ManagedFields maps workflow-id and version to the set of fields
@@ -242,6 +265,7 @@ import (
 	// workflow used when modifying the object.
 	//
 	// +optional
+	// +listType=atomic
 	managedFields?: [...#ManagedFieldsEntry] @go(ManagedFields,[]ManagedFieldsEntry) @protobuf(17,bytes,rep)
 }
 
@@ -273,16 +297,16 @@ import (
 	kind: string @go(Kind) @protobuf(1,bytes,opt)
 
 	// Name of the referent.
-	// More info: http://kubernetes.io/docs/user-guide/identifiers#names
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
 	name: string @go(Name) @protobuf(3,bytes,opt)
 
 	// UID of the referent.
-	// More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids
 	uid: types.#UID @go(UID) @protobuf(4,bytes,opt,casttype=k8s.io/apimachinery/pkg/types.UID)
 
 	// If true, this reference points to the managing controller.
 	// +optional
-	controller?: null | bool @go(Controller,*bool) @protobuf(6,varint,opt)
+	controller?: bool @go(Controller,*bool) @protobuf(6,varint,opt)
 
 	// If true, AND if the owner has the "foregroundDeletion" finalizer, then
 	// the owner cannot be deleted from the key-value store until this
@@ -293,7 +317,7 @@ import (
 	// To set this field, a user needs "delete" permission of the owner,
 	// otherwise 422 (Unprocessable Entity) will be returned.
 	// +optional
-	blockOwnerDeletion?: null | bool @go(BlockOwnerDeletion,*bool) @protobuf(7,varint,opt)
+	blockOwnerDeletion?: bool @go(BlockOwnerDeletion,*bool) @protobuf(7,varint,opt)
 }
 
 // ListOptions is the query options to a standard REST list call.
@@ -345,7 +369,7 @@ import (
 	// Timeout for the list/watch call.
 	// This limits the duration of the call, regardless of any activity or inactivity.
 	// +optional
-	timeoutSeconds?: null | int64 @go(TimeoutSeconds,*int64) @protobuf(5,varint,opt)
+	timeoutSeconds?: int64 @go(TimeoutSeconds,*int64) @protobuf(5,varint,opt)
 
 	// limit is a maximum number of responses to return for a list call. If more items exist, the
 	// server will set the `continue` field on the list metadata to a value that can be used with the
@@ -380,7 +404,72 @@ import (
 	// This field is not supported when watch is true. Clients may start a watch from the last
 	// resourceVersion value returned by the server and not miss any modifications.
 	continue?: string @go(Continue) @protobuf(8,bytes,opt)
+
+	// `sendInitialEvents=true` may be set together with `watch=true`.
+	// In that case, the watch stream will begin with synthetic events to
+	// produce the current state of objects in the collection. Once all such
+	// events have been sent, a synthetic "Bookmark" event  will be sent.
+	// The bookmark will report the ResourceVersion (RV) corresponding to the
+	// set of objects, and be marked with `"k8s.io/initial-events-end": "true"` annotation.
+	// Afterwards, the watch stream will proceed as usual, sending watch events
+	// corresponding to changes (subsequent to the RV) to objects watched.
+	//
+	// When `sendInitialEvents` option is set, we require `resourceVersionMatch`
+	// option to also be set. The semantic of the watch request is as following:
+	// - `resourceVersionMatch` = NotOlderThan
+	//   is interpreted as "data at least as new as the provided `resourceVersion`"
+	//   and the bookmark event is send when the state is synced
+	//   to a `resourceVersion` at least as fresh as the one provided by the ListOptions.
+	//   If `resourceVersion` is unset, this is interpreted as "consistent read" and the
+	//   bookmark event is send when the state is synced at least to the moment
+	//   when request started being processed.
+	// - `resourceVersionMatch` set to any other value or unset
+	//   Invalid error is returned.
+	//
+	// Defaults to true if `resourceVersion=""` or `resourceVersion="0"` (for backward
+	// compatibility reasons) and to false otherwise.
+	// +optional
+	sendInitialEvents?: bool @go(SendInitialEvents,*bool) @protobuf(11,varint,opt)
+
+	// shardSelector restricts the list of returned objects using a CEL-based
+	// shard selector expression. The format uses the shardRange() function
+	// combined with || (logical OR) to specify one or more hash ranges:
+	//
+	//   shardRange(object.metadata.uid, '0x0', '0x8000000000000000')
+	//   shardRange(object.metadata.uid, '0x0', '0x8000000000000000') || shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+	//
+	// Field paths use CEL-style object-rooted syntax (e.g. "object.metadata.uid"),
+	// NOT the fieldSelector format ("metadata.uid"). Currently supported paths:
+	//   - object.metadata.uid
+	//   - object.metadata.namespace
+	//
+	// hexStart and hexEnd are single-quoted CEL string literals with a '0x' prefix,
+	// defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a
+	// hash space. The full range is [0x0, 0x10000000000000000), where the exclusive
+	// upper bound equals 2^64.
+	//
+	// Examples:
+	//   2-shard split:
+	//     shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x8000000000000000')
+	//     shard 1: shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+	//   4-shard split:
+	//     shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x4000000000000000')
+	//     shard 1: shardRange(object.metadata.uid, '0x4000000000000000', '0x8000000000000000')
+	//     shard 2: shardRange(object.metadata.uid, '0x8000000000000000', '0xc000000000000000')
+	//     shard 3: shardRange(object.metadata.uid, '0xc000000000000000', '0x10000000000000000')
+	//
+	// This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+	// +featureGate=ShardedListAndWatch
+	// +optional
+	shardSelector?: string @go(ShardSelector) @protobuf(15,bytes,opt)
 }
+
+// InitialEventsAnnotationKey the name of the key
+// under which an annotation marking the end of
+// a watchlist stream is stored.
+//
+// The annotation is added to a "Bookmark" event.
+#InitialEventsAnnotationKey: "k8s.io/initial-events-end"
 
 // resourceVersionMatch specifies how the resourceVersion parameter is applied. resourceVersionMatch
 // may only be set if resourceVersion is also set.
@@ -453,20 +542,20 @@ import (
 	// specified type will be used.
 	// Defaults to a per object value if not specified. zero means delete immediately.
 	// +optional
-	gracePeriodSeconds?: null | int64 @go(GracePeriodSeconds,*int64) @protobuf(1,varint,opt)
+	gracePeriodSeconds?: int64 @go(GracePeriodSeconds,*int64) @protobuf(1,varint,opt)
 
 	// Must be fulfilled before a deletion is carried out. If not possible, a 409 Conflict status will be
 	// returned.
 	// +k8s:conversion-gen=false
 	// +optional
-	preconditions?: null | #Preconditions @go(Preconditions,*Preconditions) @protobuf(2,bytes,opt)
+	preconditions?: #Preconditions @go(Preconditions,*Preconditions) @protobuf(2,bytes,opt)
 
 	// Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.
 	// Should the dependent objects be orphaned. If true/false, the "orphan"
 	// finalizer will be added to/removed from the object's finalizers list.
 	// Either this field or PropagationPolicy may be set, but not both.
 	// +optional
-	orphanDependents?: null | bool @go(OrphanDependents,*bool) @protobuf(3,varint,opt)
+	orphanDependents?: bool @go(OrphanDependents,*bool) @protobuf(3,varint,opt)
 
 	// Whether and how garbage collection will be performed.
 	// Either this field or OrphanDependents may be set, but not both.
@@ -477,7 +566,7 @@ import (
 	// 'Foreground' - a cascading policy that deletes all dependents in the
 	// foreground.
 	// +optional
-	propagationPolicy?: null | #DeletionPropagation @go(PropagationPolicy,*DeletionPropagation) @protobuf(4,varint,opt)
+	propagationPolicy?: #DeletionPropagation @go(PropagationPolicy,*DeletionPropagation) @protobuf(4,varint,opt)
 
 	// When present, indicates that modifications should not be
 	// persisted. An invalid or unrecognized dryRun directive will
@@ -485,7 +574,23 @@ import (
 	// request. Valid values are:
 	// - All: all dry run stages will be processed
 	// +optional
+	// +listType=atomic
 	dryRun?: [...string] @go(DryRun,[]string) @protobuf(5,bytes,rep)
+
+	// if set to true, it will trigger an unsafe deletion of the resource in
+	// case the normal deletion flow fails with a corrupt object error.
+	// A resource is considered corrupt if it can not be retrieved from
+	// the underlying storage successfully because of a) its data can
+	// not be transformed e.g. decryption failure, or b) it fails
+	// to decode into an object.
+	// NOTE: unsafe deletion ignores finalizer constraints, skips
+	// precondition checks, and removes the object from the storage.
+	// WARNING: This may potentially break the cluster if the workload
+	// associated with the resource being unsafe-deleted relies on normal
+	// deletion flow. Use only if you REALLY know what you are doing.
+	// The default value is false, and the user must opt in to enable it
+	// +optional
+	ignoreStoreReadErrorWithClusterBreakingPotential?: bool @go(IgnoreStoreReadErrorWithClusterBreakingPotential,*bool) @protobuf(6,varint,opt)
 }
 
 // FieldValidationIgnore ignores unknown/duplicate fields
@@ -507,6 +612,7 @@ import (
 	// request. Valid values are:
 	// - All: all dry run stages will be processed
 	// +optional
+	// +listType=atomic
 	dryRun?: [...string] @go(DryRun,[]string) @protobuf(1,bytes,rep)
 
 	// fieldManager is a name associated with the actor or entity
@@ -518,19 +624,16 @@ import (
 
 	// fieldValidation instructs the server on how to handle
 	// objects in the request (POST/PUT/PATCH) containing unknown
-	// or duplicate fields, provided that the `ServerSideFieldValidation`
-	// feature gate is also enabled. Valid values are:
+	// or duplicate fields. Valid values are:
 	// - Ignore: This will ignore any unknown fields that are silently
 	// dropped from the object, and will ignore all but the last duplicate
 	// field that the decoder encounters. This is the default behavior
-	// prior to v1.23 and is the default behavior when the
-	// `ServerSideFieldValidation` feature gate is disabled.
+	// prior to v1.23.
 	// - Warn: This will send a warning via the standard warning response
 	// header for each unknown field that is dropped from the object, and
 	// for each duplicate field that is encountered. The request will
 	// still succeed if there are no other errors, and will only persist
-	// the last of any duplicate fields. This is the default when the
-	// `ServerSideFieldValidation` feature gate is enabled.
+	// the last of any duplicate fields. This is the default in v1.23+
 	// - Strict: This will fail the request with a BadRequest error if
 	// any unknown fields would be dropped from the object, or if any
 	// duplicate fields are present. The error returned from the server
@@ -550,13 +653,14 @@ import (
 	// request. Valid values are:
 	// - All: all dry run stages will be processed
 	// +optional
+	// +listType=atomic
 	dryRun?: [...string] @go(DryRun,[]string) @protobuf(1,bytes,rep)
 
 	// Force is going to "force" Apply requests. It means user will
 	// re-acquire conflicting fields owned by other people. Force
 	// flag must be unset for non-apply patch requests.
 	// +optional
-	force?: null | bool @go(Force,*bool) @protobuf(2,varint,opt)
+	force?: bool @go(Force,*bool) @protobuf(2,varint,opt)
 
 	// fieldManager is a name associated with the actor or entity
 	// that is making these changes. The value must be less than or
@@ -570,19 +674,16 @@ import (
 
 	// fieldValidation instructs the server on how to handle
 	// objects in the request (POST/PUT/PATCH) containing unknown
-	// or duplicate fields, provided that the `ServerSideFieldValidation`
-	// feature gate is also enabled. Valid values are:
+	// or duplicate fields. Valid values are:
 	// - Ignore: This will ignore any unknown fields that are silently
 	// dropped from the object, and will ignore all but the last duplicate
 	// field that the decoder encounters. This is the default behavior
-	// prior to v1.23 and is the default behavior when the
-	// `ServerSideFieldValidation` feature gate is disabled.
+	// prior to v1.23.
 	// - Warn: This will send a warning via the standard warning response
 	// header for each unknown field that is dropped from the object, and
 	// for each duplicate field that is encountered. The request will
 	// still succeed if there are no other errors, and will only persist
-	// the last of any duplicate fields. This is the default when the
-	// `ServerSideFieldValidation` feature gate is enabled.
+	// the last of any duplicate fields. This is the default in v1.23+
 	// - Strict: This will fail the request with a BadRequest error if
 	// any unknown fields would be dropped from the object, or if any
 	// duplicate fields are present. The error returned from the server
@@ -604,6 +705,7 @@ import (
 	// request. Valid values are:
 	// - All: all dry run stages will be processed
 	// +optional
+	// +listType=atomic
 	dryRun?: [...string] @go(DryRun,[]string) @protobuf(1,bytes,rep)
 
 	// Force is going to "force" Apply requests. It means user will
@@ -629,6 +731,7 @@ import (
 	// request. Valid values are:
 	// - All: all dry run stages will be processed
 	// +optional
+	// +listType=atomic
 	dryRun?: [...string] @go(DryRun,[]string) @protobuf(1,bytes,rep)
 
 	// fieldManager is a name associated with the actor or entity
@@ -640,19 +743,16 @@ import (
 
 	// fieldValidation instructs the server on how to handle
 	// objects in the request (POST/PUT/PATCH) containing unknown
-	// or duplicate fields, provided that the `ServerSideFieldValidation`
-	// feature gate is also enabled. Valid values are:
+	// or duplicate fields. Valid values are:
 	// - Ignore: This will ignore any unknown fields that are silently
 	// dropped from the object, and will ignore all but the last duplicate
 	// field that the decoder encounters. This is the default behavior
-	// prior to v1.23 and is the default behavior when the
-	// `ServerSideFieldValidation` feature gate is disabled.
+	// prior to v1.23.
 	// - Warn: This will send a warning via the standard warning response
 	// header for each unknown field that is dropped from the object, and
 	// for each duplicate field that is encountered. The request will
 	// still succeed if there are no other errors, and will only persist
-	// the last of any duplicate fields. This is the default when the
-	// `ServerSideFieldValidation` feature gate is enabled.
+	// the last of any duplicate fields. This is the default in v1.23+
 	// - Strict: This will fail the request with a BadRequest error if
 	// any unknown fields would be dropped from the object, or if any
 	// duplicate fields are present. The error returned from the server
@@ -665,11 +765,11 @@ import (
 #Preconditions: {
 	// Specifies the target UID.
 	// +optional
-	uid?: null | types.#UID @go(UID,*types.UID) @protobuf(1,bytes,opt,casttype=k8s.io/apimachinery/pkg/types.UID)
+	uid?: types.#UID @go(UID,*types.UID) @protobuf(1,bytes,opt,casttype=k8s.io/apimachinery/pkg/types.UID)
 
 	// Specifies the target ResourceVersion
 	// +optional
-	resourceVersion?: null | string @go(ResourceVersion,*string) @protobuf(2,bytes,opt)
+	resourceVersion?: string @go(ResourceVersion,*string) @protobuf(2,bytes,opt)
 }
 
 // Status is a return value for calls that don't return other objects.
@@ -703,7 +803,7 @@ import (
 	// is not guaranteed to conform to any schema except that defined by
 	// the reason type.
 	// +optional
-	details?: null | #StatusDetails @go(Details,*StatusDetails) @protobuf(5,bytes,opt)
+	details?: #StatusDetails @go(Details,*StatusDetails) @protobuf(5,bytes,opt)
 
 	// Suggested HTTP return code for this status, 0 if not set.
 	// +optional
@@ -734,13 +834,14 @@ import (
 
 	// UID of the resource.
 	// (when there is a single resource which can be described).
-	// More info: http://kubernetes.io/docs/user-guide/identifiers#uids
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids
 	// +optional
 	uid?: types.#UID @go(UID) @protobuf(6,bytes,opt,casttype=k8s.io/apimachinery/pkg/types.UID)
 
 	// The Causes array includes more details associated with the StatusReason
 	// failure. Not all StatusReasons may provide detailed causes.
 	// +optional
+	// +listType=atomic
 	causes?: [...#StatusCause] @go(Causes,[]StatusCause) @protobuf(4,bytes,rep)
 
 	// If specified, the time in seconds before the operation should be retried. Some errors may indicate
@@ -769,6 +870,7 @@ import (
 	#StatusReasonGone |
 	#StatusReasonInvalid |
 	#StatusReasonServerTimeout |
+	#StatusReasonStoreReadError |
 	#StatusReasonTimeout |
 	#StatusReasonTooManyRequests |
 	#StatusReasonBadRequest |
@@ -856,6 +958,22 @@ import (
 //   "retryAfterSeconds" int32 - the number of seconds before the operation should be retried
 // Status code 500
 #StatusReasonServerTimeout: #StatusReason & "ServerTimeout"
+
+// StatusReasonStoreReadError means that the server encountered an error while
+// retrieving resources from the backend object store.
+// This may be due to backend database error, or because processing of the read
+// resource failed.
+// Details:
+//   "kind" string - the kind attribute of the resource being acted on.
+//   "name" string - the prefix where the reading error(s) occurred
+//   "causes" []StatusCause
+//      - (optional):
+//        - "type" CauseType - CauseTypeUnexpectedServerResponse
+//        - "message" string - the error message from the store backend
+//        - "field" string - the full path with the key of the resource that failed reading
+//
+// Status code 500
+#StatusReasonStoreReadError: #StatusReason & "StorageReadError"
 
 // StatusReasonTimeout means that the request could not be completed within the given time.
 // Clients can get this response only when they specified a timeout param in the request,
@@ -961,6 +1079,11 @@ import (
 	#CauseTypeFieldValueDuplicate |
 	#CauseTypeFieldValueInvalid |
 	#CauseTypeFieldValueNotSupported |
+	#CauseTypeForbidden |
+	#CauseTypeTooLong |
+	#CauseTypeTooMany |
+	#CauseTypeInternal |
+	#CauseTypeTypeInvalid |
 	#CauseTypeUnexpectedServerResponse |
 	#CauseTypeFieldManagerConflict |
 	#CauseTypeResourceVersionTooLarge
@@ -984,6 +1107,29 @@ import (
 // CauseTypeFieldValueNotSupported is used to report valid (as per formatting rules)
 // values that can not be handled (e.g. an enumerated string).
 #CauseTypeFieldValueNotSupported: #CauseType & "FieldValueNotSupported"
+
+// CauseTypeForbidden is used to report valid (as per formatting rules)
+// values which would be accepted under some conditions, but which are not
+// permitted by the current conditions (such as security policy).  See
+// Forbidden().
+#CauseTypeForbidden: #CauseType & "FieldValueForbidden"
+
+// CauseTypeTooLong is used to report that the given value is too long.
+// This is similar to ErrorTypeInvalid, but the error will not include the
+// too-long value.  See TooLong().
+#CauseTypeTooLong: #CauseType & "FieldValueTooLong"
+
+// CauseTypeTooMany is used to report "too many". This is used to
+// report that a given list has too many items. This is similar to FieldValueTooLong,
+// but the error indicates quantity instead of length.
+#CauseTypeTooMany: #CauseType & "FieldValueTooMany"
+
+// CauseTypeInternal is used to report other errors that are not related
+// to user input.  See InternalError().
+#CauseTypeInternal: #CauseType & "InternalError"
+
+// CauseTypeTypeInvalid is for the value did not match the schema type for that field
+#CauseTypeTypeInvalid: #CauseType & "FieldValueTypeInvalid"
 
 // CauseTypeUnexpectedServerResponse is used to report when the server responded to the client
 // without the expected return type. The presence of this cause indicates the error may be
@@ -1020,6 +1166,7 @@ import (
 	#TypeMeta
 
 	// versions are the api versions that are available.
+	// +listType=atomic
 	versions: [...string] @go(Versions,[]string) @protobuf(1,bytes,rep)
 
 	// a map of client CIDR to server address that is serving this group.
@@ -1029,6 +1176,7 @@ import (
 	// The server returns only those CIDRs that it thinks that the client can match.
 	// For example: the master will return an internal IP CIDR only, if the client reaches the server using an internal IP.
 	// Server looks at X-Forwarded-For header or X-Real-Ip header or request.RemoteAddr (in that order) to get the client IP.
+	// +listType=atomic
 	serverAddressByClientCIDRs: [...#ServerAddressByClientCIDR] @go(ServerAddressByClientCIDRs,[]ServerAddressByClientCIDR) @protobuf(2,bytes,rep)
 }
 
@@ -1038,6 +1186,7 @@ import (
 	#TypeMeta
 
 	// groups is a list of APIGroup.
+	// +listType=atomic
 	groups: [...#APIGroup] @go(Groups,[]APIGroup) @protobuf(1,bytes,rep)
 }
 
@@ -1050,6 +1199,7 @@ import (
 	name: string @go(Name) @protobuf(1,bytes,opt)
 
 	// versions are the versions supported in this group.
+	// +listType=atomic
 	versions: [...#GroupVersionForDiscovery] @go(Versions,[]GroupVersionForDiscovery) @protobuf(2,bytes,rep)
 
 	// preferredVersion is the version preferred by the API server, which
@@ -1065,6 +1215,7 @@ import (
 	// For example: the master will return an internal IP CIDR only, if the client reaches the server using an internal IP.
 	// Server looks at X-Forwarded-For header or X-Real-Ip header or request.RemoteAddr (in that order) to get the client IP.
 	// +optional
+	// +listType=atomic
 	serverAddressByClientCIDRs?: [...#ServerAddressByClientCIDR] @go(ServerAddressByClientCIDRs,[]ServerAddressByClientCIDR) @protobuf(4,bytes,rep)
 }
 
@@ -1118,9 +1269,11 @@ import (
 	verbs: #Verbs @go(Verbs) @protobuf(4,bytes,opt)
 
 	// shortNames is a list of suggested short names of the resource.
+	// +listType=atomic
 	shortNames?: [...string] @go(ShortNames,[]string) @protobuf(5,bytes,rep)
 
 	// categories is a list of the grouped resources this resource belongs to (e.g. 'all')
+	// +listType=atomic
 	categories?: [...string] @go(Categories,[]string) @protobuf(7,bytes,rep)
 
 	// The hash value of the storage version, the version this resource is
@@ -1150,6 +1303,7 @@ import (
 	groupVersion: string @go(GroupVersion) @protobuf(1,bytes,opt)
 
 	// resources contains the name of the resources and if they are namespaced.
+	// +listType=atomic
 	resources: [...#APIResource] @go(APIResources,[]APIResource) @protobuf(2,bytes,rep)
 }
 
@@ -1157,12 +1311,12 @@ import (
 // For example: "/healthz", "/apis".
 #RootPaths: {
 	// paths are the paths available at root.
+	// +listType=atomic
 	paths: [...string] @go(Paths,[]string) @protobuf(1,bytes,rep)
 }
 
 // Patch is provided to give a concrete name and type to the Kubernetes PATCH request body.
-#Patch: {
-}
+#Patch: {}
 
 // A label selector is a label query over a set of resources. The result of matchLabels and
 // matchExpressions are ANDed. An empty label selector matches all objects. A null
@@ -1177,6 +1331,7 @@ import (
 
 	// matchExpressions is a list of label selector requirements. The requirements are ANDed.
 	// +optional
+	// +listType=atomic
 	matchExpressions?: [...#LabelSelectorRequirement] @go(MatchExpressions,[]LabelSelectorRequirement) @protobuf(2,bytes,rep)
 }
 
@@ -1184,8 +1339,6 @@ import (
 // relates the key and values.
 #LabelSelectorRequirement: {
 	// key is the label key that the selector applies to.
-	// +patchMergeKey=key
-	// +patchStrategy=merge
 	key: string @go(Key) @protobuf(1,bytes,opt)
 
 	// operator represents a key's relationship to a set of values.
@@ -1197,6 +1350,7 @@ import (
 	// the values array must be empty. This array is replaced during a strategic
 	// merge patch.
 	// +optional
+	// +listType=atomic
 	values?: [...string] @go(Values,[]string) @protobuf(3,bytes,rep)
 }
 
@@ -1213,6 +1367,39 @@ import (
 #LabelSelectorOpNotIn:        #LabelSelectorOperator & "NotIn"
 #LabelSelectorOpExists:       #LabelSelectorOperator & "Exists"
 #LabelSelectorOpDoesNotExist: #LabelSelectorOperator & "DoesNotExist"
+
+// FieldSelectorRequirement is a selector that contains values, a key, and an operator that
+// relates the key and values.
+#FieldSelectorRequirement: {
+	// key is the field selector key that the requirement applies to.
+	key: string @go(Key) @protobuf(1,bytes,opt)
+
+	// operator represents a key's relationship to a set of values.
+	// Valid operators are In, NotIn, Exists, DoesNotExist.
+	// The list of operators may grow in the future.
+	operator: #FieldSelectorOperator @go(Operator) @protobuf(2,bytes,opt,casttype=FieldSelectorOperator)
+
+	// values is an array of string values.
+	// If the operator is In or NotIn, the values array must be non-empty.
+	// If the operator is Exists or DoesNotExist, the values array must be empty.
+	// +optional
+	// +listType=atomic
+	values?: [...string] @go(Values,[]string) @protobuf(3,bytes,rep)
+}
+
+// A field selector operator is the set of operators that can be used in a selector requirement.
+#FieldSelectorOperator: string // #enumFieldSelectorOperator
+
+#enumFieldSelectorOperator:
+	#FieldSelectorOpIn |
+	#FieldSelectorOpNotIn |
+	#FieldSelectorOpExists |
+	#FieldSelectorOpDoesNotExist
+
+#FieldSelectorOpIn:           #FieldSelectorOperator & "In"
+#FieldSelectorOpNotIn:        #FieldSelectorOperator & "NotIn"
+#FieldSelectorOpExists:       #FieldSelectorOperator & "Exists"
+#FieldSelectorOpDoesNotExist: #FieldSelectorOperator & "DoesNotExist"
 
 // ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource
 // that the fieldset applies to.
@@ -1236,7 +1423,7 @@ import (
 	// timestamp does not update when a field is removed from the entry
 	// because another manager took it over.
 	// +optional
-	time?: null | #Time @go(Time,*Time) @protobuf(4,bytes,opt)
+	time?: #Time @go(Time,*Time) @protobuf(4,bytes,opt)
 
 	// FieldsType is the discriminator for the different fields format and version.
 	// There is currently only one possible value: "FieldsV1"
@@ -1244,7 +1431,7 @@ import (
 
 	// FieldsV1 holds the first JSON version format as described in the "FieldsV1" type.
 	// +optional
-	fieldsV1?: null | #FieldsV1 @go(FieldsV1,*FieldsV1) @protobuf(7,bytes,opt)
+	fieldsV1?: #FieldsV1 @go(FieldsV1,*FieldsV1) @protobuf(7,bytes,opt)
 
 	// Subresource is the name of the subresource used to update that object, or
 	// empty string if the object was updated through the main resource. The
@@ -1266,20 +1453,6 @@ import (
 #ManagedFieldsOperationApply:  #ManagedFieldsOperationType & "Apply"
 #ManagedFieldsOperationUpdate: #ManagedFieldsOperationType & "Update"
 
-// FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.
-//
-// Each key is either a '.' representing the field itself, and will always map to an empty set,
-// or a string representing a sub-field or item. The string will follow one of these four formats:
-// 'f:<name>', where <name> is the name of a field in a struct, or key in a map
-// 'v:<value>', where <value> is the exact json formatted value of a list item
-// 'i:<index>', where <index> is position of a item in a list
-// 'k:<keys>', where <keys> is a map of  a list item's key fields to their unique values
-// If a key maps to an empty Fields value, the field that key represents is part of the set.
-//
-// The exact format is defined in sigs.k8s.io/structured-merge-diff
-// +protobuf.options.(gogoproto.goproto_stringer)=false
-#FieldsV1: _
-
 // Table is a tabular representation of a set of API resources. The server transforms the
 // object into a set of preferred columns for quickly reviewing the objects.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -1294,9 +1467,11 @@ import (
 
 	// columnDefinitions describes each column in the returned items array. The number of cells per row
 	// will always match the number of column definitions.
+	// +listType=atomic
 	columnDefinitions: [...#TableColumnDefinition] @go(ColumnDefinitions,[]TableColumnDefinition)
 
 	// rows is the list of items in the table.
+	// +listType=atomic
 	rows: [...#TableRow] @go(Rows,[]TableRow)
 }
 
@@ -1333,6 +1508,7 @@ import (
 	// cells will be as wide as the column definitions array and may contain strings, numbers (float64 or
 	// int64), booleans, simple maps, lists, or null. See the type field of the column definition for a
 	// more detailed description.
+	// +listType=atomic
 	cells: [...] @go(Cells,[]interface{})
 
 	// conditions describe additional status of a row that are relevant for a human user. These conditions
@@ -1340,6 +1516,7 @@ import (
 	// condition type is 'Completed', for a row that indicates a resource that has run to completion and
 	// can be given less visual priority.
 	// +optional
+	// +listType=atomic
 	conditions?: [...#TableRowCondition] @go(Conditions,[]TableRowCondition)
 
 	// This field contains the requested additional information about each object based on the includeObject

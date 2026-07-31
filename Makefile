@@ -51,7 +51,7 @@ cue-vet: build ## Vet and fmt CUE files.
 	./bin/timoni mod vet ./internal/engine/fetcher/testdata/module
 	cue fmt ./internal/engine/testdata/module-values
 
-REDIS_VER=$(shell grep 'tag:' examples/redis/values.cue | awk '{ print $$2 }' | tr -d '"')
+REDIS_VER=$(shell grep 'tag:' examples/redis/values.cue | awk '{ print $$2 }' | tr -d '"' | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
 push-redis: build
 	./bin/timoni mod push ./examples/redis oci://ghcr.io/stefanprodan/modules/redis -v $(REDIS_VER) --latest \
 		-a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni/tree/main/examples/redis'  \

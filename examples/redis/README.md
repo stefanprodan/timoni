@@ -8,9 +8,9 @@ with persistent storage and
 [append-only](https://redis.io/docs/management/persistence/#append-only-file)
 durable strategy.
 
-This module uses the Chainguard
-[Redis container image](https://edu.chainguard.dev/chainguard/chainguard-images/reference/redis/overview/)
-which comes with ARM and x86-64 support and fewer CVEs than the DockerHub Redis images.
+This module uses the official Docker Hub
+[Redis container image](https://hub.docker.com/_/redis)
+(Alpine variant).
 
 ## Module Repository
 
@@ -33,7 +33,7 @@ The Redis cluster can be accessed using the following Kubernetes Services:
 To install a specific module version:
 
 ```shell
-timoni -n default apply redis oci://ghcr.io/stefanprodan/modules/redis -v 7.2.1
+timoni -n default apply redis oci://ghcr.io/stefanprodan/modules/redis -v 8.10.0
 ```
 
 To change the [default configuration](#configuration),
@@ -101,7 +101,7 @@ timoni -n default delete redis
 |------------------------------|-----------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
 | `image: tag:`                | `string`                                | `<latest version>`         | Container image tag                                                                                                                          |
 | `image: digest:`             | `string`                                | `<latest digest>`          | Container image digest, takes precedence over `tag` when specified                                                                           |
-| `image: repository:`         | `string`                                | `cgr.dev/chainguard/redis` | Container image repository                                                                                                                   |
+| `image: repository:`         | `string`                                | `docker.io/redis`          | Container image repository                                                                                                                   |
 | `image: pullPolicy:`         | `string`                                | `IfNotPresent`             | [Kubernetes image pull policy](https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy)                                     |
 | `metadata: labels:`          | `{[ string]: string}`                   | `{}`                       | Common labels for all resources                                                                                                              |
 | `metadata: annotations:`     | `{[ string]: string}`                   | `{}`                       | Common annotations for all resources                                                                                                         |

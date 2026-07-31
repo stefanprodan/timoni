@@ -19,14 +19,14 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.2.4"
+				version: "8.10.0"
 			}
 			namespace: "podinfo"
 			values: maxmemory: 256
 		}
 		podinfo: {
 			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-			module: version: "6.5.4"
+			module: version: "6.14.0"
 			namespace: "podinfo"
 			values: caching: {
 				enabled:  true
@@ -66,8 +66,8 @@ Apply the Bundle on the cluster:
 
       ```text
       applying instance redis
-      pulling oci://ghcr.io/stefanprodan/modules/redis:7.2.4
-      using module timoni.sh/redis version 7.2.4
+      pulling oci://ghcr.io/stefanprodan/modules/redis:8.10.0
+      using module timoni.sh/redis version 8.10.0
       installing redis in namespace podinfo
       Namespace/podinfo created
       applying master
@@ -84,8 +84,8 @@ Apply the Bundle on the cluster:
       waiting for 2 resource(s) to become ready...
       resources are ready
       applying instance podinfo
-      pulling oci://ghcr.io/stefanprodan/modules/podinfo:6.5.4
-      using module timoni.sh/podinfo version 6.5.4
+      pulling oci://ghcr.io/stefanprodan/modules/podinfo:6.14.0
+      using module timoni.sh/podinfo version 6.14.0
       installing podinfo in namespace podinfo
       ServiceAccount/podinfo/podinfo created
       Service/podinfo/podinfo created
@@ -112,7 +112,7 @@ Build the Bundle and print the resulting Kubernetes resources for all the Bundle
       metadata:
       labels:
         app.kubernetes.io/part-of: redis
-        app.kubernetes.io/version: 7.2.4
+        app.kubernetes.io/version: 8.10.0
       name: redis
       namespace: podinfo
       ---
@@ -125,7 +125,7 @@ Build the Bundle and print the resulting Kubernetes resources for all the Bundle
       metadata:
       labels:
         app.kubernetes.io/name: podinfo
-        app.kubernetes.io/version: 6.5.4
+        app.kubernetes.io/version: 6.14.0
       name: podinfo
       namespace: podinfo
       ---
@@ -144,8 +144,8 @@ List the managed resources from a bundle and their rollout status:
 
      ```text
      last applied 2024-03-03T20:21:19Z
-     module oci://ghcr.io/stefanprodan/modules/redis:7.2.4
-     digest: sha256:8cf531365742c7cab9628909dfe16958550853f7c994284eacad64f169f4c74a
+     module oci://ghcr.io/stefanprodan/modules/redis:8.10.0
+     digest: sha256:4f377b66fd6d608f6a347bbef5b4fcd1aaff3dfa253b1c8437ae8e11fa08b70a
      ServiceAccount/podinfo/redis Current Resource is current
      ConfigMap/podinfo/redis Current Resource is always ready
      Service/podinfo/redis Current Service is ready
@@ -155,8 +155,8 @@ List the managed resources from a bundle and their rollout status:
      PersistentVolumeClaim/podinfo/redis-master Current PVC is Bound
 
      last applied 2024-03-03T20:21:19Z
-     module oci://ghcr.io/stefanprodan/modules/podinfo:6.5.4
-     digest: sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365
+     module oci://ghcr.io/stefanprodan/modules/podinfo:6.14.0
+     digest: sha256:32082e8ac0bba9ee2a3f95534f52c94f5a41dc642bb396c73b04fa18aff147d7
      ServiceAccount/podinfo/podinfo Current Resource is always ready
      Service/podinfo/podinfo Current Service is ready
      Deployment/podinfo/podinfo Current Deployment is available. Replicas: 1
@@ -174,8 +174,8 @@ List the instances in Bundle `podinfo` across all namespaces:
 
      ```text
      NAME    NAMESPACE         MODULE                                          VERSION LAST APPLIED          BUNDLE
-     podinfo podinfo           oci://ghcr.io/stefanprodan/modules/podinfo      6.5.4   2024-03-03T16:20:07Z  podinfo
-     redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        7.2.4   2024-03-03T16:20:00Z  podinfo
+     podinfo podinfo           oci://ghcr.io/stefanprodan/modules/podinfo      6.14.0   2024-03-03T16:20:07Z  podinfo
+     redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        8.10.0   2024-03-03T16:20:00Z  podinfo
      ```
 
 ## Writing a Bundle spec
@@ -269,7 +269,7 @@ When not specified, the version defaults to `latest`, which pulls the module OCI
 ```cue
 module: {
 	url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-	version: "6.5.4"
+	version: "6.14.1"
 }
 ```
 
@@ -285,7 +285,7 @@ The `instance.module.digest` is an optional field that specifies the OCI digest 
 ```cue
 module: {
 	url:    "oci://ghcr.io/stefanprodan/modules/podinfo"
-	digest: "sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365"
+	digest: "sha256:ddf8be195f69ad767b40d5c3fec3a8a85482bf6bf469d949a462cb4fd27df580"
 }
 ```
 
@@ -295,8 +295,8 @@ upstream digest of the version matches the specified `instance.module.digest`.
 ```cue
 module: {
 	url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-	version: "6.5.4"
-	digest:  "sha256:1dba385f9d56f9a79e5b87344bbec1502bd11f056df51834e18d3e054de39365"
+	version: "6.14.1"
+	digest:  "sha256:ddf8be195f69ad767b40d5c3fec3a8a85482bf6bf469d949a462cb4fd27df580"
 }
 ```
 
