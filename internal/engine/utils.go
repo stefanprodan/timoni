@@ -102,6 +102,7 @@ func ExtractValueFromFile(ctx *cue.Context, filePath, expr string) (cue.Value, e
 	return ExtractValueFromBytes(ctx, vData, expr)
 }
 
+// ExtractValueFromBytes compiles data and returns the value at expr or an error.
 func ExtractValueFromBytes(ctx *cue.Context, data []byte, expr string) (cue.Value, error) {
 	vObj := ctx.CompileBytes(data)
 	if vObj.Err() != nil {
@@ -109,8 +110,8 @@ func ExtractValueFromBytes(ctx *cue.Context, data []byte, expr string) (cue.Valu
 	}
 
 	value := vObj.LookupPath(cue.ParsePath(expr))
-	if value.Err() != nil {
-		return cue.Value{}, vObj.Err()
+	if err := value.Err(); err != nil {
+		return cue.Value{}, err
 	}
 
 	return value, nil
