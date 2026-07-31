@@ -116,7 +116,7 @@ Apply the Bundle using the values from the Runtime:
       ```text
       applying instance podinfo
       pulling oci://1234567890.dkr.ecr.us-west-2.amazonaws.com/modules/podinfo
-      using module timoni.sh/podinfo version 6.3.5
+      using module timoni.sh/podinfo version 6.14.1
       installing podinfo in namespace podinfo
       ServiceAccount/podinfo/podinfo created
       Service/podinfo/podinfo created

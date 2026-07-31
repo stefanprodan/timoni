@@ -95,14 +95,14 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "7.0.9"
+				version: "8.10.0"
 			}
 			namespace: "podinfo"
 			values: maxmemory: 256
 		}
 		podinfo: {
 			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-			module: version: "6.3.4"
+			module: version: "6.14.1"
 			namespace: "podinfo"
 			values: caching: {
 				enabled:  true
@@ -119,7 +119,7 @@ For deterministic operations, it is possible to pin a module version by its OCI 
 redis: {
 	module: {
 		url:    "oci://ghcr.io/stefanprodan/modules/redis"
-		digest: "sha256:e9137d41b0d263bfaf2a43fc862648ad9dc3a976b4b0fc6e27617ea28ee27d45"
+		digest: "sha256:4f377b66fd6d608f6a347bbef5b4fcd1aaff3dfa253b1c8437ae8e11fa08b70a"
 	}
 }
 ```
