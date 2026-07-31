@@ -22,22 +22,25 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// SignArtifact signs an OpenContainers artifact using the specified provider.
+// ValidateSigningProvider reports whether the signing provider is supported.
+func ValidateSigningProvider(provider string) error {
+	if provider != "cosign" {
+		return fmt.Errorf("signer not supported: %s", provider)
+	}
+	return nil
+}
+
+// SignArtifact validates the provider and signs an OpenContainers artifact.
 func SignArtifact(log logr.Logger, provider string, ociURL string, keyRef string) error {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return err
 	}
 
-	switch provider {
-	case "cosign":
-		if err := SignCosign(log, ref.String(), keyRef); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("signer not supported: %s", provider)
+	if err := ValidateSigningProvider(provider); err != nil {
+		return err
 	}
-	return nil
+	return SignCosign(log, ref.String(), keyRef)
 }
 
 // VerifyArtifact verifies an OpenContainers artifact using the specified provider.

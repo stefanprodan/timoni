@@ -106,3 +106,10 @@ func Test_PushModRejectsBuildMetadataVersion(t *testing.T) {
 	))
 	g.Expect(err).To(MatchError(ContainSubstring("version build metadata is not supported")))
 }
+
+func TestPushModRejectsInvalidSignerBeforeInput(t *testing.T) {
+	g := NewWithT(t)
+
+	_, err := executeCommand("mod push /does/not/exist oci://registry.example.com/org/module -v 1.0.0 --sign unsupported")
+	g.Expect(err).To(MatchError(ContainSubstring("signer not supported: unsupported")))
+}

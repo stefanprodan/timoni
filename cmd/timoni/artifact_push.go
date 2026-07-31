@@ -93,7 +93,7 @@ func init() {
 	artifactCmd.AddCommand(pushArtifactCmd)
 }
 
-// pushArtifactCmdRun validates tags, builds, and pushes an OCI artifact.
+// pushArtifactCmdRun validates inputs, builds, and pushes an OCI artifact.
 func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("repository URL is required")
@@ -105,6 +105,11 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 
 	for _, tag := range pushArtifactArgs.tags {
 		if err := oci.ValidateTag(tag); err != nil {
+			return err
+		}
+	}
+	if pushArtifactArgs.sign != "" {
+		if err := oci.ValidateSigningProvider(pushArtifactArgs.sign); err != nil {
 			return err
 		}
 	}

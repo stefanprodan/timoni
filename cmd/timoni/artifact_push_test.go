@@ -86,3 +86,10 @@ func TestPushArtifactRejectsInvalidTagsBeforeInput(t *testing.T) {
 	_, err := executeCommand("artifact push oci://registry.example.com/org/artifact -f /does/not/exist -t 1.0.0 -t .invalid")
 	g.Expect(err).To(MatchError(ContainSubstring("invalid OCI tag")))
 }
+
+func TestPushArtifactRejectsInvalidSignerBeforeInput(t *testing.T) {
+	g := NewWithT(t)
+
+	_, err := executeCommand("artifact push oci://registry.example.com/org/artifact -f /does/not/exist -t 1.0.0 --sign unsupported")
+	g.Expect(err).To(MatchError(ContainSubstring("signer not supported: unsupported")))
+}
