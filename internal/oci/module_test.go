@@ -19,11 +19,14 @@ package oci
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
+	godigest "github.com/opencontainers/go-digest"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
@@ -111,4 +114,47 @@ func TestModuleOperations(t *testing.T) {
 	cachedLayers, err := os.ReadDir(cacheDir)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(len(cachedLayers)).To(BeEquivalentTo(2))
+
+	blockedDestination := filepath.Join(tmpDir, "blocked-artifact")
+	err = os.WriteFile(blockedDestination, []byte("blocked"), 0o600)
+	g.Expect(err).ToNot(HaveOccurred())
+	_, err = PullModule(digestURL, blockedDestination, cacheDir, opts)
+	g.Expect(err).To(HaveOccurred())
+	for _, layer := range cachedLayers {
+		g.Expect(filepath.Join(cacheDir, layer.Name())).To(BeAnExistingFile())
+	}
+
+	corruptLayer := filepath.Join(cacheDir, cachedLayers[0].Name())
+	err = os.WriteFile(corruptLayer, []byte("invalid layer"), 0o600)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	_, err = PullModule(digestURL, filepath.Join(tmpDir, "recovered-artifact"), cacheDir, opts)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(corruptLayer).To(BeAnExistingFile())
+	contents, err := os.ReadFile(corruptLayer)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(contents).ToNot(Equal([]byte("invalid layer")))
+}
+
+// TestWriteCachedLayer verifies atomic publication by concurrent writers.
+func TestWriteCachedLayer(t *testing.T) {
+	g := NewWithT(t)
+	cachedLayer := filepath.Join(t.TempDir(), "layer.tgz")
+	remote, writer := io.Pipe()
+	errCh := make(chan error, 1)
+	expectedDigest := godigest.FromString("layer")
+
+	go func() {
+		errCh <- writeCachedLayer(cachedLayer, remote, expectedDigest)
+	}()
+
+	_, err := writer.Write([]byte("layer"))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(cachedLayer).ToNot(BeAnExistingFile())
+	g.Expect(writeCachedLayer(cachedLayer, strings.NewReader("layer"), expectedDigest)).To(Succeed())
+	g.Expect(writer.Close()).To(Succeed())
+	g.Expect(<-errCh).To(Succeed())
+	contents, err := os.ReadFile(cachedLayer)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(contents).To(Equal([]byte("layer")))
 }

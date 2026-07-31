@@ -21,11 +21,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/fluxcd/pkg/tar"
 	"github.com/google/go-containerregistry/pkg/crane"
 	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
+	godigest "github.com/opencontainers/go-digest"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
@@ -34,8 +35,8 @@ import (
 // - determines the artifact digest corresponding to the module version
 // - fetches the manifest of the remote artifact
 // - verifies that artifact config matches Timoni's media type
-// - downloads all the compressed layer matching Timoni's media type (if not cached)
-// - stores the compressed layers in the local cache (if caching is enabled)
+// - downloads all compressed layers matching Timoni's media type (if not cached)
+// - atomically stores the compressed layers in the local cache (if caching is enabled)
 // - extracts the module contents to the destination directory
 func PullModule(ociURL, dstPath, cacheDir string, opts []crane.Option) (*apiv1.ModuleReference, error) {
 	ref, err := parseArtifactRef(ociURL)
@@ -98,10 +99,15 @@ func PullModule(ociURL, dstPath, cacheDir string, opts []crane.Option) (*apiv1.M
 			layerDigest := layer.Digest.String()
 			blobURL := fmt.Sprintf("%s@%s", repoURL, layerDigest)
 
-			isCached := false
-			cachedLayer := path.Join(cacheDir, fmt.Sprintf("%s.tgz", layer.Digest.Hex))
-			if _, err := os.Stat(cachedLayer); err == nil {
-				isCached = true
+			cachedLayer := filepath.Join(cacheDir, fmt.Sprintf("%s.tgz", layer.Digest.Hex))
+			expectedDigest, err := godigest.Parse(layerDigest)
+			if err != nil {
+				return nil, fmt.Errorf("parsing layer digest %s failed: %w", layerDigest, err)
+			}
+
+			isCached, err := verifyCachedLayer(cachedLayer, expectedDigest)
+			if err != nil {
+				return nil, fmt.Errorf("reading layer from storage failed: %w", err)
 			}
 
 			// Pull the compressed layer from the registry and persist the gzip tarball
@@ -117,16 +123,7 @@ func PullModule(ociURL, dstPath, cacheDir string, opts []crane.Option) (*apiv1.M
 					return nil, fmt.Errorf("pulling layer %s failed: %w", layerDigest, err)
 				}
 
-				local, err := os.Create(cachedLayer)
-				if err != nil {
-					return nil, fmt.Errorf("writing layer to storage failed: %w", err)
-				}
-
-				if _, err := io.Copy(local, remote); err != nil {
-					return nil, fmt.Errorf("writing layer to storage failed: %w", err)
-				}
-
-				if err := local.Close(); err != nil {
+				if err := writeCachedLayer(cachedLayer, remote, expectedDigest); err != nil {
 					return nil, fmt.Errorf("writing layer to storage failed: %w", err)
 				}
 			}
@@ -137,10 +134,8 @@ func PullModule(ociURL, dstPath, cacheDir string, opts []crane.Option) (*apiv1.M
 			}
 
 			// Extract the contents from the gzip tarball stored in cache.
-			// If extraction fails, the gzip tarball is removed from cache.
 			if err = tar.Untar(reader, dstPath, tar.WithMaxUntarSize(-1)); err != nil {
 				_ = reader.Close()
-				_ = os.Remove(cachedLayer)
 				return nil, fmt.Errorf("extracting layer %s failed: %w", layerDigest, err)
 			}
 
@@ -155,4 +150,55 @@ func PullModule(ociURL, dstPath, cacheDir string, opts []crane.Option) (*apiv1.M
 	}
 
 	return moduleRef, nil
+}
+
+// verifyCachedLayer reports whether cachedLayer matches expectedDigest.
+func verifyCachedLayer(cachedLayer string, expectedDigest godigest.Digest) (bool, error) {
+	local, err := os.Open(cachedLayer)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	defer local.Close()
+
+	verifier := expectedDigest.Verifier()
+	if _, err := io.Copy(verifier, local); err != nil {
+		return false, err
+	}
+	return verifier.Verified(), nil
+}
+
+// writeCachedLayer verifies and publishes a complete compressed layer at cachedLayer.
+func writeCachedLayer(cachedLayer string, remote io.Reader, expectedDigest godigest.Digest) error {
+	local, err := os.CreateTemp(filepath.Dir(cachedLayer), ".layer-*")
+	if err != nil {
+		return err
+	}
+	temporaryLayer := local.Name()
+	defer func() {
+		_ = os.Remove(temporaryLayer)
+	}()
+
+	verifier := expectedDigest.Verifier()
+	if _, err := io.Copy(io.MultiWriter(local, verifier), remote); err != nil {
+		_ = local.Close()
+		return err
+	}
+	if !verifier.Verified() {
+		_ = local.Close()
+		return fmt.Errorf("layer digest mismatch: expected %s", expectedDigest)
+	}
+	if err := local.Close(); err != nil {
+		return err
+	}
+
+	if err := os.Rename(temporaryLayer, cachedLayer); err != nil {
+		if valid, verifyErr := verifyCachedLayer(cachedLayer, expectedDigest); verifyErr == nil && valid {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
