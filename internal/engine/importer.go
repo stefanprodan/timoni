@@ -254,6 +254,12 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 					return err
 				}
 			}
+			if sch.AdditionalProperties.Schema != nil {
+				nextPath := append(path[:len(path):len(path)], cue.AnyString)
+				if err := walkfn(nextPath, sch.AdditionalProperties.Schema.Value); err != nil {
+					return err
+				}
+			}
 
 			return nil
 		}
@@ -380,6 +386,11 @@ func parentPath(c astutil.Cursor) (cue.Selector, astutil.Cursor) {
 	for p != nil {
 		switch x := p.Node().(type) {
 		case *ast.Field:
+			// Pattern constraints like `[string]: ...` have a list label;
+			// they are how the openapi encoder renders additionalProperties.
+			if _, ok := x.Label.(*ast.ListLit); ok {
+				return cue.AnyString, p
+			}
 			lab, _, _ := ast.LabelName(x.Label)
 			if strings.HasPrefix(lab, "#") {
 				return cue.Def(lab), p
@@ -416,7 +427,10 @@ func structPath(c astutil.Cursor) cue.Path {
 	return cue.MakePath(selectors...)
 }
 
-// preservePathMatches reports whether current is a suffix of preserved, treating AnyIndex as a wildcard.
+// preservePathMatches reports whether current is a suffix of preserved,
+// treating AnyIndex as a wildcard for concrete list indices. Selector types
+// take part in the comparison because AnyIndex and AnyString share the same
+// string form ("[_]").
 func preservePathMatches(preserved, current cue.Path) bool {
 	pattern := preserved.Selectors()
 	actual := current.Selectors()
@@ -426,10 +440,10 @@ func preservePathMatches(preserved, current cue.Path) bool {
 	for i := 1; i <= len(actual); i++ {
 		want := pattern[len(pattern)-i]
 		got := actual[len(actual)-i]
-		if want.String() == cue.AnyIndex.String() && got.Type().LabelType() == cue.IndexLabel {
+		if want.Type() == cue.AnyIndex.Type() && got.Type().LabelType() == cue.IndexLabel {
 			continue
 		}
-		if want.String() != got.String() {
+		if want.Type() != got.Type() || want.String() != got.String() {
 			return false
 		}
 	}
