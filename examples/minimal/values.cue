@@ -9,13 +9,13 @@ package main
 values: {
 	message: "Hello World"
 	image: {
-		repository: "cgr.dev/chainguard/nginx"
-		digest:     "sha256:3dd8fa303f77d7eb6ce541cb05009a5e8723bd7e3778b95131ab4a2d12fadb8f"
-		tag:        "1.25.3"
+		repository: "docker.io/nginx"
+		digest:     "sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752"
+		tag:        "1.31.3-alpine"
 	}
 	test: image: {
-		repository: "cgr.dev/chainguard/curl"
-		digest:     ""
-		tag:        "latest"
+		repository: "docker.io/curlimages/curl"
+		digest:     "sha256:7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13"
+		tag:        "8.21.0"
 	}
 }
