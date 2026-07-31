@@ -17,6 +17,7 @@ limitations under the License.
 package engine
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"os"
@@ -76,4 +77,18 @@ func TestExtractValueFromBytesLookupError(t *testing.T) {
 
 	_, err := ExtractValueFromBytes(cuecontext.New(), []byte("other: true"), "values")
 	g.Expect(err).To(MatchError(ContainSubstring("not found")))
+}
+
+func TestReadIgnoreFileScannerError(t *testing.T) {
+	g := NewWithT(t)
+	moduleRoot := t.TempDir()
+	err := os.WriteFile(
+		filepath.Join(moduleRoot, "timoni.ignore"),
+		[]byte(strings.Repeat("x", bufio.MaxScanTokenSize+1)),
+		0o600,
+	)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	_, err = ReadIgnoreFile(moduleRoot)
+	g.Expect(err).To(HaveOccurred())
 }
