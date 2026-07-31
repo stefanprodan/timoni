@@ -37,6 +37,7 @@ var bundleDelCmd = &cobra.Command{
 	Use:     "delete",
 	Aliases: []string{"rm", "uninstall"},
 	Short:   "Delete all instances from a bundle",
+	Args:    cobra.MaximumNArgs(1),
 	Long: `The bundle delete command uninstalls the instances and
 deletes all their Kubernetes resources from the cluster.'.
 `,
