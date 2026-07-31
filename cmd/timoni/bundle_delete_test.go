@@ -31,6 +31,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+func Test_BundleDeleteRejectsExtraArgs(t *testing.T) {
+	g := NewWithT(t)
+	_, err := executeCommand("bundle delete intended accidental-extra --runtime-cluster absent")
+	g.Expect(err).To(MatchError(ContainSubstring("accepts at most 1 arg(s), received 2")))
+}
+
 func Test_BundleDelete(t *testing.T) {
 	g := NewWithT(t)
 
