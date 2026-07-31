@@ -56,6 +56,7 @@ func (f *OCI) GetModuleRoot() string {
 
 // Fetch copies the module contents to the destination directory.
 // The artifact is pulled from the registry and its contents extracted to the destination dir.
+// An empty cache directory disables persistent caching.
 func (f *OCI) Fetch() (*apiv1.ModuleReference, error) {
 	dstDir := f.GetModuleRoot()
 
@@ -68,8 +69,10 @@ func (f *OCI) Fetch() (*apiv1.ModuleReference, error) {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(f.cacheDir, os.ModePerm); err != nil {
-		return nil, err
+	if f.cacheDir != "" {
+		if err := os.MkdirAll(f.cacheDir, os.ModePerm); err != nil {
+			return nil, err
+		}
 	}
 
 	opts := oci.Options(f.ctx, f.creds, f.insecure)

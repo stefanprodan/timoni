@@ -64,6 +64,25 @@ func TestOCIFetch(t *testing.T) {
 	digestUrl, err := oci.PushModule(imgVersionURL, srcPath, imgIgnore, map[string]string{}, opts)
 	g.Expect(err).ToNot(HaveOccurred())
 
+	t.Run("without cache", func(t *testing.T) {
+		g := NewWithT(t)
+
+		of := NewOCI(
+			context.Background(),
+			imgURL,
+			imgVersion,
+			filepath.Join(t.TempDir(), "dst"),
+			"",
+			"",
+			true,
+		)
+
+		mr, err := of.Fetch()
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(mr.Repository).To(Equal(imgURL))
+		g.Expect(filepath.Join(of.GetModuleRoot(), "cue.mod/module.cue")).To(BeARegularFile())
+	})
+
 	t.Run("with version", func(t *testing.T) {
 		g := NewWithT(t)
 
