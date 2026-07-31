@@ -20,13 +20,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/cobra"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/flags"
 	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
 )
@@ -60,19 +59,13 @@ func init() {
 	modCmd.AddCommand(buildModCmd)
 }
 
-// buildModCmdRun validates, builds, and writes a local module artifact.
+// buildModCmdRun validates the module version, builds, and writes a local module artifact.
 func buildModCmdRun(cmd *cobra.Command, args []string) error {
 	if buildModArgs.output == "" {
 		return fmt.Errorf("output path is required")
 	}
-	if buildModArgs.version == "" {
-		return fmt.Errorf("version is required")
-	}
-	if strings.Contains(buildModArgs.version, "+") {
-		return fmt.Errorf("version build metadata is not supported")
-	}
-	if _, err := semver.StrictNewVersion(buildModArgs.version); err != nil {
-		return fmt.Errorf("version is not in semver format: %w", err)
+	if err := flags.ValidateModuleVersion(buildModArgs.version); err != nil {
+		return err
 	}
 	format := oci.LocalFormat(buildModArgs.format)
 	if err := format.Validate(); err != nil {

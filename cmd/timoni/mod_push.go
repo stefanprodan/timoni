@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
@@ -107,6 +106,7 @@ func init() {
 	modCmd.AddCommand(pushModCmd)
 }
 
+// pushModCmdRun validates the module version, builds, and pushes a module artifact.
 func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("module and URL are required")
@@ -114,8 +114,8 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	pushModArgs.module = args[0]
 
 	version := pushModArgs.version.String()
-	if _, err := semver.StrictNewVersion(version); err != nil {
-		return fmt.Errorf("version is not in semver format: %w", err)
+	if err := flags.ValidateModuleVersion(version); err != nil {
+		return err
 	}
 
 	ociURL := fmt.Sprintf("%s:%s", args[1], version)
