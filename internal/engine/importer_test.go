@@ -368,6 +368,32 @@ func TestConvertCRD(t *testing.T) {
 	}
 }`,
 		},
+		{
+			name: "array-item-xk-preserve-false",
+			spec: `type: "object"
+			properties: {
+				resources: {
+					properties: claims: {
+						items: {
+							properties: name: type: "string"
+							required: ["name"]
+							type: "object"
+							"x-kubernetes-preserve-unknown-fields": false
+						}
+						type: "array"
+					}
+					type: "object"
+				}
+			}
+			`,
+			expect: `{
+	resources?: {
+		claims?: [...{
+			name!: string
+		}]
+	}
+}`,
+		},
 	}
 
 	for _, item := range table {

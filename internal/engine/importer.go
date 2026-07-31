@@ -127,7 +127,8 @@ type VersionedSchema struct {
 	Schema cue.Value
 }
 
-// convertCRD converts a CRD CUE value into its naming metadata and versioned CUE schemas.
+// convertCRD converts a CRD CUE value into naming metadata and versioned CUE
+// schemas, applying supported Kubernetes extensions.
 func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 	cc := &IntermediateCRD{
 		Schemas: make([]VersionedSchema, 0),
@@ -236,8 +237,8 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 
 		var walkfn func(path []cue.Selector, sch *openapi3.Schema) error
 		walkfn = func(path []cue.Selector, sch *openapi3.Schema) error {
-			_, has := sch.Extensions["x-kubernetes-preserve-unknown-fields"]
-			if has {
+			preserveUnknownFields, _ := sch.Extensions["x-kubernetes-preserve-unknown-fields"].(bool)
+			if preserveUnknownFields {
 				preserve = append(preserve, cue.MakePath(path...))
 			}
 			for name, prop := range sch.Properties {
