@@ -22,9 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"slices"
-	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
@@ -315,61 +313,4 @@ func (b *ModuleBuilder) GetContainerImages(value cue.Value) ([]string, error) {
 	slices.Sort(images)
 
 	return images, nil
-}
-
-// GetConfigDoc extracts the config structure from the module.
-func (b *ModuleBuilder) GetConfigDoc(value cue.Value) ([][]string, error) {
-	cfgValues := value.LookupPath(cue.ParsePath(apiv1.ConfigValuesSelector.String()))
-	if cfgValues.Err() != nil {
-		return nil, fmt.Errorf("lookup %s failed: %w", apiv1.ConfigValuesSelector, cfgValues.Err())
-	}
-
-	labelDomain := regexp.MustCompile(`^([a-zA-Z0-9-_.]+)?(".+")?$`)
-
-	var rows [][]string
-	configDataInfo := func(v cue.Value) bool {
-		var row []string
-		var noDoc bool
-		var doc string
-
-		for _, d := range v.Doc() {
-			if line := len(d.List) - 1; line >= 0 {
-				switch d.List[line].Text {
-				case "// +nodoc":
-					noDoc = true
-					break
-				}
-			}
-
-			doc += d.Text()
-			doc = strings.ReplaceAll(doc, "\n", " ")
-			doc = strings.ReplaceAll(doc, "+required", "")
-			doc = strings.ReplaceAll(doc, "+optional", "")
-		}
-
-		if !noDoc {
-			defaultVal, _ := v.Default()
-			valueBytes, _ := defaultVal.MarshalJSON()
-			valueType := strings.ReplaceAll(v.IncompleteKind().String(), "|", "\\|")
-
-			value := strings.ReplaceAll(string(valueBytes), "\":", "\": ")
-			value = strings.ReplaceAll(value, "\":[", "\": [")
-			value = strings.ReplaceAll(value, "},", "}, ")
-			value = strings.ReplaceAll(value, "|", "\\|")
-
-			field := strings.Replace(v.Path().String(), "timoni.instance.config.", "", 1)
-			match := labelDomain.FindStringSubmatch(field)
-
-			row = append(row, fmt.Sprintf("`%s:`", strings.ReplaceAll(match[1], ".", ": ")+match[2]))
-			row = append(row, fmt.Sprintf("`%s`", valueType))
-			row = append(row, fmt.Sprintf("`%s`", value))
-			row = append(row, fmt.Sprintf("%s", doc))
-			rows = append(rows, row)
-		}
-
-		return true
-	}
-
-	cfgValues.Walk(configDataInfo, nil)
-	return rows, nil
 }
