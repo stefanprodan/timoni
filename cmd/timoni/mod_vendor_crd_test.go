@@ -17,7 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
+	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path"
@@ -28,6 +33,103 @@ import (
 	"github.com/onsi/gomega/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
+
+func TestReadRemoteCRDManifestAcceptsBodyAtLimit(t *testing.T) {
+	g := NewWithT(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("crd!"))
+	}))
+	defer server.Close()
+
+	data, err := readRemoteCRDManifest(context.Background(), server.Client(), server.URL, 4)
+
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(string(data)).To(Equal("crd!"))
+}
+
+func TestReadRemoteCRDManifestHonorsCancellation(t *testing.T) {
+	g := NewWithT(t)
+	started := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-started
+		cancel()
+	}()
+
+	_, err := readRemoteCRDManifest(ctx, server.Client(), server.URL, 4)
+
+	g.Expect(err).To(MatchError(ContainSubstring(context.Canceled.Error())))
+}
+
+func TestReadRemoteCRDManifestRejectsLargeContentLength(t *testing.T) {
+	g := NewWithT(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Length", "5")
+		_, _ = w.Write([]byte("crd!!"))
+	}))
+	defer server.Close()
+
+	_, err := readRemoteCRDManifest(context.Background(), server.Client(), server.URL, 4)
+
+	g.Expect(err).To(MatchError(ContainSubstring("exceeds the 4-byte limit")))
+	g.Expect(err).To(MatchError(ContainSubstring(server.URL)))
+}
+
+func TestReadRemoteCRDManifestRejectsUnknownLengthBody(t *testing.T) {
+	g := NewWithT(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.(http.Flusher).Flush()
+		_, _ = w.Write([]byte("crd!!"))
+	}))
+	defer server.Close()
+
+	_, err := readRemoteCRDManifest(context.Background(), server.Client(), server.URL, 4)
+
+	g.Expect(err).To(MatchError(ContainSubstring("exceeds the 4-byte limit")))
+}
+
+func TestReadRemoteCRDManifestLimitsDecodedBody(t *testing.T) {
+	g := NewWithT(t)
+	var compressed bytes.Buffer
+	zw := gzip.NewWriter(&compressed)
+	_, err := zw.Write(bytes.Repeat([]byte("x"), 101))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(zw.Close()).To(Succeed())
+	g.Expect(compressed.Len()).To(BeNumerically("<", 100))
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Encoding", "gzip")
+		_, _ = w.Write(compressed.Bytes())
+	}))
+	defer server.Close()
+
+	_, err = readRemoteCRDManifest(context.Background(), server.Client(), server.URL, 100)
+
+	g.Expect(err).To(MatchError(ContainSubstring("exceeds the 100-byte limit")))
+}
+
+func TestReadRemoteCRDManifestRejectsInsecureRedirect(t *testing.T) {
+	g := NewWithT(t)
+	insecure := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("crd"))
+	}))
+	defer insecure.Close()
+	secure := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Location", insecure.URL)
+		w.WriteHeader(http.StatusFound)
+	}))
+	defer secure.Close()
+
+	_, err := readRemoteCRDManifest(context.Background(), secure.Client(), secure.URL, 4)
+
+	g.Expect(err).To(MatchError(ContainSubstring("redirect to insecure HTTP")))
+}
 
 func TestRemoveCRDStatusSchema(t *testing.T) {
 	tests := []struct {

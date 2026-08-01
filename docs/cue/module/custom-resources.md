@@ -21,6 +21,8 @@ to the YAML file which contains the Prometheus Operator CRDs:
 timoni mod vendor crds -f https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.68.0/stripped-down-crds.yaml
 ```
 
+Remote CRD manifests are limited to 16 MiB after HTTP content decoding.
+
 The above command will generate the CUE schemas corresponding to the Kubernetes CRDs
 inside the `cue.mod/gen` directory:
 
