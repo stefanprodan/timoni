@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/fluxcd/pkg/tar"
 	"github.com/google/go-containerregistry/pkg/crane"
 	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	godigest "github.com/opencontainers/go-digest"
@@ -134,7 +133,7 @@ func PullModule(ociURL, dstPath, cacheDir string, opts []crane.Option) (*apiv1.M
 			}
 
 			// Extract the contents from the gzip tarball stored in cache.
-			if err = tar.Untar(reader, dstPath, tar.WithMaxUntarSize(-1)); err != nil {
+			if err = extractLayer(reader, dstPath); err != nil {
 				_ = reader.Close()
 				return nil, fmt.Errorf("extracting layer %s failed: %w", layerDigest, err)
 			}

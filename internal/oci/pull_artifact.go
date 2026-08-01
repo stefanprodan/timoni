@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/fluxcd/pkg/tar"
 	"github.com/google/go-containerregistry/pkg/crane"
 	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
 
@@ -74,7 +73,7 @@ func PullArtifact(ociURL, dstPath, contentType string, opts []crane.Option) erro
 				return fmt.Errorf("extracting artifact layer %s failed: %w", layerDigest, err)
 			}
 
-			if err = tar.Untar(blob, dstPath, tar.WithMaxUntarSize(-1)); err != nil {
+			if err = extractLayer(blob, dstPath); err != nil {
 				return fmt.Errorf("extracting artifact layer %s failed: %w", layerDigest, err)
 			}
 		}
