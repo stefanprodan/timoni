@@ -26,7 +26,7 @@ import (
 
 // PushModule builds and pushes ordered vendor and module layers, then returns
 // the module's digest URL.
-func PushModule(ociURL, contentPath string, ignorePaths []string, annotations map[string]string, opts []crane.Option) (string, error) {
+func PushModule(ociURL, contentPath string, ignorePaths []string, annotations map[string]string, opts []crane.Option) (result string, err error) {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return "", err
@@ -36,7 +36,9 @@ func PushModule(ociURL, contentPath string, ignorePaths []string, annotations ma
 	if err != nil {
 		return "", err
 	}
-	defer build.Close()
+	defer func() {
+		err = build.CloseWithError(err)
+	}()
 
 	if err := crane.Push(build.Image, ref.String(), opts...); err != nil {
 		return "", fmt.Errorf("pushing artifact failed: %w", err)

@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -41,6 +42,15 @@ type ImageBuild struct {
 // Close removes the temporary layer files owned by the build.
 func (b *ImageBuild) Close() error {
 	return os.RemoveAll(b.tmpDir)
+}
+
+// CloseWithError removes temporary layer files and preserves an earlier error.
+func (b *ImageBuild) CloseWithError(err error) error {
+	cleanupErr := b.Close()
+	if cleanupErr != nil {
+		cleanupErr = fmt.Errorf("removing temporary layers: %w", cleanupErr)
+	}
+	return errors.Join(err, cleanupErr)
 }
 
 // contentLayer defines one ordered layer in an OCI image build.

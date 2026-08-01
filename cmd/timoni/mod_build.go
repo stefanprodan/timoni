@@ -60,7 +60,7 @@ func init() {
 }
 
 // buildModCmdRun validates the module version, builds, and writes a local module artifact.
-func buildModCmdRun(cmd *cobra.Command, args []string) error {
+func buildModCmdRun(cmd *cobra.Command, args []string) (err error) {
 	if buildModArgs.output == "" {
 		return fmt.Errorf("output path is required")
 	}
@@ -92,7 +92,9 @@ func buildModCmdRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer build.Close()
+	defer func() {
+		err = build.CloseWithError(err)
+	}()
 	if err := oci.WriteImage(build.Image, buildModArgs.output, format, []string{buildModArgs.version}); err != nil {
 		return err
 	}
