@@ -147,7 +147,8 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 			pullModArgs.certificateIdentity,
 			pullModArgs.certificateIdentityRegexp,
 			pullModArgs.certificateOidcIssuer,
-			pullModArgs.certificateOidcIssuerRegexp)
+			pullModArgs.certificateOidcIssuerRegexp,
+			rootArgs.registryInsecure)
 		if err != nil {
 			return err
 		}

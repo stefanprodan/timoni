@@ -50,8 +50,9 @@ func validateCosignExecutable() error {
 	return nil
 }
 
-// SignArtifact validates the provider and signs an OpenContainers artifact.
-func SignArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string) error {
+// SignArtifact validates the provider and signs an OpenContainers artifact
+// with the requested registry transport.
+func SignArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string, insecure bool) error {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return err
@@ -60,11 +61,12 @@ func SignArtifact(ctx context.Context, log logr.Logger, provider string, ociURL 
 	if err := ValidateSigningProvider(provider); err != nil {
 		return err
 	}
-	return SignCosign(ctx, log, ref.String(), keyRef)
+	return SignCosign(ctx, log, ref.String(), keyRef, insecure)
 }
 
-// VerifyArtifact validates the provider and verifies an OpenContainers artifact.
-func VerifyArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string) error {
+// VerifyArtifact validates the provider and verifies an OpenContainers artifact
+// with the requested registry transport.
+func VerifyArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string, insecure bool) error {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return err
@@ -73,5 +75,5 @@ func VerifyArtifact(ctx context.Context, log logr.Logger, provider string, ociUR
 	if err := ValidateVerificationProvider(provider); err != nil {
 		return err
 	}
-	return VerifyCosign(ctx, log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp)
+	return VerifyCosign(ctx, log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp, insecure)
 }
