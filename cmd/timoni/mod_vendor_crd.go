@@ -59,6 +59,8 @@ type vendorCrdFlags struct {
 
 var vendorCrdArgs vendorCrdFlags
 
+const maxRemoteCRDManifestSize int64 = 16 << 20
+
 func init() {
 	vendorCrdCmd.Flags().StringVarP(&vendorCrdArgs.crdFile, "file", "f", "",
 		"The path to Kubernetes CRD YAML.")
@@ -94,27 +96,13 @@ func runVendorCrdCmd(cmd *cobra.Command, args []string) error {
 		err     error
 	)
 	if strings.HasPrefix(vendorCrdArgs.crdFile, "https://") {
-		req, err := http.NewRequest("GET", vendorCrdArgs.crdFile, nil)
-		if err != nil {
-			return fmt.Errorf("failed to create HTTP request for %s, error: %w", vendorCrdArgs.crdFile, err)
-		}
-
-		hctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+		hctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 		defer cancel()
 
-		resp, err := cleanhttp.DefaultClient().Do(req.WithContext(hctx))
+		crdData, err = readRemoteCRDManifest(hctx, cleanhttp.DefaultClient(), vendorCrdArgs.crdFile,
+			maxRemoteCRDManifestSize)
 		if err != nil {
-			return fmt.Errorf("failed to download manifest from %s, error: %w", vendorCrdArgs.crdFile, err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("failed to download manifest from %s, status: %s", vendorCrdArgs.crdFile, resp.Status)
-		}
-
-		crdData, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("failed to download manifest from %s, error: %w", vendorCrdArgs.crdFile, err)
+			return err
 		}
 	} else {
 		if fs, err := os.Stat(vendorCrdArgs.crdFile); err != nil || !fs.Mode().IsRegular() {
@@ -178,6 +166,52 @@ func runVendorCrdCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// readRemoteCRDManifest downloads a response within the size limit without redirecting to HTTP.
+func readRemoteCRDManifest(ctx context.Context, client *http.Client, url string, maxSize int64) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP request for %s, error: %w", url, err)
+	}
+
+	httpClient := *client
+	checkRedirect := httpClient.CheckRedirect
+	httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if req.URL.Scheme != "https" {
+			return fmt.Errorf("redirect to insecure HTTP URL %s", req.URL)
+		}
+		if checkRedirect != nil {
+			return checkRedirect(req, via)
+		}
+		if len(via) >= 10 {
+			return fmt.Errorf("stopped after 10 redirects")
+		}
+		return nil
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download manifest from %s, error: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to download manifest from %s, status: %s", url, resp.Status)
+	}
+	if resp.ContentLength > maxSize {
+		return nil, fmt.Errorf("failed to download manifest from %s, response exceeds the %d-byte limit", url, maxSize)
+	}
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxSize+1))
+	if err != nil {
+		return nil, fmt.Errorf("failed to download manifest from %s, error: %w", url, err)
+	}
+	if int64(len(data)) > maxSize {
+		return nil, fmt.Errorf("failed to download manifest from %s, response exceeds the %d-byte limit", url, maxSize)
+	}
+
+	return data, nil
 }
 
 // removeCRDStatusSchema removes the read-only status field from each version.
