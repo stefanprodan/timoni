@@ -28,6 +28,11 @@ import (
 	"github.com/go-logr/logr"
 )
 
+const (
+	maxCosignOutputLogLine   = 1024 * 1024
+	maxCosignOutputScanToken = maxCosignOutputLogLine + 1
+)
+
 // SignCosign signs an image (`imageRef`) using a cosign private key (`keyRef`).
 func SignCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef string) error {
 	cosignExecutable, err := exec.LookPath("cosign")
@@ -138,15 +143,19 @@ func processCosignIO(ctx context.Context, log logr.Logger, cosignCmd *exec.Cmd) 
 	close(stopClosing)
 	<-pipesClosed
 
-	if err := cosignCmd.Wait(); err != nil {
-		return errors.Join(ctx.Err(), err, stdoutErr, stderrErr)
+	if err := errors.Join(stdoutErr, stderrErr); err != nil {
+		log.Error(err, "cosign output could not be fully logged")
 	}
-	return errors.Join(stdoutErr, stderrErr)
+	if err := cosignCmd.Wait(); err != nil {
+		return errors.Join(ctx.Err(), err)
+	}
+	return nil
 }
 
 // scanCosignOutput logs one cosign output stream and drains it after errors.
 func scanCosignOutput(log logr.Logger, output io.Reader) error {
 	scanner := bufio.NewScanner(output)
+	scanner.Buffer(make([]byte, 0, bufio.MaxScanTokenSize), maxCosignOutputScanToken)
 	for scanner.Scan() {
 		log.Info("cosign: " + scanner.Text())
 	}

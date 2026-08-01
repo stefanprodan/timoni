@@ -52,14 +52,32 @@ func TestProcessCosignIODrainsOutputConcurrently(t *testing.T) {
 	g.Expect(cmd.ProcessState.Success()).To(BeTrue())
 }
 
-func TestProcessCosignIOReturnsScannerError(t *testing.T) {
+func TestProcessCosignIOAcceptsLargeCosignJSONOutput(t *testing.T) {
 	g := NewWithT(t)
 	cmd := cosignHelperCommand(t, "long-line")
 
 	err := processCosignIO(context.Background(), logr.Discard(), cmd)
 
-	g.Expect(err).To(MatchError(ContainSubstring("token too long")))
+	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(cmd.ProcessState).ToNot(BeNil())
+	g.Expect(cmd.ProcessState.Success()).To(BeTrue())
+}
+
+func TestScanCosignOutputAcceptsLineAtLogLimit(t *testing.T) {
+	g := NewWithT(t)
+
+	g.Expect(scanCosignOutput(logr.Discard(), strings.NewReader(strings.Repeat("x", maxCosignOutputLogLine)))).To(Succeed())
+}
+
+func TestProcessCosignIODoesNotFailOnOutputLoggingError(t *testing.T) {
+	g := NewWithT(t)
+	cmd := cosignHelperCommand(t, "overlong-line")
+
+	err := processCosignIO(context.Background(), logr.Discard(), cmd)
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cmd.ProcessState).ToNot(BeNil())
+	g.Expect(cmd.ProcessState.Success()).To(BeTrue())
 }
 
 func TestScanCosignOutputIgnoresClosedPipe(t *testing.T) {
@@ -72,15 +90,15 @@ func TestScanCosignOutputIgnoresClosedPipe(t *testing.T) {
 	g.Expect(scanCosignOutput(logr.Discard(), output)).To(Succeed())
 }
 
-func TestProcessCosignIOReturnsOutputAndExitErrors(t *testing.T) {
+func TestProcessCosignIOReturnsExitErrorDespiteOutputLoggingError(t *testing.T) {
 	g := NewWithT(t)
 	cmd := cosignHelperCommand(t, "long-line-exit-error")
 
 	err := processCosignIO(context.Background(), logr.Discard(), cmd)
 
 	g.Expect(err).To(MatchError(And(
-		ContainSubstring("token too long"),
 		ContainSubstring("exit status 23"),
+		Not(ContainSubstring("token too long")),
 	)))
 }
 
@@ -137,6 +155,8 @@ func TestCosignHelperProcess(t *testing.T) {
 	case "long-line-exit-error":
 		_, _ = fmt.Fprint(os.Stdout, strings.Repeat("x", 128*1024))
 		os.Exit(23)
+	case "overlong-line":
+		_, _ = fmt.Fprint(os.Stdout, strings.Repeat("x", 2*1024*1024))
 	case "wait":
 		time.Sleep(time.Hour)
 	case "grandchild":
