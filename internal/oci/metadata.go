@@ -45,13 +45,14 @@ func ParseAnnotations(args []string) (map[string]string, error) {
 }
 
 // AppendGitMetadata fills missing creation, source, and revision annotations.
-// Creation uses SOURCE_DATE_EPOCH before Git commit time; Git failures are ignored.
-func AppendGitMetadata(repoPath string, annotations map[string]string) {
+// Creation uses SOURCE_DATE_EPOCH before Git commit time; Git failures and
+// cancellations are ignored.
+func AppendGitMetadata(parent context.Context, repoPath string, annotations map[string]string) {
 	if info, err := os.Stat(repoPath); err == nil && !info.IsDir() {
 		repoPath = filepath.Dir(repoPath)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 10*time.Second)
 	defer cancel()
 
 	if _, found := annotations[apiv1.CreatedAnnotation]; !found {

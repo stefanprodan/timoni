@@ -46,7 +46,7 @@ func TestModuleOperations(t *testing.T) {
 	annotations, err := ParseAnnotations([]string{imgLicense})
 	g.Expect(err).ToNot(HaveOccurred())
 	annotations[apiv1.VersionAnnotation] = imgVersion
-	AppendGitMetadata(srcPath, annotations)
+	AppendGitMetadata(context.Background(), srcPath, annotations)
 
 	opts := Options(ctx, "", false)
 	digestURL, err := PushModule(imgVersionURL, srcPath, imgIgnore, annotations, opts)
