@@ -104,3 +104,13 @@ func TestPullModRejectsInvalidInputsBeforeOutput(t *testing.T) {
 		})
 	}
 }
+
+func TestPullModRejectsMissingCosignBeforeOutput(t *testing.T) {
+	t.Setenv("PATH", "")
+	g := NewWithT(t)
+	output := filepath.Join(t.TempDir(), "output")
+
+	_, err := executeCommand(fmt.Sprintf("mod pull oci://example.com/org/module --verify cosign --cosign-key key.pub --output %s", output))
+	g.Expect(err).To(MatchError(ContainSubstring("executing cosign failed")))
+	g.Expect(output).ToNot(Or(BeADirectory(), BeAnExistingFile()))
+}

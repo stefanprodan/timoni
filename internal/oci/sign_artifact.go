@@ -19,22 +19,33 @@ package oci
 import (
 	"context"
 	"fmt"
+	"os/exec"
 
 	"github.com/go-logr/logr"
 )
 
-// ValidateSigningProvider reports whether the signing provider is supported.
+// ValidateSigningProvider reports whether the signing provider is supported
+// and available.
 func ValidateSigningProvider(provider string) error {
 	if provider != "cosign" {
 		return fmt.Errorf("signer not supported: %s", provider)
 	}
-	return nil
+	return validateCosignExecutable()
 }
 
-// ValidateVerificationProvider reports whether the verification provider is supported.
+// ValidateVerificationProvider reports whether the verification provider is
+// supported and available.
 func ValidateVerificationProvider(provider string) error {
 	if provider != "cosign" {
 		return fmt.Errorf("verifier not supported: %s", provider)
+	}
+	return validateCosignExecutable()
+}
+
+// validateCosignExecutable reports whether Cosign can be executed.
+func validateCosignExecutable() error {
+	if _, err := exec.LookPath("cosign"); err != nil {
+		return fmt.Errorf("executing cosign failed: %w", err)
 	}
 	return nil
 }
