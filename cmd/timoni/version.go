@@ -46,6 +46,10 @@ func init() {
 }
 
 func runVersionCmd(cmd *cobra.Command, args []string) error {
+	if err := validateOutputFormat(versionArgs.output, false); err != nil {
+		return err
+	}
+
 	info := map[string]string{}
 	info["client"] = VERSION
 	info["api"] = apiv1.GroupVersion.String()

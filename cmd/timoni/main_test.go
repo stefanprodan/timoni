@@ -118,7 +118,7 @@ func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 
 func resetCmdArgs() {
 	applyArgs = applyFlags{}
-	buildArgs = buildFlags{}
+	buildArgs = buildFlags{output: "yaml"}
 	deleteArgs = deleteFlags{}
 	statusArgs = statusFlags{}
 	inspectModuleArgs = inspectModuleFlags{}
@@ -146,6 +146,7 @@ func resetCmdArgs() {
 	}
 	pullArtifactArgs = pullArtifactFlags{}
 	runtimeBuildArgs = runtimeBuildFlags{}
+	versionArgs = versionFlags{output: "yaml"}
 }
 
 func rnd(prefix string, n int) string {

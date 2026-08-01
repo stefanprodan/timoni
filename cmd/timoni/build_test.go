@@ -231,6 +231,13 @@ func TestBuild(t *testing.T) {
 	})
 }
 
+func TestBuildRejectsInvalidOutputBeforeInput(t *testing.T) {
+	g := NewWithT(t)
+
+	_, err := executeCommand("build app /does/not/exist --output invalid")
+	g.Expect(err).To(MatchError("unknown --output=invalid, can be yaml or json"))
+}
+
 func TestBuild_WithDigest(t *testing.T) {
 	g := NewWithT(t)
 
