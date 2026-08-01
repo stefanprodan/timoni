@@ -30,6 +30,14 @@ func ValidateSigningProvider(provider string) error {
 	return nil
 }
 
+// ValidateVerificationProvider reports whether the verification provider is supported.
+func ValidateVerificationProvider(provider string) error {
+	if provider != "cosign" {
+		return fmt.Errorf("verifier not supported: %s", provider)
+	}
+	return nil
+}
+
 // SignArtifact validates the provider and signs an OpenContainers artifact.
 func SignArtifact(log logr.Logger, provider string, ociURL string, keyRef string) error {
 	ref, err := parseArtifactRef(ociURL)
@@ -43,20 +51,15 @@ func SignArtifact(log logr.Logger, provider string, ociURL string, keyRef string
 	return SignCosign(log, ref.String(), keyRef)
 }
 
-// VerifyArtifact verifies an OpenContainers artifact using the specified provider.
+// VerifyArtifact validates the provider and verifies an OpenContainers artifact.
 func VerifyArtifact(log logr.Logger, provider string, ociURL string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string) error {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return err
 	}
 
-	switch provider {
-	case "cosign":
-		if err := VerifyCosign(log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("verifier not supported: %s", provider)
+	if err := ValidateVerificationProvider(provider); err != nil {
+		return err
 	}
-	return nil
+	return VerifyCosign(log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp)
 }

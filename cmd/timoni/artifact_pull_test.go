@@ -75,3 +75,33 @@ func Test_PullArtifact(t *testing.T) {
 	g.Expect(err).To(HaveOccurred())
 
 }
+
+func TestPullArtifactRejectsInvalidInputsBeforeOutput(t *testing.T) {
+	tests := []struct {
+		name string
+		args string
+		err  string
+	}{
+		{
+			name: "invalid reference",
+			args: "example.com/org/artifact",
+			err:  "URL must be in format 'oci://<domain>/<org>/<repo>'",
+		},
+		{
+			name: "unsupported verifier",
+			args: "oci://example.com/org/artifact --verify unsupported",
+			err:  "verifier not supported: unsupported",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			output := filepath.Join(t.TempDir(), "output")
+
+			_, err := executeCommand(fmt.Sprintf("artifact pull %s --output %s", tt.args, output))
+			g.Expect(err).To(MatchError(ContainSubstring(tt.err)))
+			g.Expect(output).ToNot(Or(BeADirectory(), BeAnExistingFile()))
+		})
+	}
+}
