@@ -29,7 +29,7 @@ import (
 )
 
 var pullArtifactCmd = &cobra.Command{
-	Use:   "pull [ARTIFACT URL]",
+	Use:   "pull ARTIFACT_URL",
 	Args:  cobra.MaximumNArgs(1),
 	Short: "Pull an artifact from a container registry",
 	Long: `The pull command downloads an artifact with the application/vnd.timoni media type

@@ -28,7 +28,7 @@ import (
 )
 
 var listModCmd = &cobra.Command{
-	Use:     "list [MODULE URL]",
+	Use:     "list MODULE_URL",
 	Args:    cobra.MaximumNArgs(1),
 	Aliases: []string{"ls"},
 	Short:   "List the versions of a module",

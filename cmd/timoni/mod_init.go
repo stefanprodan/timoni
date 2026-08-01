@@ -33,7 +33,7 @@ import (
 )
 
 var initModCmd = &cobra.Command{
-	Use:   "init [MODULE NAME] [PATH]",
+	Use:   "init MODULE_NAME [PATH]",
 	Args:  cobra.MaximumNArgs(2),
 	Short: "Create a module along with common files and directories",
 	Example: `  # Create a module in the current directory

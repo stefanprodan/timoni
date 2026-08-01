@@ -28,7 +28,7 @@ import (
 )
 
 var inspectModuleCmd = &cobra.Command{
-	Use:   "module [INSTANCE NAME]",
+	Use:   "module INSTANCE_NAME",
 	Args:  cobra.MaximumNArgs(1),
 	Short: "Print the module information of an instance",
 	Example: `  # Print the module info

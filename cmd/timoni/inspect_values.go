@@ -25,7 +25,7 @@ import (
 )
 
 var inspectValuesCmd = &cobra.Command{
-	Use:   "values [INSTANCE NAME]",
+	Use:   "values INSTANCE_NAME",
 	Args:  cobra.MaximumNArgs(1),
 	Short: "Print the values of an instance",
 	Example: `  # Print the values

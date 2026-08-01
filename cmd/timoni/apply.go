@@ -36,7 +36,7 @@ import (
 )
 
 var applyCmd = &cobra.Command{
-	Use:     "apply [INSTANCE NAME] [MODULE URL]",
+	Use:     "apply INSTANCE_NAME MODULE_URL",
 	Args:    cobra.MaximumNArgs(2),
 	Aliases: []string{"install", "upgrade"},
 	Short:   "Install or upgrade a module instance",
