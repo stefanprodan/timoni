@@ -12,6 +12,9 @@ OCI artifacts with a public/private key pair or with an OIDC token provided by G
 To sign modules, you need to [install](https://docs.sigstore.dev/system_config/installation/)
 the Cosign v2 binary and place it in the `PATH` for Timoni to use it.
 
+When `--registry-insecure` is set, Timoni also permits Cosign to use plain HTTP or skip TLS verification.
+Use this option only for testing.
+
 ### Sign with static keys
 
 Generate a cosign key pair:

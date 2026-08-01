@@ -39,6 +39,22 @@ func TestProcessCosignIOReturnsExitError(t *testing.T) {
 	g.Expect(cmd.ProcessState).ToNot(BeNil())
 }
 
+func TestNewCosignCommandRegistryFlags(t *testing.T) {
+	for _, operation := range []string{"sign", "verify"} {
+		t.Run(operation, func(t *testing.T) {
+			g := NewWithT(t)
+
+			secure := newCosignCommand(context.Background(), "cosign", operation, false)
+			insecure := newCosignCommand(context.Background(), "cosign", operation, true)
+
+			g.Expect(secure.Args).To(Equal([]string{"cosign", operation}))
+			g.Expect(insecure.Args).To(Equal([]string{
+				"cosign", operation, "--allow-http-registry", "--allow-insecure-registry",
+			}))
+		})
+	}
+}
+
 func TestProcessCosignIODrainsOutputConcurrently(t *testing.T) {
 	g := NewWithT(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

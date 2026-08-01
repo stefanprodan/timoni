@@ -50,6 +50,9 @@ When publishing bundles with [timoni artifact push](cmd/timoni_artifact_push.md)
 
 Registry tags must follow the OCI Distribution tag grammar.
 
+When `--registry-insecure` is set, Timoni also permits Cosign to use plain HTTP or skip TLS verification.
+Use this option only for testing.
+
 ### Push and sign example
 
 Login to the container registry:

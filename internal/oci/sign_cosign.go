@@ -33,14 +33,14 @@ const (
 	maxCosignOutputScanToken = maxCosignOutputLogLine + 1
 )
 
-// SignCosign signs an image (`imageRef`) using a cosign private key (`keyRef`).
-func SignCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef string) error {
+// SignCosign signs an image and optionally permits insecure registry transport.
+func SignCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef string, insecure bool) error {
 	cosignExecutable, err := exec.LookPath("cosign")
 	if err != nil {
 		return fmt.Errorf("executing cosign failed: %w", err)
 	}
 
-	cosignCmd := exec.CommandContext(ctx, cosignExecutable, []string{"sign"}...)
+	cosignCmd := newCosignCommand(ctx, cosignExecutable, "sign", insecure)
 	cosignCmd.Env = os.Environ()
 
 	// if key is empty, use keyless mode
@@ -59,16 +59,18 @@ func SignCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef st
 	return nil
 }
 
-// VerifyCosign verifies an image (`rawRef`) with a cosign public key (`keyRef`).
-// Either --cosign-certificate-identity or --cosign-certificate-identity-regexp and either --cosign-certificate-oidc-issuer or --cosign-certificate-oidc-issuer-regexp must be set for keyless flows.
+// VerifyCosign verifies an image and optionally permits insecure registry
+// transport. Keyless flows require an identity and an OIDC issuer or their
+// regular-expression alternatives.
 func VerifyCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef string,
-	certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string) error {
+	certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string,
+	insecure bool) error {
 	cosignExecutable, err := exec.LookPath("cosign")
 	if err != nil {
 		return fmt.Errorf("executing cosign failed: %w", err)
 	}
 
-	cosignCmd := exec.CommandContext(ctx, cosignExecutable, []string{"verify"}...)
+	cosignCmd := newCosignCommand(ctx, cosignExecutable, "verify", insecure)
 	cosignCmd.Env = os.Environ()
 
 	// if key is empty, use keyless mode
@@ -103,6 +105,15 @@ func VerifyCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef 
 	}
 
 	return nil
+}
+
+// newCosignCommand creates a Cosign command with the requested registry transport.
+func newCosignCommand(ctx context.Context, executable string, operation string, insecure bool) *exec.Cmd {
+	args := []string{operation}
+	if insecure {
+		args = append(args, "--allow-http-registry", "--allow-insecure-registry")
+	}
+	return exec.CommandContext(ctx, executable, args...)
 }
 
 // processCosignIO runs cosign and logs its output while draining both streams.
