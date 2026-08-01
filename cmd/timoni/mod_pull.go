@@ -133,9 +133,11 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	log := LoggerFrom(cmd.Context())
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+	defer cancel()
 
 	if pullModArgs.verify != "" {
-		err := oci.VerifyArtifact(log,
+		err := oci.VerifyArtifact(ctx, log,
 			pullModArgs.verify,
 			ociURL,
 			pullModArgs.cosignKey,
@@ -147,9 +149,6 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
 
 	spin := logger.StartSpinner(fmt.Sprintf("pulling %s", ociURL))
 	opts := oci.Options(ctx, pullModArgs.creds.String(), rootArgs.registryInsecure)

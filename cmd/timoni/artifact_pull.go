@@ -108,6 +108,8 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	ociURL := args[0]
 
 	log := LoggerFrom(cmd.Context())
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
+	defer cancel()
 
 	if _, err := oci.ParseArtifactURL(ociURL); err != nil {
 		return err
@@ -123,7 +125,7 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	if pullArtifactArgs.verify != "" {
-		err := oci.VerifyArtifact(log,
+		err := oci.VerifyArtifact(ctx, log,
 			pullArtifactArgs.verify,
 			ociURL,
 			pullArtifactArgs.cosignKey,
@@ -138,9 +140,6 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 
 	spin := logger.StartSpinner("pulling artifact")
 	defer spin.Stop()
-
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
-	defer cancel()
 
 	opts := oci.Options(ctx, pullArtifactArgs.creds.String(), rootArgs.registryInsecure)
 	err := oci.PullArtifact(ociURL, pullArtifactArgs.output, pullArtifactArgs.contentType, opts)

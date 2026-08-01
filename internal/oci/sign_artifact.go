@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -39,7 +40,7 @@ func ValidateVerificationProvider(provider string) error {
 }
 
 // SignArtifact validates the provider and signs an OpenContainers artifact.
-func SignArtifact(log logr.Logger, provider string, ociURL string, keyRef string) error {
+func SignArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string) error {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return err
@@ -48,11 +49,11 @@ func SignArtifact(log logr.Logger, provider string, ociURL string, keyRef string
 	if err := ValidateSigningProvider(provider); err != nil {
 		return err
 	}
-	return SignCosign(log, ref.String(), keyRef)
+	return SignCosign(ctx, log, ref.String(), keyRef)
 }
 
 // VerifyArtifact validates the provider and verifies an OpenContainers artifact.
-func VerifyArtifact(log logr.Logger, provider string, ociURL string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string) error {
+func VerifyArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string) error {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return err
@@ -61,5 +62,5 @@ func VerifyArtifact(log logr.Logger, provider string, ociURL string, keyRef stri
 	if err := ValidateVerificationProvider(provider); err != nil {
 		return err
 	}
-	return VerifyCosign(log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp)
+	return VerifyCosign(ctx, log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp)
 }
