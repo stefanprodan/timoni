@@ -109,6 +109,9 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 
 	log := LoggerFrom(cmd.Context())
 
+	if err := validateVerificationFlags(cmd, pullArtifactArgs.verify); err != nil {
+		return err
+	}
 	if _, err := oci.ParseArtifactURL(ociURL); err != nil {
 		return err
 	}

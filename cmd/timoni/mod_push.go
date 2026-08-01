@@ -121,6 +121,9 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	if err := validateOutputFormat(pushModArgs.output, true); err != nil {
 		return err
 	}
+	if err := validateProviderCompanionFlags(cmd, pushModArgs.sign, "sign", "cosign-key"); err != nil {
+		return err
+	}
 	if pushModArgs.sign != "" {
 		if err := oci.ValidateSigningProvider(pushModArgs.sign); err != nil {
 			return err
