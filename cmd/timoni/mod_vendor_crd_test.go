@@ -26,7 +26,74 @@ import (
 	"github.com/mattn/go-shellwords"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
+
+func TestRemoveCRDStatusSchema(t *testing.T) {
+	tests := []struct {
+		name     string
+		versions interface{}
+		wantErr  string
+	}{
+		{
+			name:     "non-object version",
+			versions: []interface{}{"v1"},
+			wantErr:  "spec.versions[0] must be an object",
+		},
+		{
+			name:     "non-list versions",
+			versions: "v1",
+			wantErr:  "reading CRD spec.versions failed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			crd := &unstructured.Unstructured{Object: map[string]interface{}{
+				"spec": map[string]interface{}{"versions": tt.versions},
+			}}
+
+			err := removeCRDStatusSchema(crd)
+
+			g.Expect(err).To(MatchError(ContainSubstring(tt.wantErr)))
+		})
+	}
+}
+
+func TestRemoveCRDStatusSchemaPreservesOtherFields(t *testing.T) {
+	g := NewWithT(t)
+	crd := &unstructured.Unstructured{Object: map[string]interface{}{
+		"spec": map[string]interface{}{
+			"versions": []interface{}{
+				map[string]interface{}{
+					"name": "v1",
+					"schema": map[string]interface{}{
+						"openAPIV3Schema": map[string]interface{}{
+							"properties": map[string]interface{}{
+								"spec":   map[string]interface{}{"type": "object"},
+								"status": map[string]interface{}{"type": "object"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}}
+
+	err := removeCRDStatusSchema(crd)
+
+	g.Expect(err).ToNot(HaveOccurred())
+	versions, found, err := unstructured.NestedSlice(crd.Object, "spec", "versions")
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(found).To(BeTrue())
+	version := versions[0].(map[string]interface{})
+	properties, found, err := unstructured.NestedMap(version, "schema", "openAPIV3Schema", "properties")
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(found).To(BeTrue())
+	g.Expect(properties).To(HaveKey("spec"))
+	g.Expect(properties).ToNot(HaveKey("status"))
+}
 
 func TestVendorCrd(t *testing.T) {
 	// To regenerate the golden files:
