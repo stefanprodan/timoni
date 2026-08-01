@@ -105,7 +105,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 		return errors.New("no cluster found")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	for _, cluster := range clusters {
@@ -155,7 +155,7 @@ func deleteBundleInstance(ctx context.Context, instance *apiv1.BundleInstance, w
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(ctx, rootArgs.timeout)
 	defer cancel()
 
 	iStorage := runtime.NewStorageManager(sm)

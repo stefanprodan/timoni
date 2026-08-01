@@ -87,7 +87,7 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no cluster found")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	failed := false

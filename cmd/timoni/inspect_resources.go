@@ -65,7 +65,7 @@ func runInspectResourcesCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	iStorage := runtime.NewStorageManager(sm)

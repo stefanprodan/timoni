@@ -73,7 +73,7 @@ func tagArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	defer spin.Stop()
 
 	log := LoggerFrom(cmd.Context())
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	opts := oci.Options(ctx, tagArtifactArgs.creds.String(), rootArgs.registryInsecure)

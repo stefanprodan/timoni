@@ -193,7 +193,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		log := loggerBundle(cmd.Context(), bundle.Name, cluster.Name, true)
 
 		if !bundleApplyArgs.overwriteOwnership {
-			err = bundleInstancesOwnershipConflicts(bundle.Instances)
+			err = bundleInstancesOwnershipConflicts(cmd.Context(), bundle.Instances)
 			if err != nil {
 				return annotateInstanceOwnershipConflictErr(err)
 			}
@@ -374,14 +374,14 @@ func saveReaderToFile(reader io.Reader) (string, error) {
 	return path, nil
 }
 
-func bundleInstancesOwnershipConflicts(bundleInstances []*apiv1.BundleInstance) error {
+func bundleInstancesOwnershipConflicts(parent context.Context, bundleInstances []*apiv1.BundleInstance) error {
 	var conflicts reconciler.InstanceOwnershipConflictErr
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(parent, rootArgs.timeout)
 	defer cancel()
 
 	sm := runtime.NewStorageManager(rm)

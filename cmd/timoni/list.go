@@ -63,7 +63,7 @@ func init() {
 }
 
 func runListCmd(cmd *cobra.Command, args []string) error {
-	instances, err := listInstancesFromFlags()
+	instances, err := listInstancesFromFlags(cmd.Context())
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func runListCmd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func listInstancesFromFlags() ([]*apiv1.Instance, error) {
+func listInstancesFromFlags(parent context.Context) ([]*apiv1.Instance, error) {
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func listInstancesFromFlags() ([]*apiv1.Instance, error) {
 
 	iStorage := runtime.NewStorageManager(sm)
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(parent, rootArgs.timeout)
 	defer cancel()
 
 	ns := *kubeconfigArgs.Namespace

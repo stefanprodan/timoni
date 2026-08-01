@@ -99,6 +99,20 @@ func executeCommand(cmd string) (string, error) {
 	return executeCommandWithIn(cmd, nil)
 }
 
+func TestRestoreSignalHandlingAfterCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	stopped := make(chan struct{})
+
+	go restoreSignalHandling(ctx, func() { close(stopped) })
+	cancel()
+
+	select {
+	case <-stopped:
+	case <-time.After(time.Second):
+		t.Fatal("signal handling was not restored")
+	}
+}
+
 func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 	defer resetCmdArgs()
 	args, err := shellwords.Parse(cmd)
