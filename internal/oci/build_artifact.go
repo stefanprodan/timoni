@@ -114,16 +114,7 @@ func BuildArtifact(dstFile, contentPath string, ignorePaths []string) error {
 		if !fi.Mode().IsRegular() {
 			return nil
 		}
-		f, err := os.Open(p)
-		if err != nil {
-			f.Close()
-			return err
-		}
-		if _, err := io.Copy(tw, f); err != nil {
-			f.Close()
-			return err
-		}
-		return f.Close()
+		return copyArtifactFile(tw, p)
 	}); err != nil {
 		tw.Close()
 		gw.Close()
@@ -145,6 +136,19 @@ func BuildArtifact(dstFile, contentPath string, ignorePaths []string) error {
 	}
 
 	return nil
+}
+
+// copyArtifactFile copies a regular file into dst and closes it.
+func copyArtifactFile(dst io.Writer, path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(dst, f); err != nil {
+		_ = f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 type writeCounter struct {
