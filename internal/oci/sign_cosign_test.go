@@ -18,9 +18,13 @@ package oci
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -53,6 +57,103 @@ func TestNewCosignCommandRegistryFlags(t *testing.T) {
 			}))
 		})
 	}
+}
+
+func TestConfigureCosignCredentials(t *testing.T) {
+	for name, tt := range map[string]struct {
+		credentials string
+		imageRef    string
+		authKey     string
+		expected    dockerAuthConfig
+	}{
+		"username and password": {
+			credentials: "timoni:secret",
+			imageRef:    "registry.example.com/org/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			authKey:     "registry.example.com",
+			expected: dockerAuthConfig{
+				Auth: base64.StdEncoding.EncodeToString([]byte("timoni:secret")),
+			},
+		},
+		"registry token": {
+			credentials: "secret-token",
+			imageRef:    "registry.example.com/org/app:1.0.0",
+			authKey:     "registry.example.com",
+			expected: dockerAuthConfig{
+				RegistryToken: "secret-token",
+			},
+		},
+		"Docker Hub": {
+			credentials: "timoni:secret",
+			imageRef:    "docker.io/org/app:1.0.0",
+			authKey:     "https://index.docker.io/v1/",
+			expected: dockerAuthConfig{
+				Auth: base64.StdEncoding.EncodeToString([]byte("timoni:secret")),
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			g := NewWithT(t)
+			sourceConfigDir := t.TempDir()
+			existingConfig := `{"auths":{"registry.example.com":{"auth":"stale"}},"credsStore":"desktop","credHelpers":{"registry.example.com":"helper"}}`
+			g.Expect(os.WriteFile(filepath.Join(sourceConfigDir, "config.json"), []byte(existingConfig), 0o600)).To(Succeed())
+			cmd := exec.Command("cosign", "sign")
+			cmd.Env = append(os.Environ(), "HOME=/original/home", "DOCKER_CONFIG="+sourceConfigDir, `docker_auth_config={"auths":{}}`)
+
+			cleanup, err := configureCosignCredentials(cmd, tt.imageRef, tt.credentials)
+			g.Expect(err).NotTo(HaveOccurred())
+			defer cleanup()
+
+			dockerConfigDir := commandEnv(cmd, "DOCKER_CONFIG")
+			g.Expect(commandEnv(cmd, "HOME")).To(Equal("/original/home"))
+			g.Expect(dockerConfigDir).NotTo(Equal(sourceConfigDir))
+			g.Expect(commandEnv(cmd, "DOCKER_AUTH_CONFIG")).To(BeEmpty())
+			g.Expect(strings.Join(cmd.Args, " ")).NotTo(ContainSubstring("secret"))
+
+			configPath := filepath.Join(dockerConfigDir, "config.json")
+			configData, err := os.ReadFile(configPath)
+			g.Expect(err).NotTo(HaveOccurred())
+			var config dockerConfig
+			g.Expect(json.Unmarshal(configData, &config)).To(Succeed())
+			var rawConfig map[string]json.RawMessage
+			g.Expect(json.Unmarshal(configData, &rawConfig)).To(Succeed())
+			g.Expect(rawConfig).To(HaveLen(1))
+			g.Expect(config.Auths).To(Equal(map[string]dockerAuthConfig{
+				tt.authKey: tt.expected,
+			}))
+
+			if runtime.GOOS != "windows" {
+				info, err := os.Stat(configPath)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(info.Mode().Perm()).To(Equal(os.FileMode(0o600)))
+			}
+
+			g.Expect(cleanup()).To(Succeed())
+			_, err = os.Stat(filepath.Dir(dockerConfigDir))
+			g.Expect(err).To(MatchError(os.ErrNotExist))
+		})
+	}
+}
+
+func TestConfigureCosignCredentialsSkipsEmptyCredentials(t *testing.T) {
+	g := NewWithT(t)
+	cmd := exec.Command("cosign", "verify")
+	cmd.Env = os.Environ()
+
+	cleanup, err := configureCosignCredentials(cmd, "registry.example.com/org/app:1.0.0", "")
+
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cleanup()).To(Succeed())
+	g.Expect(commandEnv(cmd, "HOME")).To(Equal(os.Getenv("HOME")))
+}
+
+func commandEnv(cmd *exec.Cmd, key string) string {
+	for i := len(cmd.Env) - 1; i >= 0; i-- {
+		name, value, _ := strings.Cut(cmd.Env[i], "=")
+		if strings.EqualFold(name, key) {
+			return value
+		}
+	}
+	return ""
 }
 
 func TestProcessCosignIODrainsOutputConcurrently(t *testing.T) {

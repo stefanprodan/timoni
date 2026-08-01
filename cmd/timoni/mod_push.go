@@ -172,7 +172,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 
 	spin.Stop()
 	if pushModArgs.sign != "" {
-		err = oci.SignArtifact(ctx, log, pushModArgs.sign, digestURL, pushModArgs.cosignKey, rootArgs.registryInsecure)
+		err = oci.SignArtifact(ctx, log, pushModArgs.sign, digestURL, pushModArgs.cosignKey, rootArgs.registryInsecure, pushModArgs.creds.String())
 		if err != nil {
 			return err
 		}

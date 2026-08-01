@@ -14,6 +14,7 @@ the Cosign v2 binary and place it in the `PATH` for Timoni to use it.
 
 When `--registry-insecure` is set, Timoni also permits Cosign to use plain HTTP or skip TLS verification.
 Use this option only for testing.
+When `--creds` is set, Timoni also uses those credentials for Cosign.
 
 ### Sign with static keys
 

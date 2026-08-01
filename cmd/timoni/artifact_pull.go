@@ -136,7 +136,8 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 			pullArtifactArgs.certificateIdentityRegexp,
 			pullArtifactArgs.certificateOidcIssuer,
 			pullArtifactArgs.certificateOidcIssuerRegexp,
-			rootArgs.registryInsecure)
+			rootArgs.registryInsecure,
+			pullArtifactArgs.creds.String())
 		if err != nil {
 			return err
 		}

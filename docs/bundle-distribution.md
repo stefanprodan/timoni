@@ -52,6 +52,7 @@ Registry tags must follow the OCI Distribution tag grammar.
 
 When `--registry-insecure` is set, Timoni also permits Cosign to use plain HTTP or skip TLS verification.
 Use this option only for testing.
+When `--creds` is set, Timoni also uses those credentials for Cosign.
 
 ### Push and sign example
 

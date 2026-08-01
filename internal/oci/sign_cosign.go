@@ -19,13 +19,19 @@ package oci
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
 )
 
 const (
@@ -33,8 +39,19 @@ const (
 	maxCosignOutputScanToken = maxCosignOutputLogLine + 1
 )
 
-// SignCosign signs an image and optionally permits insecure registry transport.
-func SignCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef string, insecure bool) error {
+// dockerConfig contains registry authentication for a Cosign subprocess.
+type dockerConfig struct {
+	Auths map[string]dockerAuthConfig `json:"auths"`
+}
+
+// dockerAuthConfig contains one registry's Docker-compatible authentication.
+type dockerAuthConfig struct {
+	Auth          string `json:"auth,omitempty"`
+	RegistryToken string `json:"registrytoken,omitempty"`
+}
+
+// SignCosign signs an image with the requested registry credentials and transport.
+func SignCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef string, insecure bool, credentials string) (retErr error) {
 	cosignExecutable, err := exec.LookPath("cosign")
 	if err != nil {
 		return fmt.Errorf("executing cosign failed: %w", err)
@@ -42,6 +59,13 @@ func SignCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef st
 
 	cosignCmd := newCosignCommand(ctx, cosignExecutable, "sign", insecure)
 	cosignCmd.Env = os.Environ()
+	cleanup, err := configureCosignCredentials(cosignCmd, imageRef, credentials)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		retErr = errors.Join(retErr, cleanup())
+	}()
 
 	// if key is empty, use keyless mode
 	if keyRef != "" {
@@ -64,7 +88,7 @@ func SignCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef st
 // regular-expression alternatives.
 func VerifyCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef string,
 	certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string,
-	insecure bool) error {
+	insecure bool, credentials string) (retErr error) {
 	cosignExecutable, err := exec.LookPath("cosign")
 	if err != nil {
 		return fmt.Errorf("executing cosign failed: %w", err)
@@ -72,6 +96,13 @@ func VerifyCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef 
 
 	cosignCmd := newCosignCommand(ctx, cosignExecutable, "verify", insecure)
 	cosignCmd.Env = os.Environ()
+	cleanup, err := configureCosignCredentials(cosignCmd, imageRef, credentials)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		retErr = errors.Join(retErr, cleanup())
+	}()
 
 	// if key is empty, use keyless mode
 	if keyRef != "" {
@@ -114,6 +145,70 @@ func newCosignCommand(ctx context.Context, executable string, operation string, 
 		args = append(args, "--allow-http-registry", "--allow-insecure-registry")
 	}
 	return exec.CommandContext(ctx, executable, args...)
+}
+
+// configureCosignCredentials gives a Cosign subprocess an isolated Docker
+// config and returns a function that removes it.
+func configureCosignCredentials(cosignCmd *exec.Cmd, imageRef string, credentials string) (func() error, error) {
+	cleanup := func() error { return nil }
+	if credentials == "" {
+		return cleanup, nil
+	}
+
+	ref, err := name.ParseReference(imageRef)
+	if err != nil {
+		return cleanup, fmt.Errorf("parsing artifact reference failed: %w", err)
+	}
+	authKey := ref.Context().RegistryStr()
+	if authKey == name.DefaultRegistry {
+		authKey = authn.DefaultAuthKey
+	}
+
+	authConfig := dockerAuthConfig{}
+	parts := strings.SplitN(credentials, ":", 2)
+	if len(parts) == 1 {
+		authConfig.RegistryToken = parts[0]
+	} else {
+		authConfig.Auth = base64.StdEncoding.EncodeToString([]byte(credentials))
+	}
+	configData, err := json.Marshal(dockerConfig{Auths: map[string]dockerAuthConfig{authKey: authConfig}})
+	if err != nil {
+		return cleanup, fmt.Errorf("encoding Cosign registry credentials failed: %w", err)
+	}
+
+	tempDir, err := os.MkdirTemp("", "timoni-cosign-")
+	if err != nil {
+		return cleanup, fmt.Errorf("creating Cosign registry config failed: %w", err)
+	}
+	cleanup = func() error { return os.RemoveAll(tempDir) }
+	dockerConfigDir := filepath.Join(tempDir, ".docker")
+	if err := os.Mkdir(dockerConfigDir, 0o700); err != nil {
+		return cleanup, errors.Join(fmt.Errorf("creating Cosign registry config failed: %w", err), cleanup())
+	}
+	if err := os.WriteFile(filepath.Join(dockerConfigDir, "config.json"), configData, 0o600); err != nil {
+		return cleanup, errors.Join(fmt.Errorf("writing Cosign registry config failed: %w", err), cleanup())
+	}
+
+	cosignCmd.Env = replaceCommandEnv(cosignCmd.Env, "DOCKER_CONFIG", dockerConfigDir)
+	cosignCmd.Env = removeCommandEnv(cosignCmd.Env, "DOCKER_AUTH_CONFIG")
+	return cleanup, nil
+}
+
+// replaceCommandEnv replaces one variable in a subprocess environment.
+func replaceCommandEnv(env []string, key string, value string) []string {
+	return append(removeCommandEnv(env, key), key+"="+value)
+}
+
+// removeCommandEnv removes one variable from a subprocess environment.
+func removeCommandEnv(env []string, key string) []string {
+	result := make([]string, 0, len(env))
+	for _, entry := range env {
+		name, _, _ := strings.Cut(entry, "=")
+		if !strings.EqualFold(name, key) {
+			result = append(result, entry)
+		}
+	}
+	return result
 }
 
 // processCosignIO runs cosign and logs its output while draining both streams.
