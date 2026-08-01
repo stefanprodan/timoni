@@ -17,29 +17,41 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"fmt"
+	"os/exec"
 
 	"github.com/go-logr/logr"
 )
 
-// ValidateSigningProvider reports whether the signing provider is supported.
+// ValidateSigningProvider reports whether the signing provider is supported
+// and available.
 func ValidateSigningProvider(provider string) error {
 	if provider != "cosign" {
 		return fmt.Errorf("signer not supported: %s", provider)
 	}
-	return nil
+	return validateCosignExecutable()
 }
 
-// ValidateVerificationProvider reports whether the verification provider is supported.
+// ValidateVerificationProvider reports whether the verification provider is
+// supported and available.
 func ValidateVerificationProvider(provider string) error {
 	if provider != "cosign" {
 		return fmt.Errorf("verifier not supported: %s", provider)
+	}
+	return validateCosignExecutable()
+}
+
+// validateCosignExecutable reports whether Cosign can be executed.
+func validateCosignExecutable() error {
+	if _, err := exec.LookPath("cosign"); err != nil {
+		return fmt.Errorf("executing cosign failed: %w", err)
 	}
 	return nil
 }
 
 // SignArtifact validates the provider and signs an OpenContainers artifact.
-func SignArtifact(log logr.Logger, provider string, ociURL string, keyRef string) error {
+func SignArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string) error {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return err
@@ -48,11 +60,11 @@ func SignArtifact(log logr.Logger, provider string, ociURL string, keyRef string
 	if err := ValidateSigningProvider(provider); err != nil {
 		return err
 	}
-	return SignCosign(log, ref.String(), keyRef)
+	return SignCosign(ctx, log, ref.String(), keyRef)
 }
 
 // VerifyArtifact validates the provider and verifies an OpenContainers artifact.
-func VerifyArtifact(log logr.Logger, provider string, ociURL string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string) error {
+func VerifyArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string) error {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return err
@@ -61,5 +73,5 @@ func VerifyArtifact(log logr.Logger, provider string, ociURL string, keyRef stri
 	if err := ValidateVerificationProvider(provider); err != nil {
 		return err
 	}
-	return VerifyCosign(log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp)
+	return VerifyCosign(ctx, log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp)
 }

@@ -114,6 +114,14 @@ func TestPushModRejectsInvalidSignerBeforeInput(t *testing.T) {
 	g.Expect(err).To(MatchError(ContainSubstring("signer not supported: unsupported")))
 }
 
+func TestPushModRejectsMissingCosignBeforeInput(t *testing.T) {
+	t.Setenv("PATH", "")
+	g := NewWithT(t)
+
+	_, err := executeCommand("mod push /does/not/exist oci://registry.example.com/org/module -v 1.0.0 --sign cosign")
+	g.Expect(err).To(MatchError(ContainSubstring("executing cosign failed")))
+}
+
 func TestPushModRejectsInvalidOutputBeforeInput(t *testing.T) {
 	g := NewWithT(t)
 

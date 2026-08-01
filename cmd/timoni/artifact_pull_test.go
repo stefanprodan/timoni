@@ -105,3 +105,13 @@ func TestPullArtifactRejectsInvalidInputsBeforeOutput(t *testing.T) {
 		})
 	}
 }
+
+func TestPullArtifactRejectsMissingCosignBeforeOutput(t *testing.T) {
+	t.Setenv("PATH", "")
+	g := NewWithT(t)
+	output := filepath.Join(t.TempDir(), "output")
+
+	_, err := executeCommand(fmt.Sprintf("artifact pull oci://example.com/org/artifact --verify cosign --cosign-key key.pub --output %s", output))
+	g.Expect(err).To(MatchError(ContainSubstring("executing cosign failed")))
+	g.Expect(output).ToNot(Or(BeADirectory(), BeAnExistingFile()))
+}

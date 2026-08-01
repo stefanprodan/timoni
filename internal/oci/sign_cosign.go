@@ -18,6 +18,7 @@ package oci
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -27,14 +28,19 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// SignCosign signs an image (`imageRef`) using a cosign private key (`keyRef`)
-func SignCosign(log logr.Logger, imageRef string, keyRef string) error {
+const (
+	maxCosignOutputLogLine   = 1024 * 1024
+	maxCosignOutputScanToken = maxCosignOutputLogLine + 1
+)
+
+// SignCosign signs an image (`imageRef`) using a cosign private key (`keyRef`).
+func SignCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef string) error {
 	cosignExecutable, err := exec.LookPath("cosign")
 	if err != nil {
 		return fmt.Errorf("executing cosign failed: %w", err)
 	}
 
-	cosignCmd := exec.Command(cosignExecutable, []string{"sign"}...)
+	cosignCmd := exec.CommandContext(ctx, cosignExecutable, []string{"sign"}...)
 	cosignCmd.Env = os.Environ()
 
 	// if key is empty, use keyless mode
@@ -45,24 +51,24 @@ func SignCosign(log logr.Logger, imageRef string, keyRef string) error {
 	cosignCmd.Args = append(cosignCmd.Args, "--yes")
 	cosignCmd.Args = append(cosignCmd.Args, imageRef)
 
-	err = processCosignIO(log, cosignCmd)
+	err = processCosignIO(ctx, log, cosignCmd)
 	if err != nil {
 		return err
 	}
 
-	return cosignCmd.Wait()
+	return nil
 }
 
-// VerifyCosign verifies an image (`rawRef`) with a cosign public key (`keyRef`)
+// VerifyCosign verifies an image (`rawRef`) with a cosign public key (`keyRef`).
 // Either --cosign-certificate-identity or --cosign-certificate-identity-regexp and either --cosign-certificate-oidc-issuer or --cosign-certificate-oidc-issuer-regexp must be set for keyless flows.
-func VerifyCosign(log logr.Logger, imageRef string, keyRef string,
+func VerifyCosign(ctx context.Context, log logr.Logger, imageRef string, keyRef string,
 	certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string) error {
 	cosignExecutable, err := exec.LookPath("cosign")
 	if err != nil {
 		return fmt.Errorf("executing cosign failed: %w", err)
 	}
 
-	cosignCmd := exec.Command(cosignExecutable, []string{"verify"}...)
+	cosignCmd := exec.CommandContext(ctx, cosignExecutable, []string{"verify"}...)
 	cosignCmd.Env = os.Environ()
 
 	// if key is empty, use keyless mode
@@ -91,40 +97,74 @@ func VerifyCosign(log logr.Logger, imageRef string, keyRef string,
 
 	cosignCmd.Args = append(cosignCmd.Args, imageRef)
 
-	err = processCosignIO(log, cosignCmd)
+	err = processCosignIO(ctx, log, cosignCmd)
 	if err != nil {
-		return err
-	}
-	if err := cosignCmd.Wait(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func processCosignIO(log logr.Logger, cosignCmd *exec.Cmd) error {
+// processCosignIO runs cosign and logs its output while draining both streams.
+func processCosignIO(ctx context.Context, log logr.Logger, cosignCmd *exec.Cmd) error {
 	stdout, err := cosignCmd.StdoutPipe()
 	if err != nil {
-		log.Error(err, "cosign stdout pipe failed")
+		return fmt.Errorf("cosign stdout pipe failed: %w", err)
 	}
 	stderr, err := cosignCmd.StderrPipe()
 	if err != nil {
-		log.Error(err, "cosign stderr pipe failed")
+		return fmt.Errorf("cosign stderr pipe failed: %w", err)
 	}
-
-	merged := io.MultiReader(stdout, stderr)
-	scanner := bufio.NewScanner(merged)
 
 	if err := cosignCmd.Start(); err != nil {
 		return fmt.Errorf("executing cosign failed: %w", err)
 	}
 
+	outputErrs := make(chan error, 2)
+	go func() {
+		outputErrs <- scanCosignOutput(log, stdout)
+	}()
+	go func() {
+		outputErrs <- scanCosignOutput(log, stderr)
+	}()
+	stopClosing := make(chan struct{})
+	pipesClosed := make(chan struct{})
+	go func() {
+		defer close(pipesClosed)
+		select {
+		case <-ctx.Done():
+			_ = stdout.Close()
+			_ = stderr.Close()
+		case <-stopClosing:
+		}
+	}()
+	stdoutErr := <-outputErrs
+	stderrErr := <-outputErrs
+	close(stopClosing)
+	<-pipesClosed
+
+	if err := errors.Join(stdoutErr, stderrErr); err != nil {
+		log.Error(err, "cosign output could not be fully logged")
+	}
+	if err := cosignCmd.Wait(); err != nil {
+		return errors.Join(ctx.Err(), err)
+	}
+	return nil
+}
+
+// scanCosignOutput logs one cosign output stream and drains it after errors.
+func scanCosignOutput(log logr.Logger, output io.Reader) error {
+	scanner := bufio.NewScanner(output)
+	scanner.Buffer(make([]byte, 0, bufio.MaxScanTokenSize), maxCosignOutputScanToken)
 	for scanner.Scan() {
 		log.Info("cosign: " + scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
-		log.Error(err, "cosign stdout/stderr scanner failed")
+		if errors.Is(err, os.ErrClosed) {
+			return nil
+		}
+		_, drainErr := io.Copy(io.Discard, output)
+		return errors.Join(err, drainErr)
 	}
-
 	return nil
 }

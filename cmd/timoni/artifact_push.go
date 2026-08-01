@@ -136,7 +136,7 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	log := LoggerFrom(cmd.Context())
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	annotations, err := oci.ParseAnnotations(pushArtifactArgs.annotations)
@@ -171,7 +171,7 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 
 	spin.Stop()
 	if pushArtifactArgs.sign != "" {
-		err = oci.SignArtifact(log, pushArtifactArgs.sign, digestURL, pushArtifactArgs.cosignKey)
+		err = oci.SignArtifact(ctx, log, pushArtifactArgs.sign, digestURL, pushArtifactArgs.cosignKey)
 		if err != nil {
 			return err
 		}

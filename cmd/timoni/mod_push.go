@@ -146,7 +146,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	annotations[apiv1.VersionAnnotation] = version
 	oci.AppendGitMetadata(pushModArgs.module, annotations)
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	ps, err := engine.ReadIgnoreFile(pushModArgs.module)
@@ -172,7 +172,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 
 	spin.Stop()
 	if pushModArgs.sign != "" {
-		err = oci.SignArtifact(log, pushModArgs.sign, digestURL, pushModArgs.cosignKey)
+		err = oci.SignArtifact(ctx, log, pushModArgs.sign, digestURL, pushModArgs.cosignKey)
 		if err != nil {
 			return err
 		}

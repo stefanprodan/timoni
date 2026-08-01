@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"os"
 	"path"
 	"path/filepath"
@@ -53,7 +52,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Inject the logger in the command context.
-		ctx := logr.NewContext(context.Background(), cliLogger)
+		ctx := logr.NewContext(cmd.Context(), cliLogger)
 		cmd.SetContext(ctx)
 	},
 }

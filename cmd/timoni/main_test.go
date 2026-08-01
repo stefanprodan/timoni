@@ -17,9 +17,11 @@ import (
 	_ "github.com/distribution/distribution/v3/registry/storage/driver/inmemory"
 	"github.com/go-logr/zerologr"
 	"github.com/mattn/go-shellwords"
+	. "github.com/onsi/gomega"
 	"github.com/phayes/freeport"
 	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,6 +33,18 @@ var (
 	envTestClient  client.Client
 	dockerRegistry string
 )
+
+func TestRootCommandPreservesContextCancellation(t *testing.T) {
+	g := NewWithT(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := &cobra.Command{}
+	cmd.SetContext(ctx)
+
+	rootCmd.PersistentPreRun(cmd, nil)
+	cancel()
+
+	g.Expect(cmd.Context().Err()).To(MatchError(context.Canceled))
+}
 
 func TestMain(m *testing.M) {
 	ctx := ctrl.SetupSignalHandler()
