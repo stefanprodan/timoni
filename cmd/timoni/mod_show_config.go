@@ -154,6 +154,8 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// writeFile updates the generated config table and returns the temporary output path.
+// It reports input errors before the caller replaces the destination.
 func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetcher) (string, error) {
 	// Generate the markdown table
 	var tableBuffer bytes.Buffer
@@ -182,6 +184,12 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 	if err != nil {
 		return "", describeErr(f.GetModuleRoot(), "Unable to create the temporary output file", err)
 	}
+	keepOutputFile := false
+	defer func() {
+		if !keepOutputFile {
+			_ = os.Remove(tmpFileName)
+		}
+	}()
 	defer outputFile.Close()
 
 	// Create the scanner and writer
@@ -217,6 +225,9 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 			outputWriter.WriteString(line + "\n")
 		}
 	}
+	if err := inputScanner.Err(); err != nil {
+		return "", describeErr(f.GetModuleRoot(), "Reading the output file failed", err)
+	}
 
 	// If no table was found, append it to the end of the file
 	if !foundTable {
@@ -228,6 +239,7 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 		return "", describeErr(f.GetModuleRoot(), "Failed to Flush Writer", err)
 	}
 
+	keepOutputFile = true
 	return tmpFileName, nil
 }
 

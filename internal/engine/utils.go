@@ -73,7 +73,7 @@ func CopyModule(srcDir string, dstDir string) (err error) {
 	return cp.Copy(srcDir, dstDir, opt)
 }
 
-// ReadIgnoreFile returns the ignore patters found in the module root.
+// ReadIgnoreFile returns the module ignore patterns or an input error.
 func ReadIgnoreFile(moduleRoot string) ([]string, error) {
 	path := filepath.Join(moduleRoot, apiv1.IgnoreFile)
 	var ps []string
@@ -85,6 +85,9 @@ func ReadIgnoreFile(moduleRoot string) ([]string, error) {
 			if !strings.HasPrefix(s, "#") && len(strings.TrimSpace(s)) > 0 {
 				ps = append(ps, s)
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, err
 		}
 	} else if !os.IsNotExist(err) {
 		return nil, err

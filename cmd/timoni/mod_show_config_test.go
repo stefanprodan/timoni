@@ -17,8 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -93,4 +95,22 @@ func Test_ShowConfigOutputNewFile(t *testing.T) {
 	g.Expect(strContent).To(ContainSubstring("`client: enabled:`"))
 	g.Expect(strContent).To(ContainSubstring("`client: image: repository:`"))
 	g.Expect(strContent).To(ContainSubstring("`server: enabled:`"))
+}
+
+func Test_ShowConfigOutputScannerError(t *testing.T) {
+	g := NewWithT(t)
+	filePath := fmt.Sprintf("%s/README.md", t.TempDir())
+	original := []byte(strings.Repeat("x", bufio.MaxScanTokenSize+1))
+	g.Expect(os.WriteFile(filePath, original, 0o600)).To(Succeed())
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod show config testdata/module --output %s",
+		filePath,
+	))
+	g.Expect(err).To(HaveOccurred())
+	contents, readErr := os.ReadFile(filePath)
+	g.Expect(readErr).ToNot(HaveOccurred())
+	g.Expect(contents).To(Equal(original))
+	_, statErr := os.Stat(filePath + ".tmp")
+	g.Expect(os.IsNotExist(statErr)).To(BeTrue())
 }
