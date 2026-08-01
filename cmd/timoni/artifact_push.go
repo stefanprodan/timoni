@@ -108,6 +108,9 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
+	if err := validateProviderCompanionFlags(cmd, pushArtifactArgs.sign, "sign", "cosign-key"); err != nil {
+		return err
+	}
 	if pushArtifactArgs.sign != "" {
 		if err := oci.ValidateSigningProvider(pushArtifactArgs.sign); err != nil {
 			return err

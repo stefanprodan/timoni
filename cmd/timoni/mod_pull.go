@@ -119,6 +119,9 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	if pullModArgs.output == "" {
 		return fmt.Errorf("invalid output path %s", pullModArgs.output)
 	}
+	if err := validateVerificationFlags(cmd, pullModArgs.verify); err != nil {
+		return err
+	}
 	if _, err := oci.ParseArtifactURL(ociURL); err != nil {
 		return err
 	}
