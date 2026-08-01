@@ -72,7 +72,7 @@ func runVendorK8sCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cue.mod not found in the module path %s", vendorK8sArgs.modRoot)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	ociURL := fmt.Sprintf("%s:%s", k8sSchemaURL, vendorK8sArgs.version)

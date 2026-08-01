@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -42,7 +43,7 @@ func TestAppendGitMetadataPrecedence(t *testing.T) {
 		t.Setenv("SOURCE_DATE_EPOCH", "1700000000")
 		annotations := map[string]string{apiv1.CreatedAnnotation: "2024-01-02T03:04:05Z"}
 
-		AppendGitMetadata(t.TempDir(), annotations)
+		AppendGitMetadata(context.Background(), t.TempDir(), annotations)
 
 		g.Expect(annotations).To(HaveKeyWithValue(apiv1.CreatedAnnotation, "2024-01-02T03:04:05Z"))
 	})
@@ -52,7 +53,7 @@ func TestAppendGitMetadataPrecedence(t *testing.T) {
 		t.Setenv("SOURCE_DATE_EPOCH", "1700000000")
 		annotations := map[string]string{}
 
-		AppendGitMetadata(t.TempDir(), annotations)
+		AppendGitMetadata(context.Background(), t.TempDir(), annotations)
 
 		g.Expect(annotations).To(HaveKeyWithValue(apiv1.CreatedAnnotation, "2023-11-14T22:13:20Z"))
 	})
@@ -70,7 +71,7 @@ func TestAppendGitMetadataPrecedence(t *testing.T) {
 		g.Expect(cmd.Run()).To(Succeed())
 
 		annotations := map[string]string{}
-		AppendGitMetadata(repo, annotations)
+		AppendGitMetadata(context.Background(), repo, annotations)
 
 		g.Expect(annotations).To(HaveKeyWithValue(apiv1.CreatedAnnotation, "2023-11-14T22:13:20Z"))
 		g.Expect(annotations[apiv1.RevisionAnnotation]).To(HaveLen(40))
@@ -81,10 +82,22 @@ func TestAppendGitMetadataPrecedence(t *testing.T) {
 		t.Setenv("SOURCE_DATE_EPOCH", "")
 		annotations := map[string]string{}
 
-		AppendGitMetadata(t.TempDir(), annotations)
+		AppendGitMetadata(context.Background(), t.TempDir(), annotations)
 
 		g.Expect(annotations).ToNot(HaveKey(apiv1.CreatedAnnotation))
 	})
+}
+
+func TestAppendGitMetadataHonorsCancellation(t *testing.T) {
+	g := NewWithT(t)
+	t.Setenv("SOURCE_DATE_EPOCH", "")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	annotations := map[string]string{}
+
+	AppendGitMetadata(ctx, t.TempDir(), annotations)
+
+	g.Expect(annotations).To(BeEmpty())
 }
 
 func runGitTestCommand(t *testing.T, dir string, args ...string) {

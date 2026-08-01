@@ -122,7 +122,7 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctxPull, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	f, err := fetcher.New(ctxPull, fetcher.Options{

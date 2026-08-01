@@ -143,7 +143,7 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	oci.AppendGitMetadata(pushArtifactArgs.path, annotations)
+	oci.AppendGitMetadata(cmd.Context(), pushArtifactArgs.path, annotations)
 
 	spin := logger.StartSpinner("pushing artifact")
 	defer spin.Stop()

@@ -144,7 +144,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	annotations[apiv1.VersionAnnotation] = version
-	oci.AppendGitMetadata(pushModArgs.module, annotations)
+	oci.AppendGitMetadata(cmd.Context(), pushModArgs.module, annotations)
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()

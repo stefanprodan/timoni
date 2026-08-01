@@ -82,7 +82,7 @@ func buildModCmdRun(cmd *cobra.Command, args []string) (err error) {
 	}
 	// The required flag owns the manifest version annotation.
 	annotations[apiv1.VersionAnnotation] = buildModArgs.version
-	oci.AppendGitMetadata(module, annotations)
+	oci.AppendGitMetadata(cmd.Context(), module, annotations)
 	ignorePaths, err := engine.ReadIgnoreFile(module)
 	if err != nil {
 		return fmt.Errorf("reading %s failed: %w", apiv1.IgnoreFile, err)

@@ -17,9 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/fatih/color"
@@ -96,7 +99,10 @@ func init() {
 
 func main() {
 	setCacheDir()
-	if err := rootCmd.Execute(); err != nil {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	go restoreSignalHandling(ctx, cancel)
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		// Ensure a logger is initialized even if the rootCmd
 		// failed before running its hooks.
 		if cliLogger.IsZero() {
@@ -108,6 +114,12 @@ func main() {
 		cliLogger.Error(nil, err.Error())
 		os.Exit(1)
 	}
+}
+
+// restoreSignalHandling restores default signal behavior after cancellation.
+func restoreSignalHandling(ctx context.Context, stop context.CancelFunc) {
+	<-ctx.Done()
+	stop()
 }
 
 func setCacheDir() {

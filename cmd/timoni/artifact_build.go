@@ -92,7 +92,7 @@ func buildArtifactCmdRun(cmd *cobra.Command, _ []string) (err error) {
 	if err != nil {
 		return err
 	}
-	oci.AppendGitMetadata(buildArtifactArgs.path, annotations)
+	oci.AppendGitMetadata(cmd.Context(), buildArtifactArgs.path, annotations)
 
 	build, err := oci.BuildArtifactImage(buildArtifactArgs.path, ignorePaths, buildArtifactArgs.contentType, annotations)
 	if err != nil {

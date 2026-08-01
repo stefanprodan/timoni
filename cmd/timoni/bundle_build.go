@@ -163,7 +163,7 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	ctxPull, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctxPull, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	for _, instance := range bundle.Instances {

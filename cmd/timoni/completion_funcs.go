@@ -28,7 +28,7 @@ import (
 // a Timoni instance, based on the current context in ~/.kube/config,
 // and the current namespace set via --namespace.
 func completeInstanceList(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	instances, err := listInstancesFromFlags()
+	instances, err := listInstancesFromFlags(cmd.Context())
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
@@ -51,7 +51,7 @@ func completeNamespaceList(cmd *cobra.Command, args []string, toComplete string)
 
 	iStorage := runtime.NewStorageManager(sm)
 
-	ctx, cancel := context.WithTimeout(context.Background(), rootArgs.timeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
 	namespaces, err := iStorage.ListNamespaces(ctx)
