@@ -51,8 +51,8 @@ func validateCosignExecutable() error {
 }
 
 // SignArtifact validates the provider and signs an OpenContainers artifact
-// with the requested registry transport.
-func SignArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string, insecure bool) error {
+// with the requested registry credentials and transport.
+func SignArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string, insecure bool, credentials string) error {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return err
@@ -61,12 +61,12 @@ func SignArtifact(ctx context.Context, log logr.Logger, provider string, ociURL 
 	if err := ValidateSigningProvider(provider); err != nil {
 		return err
 	}
-	return SignCosign(ctx, log, ref.String(), keyRef, insecure)
+	return SignCosign(ctx, log, ref.String(), keyRef, insecure, credentials)
 }
 
 // VerifyArtifact validates the provider and verifies an OpenContainers artifact
-// with the requested registry transport.
-func VerifyArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string, insecure bool) error {
+// with the requested registry credentials and transport.
+func VerifyArtifact(ctx context.Context, log logr.Logger, provider string, ociURL string, keyRef string, certIdentity string, certIdentityRegexp string, certOidcIssuer string, certOidcIssuerRegexp string, insecure bool, credentials string) error {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return err
@@ -75,5 +75,5 @@ func VerifyArtifact(ctx context.Context, log logr.Logger, provider string, ociUR
 	if err := ValidateVerificationProvider(provider); err != nil {
 		return err
 	}
-	return VerifyCosign(ctx, log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp, insecure)
+	return VerifyCosign(ctx, log, ref.String(), keyRef, certIdentity, certIdentityRegexp, certOidcIssuer, certOidcIssuerRegexp, insecure, credentials)
 }
