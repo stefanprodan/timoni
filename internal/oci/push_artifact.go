@@ -26,7 +26,7 @@ import (
 
 // PushArtifact builds and pushes a single-layer OCI artifact, then returns its
 // digest URL.
-func PushArtifact(ociURL, contentPath string, ignorePaths []string, contentType string, annotations map[string]string, opts []crane.Option) (string, error) {
+func PushArtifact(ociURL, contentPath string, ignorePaths []string, contentType string, annotations map[string]string, opts []crane.Option) (result string, err error) {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return "", err
@@ -36,7 +36,9 @@ func PushArtifact(ociURL, contentPath string, ignorePaths []string, contentType 
 	if err != nil {
 		return "", err
 	}
-	defer build.Close()
+	defer func() {
+		err = build.CloseWithError(err)
+	}()
 
 	if err := crane.Push(build.Image, ref.String(), opts...); err != nil {
 		return "", fmt.Errorf("pushing artifact failed: %w", err)

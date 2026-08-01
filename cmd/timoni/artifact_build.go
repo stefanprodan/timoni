@@ -65,7 +65,7 @@ func init() {
 }
 
 // buildArtifactCmdRun validates, builds, and writes a local artifact.
-func buildArtifactCmdRun(cmd *cobra.Command, _ []string) error {
+func buildArtifactCmdRun(cmd *cobra.Command, _ []string) (err error) {
 	if buildArtifactArgs.output == "" {
 		return fmt.Errorf("output path is required")
 	}
@@ -98,7 +98,9 @@ func buildArtifactCmdRun(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	defer build.Close()
+	defer func() {
+		err = build.CloseWithError(err)
+	}()
 	if err := oci.WriteImage(build.Image, buildArtifactArgs.output, format, buildArtifactArgs.tags); err != nil {
 		return err
 	}

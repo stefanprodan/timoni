@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"errors"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -55,4 +56,15 @@ func TestBuildImages(t *testing.T) {
 	g.Expect(manifest.Layers[0].Annotations).To(HaveKeyWithValue(apiv1.ContentTypeAnnotation, apiv1.TimoniModVendorContentType))
 	g.Expect(manifest.Layers[1].Annotations).To(HaveKeyWithValue(apiv1.ContentTypeAnnotation, apiv1.TimoniModContentType))
 	g.Expect(backing[1]).To(Equal("preserve"))
+}
+
+func TestImageBuildCloseWithError(t *testing.T) {
+	g := NewWithT(t)
+	cleanupOnly := (&ImageBuild{tmpDir: "\x00"}).CloseWithError(nil)
+	g.Expect(cleanupOnly).To(MatchError(ContainSubstring("removing temporary layers")))
+
+	primaryErr := errors.New("publishing failed")
+	err := (&ImageBuild{tmpDir: "\x00"}).CloseWithError(primaryErr)
+	g.Expect(errors.Is(err, primaryErr)).To(BeTrue())
+	g.Expect(err).To(MatchError(ContainSubstring("removing temporary layers")))
 }
