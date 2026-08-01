@@ -31,7 +31,7 @@ import (
 )
 
 var pullModCmd = &cobra.Command{
-	Use:   "pull [MODULE URL]",
+	Use:   "pull MODULE_URL",
 	Args:  cobra.MaximumNArgs(1),
 	Short: "Pull a module version from a container registry",
 	Long: `The pull command downloads the module from a container registry and

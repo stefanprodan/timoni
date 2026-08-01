@@ -31,7 +31,7 @@ import (
 )
 
 var pushArtifactCmd = &cobra.Command{
-	Use:   "push [REPOSITORY URL]",
+	Use:   "push REPOSITORY_URL",
 	Args:  cobra.MaximumNArgs(1),
 	Short: "Push a directory contents to a container registry",
 	Long: `The push command packages a directory contents as an OCI artifact and pushes

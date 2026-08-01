@@ -33,7 +33,7 @@ import (
 )
 
 var statusCmd = &cobra.Command{
-	Use:   "status [INSTANCE NAME]",
+	Use:   "status INSTANCE_NAME",
 	Args:  cobra.MaximumNArgs(1),
 	Short: "Displays the current status of Kubernetes resources managed by an instance",
 	Example: `  # Show the current status of the managed resources

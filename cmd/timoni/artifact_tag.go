@@ -28,7 +28,7 @@ import (
 )
 
 var tagArtifactCmd = &cobra.Command{
-	Use:   "tag [ARTIFACT URL]",
+	Use:   "tag ARTIFACT_URL",
 	Short: "Tag an OCI artifact in the upstream registry",
 	Long:  `The tag command allows adding tags to an existing artifact.`,
 	Example: `  # Tag an existing artifact with a new tags

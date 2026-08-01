@@ -27,7 +27,7 @@ import (
 )
 
 var inspectResourcesCmd = &cobra.Command{
-	Use:   "resources [INSTANCE NAME]",
+	Use:   "resources INSTANCE_NAME",
 	Args:  cobra.MaximumNArgs(1),
 	Short: "Print the Kubernetes objects managed by an instance",
 	Example: `  # Print the managed resources
