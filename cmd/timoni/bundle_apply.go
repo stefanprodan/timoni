@@ -348,19 +348,30 @@ func annotateInstanceOwnershipConflictErr(err error) error {
 	return err
 }
 
+// saveReaderToFile copies a reader into a caller-owned temporary file.
 func saveReaderToFile(reader io.Reader) (string, error) {
 	f, err := os.CreateTemp("", "*.cue")
 	if err != nil {
 		return "", errors.New("unable to create temp dir for stdin")
 	}
-
-	defer f.Close()
+	path := f.Name()
+	keep := false
+	defer func() {
+		if !keep {
+			_ = os.Remove(path)
+		}
+	}()
 
 	if _, err := io.Copy(f, reader); err != nil {
+		_ = f.Close()
 		return "", fmt.Errorf("error writing stdin to file: %w", err)
 	}
+	if err := f.Close(); err != nil {
+		return "", fmt.Errorf("error closing stdin file: %w", err)
+	}
 
-	return f.Name(), nil
+	keep = true
+	return path, nil
 }
 
 func bundleInstancesOwnershipConflicts(bundleInstances []*apiv1.BundleInstance) error {
