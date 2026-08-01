@@ -66,6 +66,7 @@ const (
 	modTemplateURL  = "oci://ghcr.io/stefanprodan/timoni/minimal"
 )
 
+// runInitModCmd initializes a module from an OCI template.
 func runInitModCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return errors.New("module name is required")
@@ -110,17 +111,12 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	dst := filepath.Join(initModArgs.path, initModArgs.name)
-	err = initModuleFromTemplate(
+	err = initializeModule(
 		initModArgs.name,
 		templateName,
 		tmpDir,
 		dst,
 	)
-	if err != nil {
-		return err
-	}
-
-	err = os.WriteFile(filepath.Join(dst, apiv1.IgnoreFile), []byte(apiv1.DefaultIgnorePatterns), 0600)
 	if err != nil {
 		return err
 	}
@@ -176,6 +172,21 @@ func copyModuleFile(mName, mTmpl, src, dst string) (err error) {
 	return
 }
 
+// initializeModule copies a template and writes the default ignore file.
+// It removes the newly created destination if either operation fails.
+func initializeModule(mName, mTmpl, src, dst string) error {
+	if err := initModuleFromTemplate(mName, mTmpl, src, dst); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dst, apiv1.IgnoreFile), []byte(apiv1.DefaultIgnorePatterns), 0600); err != nil {
+		_ = os.RemoveAll(dst)
+		return err
+	}
+	return nil
+}
+
+// initModuleFromTemplate copies a template into a new module destination.
+// It removes the destination if initialization fails.
 func initModuleFromTemplate(mName, mTmpl, src string, dst string) (err error) {
 	src = filepath.Clean(src)
 	dst = filepath.Clean(dst)
@@ -188,18 +199,21 @@ func initModuleFromTemplate(mName, mTmpl, src string, dst string) (err error) {
 		return errors.New("source is not a directory")
 	}
 
-	_, err = os.Stat(dst)
-	if err != nil && !os.IsNotExist(err) {
+	if err = os.MkdirAll(filepath.Dir(dst), si.Mode()); err != nil {
 		return
 	}
-	if err == nil {
+	err = os.Mkdir(dst, si.Mode())
+	if errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("module %s already exists", dst)
 	}
-
-	err = os.MkdirAll(dst, si.Mode())
 	if err != nil {
 		return
 	}
+	defer func() {
+		if err != nil {
+			_ = os.RemoveAll(dst)
+		}
+	}()
 
 	entries, err := os.ReadDir(src)
 	if err != nil {
@@ -216,8 +230,12 @@ func initModuleFromTemplate(mName, mTmpl, src string, dst string) (err error) {
 				return
 			}
 		} else {
-			if fi, fiErr := entry.Info(); fiErr != nil || !fi.Mode().IsRegular() {
-				return
+			fi, fiErr := entry.Info()
+			if fiErr != nil {
+				return fmt.Errorf("reading template entry %s failed: %w", srcPath, fiErr)
+			}
+			if !fi.Mode().IsRegular() {
+				return fmt.Errorf("template entry is not a regular file: %s", srcPath)
 			}
 
 			err = copyModuleFile(mName, mTmpl, srcPath, dstPath)
