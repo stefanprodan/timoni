@@ -39,3 +39,10 @@ func TestVersion(t *testing.T) {
 	g.Expect(data).To(HaveKey("client"))
 	g.Expect(data).To(HaveKey("cue"))
 }
+
+func TestVersionRejectsInvalidOutput(t *testing.T) {
+	g := NewWithT(t)
+
+	_, err := executeCommand("version --output invalid")
+	g.Expect(err).To(MatchError("unknown --output=invalid, can be yaml or json"))
+}

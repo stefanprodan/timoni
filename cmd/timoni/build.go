@@ -98,6 +98,9 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	if len(args) < 2 {
 		return errors.New("name and module are required")
 	}
+	if err := validateOutputFormat(buildArgs.output, false); err != nil {
+		return err
+	}
 
 	buildArgs.name = args[0]
 	buildArgs.module = args[1]

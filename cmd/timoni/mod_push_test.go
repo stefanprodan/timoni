@@ -113,3 +113,10 @@ func TestPushModRejectsInvalidSignerBeforeInput(t *testing.T) {
 	_, err := executeCommand("mod push /does/not/exist oci://registry.example.com/org/module -v 1.0.0 --sign unsupported")
 	g.Expect(err).To(MatchError(ContainSubstring("signer not supported: unsupported")))
 }
+
+func TestPushModRejectsInvalidOutputBeforeInput(t *testing.T) {
+	g := NewWithT(t)
+
+	_, err := executeCommand("mod push /does/not/exist oci://registry.example.com/org/module -v 1.0.0 --output invalid")
+	g.Expect(err).To(MatchError("unknown --output=invalid, can be yaml or json"))
+}
