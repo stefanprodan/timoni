@@ -42,9 +42,9 @@ extract its contents the specified directory.`,
 	--output ./path/to/module
 
   # Pull a specific module version from GitHub Container Registry
+  printf %s "$GITHUB_TOKEN" | timoni registry login ghcr.io -u timoni --password-stdin
   timoni mod pull oci://ghcr.io/org/modules/app --version 1.0.0 \
-	--output=./modules/app \
-	--creds timoni:$GITHUB_TOKEN
+	--output=./modules/app
 
   # Verify the Cosign signature and pull (the cosign binary must be present in PATH)
   timoni mod pull oci://docker.io/org/app-module \

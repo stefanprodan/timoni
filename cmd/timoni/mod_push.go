@@ -43,9 +43,9 @@ container registry using the version as the image tag.`,
   timoni mod push ./path/to/module oci://docker.io/org/app-module -v 1.0.0
 
   # Push a module to GitHub Container Registry using a GitHub token
+  printf %s "$GITHUB_TOKEN" | timoni registry login ghcr.io -u timoni --password-stdin
   timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
-	--version=1.0.0 \
-	--creds timoni:$GITHUB_TOKEN
+	--version=1.0.0
 
   # Push a release candidate without marking it as the latest stable
   timoni mod push ./path/to/module oci://docker.io/org/app-module \

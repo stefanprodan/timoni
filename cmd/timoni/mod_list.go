@@ -40,8 +40,8 @@ var listModCmd = &cobra.Command{
   timoni mod list oci://docker.io/org/app --with-digest=false
 
   # Print the versions of a module from GitHub Container Registry
-  timoni mod list oci://ghcr.io/org/manifests/app \
-	--creds timoni:$GITHUB_TOKEN
+  printf %s "$GITHUB_TOKEN" | timoni registry login ghcr.io -u timoni --password-stdin
+  timoni mod list oci://ghcr.io/org/manifests/app
 `,
 	RunE: listModCmdRun,
 }

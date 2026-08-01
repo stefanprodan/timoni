@@ -42,8 +42,8 @@ the ignore rules will be used to exclude files from the artifact.`,
   timoni artifact push oci://docker.io/org/app -t latest -f .
 
  # Push a dir contents to GitHub Container Registry using a GitHub token
+  printf %s "$GITHUB_TOKEN" | timoni registry login ghcr.io -u timoni --password-stdin
   timoni artifact push oci://ghcr.io/org/schemas/app -f ./path/to/bundles \
-	--creds=timoni:$GITHUB_TOKEN \
 	--tag="$(git rev-parse --short HEAD)" \
 	--tag=latest \
 	--annotation="org.opencontainers.image.source=$(git config --get remote.origin.url)" \

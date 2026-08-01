@@ -46,11 +46,13 @@ jobs:
         run: |
           timoni mod vet ./modules/my-module
       - name: Push module
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          printf %s "$GHCR_TOKEN" | timoni registry login ghcr.io --username "${{ github.actor }}" --password-stdin
           timoni mod push ./my-module \
             oci://ghcr.io/${{ github.repository_owner }}/my-module \
             --version ${{ github.ref_name }} \
-            --creds ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}  
             --latest \
             -a 'org.opencontainers.image.licenses=Apache-2.0' \
             -a 'org.opencontainers.image.source=https://github.com/${{ github.repository }}' \

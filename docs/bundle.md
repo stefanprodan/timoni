@@ -364,6 +364,7 @@ The apply command performs the following actions for each instance:
 - Pulls the module version from the specified container registry.
 - If the registry is private, uses the credentials found in `~/.docker/config.json`.
 - If the registry credentials are specified with `--creds`, these take priority over the docker ones.
+- A value such as `--creds @./registry-creds` reads credentials from a file so the secret is absent from process arguments; use `@@` for a literal leading `@`.
 - Merges the custom values supplied in the Bundle with the default values found in the module.
 - Builds the module by passing the instance name, namespace and values.
 - Labels the resulting Kubernetes resources with the instance name and namespace.
