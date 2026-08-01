@@ -119,6 +119,14 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	if pullModArgs.output == "" {
 		return fmt.Errorf("invalid output path %s", pullModArgs.output)
 	}
+	if _, err := oci.ParseArtifactURL(ociURL); err != nil {
+		return err
+	}
+	if pullModArgs.verify != "" {
+		if err := oci.ValidateVerificationProvider(pullModArgs.verify); err != nil {
+			return err
+		}
+	}
 
 	if err := os.MkdirAll(pullModArgs.output, os.ModePerm); err != nil {
 		return fmt.Errorf("invalid output path %s: %w", pullModArgs.output, err)
