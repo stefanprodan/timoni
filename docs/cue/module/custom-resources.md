@@ -3,6 +3,9 @@
 Timoni allows defining Kubernetes Custom Resources (CRs) in modules and can ensure
 that these are validated against their Kubernetes Custom Resource Definitions (CRDs).
 
+For waiting on custom resources that don't follow the kstatus conventions,
+see [custom health checks](health-checks.md).
+
 To enable validation for custom resources, you have to generate the CUE schemas from
 the Kubernetes CRDs OpenAPI validation spec with the `timoni mod vendor crds` command.
 

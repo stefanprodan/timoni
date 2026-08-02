@@ -100,7 +100,6 @@ import (
 
 ```
 
-
 ### Disable Waiting
 
 To prevent Timoni's readiness check from waiting for certain
@@ -130,3 +129,30 @@ import (
 }
 
 ```
+
+### Waiting for Custom Resources
+
+For custom resources, a readiness evaluation can be defined with [custom health checks](health-checks.md)
+inside `timoni.cue` in module root.
+
+Example:
+
+```cue
+package main
+
+import timoniv1 "timoni.sh/core/v1alpha1"
+
+timoni: healthChecks: {
+	"cert-manager.io": timoniv1.#HealthCheckForCondition & {
+		group: "cert-manager.io"
+	}
+	"trust.cert-manager.io": timoniv1.#HealthCheckForCondition & {
+		group:         "trust.cert-manager.io"
+		conditionType: "Synced"
+	}
+}
+```
+
+The above definition tells Timoni to look for the `Ready=True` condition in
+all kinds under the `cert-manager.io` group (`ClusterIssuer`, `Issuer`, `Certificate`) and
+to look for `Synced=True` for the trust-manager kinds (`ClusterBundle`, `Bundle`).
