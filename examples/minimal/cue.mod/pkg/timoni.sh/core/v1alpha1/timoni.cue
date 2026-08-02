@@ -9,5 +9,6 @@ package v1alpha1
 	apiVersion: string & =~"^v1alpha1$"
 	instance: {...}
 	apply: [string]: [...]
+	healthChecks?: [string]: #HealthCheck
 	kubeMinorVersion?: int
 }

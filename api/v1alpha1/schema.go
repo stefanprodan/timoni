@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/stefanprodan/timoni/schemas"
 )
@@ -34,36 +35,45 @@ var pkgClauseRegex = regexp.MustCompile(`(?m)^package ` + schemaPackage + `\b.*\
 
 var (
 	// BundleSchema defines the v1alpha1 CUE schema for Timoni's bundle API.
-	BundleSchema = mustInlineSchema("bundle.cue", "bundle: #Bundle")
+	BundleSchema = mustInlineSchema("bundle: #Bundle", "bundle.cue")
 
 	// RuntimeSchema defines the v1alpha1 CUE schema for Timoni's runtime API.
-	RuntimeSchema = mustInlineSchema("runtime.cue", "")
+	RuntimeSchema = mustInlineSchema("", "runtime.cue")
 
 	// InstanceSchema defines the v1alpha1 CUE schema for Timoni's instance API.
-	InstanceSchema = mustInlineSchema("timoni.cue", "timoni: #Timoni")
+	// The health check definitions referenced by #Timoni are inlined along
+	// with it so that modules need no vendored schema update to use them.
+	InstanceSchema = mustInlineSchema("timoni: #Timoni", "timoni.cue", "healthcheck.cue")
 )
 
-// mustInlineSchema reads an embedded core schema file and returns its
-// content as an anonymous-package CUE snippet: the 'package v1alpha1'
-// clause is stripped so the definitions can be loaded into Timoni's
-// internal '_' package, and the given root binding is appended when set.
-func mustInlineSchema(file, binding string) string {
-	data, err := schemas.FS.ReadFile(schemaDir + "/" + file)
-	if err != nil {
-		panic(fmt.Sprintf("failed to load schema %s: %v", file, err))
+// mustInlineSchema reads the embedded core schema files and returns their
+// concatenated content as an anonymous-package CUE snippet: the
+// 'package v1alpha1' clauses are stripped so the definitions can be loaded
+// into Timoni's internal '_' package, and the given root binding is
+// appended when set.
+func mustInlineSchema(binding string, files ...string) string {
+	var schema strings.Builder
+	for _, file := range files {
+		data, err := schemas.FS.ReadFile(schemaDir + "/" + file)
+		if err != nil {
+			panic(fmt.Sprintf("failed to load schema %s: %v", file, err))
+		}
+
+		content := string(data)
+		loc := pkgClauseRegex.FindStringIndex(content)
+		if loc == nil {
+			panic(fmt.Sprintf("schema %s: missing 'package %s' clause", file, schemaPackage))
+		}
+
+		schema.WriteString(content[loc[1]:])
 	}
 
-	content := string(data)
-	loc := pkgClauseRegex.FindStringIndex(content)
-	if loc == nil {
-		panic(fmt.Sprintf("schema %s: missing 'package %s' clause", file, schemaPackage))
-	}
-
-	schema := content[loc[1]:]
 	if binding != "" {
-		schema += "\n" + binding + "\n"
+		schema.WriteString("\n")
+		schema.WriteString(binding)
+		schema.WriteString("\n")
 	}
-	return schema
+	return schema.String()
 }
 
 const (
