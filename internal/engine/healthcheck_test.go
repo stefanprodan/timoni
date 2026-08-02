@@ -17,6 +17,7 @@ limitations under the License.
 package engine
 
 import (
+	"strings"
 	"testing"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -24,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/schemas"
 )
 
 func getHealthChecks(t *testing.T, src string) ([]*HealthCheck, error) {
@@ -305,6 +307,239 @@ timoni: {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			res, err := tt.check.Evaluate(tt.object)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(res).To(BeEquivalentTo(tt.expect))
+		})
+	}
+}
+
+func TestHealthCheckLibrary(t *testing.T) {
+	g := NewWithT(t)
+
+	// The library is not injected into module packages: load its schema
+	// file as if the module had imported the vendored CUE package.
+	libData, err := schemas.FS.ReadFile("timoni.sh/core/v1alpha1/healthchecklibrary.cue")
+	g.Expect(err).ToNot(HaveOccurred())
+	lib := strings.Replace(string(libData), "package v1alpha1", "", 1)
+
+	// A module-specific check declared alongside the library ones must
+	// unify: the library check maps are explicitly open, as values
+	// extracted from a definition are otherwise closed and would reject
+	// any sibling field.
+	checks, err := getHealthChecks(t, lib+`
+timoni: {
+	apiVersion: "v1alpha1"
+	instance: {}
+	apply: {}
+	healthChecks: #HealthCheckLibrary.all
+	healthChecks: "example.com/Database": #HealthCheck & {
+		group: "example.com"
+		kind:  "Database"
+		#object: status?: {phase?: string, ...}
+		current: #object.status.phase == "Ready"
+	}
+}
+`)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(checks).To(HaveLen(16))
+
+	byKind := make(map[string]*HealthCheck, len(checks))
+	for _, hc := range checks {
+		byKind[hc.GroupKind.Kind] = hc
+	}
+	for _, kind := range []string{"GatewayClass", "Gateway", "HTTPRoute", "GRPCRoute", "TCPRoute", "TLSRoute", "UDPRoute", "BackendTLSPolicy", "BackendLBPolicy"} {
+		g.Expect(byKind).To(HaveKey(kind))
+		g.Expect(byKind[kind].GroupKind.Group).To(BeEquivalentTo("gateway.networking.k8s.io"))
+	}
+	for _, kind := range []string{"XListenerSet", "XBackendTrafficPolicy"} {
+		g.Expect(byKind).To(HaveKey(kind))
+		g.Expect(byKind[kind].GroupKind.Group).To(BeEquivalentTo("gateway.networking.x-k8s.io"))
+	}
+	for _, kind := range []string{"Cluster", "Machine", "MachineDeployment"} {
+		g.Expect(byKind).To(HaveKey(kind))
+		g.Expect(byKind[kind].GroupKind.Group).To(BeEquivalentTo("cluster.x-k8s.io"))
+	}
+	g.Expect(byKind).To(HaveKey("KubeadmControlPlane"))
+	g.Expect(byKind["KubeadmControlPlane"].GroupKind.Group).To(BeEquivalentTo("controlplane.cluster.x-k8s.io"))
+
+	condition := func(t, s string, gen int64) map[string]any {
+		return map[string]any{"type": t, "status": s, "observedGeneration": gen}
+	}
+	parent := func(conditions ...any) map[string]any {
+		return map[string]any{"conditions": conditions}
+	}
+
+	tests := []struct {
+		name   string
+		kind   string
+		object map[string]any
+		expect HealthStatus
+	}{
+		{
+			name: "programmed gateway is current",
+			kind: "Gateway",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"conditions": []any{condition("Accepted", "True", 1), condition("Programmed", "True", 1)},
+				},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "accepted gateway class is current",
+			kind: "GatewayClass",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"conditions": []any{condition("Accepted", "True", 1)},
+				},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "route accepted by all parents is current",
+			kind: "HTTPRoute",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"status": map[string]any{
+					"parents": []any{
+						parent(condition("Accepted", "True", 2), condition("ResolvedRefs", "True", 2)),
+						parent(condition("Accepted", "True", 2)),
+					},
+				},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "route rejected by one parent is in progress",
+			kind: "HTTPRoute",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"status": map[string]any{
+					"parents": []any{
+						parent(condition("Accepted", "True", 2)),
+						parent(condition("Accepted", "False", 2)),
+					},
+				},
+			},
+			expect: HealthStatusInProgress,
+		},
+		{
+			name: "route with no parents is in progress",
+			kind: "HTTPRoute",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"status":   map[string]any{"parents": []any{}},
+			},
+			expect: HealthStatusInProgress,
+		},
+		{
+			name: "route with stale accepted condition is in progress",
+			kind: "HTTPRoute",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"status": map[string]any{
+					"parents": []any{
+						parent(condition("Accepted", "True", 1)),
+					},
+				},
+			},
+			expect: HealthStatusInProgress,
+		},
+		{
+			name: "programmed listener set is current",
+			kind: "XListenerSet",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"conditions": []any{condition("Accepted", "True", 1), condition("Programmed", "True", 1)},
+				},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "policy accepted by all ancestors is current",
+			kind: "BackendTLSPolicy",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"ancestors": []any{
+						map[string]any{"conditions": []any{condition("Accepted", "True", 1)}},
+						map[string]any{"conditions": []any{condition("Accepted", "True", 1)}},
+					},
+				},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "policy rejected by one ancestor is in progress",
+			kind: "XBackendTrafficPolicy",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"ancestors": []any{
+						map[string]any{"conditions": []any{condition("Accepted", "True", 1)}},
+						map[string]any{"conditions": []any{condition("Accepted", "False", 1)}},
+					},
+				},
+			},
+			expect: HealthStatusInProgress,
+		},
+		{
+			name: "v1beta1 ready cluster is current",
+			kind: "Cluster",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"observedGeneration": int64(1),
+					"conditions":         []any{map[string]any{"type": "Ready", "status": "True"}},
+				},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "v1beta2 available cluster is current",
+			kind: "Cluster",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"observedGeneration": int64(1),
+					"conditions":         []any{condition("Available", "True", 1)},
+				},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "provisioning control plane is in progress",
+			kind: "KubeadmControlPlane",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"observedGeneration": int64(1),
+					"conditions":         []any{condition("Available", "False", 1)},
+				},
+			},
+			expect: HealthStatusInProgress,
+		},
+		{
+			name: "machine deployment with stale status is in progress",
+			kind: "MachineDeployment",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"status": map[string]any{
+					"observedGeneration": int64(1),
+					"conditions":         []any{condition("Available", "True", 1)},
+				},
+			},
+			expect: HealthStatusInProgress,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			res, err := byKind[tt.kind].Evaluate(tt.object)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(res).To(BeEquivalentTo(tt.expect))
 		})

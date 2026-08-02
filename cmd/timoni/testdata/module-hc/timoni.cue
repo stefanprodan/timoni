@@ -1,5 +1,7 @@
 package main
 
+import timoniv1 "timoni.sh/core/v1alpha1"
+
 // Define the schema for the user-supplied values.
 values: {
 	message: *"hello" | string
@@ -40,9 +42,15 @@ timoni: {
 
 	apply: app: [for obj in instance.objects {obj}]
 
+	// Unify the library checks from the vendored schemas to cover the
+	// import path: the definitions must compose with the ones injected
+	// by the binary, and the library maps must accept the module's own
+	// check declared alongside.
+	healthChecks: timoniv1.#HealthCheckLibrary.all
+
 	// Wait for the Demo custom resource to become ready based on
 	// its Ready status condition.
-	healthChecks: demo: #HealthCheckForCondition & {
+	healthChecks: demo: timoniv1.#HealthCheckForCondition & {
 		group: "testing.timoni.sh"
 		kind:  "Demo"
 	}
