@@ -44,7 +44,9 @@ var ownerRef = ssa.Owner{
 }
 
 // NewResourceManager creates a ResourceManager for the given cluster.
-func NewResourceManager(rcg genericclioptions.RESTClientGetter) (*ssa.ResourceManager, error) {
+// The optional factories add custom kstatus readers to the status poller,
+// next to the built-in Kubernetes Job one.
+func NewResourceManager(rcg genericclioptions.RESTClientGetter, readers ...StatusReaderFactory) (*ssa.ResourceManager, error) {
 	cfg, err := rcg.ToRESTConfig()
 	if err != nil {
 		return nil, fmt.Errorf("loading kubeconfig failed: %w", err)
@@ -64,10 +66,16 @@ func NewResourceManager(rcg genericclioptions.RESTClientGetter) (*ssa.ResourceMa
 		return nil, err
 	}
 
+	// The custom readers are registered before the built-in Job one
+	// so that module-defined health checks take precedence.
+	var statusReaders []pollingEngine.StatusReader
+	for _, factory := range readers {
+		statusReaders = append(statusReaders, factory(restMapper))
+	}
+	statusReaders = append(statusReaders, NewCustomJobStatusReader(restMapper))
+
 	kubePoller := polling.NewStatusPoller(kubeClient, restMapper, polling.Options{
-		CustomStatusReaders: []pollingEngine.StatusReader{
-			NewCustomJobStatusReader(restMapper),
-		},
+		CustomStatusReaders:  statusReaders,
 		ClusterReaderFactory: pollingEngine.ClusterReaderFactoryFunc(clusterreader.NewDirectClusterReader),
 	})
 
