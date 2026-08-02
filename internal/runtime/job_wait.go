@@ -16,8 +16,7 @@ limitations under the License.
 
 /*
 Derived work from:
-https://github.com/fluxcd/kustomize-controller/tree/v1.1.1/internal/statusreaders
-https://github.com/kubernetes-sigs/cli-utils/blob/0b156cb0425fdb29a436d13f840a39039558c10e/pkg/kstatus/status/core.go#L533
+https://github.com/fluxcd/pkg/blob/runtime/v0.111.0/runtime/statusreaders/job.go
 */
 
 package runtime
@@ -65,11 +64,22 @@ func (j *customJobStatusReader) ReadStatusForObject(ctx context.Context, reader 
 func jobConditions(u *unstructured.Unstructured) (*status.Result, error) {
 	obj := u.UnstructuredContent()
 
+	// Check if the Job is suspended and mark as Current if so.
+	if suspended, found, err := unstructured.NestedBool(obj, "spec", "suspend"); err == nil && found && suspended {
+		message := "Job is suspended"
+		return &status.Result{
+			Status:     status.CurrentStatus,
+			Message:    message,
+			Conditions: []status.Condition{},
+		}, nil
+	}
+
 	parallelism := status.GetIntField(obj, ".spec.parallelism", 1)
 	completions := status.GetIntField(obj, ".spec.completions", parallelism)
-	active := status.GetIntField(obj, ".status.active", 1)
+	active := status.GetIntField(obj, ".status.active", 0)
 	succeeded := status.GetIntField(obj, ".status.succeeded", 0)
 	failed := status.GetIntField(obj, ".status.failed", 0)
+	startTime := status.GetStringField(obj, ".status.startTime", "")
 
 	objc, err := status.GetObjectWithConditions(obj)
 	if err != nil {
@@ -87,7 +97,10 @@ func jobConditions(u *unstructured.Unstructured) (*status.Result, error) {
 				}, nil
 			}
 		case "Failed":
-			message := fmt.Sprintf("Job Failed. failed: %d/%d error: %s", failed, completions, c.Message)
+			message := fmt.Sprintf("Job Failed. failed: %d/%d", failed, completions)
+			if c.Message != "" {
+				message = fmt.Sprintf("%s error: %s", message, c.Message)
+			}
 			if c.Status == corev1.ConditionTrue {
 				return &status.Result{
 					Status:  status.FailedStatus,
@@ -97,7 +110,7 @@ func jobConditions(u *unstructured.Unstructured) (*status.Result, error) {
 							Type:    status.ConditionStalled,
 							Status:  corev1.ConditionTrue,
 							Reason:  "JobFailed",
-							Message: c.Message,
+							Message: message,
 						},
 					},
 				}, nil
@@ -105,7 +118,23 @@ func jobConditions(u *unstructured.Unstructured) (*status.Result, error) {
 		}
 	}
 
-	message := fmt.Sprintf("Job in progress. active: %d", active)
+	if startTime == "" {
+		message := fmt.Sprintf("Job not started. active: 0/%d", parallelism)
+		return &status.Result{
+			Status:  status.InProgressStatus,
+			Message: message,
+			Conditions: []status.Condition{
+				{
+					Type:    status.ConditionReconciling,
+					Status:  corev1.ConditionTrue,
+					Reason:  "JobNotStarted",
+					Message: message,
+				},
+			},
+		}, nil
+	}
+
+	message := fmt.Sprintf("Job in progress. success:%d, active: %d, failed: %d", succeeded, active, failed)
 	return &status.Result{
 		Status:  status.InProgressStatus,
 		Message: message,

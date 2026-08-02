@@ -31,6 +31,9 @@ const (
 	// ApplySelector is the CUE path for the Timoni's apply resource sets.
 	ApplySelector Selector = "timoni.apply"
 
+	// HealthChecksSelector is the CUE path for the Timoni's custom health checks.
+	HealthChecksSelector Selector = "timoni.healthChecks"
+
 	// ValuesSelector is the CUE path for the Timoni's module values.
 	ValuesSelector Selector = "values"
 )

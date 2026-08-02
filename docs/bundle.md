@@ -502,7 +502,9 @@ The readiness check is performed for the Kubernetes resources with the following
   PersistentVolumeClaim, Pod, PodDisruptionBudget, Job, CronJob, Service,
   Secret, ConfigMap, CustomResourceDefinition
 - Custom resources that are compatible
-  with [kstatus](https://github.com/kubernetes-sigs/cli-utils/tree/master/pkg/kstatus)
+  with [Flux kstatus](https://github.com/fluxcd/cli-utils)
+- Custom resources that are not kstatus-compliant, for which the module
+  defines [custom health checks](cue/module/health-checks.md)
 
 Example:
 

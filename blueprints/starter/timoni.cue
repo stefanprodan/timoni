@@ -6,6 +6,7 @@ package main
 
 import (
 	templates "timoni.sh/blueprint/templates"
+	timoniv1 "timoni.sh/core/v1alpha1"
 )
 
 // Define the schema for the user-supplied values.
@@ -39,4 +40,8 @@ timoni: {
 	// Pass Kubernetes resources outputted by the instance
 	// to Timoni's multi-step apply.
 	apply: app: [for obj in instance.objects {obj}]
+
+	// Enable the readiness evaluation of custom resources.
+	// Module-specific health checks can be declared alongside the library ones.
+	healthChecks: timoniv1.#HealthCheckLibrary.all
 }

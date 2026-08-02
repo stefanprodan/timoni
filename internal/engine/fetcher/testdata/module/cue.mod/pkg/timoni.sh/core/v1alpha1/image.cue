@@ -3,7 +3,9 @@
 
 package v1alpha1
 
-import "strings"
+import (
+	"strings"
+)
 
 // Image defines the schema for OCI image reference used in Kubernetes PodSpec container image.
 #Image: {
@@ -22,9 +24,12 @@ import "strings"
 	// Spec: https://github.com/opencontainers/image-spec/blob/main/descriptor.md#digests.
 	digest!: string
 
+	// PullPolicy defines the pull policy for the image.
+	// By default, it is set to IfNotPresent.
+	pullPolicy: *"IfNotPresent" | "Always" | "Never"
+
 	// Reference is the image address computed from repository, tag and digest
 	// in the format [REPOSITORY]:[TAG]@[DIGEST].
-	// +nodoc
 	reference: string
 
 	if digest != "" && tag != "" {

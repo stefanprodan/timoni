@@ -6,7 +6,7 @@ site_url: https://timoni.sh
 repo_name: stefanprodan/timoni
 repo_url: https://github.com/stefanprodan/timoni
 edit_uri: ""
-copyright: Copyright © 2024 Stefan Prodan
+copyright: Copyright © 2026 Stefan Prodan
 
 home:
   image: images/logo_icons.svg
@@ -111,6 +111,7 @@ nav:
           - Add custom resources: cue/module/custom-resources.md
           - Cluster version constraints: cue/module/semver-constraints.md
           - Control the apply behavior: cue/module/apply-behavior.md
+          - Custom health checks: cue/module/health-checks.md
           - Run tests with Kubernetes Jobs: cue/module/test-jobs.md
           - Import resources from YAML: cue/module/import-resources.md
       - Module Distribution:

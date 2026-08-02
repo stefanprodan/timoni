@@ -17,7 +17,8 @@ and the values fetched live from cluster resources (Secrets/ConfigMaps) for inje
 make build              # Build ./bin/timoni (CGO_ENABLED=0)
 make test               # tidy + generate + fmt + vet + run all Go tests with Kubernetes envtest
 make generate           # Regenerate api/v1alpha1/zz_generated.deepcopy.go via controller-gen
-make cue-vet            # cue fmt + cue vet schemas, and `timoni mod vet` the example/blueprint/testdata modules
+make sync-schemas       # Sync schemas/timoni.sh/core/v1alpha1 to the vendored copies in blueprints, examples and testdata modules
+make cue-vet            # sync-schemas + cue fmt + cue vet schemas, and `timoni mod vet` the example/blueprint/testdata modules
 make docs               # Regenerate docs/cmd/*.md from the cobra commands via `timoni docgen`
 ```
 
@@ -29,7 +30,7 @@ go test ./cmd/timoni/... -run TestApply -v
 
 - `make test` is the canonical pre-commit gate; it runs `go mod tidy`, code generation, fmt, and vet before testing, so a clean `make test` implies all of those pass.
 - Tests in `cmd/timoni` and packages that talk to the API server require **envtest** (`make install-envtest` downloads the Kubernetes test binaries into `./bin`).
-- After changing CUE schemas or example modules, run `make cue-vet`. After changing types in `api/v1alpha1`, run `make generate`.
+- After changing CUE schemas or example modules, run `make cue-vet`; it first runs `sync-schemas`, which propagates the canonical `schemas/timoni.sh/core/v1alpha1` files to their vendored copies (full set into blueprints/examples, refresh-only into the testdata modules). After changing types in `api/v1alpha1`, run `make generate`.
 - After changing any command's `Use`/`Short`/`Long`/flags in `cmd/timoni/`, run `make docs` — the CLI reference under `docs/cmd/` is generated and must be regenerated to match, or it goes stale.
 
 ## Architecture
@@ -46,6 +47,7 @@ The core of Timoni. Turns CUE into Kubernetes objects:
 - `BundleBuilder` / `RuntimeBuilder` — compile Bundle and Runtime CUE definitions; bundles instantiate per-workspace with runtime values injected.
 - `RuntimeInjector` — substitutes runtime values (cluster-read secrets/config) into bundles.
 - `ResourceSet` — the rendered set of objects.
+- `HealthCheck` — extracts the custom health checks a module declares under `timoni: healthChecks:` (the `#HealthCheck`/`#HealthCheckForCondition` CUE schemas) for custom resources that are not kstatus-compliant.
 - `Importer` (`importer.go`) — generates CUE definitions from Kubernetes **CRDs** by converting their OpenAPI v3 schemas (this is what `timoni mod vendor crd` runs, letting module authors use custom resources type-safely).
 - `fetcher/` — pulls module sources, either `local.go` (filesystem path) or `oci.go` (OCI registry).
 
@@ -53,7 +55,7 @@ The core of Timoni. Turns CUE into Kubernetes objects:
 `Reconciler` (built via `NewReconciler`) takes the engine's build result and applies it using `github.com/fluxcd/pkg/ssa` (server-side apply): diff, apply, wait-for-ready, prune stale objects, handle force-recreate of immutable fields. `interactive.go` wraps it as `InteractiveReconciler` — the variant `apply`/`bundle apply` actually use — which adds the `--dry-run` (server-side dry-run) and `--diff` flows, rendering diffs via `internal/dyff`. Honors the `action.timoni.sh/*` annotations (`force`, `prune`, `one-off`, `wait`), all defined in `api/v1alpha1/actions.go`.
 
 ### `internal/runtime/` — cluster-side state
-Reflects instances on the cluster: the instance **inventory** is stored in a Secret named `timoni.<instance>` (`storage.go`); `instances.go`/`resources.go` read back applied resources; `reader.go` reads runtime values from cluster objects; `job_wait.go` waits on Jobs.
+Reflects instances on the cluster: the instance **inventory** is stored in a Secret named `timoni.<instance>` (`storage.go`); `instances.go`/`resources.go` read back applied resources; `reader.go` reads runtime values from cluster objects; `job_wait.go` waits on Jobs; `resource_wait.go` plugs the module-defined custom health checks into the kstatus polling as a status reader.
 
 ### Runtime & multi-cluster
 A **Runtime** (`#Runtime` CUE schema; `apiv1.Runtime`/`RuntimeCluster`) declares a list of target clusters — each with a `name`, `group`, and `kubeContext` — plus `values` read live from the cluster. Bundle commands take it via the persistent `--runtime`/`-r` flag (or `--runtime-from-env`) and select clusters with `--runtime-cluster`/`--runtime-group` (both default `*` = all).

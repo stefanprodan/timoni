@@ -71,7 +71,17 @@ func (r *Reconciler) Init(ctx context.Context, builder *engine.ModuleBuilder, bu
 		r.currentObjects = append(r.currentObjects, set.Objects...)
 	}
 
-	r.resourceManager, err = runtime.NewResourceManager(rcg)
+	healthChecks, err := builder.GetHealthChecks(buildResult)
+	if err != nil {
+		return fmt.Errorf("failed to extract health checks: %w", err)
+	}
+
+	var statusReaders []runtime.StatusReaderFactory
+	if len(healthChecks) > 0 {
+		statusReaders = append(statusReaders, runtime.NewCustomHealthStatusReader(healthChecks))
+	}
+
+	r.resourceManager, err = runtime.NewResourceManager(rcg, statusReaders...)
 	if err != nil {
 		return err
 	}

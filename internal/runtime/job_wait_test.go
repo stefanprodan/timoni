@@ -16,7 +16,7 @@ limitations under the License.
 
 /*
 Derived work from:
-https://github.com/fluxcd/kustomize-controller/tree/v1.1.1/internal/statusreaders
+https://github.com/fluxcd/pkg/blob/runtime/v0.111.0/runtime/statusreaders/job_test.go
 */
 
 package runtime
@@ -29,19 +29,19 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func Test_jobConditions(t *testing.T) {
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "job",
-		},
-		Spec:   batchv1.JobSpec{},
-		Status: batchv1.JobStatus{},
-	}
-
 	t.Run("job without Complete condition returns InProgress status", func(t *testing.T) {
 		g := NewWithT(t)
+		job := &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "job",
+			},
+			Spec:   batchv1.JobSpec{},
+			Status: batchv1.JobStatus{},
+		}
 		us, err := ToUnstructured(job)
 		g.Expect(err).ToNot(HaveOccurred())
 		result, err := jobConditions(us)
@@ -51,11 +51,17 @@ func Test_jobConditions(t *testing.T) {
 
 	t.Run("job with Complete condition as True returns Current status", func(t *testing.T) {
 		g := NewWithT(t)
-		job.Status = batchv1.JobStatus{
-			Conditions: []batchv1.JobCondition{
-				{
-					Type:   batchv1.JobComplete,
-					Status: corev1.ConditionTrue,
+		job := &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "job",
+			},
+			Spec: batchv1.JobSpec{},
+			Status: batchv1.JobStatus{
+				Conditions: []batchv1.JobCondition{
+					{
+						Type:   batchv1.JobComplete,
+						Status: corev1.ConditionTrue,
+					},
 				},
 			},
 		}
@@ -64,5 +70,125 @@ func Test_jobConditions(t *testing.T) {
 		result, err := jobConditions(us)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(result.Status).To(Equal(status.CurrentStatus))
+		g.Expect(result.Message).To(ContainSubstring("Job Completed"))
+	})
+
+	t.Run("suspended job returns Current status", func(t *testing.T) {
+		g := NewWithT(t)
+		suspend := true
+		job := &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "job",
+			},
+			Spec: batchv1.JobSpec{
+				Suspend: &suspend,
+			},
+			Status: batchv1.JobStatus{},
+		}
+		us, err := ToUnstructured(job)
+		g.Expect(err).ToNot(HaveOccurred())
+		result, err := jobConditions(us)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(result.Status).To(Equal(status.CurrentStatus))
+		g.Expect(result.Message).To(Equal("Job is suspended"))
+	})
+
+	t.Run("job with Failed condition as True returns Failed status", func(t *testing.T) {
+		g := NewWithT(t)
+		job := &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "job",
+			},
+			Spec: batchv1.JobSpec{},
+			Status: batchv1.JobStatus{
+				Failed: 1,
+				Conditions: []batchv1.JobCondition{
+					{
+						Type:    batchv1.JobFailed,
+						Status:  corev1.ConditionTrue,
+						Message: "Job has reached the specified backoff limit",
+					},
+				},
+			},
+		}
+		us, err := ToUnstructured(job)
+		g.Expect(err).ToNot(HaveOccurred())
+		result, err := jobConditions(us)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(result.Status).To(Equal(status.FailedStatus))
+		g.Expect(result.Message).To(ContainSubstring("Job Failed"))
+		g.Expect(result.Message).To(ContainSubstring("error: Job has reached the specified backoff limit"))
+		g.Expect(result.Conditions).To(HaveLen(1))
+		g.Expect(result.Conditions[0].Type).To(Equal(status.ConditionStalled))
+		g.Expect(result.Conditions[0].Reason).To(Equal("JobFailed"))
+	})
+
+	t.Run("job not started returns InProgress status", func(t *testing.T) {
+		g := NewWithT(t)
+		parallelism := int32(3)
+		job := &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "job",
+			},
+			Spec: batchv1.JobSpec{
+				Parallelism: &parallelism,
+			},
+			Status: batchv1.JobStatus{},
+		}
+		us, err := ToUnstructured(job)
+		g.Expect(err).ToNot(HaveOccurred())
+		result, err := jobConditions(us)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(result.Status).To(Equal(status.InProgressStatus))
+		g.Expect(result.Message).To(Equal("Job not started. active: 0/3"))
+		g.Expect(result.Conditions).To(HaveLen(1))
+		g.Expect(result.Conditions[0].Type).To(Equal(status.ConditionReconciling))
+		g.Expect(result.Conditions[0].Reason).To(Equal("JobNotStarted"))
+	})
+
+	t.Run("job without status field returns InProgress status", func(t *testing.T) {
+		g := NewWithT(t)
+		us := &unstructured.Unstructured{
+			Object: map[string]any{
+				"apiVersion": "batch/v1",
+				"kind":       "Job",
+				"metadata": map[string]any{
+					"name": "job",
+				},
+				"spec": map[string]any{
+					"parallelism": int64(2),
+				},
+			},
+		}
+		result, err := jobConditions(us)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(result.Status).To(Equal(status.InProgressStatus))
+		g.Expect(result.Message).To(Equal("Job not started. active: 0/2"))
+	})
+
+	t.Run("job in progress returns InProgress status", func(t *testing.T) {
+		g := NewWithT(t)
+		now := metav1.Now()
+		job := &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "job",
+			},
+			Spec: batchv1.JobSpec{},
+			Status: batchv1.JobStatus{
+				StartTime: &now,
+				Active:    2,
+				Succeeded: 1,
+				Failed:    1,
+			},
+		}
+		us, err := ToUnstructured(job)
+		g.Expect(err).ToNot(HaveOccurred())
+		result, err := jobConditions(us)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(result.Status).To(Equal(status.InProgressStatus))
+		g.Expect(result.Message).To(Equal("Job in progress. success:1, active: 2, failed: 1"))
+		g.Expect(result.Conditions).To(HaveLen(1))
+		g.Expect(result.Conditions[0].Type).To(Equal(status.ConditionReconciling))
+		g.Expect(result.Conditions[0].Reason).To(Equal("JobInProgress"))
 	})
 }
