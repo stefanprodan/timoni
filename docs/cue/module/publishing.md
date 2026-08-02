@@ -132,6 +132,33 @@ go.sum
 debug_values.cue
 ```
 
+### Symbolic links
+
+When packaging a module, Timoni resolves symbolic links and includes
+their targets in the artifact as regular files and directories.
+This allows sharing files between modules in a monorepo, for example
+by symlinking the vendored CUE schemas under `cue.mod/pkg`.
+Symlink cycles are detected and reported as errors.
+The `timoni.ignore` rules apply to the resolved content at its
+in-module path, the same as for regular files and directories.
+
+The same resolution is applied when building a module from a local path,
+so `timoni build`, `timoni apply` and `timoni mod vet` see the exact same
+files as the published artifact.
+
+To opt out of symlink resolution, set the `TIMONI_FOLLOW_SYMLINKS=false`
+env var, in which case symbolic links are skipped.
+
+!!! warning "Symlinks in CI"
+
+    Symlink resolution follows links to any file readable by the user
+    running Timoni, including files outside the module directory and the
+    repository. When running `timoni mod push` in CI for repositories that
+    accept contributions from untrusted parties, a pull request could add
+    a symlink to a file on the CI runner, e.g. a credentials file, and get
+    it published inside the module artifact. In such pipelines, set
+    `TIMONI_FOLLOW_SYMLINKS=false` to skip symbolic links altogether.
+
 ## Listing module versions
 
 Timoni offers a command for listing all the versions available in a
