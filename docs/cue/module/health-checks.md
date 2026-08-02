@@ -84,6 +84,9 @@ The `#HealthCheckLibrary` schema provides ready-made health checks for
 popular custom resources, grouped by API family. The `gatewayAPI`
 family covers all the Kubernetes [Gateway API](https://gateway-api.sigs.k8s.io)
 kinds, including the experimental channel used by service meshes.
+The Gateway kinds gate on their `Accepted` and `Programmed` status
+conditions, while a route counts as ready when every parent referenced
+in its spec has accepted it and resolved its backend references.
 
 The `clusterAPI` family covers the
 [Cluster API](https://cluster-api.sigs.k8s.io) core kinds (Cluster,

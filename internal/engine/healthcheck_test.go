@@ -341,17 +341,17 @@ timoni: {
 }
 `)
 	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(checks).To(HaveLen(16))
+	g.Expect(checks).To(HaveLen(18))
 
 	byKind := make(map[string]*HealthCheck, len(checks))
 	for _, hc := range checks {
 		byKind[hc.GroupKind.Kind] = hc
 	}
-	for _, kind := range []string{"GatewayClass", "Gateway", "HTTPRoute", "GRPCRoute", "TCPRoute", "TLSRoute", "UDPRoute", "BackendTLSPolicy", "BackendLBPolicy"} {
+	for _, kind := range []string{"GatewayClass", "Gateway", "ListenerSet", "HTTPRoute", "GRPCRoute", "TCPRoute", "TLSRoute", "UDPRoute", "BackendTLSPolicy", "BackendLBPolicy"} {
 		g.Expect(byKind).To(HaveKey(kind))
 		g.Expect(byKind[kind].GroupKind.Group).To(BeEquivalentTo("gateway.networking.k8s.io"))
 	}
-	for _, kind := range []string{"XListenerSet", "XBackendTrafficPolicy"} {
+	for _, kind := range []string{"XListenerSet", "XBackendTrafficPolicy", "XMesh"} {
 		g.Expect(byKind).To(HaveKey(kind))
 		g.Expect(byKind[kind].GroupKind.Group).To(BeEquivalentTo("gateway.networking.x-k8s.io"))
 	}
@@ -365,8 +365,11 @@ timoni: {
 	condition := func(t, s string, gen int64) map[string]any {
 		return map[string]any{"type": t, "status": s, "observedGeneration": gen}
 	}
-	parent := func(conditions ...any) map[string]any {
-		return map[string]any{"conditions": conditions}
+	ref := func(name string) map[string]any {
+		return map[string]any{"name": name, "group": "gateway.networking.k8s.io", "kind": "Gateway"}
+	}
+	parent := func(parentRef map[string]any, conditions ...any) map[string]any {
+		return map[string]any{"parentRef": parentRef, "conditions": conditions}
 	}
 
 	tests := []struct {
@@ -398,14 +401,15 @@ timoni: {
 			expect: HealthStatusCurrent,
 		},
 		{
-			name: "route accepted by all parents is current",
+			name: "route accepted by all spec parents is current",
 			kind: "HTTPRoute",
 			object: map[string]any{
 				"metadata": map[string]any{"generation": int64(2)},
+				"spec":     map[string]any{"parentRefs": []any{ref("gw-a"), ref("gw-b")}},
 				"status": map[string]any{
 					"parents": []any{
-						parent(condition("Accepted", "True", 2), condition("ResolvedRefs", "True", 2)),
-						parent(condition("Accepted", "True", 2)),
+						parent(ref("gw-a"), condition("Accepted", "True", 2), condition("ResolvedRefs", "True", 2)),
+						parent(ref("gw-b"), condition("Accepted", "True", 2)),
 					},
 				},
 			},
@@ -416,21 +420,108 @@ timoni: {
 			kind: "HTTPRoute",
 			object: map[string]any{
 				"metadata": map[string]any{"generation": int64(2)},
+				"spec":     map[string]any{"parentRefs": []any{ref("gw-a"), ref("gw-b")}},
 				"status": map[string]any{
 					"parents": []any{
-						parent(condition("Accepted", "True", 2)),
-						parent(condition("Accepted", "False", 2)),
+						parent(ref("gw-a"), condition("Accepted", "True", 2)),
+						parent(ref("gw-b"), condition("Accepted", "False", 2)),
 					},
 				},
 			},
 			expect: HealthStatusInProgress,
 		},
 		{
-			name: "route with no parents is in progress",
+			name: "route with an unclaimed parent is in progress",
 			kind: "HTTPRoute",
 			object: map[string]any{
 				"metadata": map[string]any{"generation": int64(2)},
-				"status":   map[string]any{"parents": []any{}},
+				"spec":     map[string]any{"parentRefs": []any{ref("gw-a"), ref("gw-b")}},
+				"status": map[string]any{
+					"parents": []any{
+						parent(ref("gw-a"), condition("Accepted", "True", 2)),
+					},
+				},
+			},
+			expect: HealthStatusInProgress,
+		},
+		{
+			name: "route with one parent claimed by two controllers and one unclaimed is in progress",
+			kind: "HTTPRoute",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"spec":     map[string]any{"parentRefs": []any{ref("gw-a"), ref("gw-b")}},
+				"status": map[string]any{
+					"parents": []any{
+						parent(ref("gw-a"), condition("Accepted", "True", 2)),
+						parent(ref("gw-a"), condition("Accepted", "True", 2)),
+					},
+				},
+			},
+			expect: HealthStatusInProgress,
+		},
+		{
+			name: "route with unresolved backend refs is in progress",
+			kind: "HTTPRoute",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"spec":     map[string]any{"parentRefs": []any{ref("gw-a")}},
+				"status": map[string]any{
+					"parents": []any{
+						parent(ref("gw-a"), condition("Accepted", "True", 2), condition("ResolvedRefs", "False", 2)),
+					},
+				},
+			},
+			expect: HealthStatusInProgress,
+		},
+		{
+			name: "route with section-specific parents is current",
+			kind: "HTTPRoute",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"spec": map[string]any{"parentRefs": []any{
+					map[string]any{"name": "gw", "sectionName": "http"},
+					map[string]any{"name": "gw", "sectionName": "https"},
+				}},
+				"status": map[string]any{
+					"parents": []any{
+						parent(map[string]any{"name": "gw", "sectionName": "http"}, condition("Accepted", "True", 2)),
+						parent(map[string]any{"name": "gw", "sectionName": "https"}, condition("Accepted", "True", 2)),
+					},
+				},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "route accepted by its mesh service parent is current",
+			kind: "HTTPRoute",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"spec": map[string]any{"parentRefs": []any{
+					map[string]any{"name": "backend", "group": "", "kind": "Service"},
+				}},
+				"status": map[string]any{
+					"parents": []any{
+						parent(map[string]any{"name": "backend", "group": "", "kind": "Service"}, condition("Accepted", "True", 2)),
+					},
+				},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "route with no parent refs is current",
+			kind: "HTTPRoute",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"spec":     map[string]any{},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "route with no status is in progress",
+			kind: "HTTPRoute",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(2)},
+				"spec":     map[string]any{"parentRefs": []any{ref("gw-a")}},
 			},
 			expect: HealthStatusInProgress,
 		},
@@ -439,9 +530,10 @@ timoni: {
 			kind: "HTTPRoute",
 			object: map[string]any{
 				"metadata": map[string]any{"generation": int64(2)},
+				"spec":     map[string]any{"parentRefs": []any{ref("gw-a")}},
 				"status": map[string]any{
 					"parents": []any{
-						parent(condition("Accepted", "True", 1)),
+						parent(ref("gw-a"), condition("Accepted", "True", 1)),
 					},
 				},
 			},
@@ -449,6 +541,17 @@ timoni: {
 		},
 		{
 			name: "programmed listener set is current",
+			kind: "ListenerSet",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"conditions": []any{condition("Accepted", "True", 1), condition("Programmed", "True", 1)},
+				},
+			},
+			expect: HealthStatusCurrent,
+		},
+		{
+			name: "programmed experimental listener set is current",
 			kind: "XListenerSet",
 			object: map[string]any{
 				"metadata": map[string]any{"generation": int64(1)},
@@ -457,6 +560,17 @@ timoni: {
 				},
 			},
 			expect: HealthStatusCurrent,
+		},
+		{
+			name: "pending mesh is in progress",
+			kind: "XMesh",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"conditions": []any{map[string]any{"type": "Accepted", "status": "Unknown", "reason": "Pending"}},
+				},
+			},
+			expect: HealthStatusInProgress,
 		},
 		{
 			name: "policy accepted by all ancestors is current",
@@ -481,6 +595,19 @@ timoni: {
 					"ancestors": []any{
 						map[string]any{"conditions": []any{condition("Accepted", "True", 1)}},
 						map[string]any{"conditions": []any{condition("Accepted", "False", 1)}},
+					},
+				},
+			},
+			expect: HealthStatusInProgress,
+		},
+		{
+			name: "policy with unresolved refs is in progress",
+			kind: "BackendTLSPolicy",
+			object: map[string]any{
+				"metadata": map[string]any{"generation": int64(1)},
+				"status": map[string]any{
+					"ancestors": []any{
+						map[string]any{"conditions": []any{condition("Accepted", "True", 1), condition("ResolvedRefs", "False", 1)}},
 					},
 				},
 			},

@@ -13,13 +13,13 @@ package v1alpha1
 	families: {
 		// gatewayAPI covers the Kubernetes Gateway API kinds from both
 		// the standard and the experimental channels: GatewayClass,
-		// Gateway and XListenerSet gate on their Accepted and Programmed
-		// status conditions, the *Route kinds are ready when accepted by
-		// all their parent gateways, and the policy kinds when accepted
-		// by all their ancestors. ReferenceGrant reports no status and
-		// needs no check.
+		// Gateway, ListenerSet and XMesh gate on their Accepted and
+		// Programmed status conditions, the *Route kinds are ready when
+		// every parent referenced in their spec has accepted them and
+		// resolved their backend references, and the policy kinds when
+		// accepted by all their ancestors. ReferenceGrant reports no
+		// status and needs no check.
 		gatewayAPI: {
-			...
 			"gateway.networking.k8s.io/GatewayClass": #HealthCheckForCondition & {
 				group:         "gateway.networking.k8s.io"
 				kind:          "GatewayClass"
@@ -30,10 +30,20 @@ package v1alpha1
 				kind:          "Gateway"
 				conditionType: "Programmed"
 			}
+			"gateway.networking.k8s.io/ListenerSet": #HealthCheckForCondition & {
+				group:         "gateway.networking.k8s.io"
+				kind:          "ListenerSet"
+				conditionType: "Programmed"
+			}
 			"gateway.networking.x-k8s.io/XListenerSet": #HealthCheckForCondition & {
 				group:         "gateway.networking.x-k8s.io"
 				kind:          "XListenerSet"
 				conditionType: "Programmed"
+			}
+			"gateway.networking.x-k8s.io/XMesh": #HealthCheckForCondition & {
+				group:         "gateway.networking.x-k8s.io"
+				kind:          "XMesh"
+				conditionType: "Accepted"
 			}
 			for k in ["HTTPRoute", "GRPCRoute", "TCPRoute", "TLSRoute", "UDPRoute"] {
 				"gateway.networking.k8s.io/\(k)": _#RouteParentsAccepted & {kind: k}
@@ -48,6 +58,7 @@ package v1alpha1
 				group: "gateway.networking.x-k8s.io"
 				kind:  "XBackendTrafficPolicy"
 			}
+			...
 		}
 
 		// clusterAPI covers the Cluster API core kinds and the kubeadm
@@ -57,7 +68,6 @@ package v1alpha1
 		// bootstrap and infrastructure kinds report no common aggregate
 		// readiness condition and are not covered.
 		clusterAPI: {
-			...
 			for k in ["Cluster", "Machine", "MachineDeployment"] {
 				"cluster.x-k8s.io/\(k)": _#ReadyOrAvailableCondition & {
 					group: "cluster.x-k8s.io"
@@ -68,6 +78,7 @@ package v1alpha1
 				group: "controlplane.cluster.x-k8s.io"
 				kind:  "KubeadmControlPlane"
 			}
+			...
 		}
 	}
 
@@ -79,38 +90,90 @@ package v1alpha1
 }
 
 // _#RouteParentsAccepted is the shared health check for the Gateway API
-// route kinds, which report their conditions per parent gateway under
-// 'status.parents' instead of a top-level condition list. A route is
-// ready when it is bound to at least one parent and every parent
-// reports an 'Accepted: True' condition; a condition carrying its own
-// observedGeneration only counts when it matches metadata.generation.
+// route kinds, which report their status per parent under
+// 'status.parents' with one entry per parentRef and controller, instead
+// of a top-level condition list. A route is ready when every parent
+// referenced in 'spec.parentRefs' reports an 'Accepted: True' condition
+// and no 'ResolvedRefs: False' one, which signals invalid backend
+// references. Parents that no controller claims are never added to the
+// status, so an unclaimed parent ref keeps the route in progress. As
+// the status echoes the spec refs, an entry matches a parent ref when
+// the fields declared in the ref are reported with equal values. A
+// route with no parent refs is not attached to anything and counts as
+// ready. A condition carrying its own observedGeneration only counts
+// when it matches metadata.generation.
 _#RouteParentsAccepted: #HealthCheck & {
 	group: "gateway.networking.k8s.io"
 	#object: {
 		metadata: {generation?: int, ...}
+		spec?: parentRefs?: [...{
+			name?:        string
+			namespace?:   string
+			group?:       string
+			kind?:        string
+			sectionName?: string
+			port?:        int
+			...
+		}]
 		status?: parents?: [...{
+			parentRef?: {
+				name?:        string
+				namespace?:   string
+				group?:       string
+				kind?:        string
+				sectionName?: string
+				port?:        int
+				...
+			}
 			conditions?: [...{type?: string, status?: string, observedGeneration?: int, ...}]
 			...
 		}]
 		...
 	}
-	current: len(#object.status.parents) > 0 && len([
-		for p in #object.status.parents
-		for c in p.conditions
-		if c.type == "Accepted" && c.status == "True"
-		if [
-			if c.observedGeneration != _|_ {c.observedGeneration == #object.metadata.generation},
-			true,
-		][0] {c},
-	]) == len(#object.status.parents)
+
+	_parentRefs: [
+		if #object.spec.parentRefs != _|_ {#object.spec.parentRefs},
+		[],
+	][0]
+
+	current: len([
+		for r in _parentRefs
+		if len([
+			for p in #object.status.parents
+			if p.parentRef.name == r.name
+			if [if r.namespace != _|_ {[if p.parentRef.namespace != _|_ {p.parentRef.namespace == r.namespace}, false][0]}, true][0]
+			if [if r.group != _|_ {[if p.parentRef.group != _|_ {p.parentRef.group == r.group}, false][0]}, true][0]
+			if [if r.kind != _|_ {[if p.parentRef.kind != _|_ {p.parentRef.kind == r.kind}, false][0]}, true][0]
+			if [if r.sectionName != _|_ {[if p.parentRef.sectionName != _|_ {p.parentRef.sectionName == r.sectionName}, false][0]}, true][0]
+			if [if r.port != _|_ {[if p.parentRef.port != _|_ {p.parentRef.port == r.port}, false][0]}, true][0]
+			if len([
+				for c in p.conditions
+				if c.type == "Accepted" && c.status == "True"
+				if [
+					if c.observedGeneration != _|_ {c.observedGeneration == #object.metadata.generation},
+					true,
+				][0] {c},
+			]) > 0
+			if len([
+				for c in p.conditions
+				if c.type == "ResolvedRefs" && c.status == "False"
+				if [
+					if c.observedGeneration != _|_ {c.observedGeneration == #object.metadata.generation},
+					true,
+				][0] {c},
+			]) == 0 {p},
+		]) > 0 {r},
+	]) == len(_parentRefs)
 }
 
 // _#PolicyAncestorsAccepted is the shared health check for the Gateway
 // API policy kinds, which report their conditions per ancestor under
-// 'status.ancestors'. A policy is ready when at least one ancestor is
-// reported and every ancestor reports an 'Accepted: True' condition;
-// a condition carrying its own observedGeneration only counts when it
-// matches metadata.generation.
+// 'status.ancestors'. The set of ancestors is discovered by the
+// controllers and cannot be derived from the policy spec, so a policy
+// is ready when at least one ancestor is reported and every ancestor
+// reports an 'Accepted: True' condition and no 'ResolvedRefs: False'
+// one. A condition carrying its own observedGeneration only counts
+// when it matches metadata.generation.
 _#PolicyAncestorsAccepted: #HealthCheck & {
 	#object: {
 		metadata: {generation?: int, ...}
@@ -122,12 +185,22 @@ _#PolicyAncestorsAccepted: #HealthCheck & {
 	}
 	current: len(#object.status.ancestors) > 0 && len([
 		for a in #object.status.ancestors
-		for c in a.conditions
-		if c.type == "Accepted" && c.status == "True"
-		if [
-			if c.observedGeneration != _|_ {c.observedGeneration == #object.metadata.generation},
-			true,
-		][0] {c},
+		if len([
+			for c in a.conditions
+			if c.type == "Accepted" && c.status == "True"
+			if [
+				if c.observedGeneration != _|_ {c.observedGeneration == #object.metadata.generation},
+				true,
+			][0] {c},
+		]) > 0
+		if len([
+			for c in a.conditions
+			if c.type == "ResolvedRefs" && c.status == "False"
+			if [
+				if c.observedGeneration != _|_ {c.observedGeneration == #object.metadata.generation},
+				true,
+			][0] {c},
+		]) == 0 {a},
 	]) == len(#object.status.ancestors)
 }
 
