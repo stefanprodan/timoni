@@ -46,7 +46,7 @@ func TestLocalFetch(t *testing.T) {
 		dst := filepath.Join(t.TempDir(), "dst")
 		testmod := "testdata/module"
 
-		g.Expect(fscopy.CopyDir(testmod, src, fscopy.Options{})).To(Succeed())
+		g.Expect(fscopy.CopyDir(testmod, src, fscopy.Options{FollowSymlinks: true})).To(Succeed())
 
 		lf := NewLocal(src, dst)
 		mr, err := lf.Fetch()

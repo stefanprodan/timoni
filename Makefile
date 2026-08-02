@@ -33,20 +33,7 @@ fmt: ## Format Go code.
 vet: ## Vet Go code.
 	go vet ./...
 
-sync-schemas: ## Sync the CUE schemas to their vendored copies in blueprints, examples and testdata modules.
-	for dir in ./blueprints/* ./examples/* ; do
-		pkg=$$dir/cue.mod/pkg/timoni.sh/core/v1alpha1
-		if [ -d $$pkg ]; then
-			cp ./schemas/timoni.sh/core/v1alpha1/*.cue $$pkg/
-		fi
-	done
-	for pkg in $$(find ./cmd ./internal -type d -path '*/cue.mod/pkg/timoni.sh/core/v1alpha1') ; do
-		for f in $$pkg/*.cue ; do
-			cp ./schemas/timoni.sh/core/v1alpha1/$$(basename $$f) $$f
-		done
-	done
-
-cue-vet: build sync-schemas ## Vet and fmt CUE files.
+cue-vet: build ## Vet and fmt CUE files.
 	cue fmt ./schemas/...
 	cue vet ./schemas/...
 	for dir in ./blueprints/* ; do

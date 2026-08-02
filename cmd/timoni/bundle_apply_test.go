@@ -623,7 +623,7 @@ bundle: {
 	// This is needed because `bundlePath` below will be `tmpdir/bundle.cue`
 	// which means the `file://./testdata/module/` will be normalized to /tmpdir/testdata/module
 	bundleTmpDir := t.TempDir()
-	g.Expect(fscopy.CopyDir(modPath, filepath.Join(bundleTmpDir, modPath), fscopy.Options{})).To(Succeed())
+	g.Expect(fscopy.CopyDir(modPath, filepath.Join(bundleTmpDir, modPath), fscopy.Options{FollowSymlinks: true})).To(Succeed())
 
 	bundlePath := filepath.Join(bundleTmpDir, "bundle.cue")
 	err := os.WriteFile(bundlePath, []byte(bundleCue), 0644)
@@ -682,7 +682,7 @@ func Test_BundleApply_Runtime_LocalModule_WithAbsolutePath(t *testing.T) {
 	// Copy testdata/module/ to /tmpdir/testdata/module/
 	// modPath will become an absolute path `/tmpdir/testdata/module/`
 	bundleTmpDir := t.TempDir()
-	g.Expect(fscopy.CopyDir("testdata/module", filepath.Join(bundleTmpDir, "testdata/module"), fscopy.Options{})).To(Succeed())
+	g.Expect(fscopy.CopyDir("testdata/module", filepath.Join(bundleTmpDir, "testdata/module"), fscopy.Options{FollowSymlinks: true})).To(Succeed())
 
 	bundleName := "my-bundle"
 	modPath := filepath.Join(bundleTmpDir, "testdata/module")
