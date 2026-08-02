@@ -119,10 +119,10 @@ timoni: healthChecks: {
 }
 ```
 
-The library is part of the vendored `timoni.sh/core/v1alpha1` package
-included in modules generated with `timoni mod init`. Modules created
-with an older Timoni version must update their vendored schemas as
-described in the
+The library is part of the vendored `timoni.sh/core/v1alpha1` package,
+and modules generated with `timoni mod init` come with the library
+checks enabled by default. Modules created with an older Timoni version
+must update their vendored schemas as described in the
 [schemas README](https://github.com/stefanprodan/timoni/tree/main/schemas).
 
 ## Condition-based health checks
