@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -155,11 +156,29 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	pushModArgs.ignorePaths = append(pushModArgs.ignorePaths, ps...)
 
+	// When symlink resolution is enabled, stage the module in a temp dir
+	// so that the artifact contains the resolved file set local builds
+	// see. With TIMONI_FOLLOW_SYMLINKS=false the archiver skips symlinks
+	// by itself, so the module is packaged straight from its source dir.
+	moduleDir := pushModArgs.module
+	if engine.FollowSymlinks() {
+		tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(tmpDir)
+
+		moduleDir = path.Join(tmpDir, "module")
+		if err := engine.CopyModule(pushModArgs.module, moduleDir); err != nil {
+			return err
+		}
+	}
+
 	spin := logger.StartSpinner("pushing module")
 	defer spin.Stop()
 
 	opts := oci.Options(ctx, pushModArgs.creds.String(), rootArgs.registryInsecure)
-	digestURL, err := oci.PushModule(ociURL, pushModArgs.module, pushModArgs.ignorePaths, annotations, opts)
+	digestURL, err := oci.PushModule(ociURL, moduleDir, pushModArgs.ignorePaths, annotations, opts)
 	if err != nil {
 		return err
 	}

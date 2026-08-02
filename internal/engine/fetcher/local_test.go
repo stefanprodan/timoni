@@ -20,8 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	cp "github.com/otiai10/copy"
-
+	"github.com/stefanprodan/timoni/internal/fscopy"
 	. "github.com/stefanprodan/timoni/internal/testutils"
 )
 
@@ -47,7 +46,7 @@ func TestLocalFetch(t *testing.T) {
 		dst := filepath.Join(t.TempDir(), "dst")
 		testmod := "testdata/module"
 
-		g.Expect(cp.Copy(testmod, src)).To(Succeed())
+		g.Expect(fscopy.CopyDir(testmod, src, fscopy.Options{})).To(Succeed())
 
 		lf := NewLocal(src, dst)
 		mr, err := lf.Fetch()

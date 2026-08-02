@@ -26,7 +26,6 @@ import (
 	"cuelang.org/go/pkg/strings"
 	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"github.com/google/go-containerregistry/pkg/name"
-	cp "github.com/otiai10/copy"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -34,6 +33,7 @@ import (
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/fscopy"
 	"github.com/stefanprodan/timoni/internal/logger"
 )
 
@@ -116,7 +116,7 @@ func runVetModCmd(cmd *cobra.Command, args []string) error {
 	if vetModArgs.debug {
 		dv := path.Join(vetModArgs.path, "debug_values.cue")
 		if _, err := os.Stat(dv); err == nil {
-			if cpErr := cp.Copy(dv, path.Join(tmpDir, "module", "debug_values.cue")); cpErr != nil {
+			if cpErr := fscopy.CopyFile(dv, path.Join(tmpDir, "module", "debug_values.cue")); cpErr != nil {
 				return cpErr
 			}
 			tags = append(tags, "debug")
