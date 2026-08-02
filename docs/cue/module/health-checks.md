@@ -15,7 +15,9 @@ conditions, and for these a health check is a one-line declaration using
 the [`#HealthCheckForCondition`](#condition-based-health-checks)
 shorthand; resources with bespoke status reporting use the raw
 `#HealthCheck` form, which takes the readiness evaluation as CUE
-expressions.
+expressions. Ready-made checks for popular custom resources, such as
+the Kubernetes Gateway API and Cluster API kinds, come with the
+[health check library](#the-health-check-library).
 
 ## Defining health checks
 
@@ -23,13 +25,11 @@ Health checks are declared in the module's root CUE package, either in
 `timoni.cue` next to `timoni: apply:`, or in a dedicated sibling file
 e.g. `healthchecks.cue`.
 
-For example, waiting for a Kubernetes
-[Gateway](https://gateway-api.sigs.k8s.io) to be programmed by its
-controller and for an HTTPRoute to be accepted by all its parent
-gateways. The Gateway readiness comes from its `Programmed` status
-condition, so the shorthand fits. The HTTPRoute needs a raw check, as the
-Gateway API routes report their conditions per parent gateway instead
-of a top-level status condition:
+For example, waiting for a [CloudNativePG](https://cloudnative-pg.io)
+Database to be created on the PostgreSQL cluster. The Database reports
+readiness through the `status.applied` field instead of status
+conditions, so it needs the raw `#HealthCheck` form with the readiness
+evaluation defined in CUE:
 
 ```cue
 package main
@@ -37,23 +37,16 @@ package main
 import timoniv1 "timoni.sh/core/v1alpha1"
 
 timoni: healthChecks: {
-	"gateway.networking.k8s.io/Gateway": timoniv1.#HealthCheckForCondition & {
-		group:         "gateway.networking.k8s.io"
-		kind:          "Gateway"
-		conditionType: "Programmed"
-	}
-	"gateway.networking.k8s.io/HTTPRoute": timoniv1.#HealthCheck & {
-		group: "gateway.networking.k8s.io"
-		kind:  "HTTPRoute"
-		#object: status?: parents?: [...{
-			conditions?: [...{type?: string, status?: string, ...}]
+	"postgresql.cnpg.io/Database": timoniv1.#HealthCheck & {
+		group: "postgresql.cnpg.io"
+		kind:  "Database"
+		#object: {
+			metadata: {generation?: int, ...}
+			status?: {observedGeneration?: int, applied?: bool, ...}
 			...
-		}]
-		current: len(#object.status.parents) > 0 && len([
-			for p in #object.status.parents
-			for c in p.conditions
-			if c.type == "Accepted" && c.status == "True" {c},
-		]) == len(#object.status.parents)
+		}
+		inProgress: #object.status.observedGeneration != #object.metadata.generation
+		current:    #object.status.applied
 	}
 }
 ```
@@ -84,6 +77,53 @@ An expression that cannot be evaluated because the referenced fields are
 missing from the live object counts as `false`. A freshly created resource
 with no `status` is therefore simply in progress until its controller
 reports one, and `current` is the only expression that has to be defined.
+
+## The health check library
+
+The `#HealthCheckLibrary` schema provides ready-made health checks for
+popular custom resources, grouped by API family. The `gatewayAPI`
+family covers all the Kubernetes [Gateway API](https://gateway-api.sigs.k8s.io)
+kinds, including the experimental channel used by service meshes.
+
+The `clusterAPI` family covers the
+[Cluster API](https://cluster-api.sigs.k8s.io) core kinds (Cluster,
+Machine, MachineDeployment) and the KubeadmControlPlane. The checks
+accept both the v1beta1 `Ready` and the v1beta2 `Available` readiness
+conditions, as health checks match resources regardless of their
+version.
+
+To include all the checks in the library, unify `all` into the health
+checks field:
+
+```cue
+package main
+
+import timoniv1 "timoni.sh/core/v1alpha1"
+
+timoni: healthChecks: timoniv1.#HealthCheckLibrary.all
+```
+
+A single family can be selected with e.g.
+`timoniv1.#HealthCheckLibrary.families.gatewayAPI`, and module-specific
+checks can be declared alongside the library ones, e.g. waiting for an
+[ExternalSecret](https://external-secrets.io) to be synced from its
+provider, based on its `Ready` status condition, the shorthand default:
+
+```cue
+timoni: healthChecks: timoniv1.#HealthCheckLibrary.all
+timoni: healthChecks: {
+	"external-secrets.io/ExternalSecret": timoniv1.#HealthCheckForCondition & {
+		group: "external-secrets.io"
+		kind:  "ExternalSecret"
+	}
+}
+```
+
+The library is part of the vendored `timoni.sh/core/v1alpha1` package
+included in modules generated with `timoni mod init`. Modules created
+with an older Timoni version must update their vendored schemas as
+described in the
+[schemas README](https://github.com/stefanprodan/timoni/tree/main/schemas).
 
 ## Condition-based health checks
 

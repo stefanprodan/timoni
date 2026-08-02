@@ -49,6 +49,21 @@ The Timoni's CUE schemas are included in the modules generated with `timoni mod 
 - `#SemVer` - Schema for validating semantic versions and enforcing
   a minimum major and/or minor version.
 
+### Custom Health Checks
+
+- `#HealthCheck` - Schema for defining a custom readiness evaluation in CUE
+  for Kubernetes custom resources that are not
+  [kstatus](https://github.com/fluxcd/cli-utils)-compliant.
+- `#HealthCheckForCondition` - Schema for generating a health check for
+  custom resources that signal readiness through status conditions.
+- `#HealthCheckLibrary` - Ready-made health checks for popular custom
+  resources, grouped by API family under `families`, with `all` unifying
+  every family. Currently, covers the Kubernetes
+  [Gateway API](https://gateway-api.sigs.k8s.io) kinds from both the
+  standard and the experimental channels under `families.gatewayAPI`,
+  and the [Cluster API](https://cluster-api.sigs.k8s.io) core kinds
+  under `families.clusterAPI`.
+
 ### Timoni API
 
 These schemas describe Timoni's own APIs and are the single source of truth
