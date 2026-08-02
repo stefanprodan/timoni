@@ -21,11 +21,9 @@ import (
 	let minMajor = strconv.Atoi(strings.Split(#Minimum, ".")[0])
 	let minMinor = strconv.Atoi(strings.Split(#Minimum, ".")[1])
 
-	// +nodoc
 	major: int & >=minMajor
 	major: strconv.Atoi(strings.Split(#Version, ".")[0])
 
-	// +nodoc
 	minor: int & >=minMinor
 	minor: strconv.Atoi(strings.Split(#Version, ".")[1])
 }
