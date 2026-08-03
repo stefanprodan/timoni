@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="refresh" content="10" />
+	<title>{{ .metadata.name }}</title>
+	<style>
+	html { color-scheme: light dark; }
+	body { width: 35em; margin: 0 auto;
+	font-family: Tahoma, Verdana, Arial, sans-serif; }
+	</style>
+</head>
+<body>
+	<h1> {{ .message }} from {{ .metadata.name }}!</h1>
+	<p>If you see this page, the <b>{{ .metadata.name }}</b> instance is successfully deployed in the <b>{{ .metadata.namespace }}</b> namespace by Timoni.</p>
+</body>
+</html>
