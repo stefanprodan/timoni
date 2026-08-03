@@ -1,26 +1,21 @@
+@extern(embed)
+
 package master
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	"text/template"
+
+	timoniv1 "timoni.sh/core/v1alpha1"
 	"timoni.sh/redis/templates/config"
 )
 
-#ConfigMap: corev1.#ConfigMap & {
-	#config:    config.#Config
-	apiVersion: "v1"
-	kind:       "ConfigMap"
-	metadata:   #config.metadata
-	data:
-		"redis.conf": """
-			maxmemory \(#config.maxmemory)mb
-			maxmemory-policy allkeys-lru
+// The Redis configuration is embedded from the sibling redis.conf file
+// at build time and rendered with the instance config.
+_redisConf: string @embed(file="redis.conf", type=text)
 
-			dir /data
-			save \"\"
-			appendonly yes
-
-			protected-mode no
-			rename-command CONFIG \"\"
-
-			"""
+#ConfigMap: timoniv1.#ImmutableConfig & {
+	#config: config.#Config
+	#Kind:   timoniv1.#ConfigMapKind
+	#Meta:   #config.metadata
+	#Data: "redis.conf": template.Execute(_redisConf, #config)
 }

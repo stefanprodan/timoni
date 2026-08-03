@@ -9,6 +9,7 @@ import (
 
 #ReplicaDeployment: appsv1.#Deployment & {
 	#config: config.#Config
+	#cmName: string
 	_selectorLabel: {
 		(timoniv1.#StdLabelName): "\(#config.metadata.name)-replica"
 	}
@@ -91,7 +92,7 @@ import (
 					{
 						name: "config"
 						configMap: {
-							name: "\(#config.metadata.name)"
+							name: #cmName
 							items: [{
 								key:  "redis.conf"
 								path: key
