@@ -290,7 +290,9 @@ module: {
 ```
 
 When both the version number and the digest are specified, Timoni will verify that the
-upstream digest of the version matches the specified `instance.module.digest`.
+digest of the pulled module matches the specified `instance.module.digest`.
+The digest is computed from the artifact manifest that Timoni pulled, so the check fails
+if the registry serves any content other than the pinned one for that version.
 
 ```cue
 module: {

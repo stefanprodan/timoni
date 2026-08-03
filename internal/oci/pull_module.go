@@ -31,8 +31,8 @@ import (
 )
 
 // PullModule performs the following operations:
-// - determines the artifact digest corresponding to the module version
 // - fetches the manifest of the remote artifact
+// - computes the artifact digest from the fetched manifest
 // - verifies that artifact config matches Timoni's media type
 // - downloads all compressed layers matching Timoni's media type (if not cached)
 // - atomically stores the compressed layers in the local cache (if caching is enabled)
@@ -45,15 +45,20 @@ func PullModule(ociURL, dstPath, cacheDir string, opts []crane.Option) (*apiv1.M
 
 	repoURL := ref.Context().Name()
 
-	digest, err := crane.Digest(ref.String(), opts...)
-	if err != nil {
-		return nil, fmt.Errorf("resolving digest of '%s' failed: %w", ociURL, err)
-	}
-
 	manifestJSON, err := crane.Manifest(ref.String(), opts...)
 	if err != nil {
 		return nil, fmt.Errorf("pulling artifact manifest failed: %w", err)
 	}
+
+	// The digest has to be the hash of the manifest parsed below, since callers
+	// verify pinned modules against it. Resolving it with a separate request
+	// would describe whatever the tag pointed to at that moment, which is not
+	// necessarily what this pull extracted.
+	hash, _, err := gcrv1.SHA256(bytes.NewReader(manifestJSON))
+	if err != nil {
+		return nil, fmt.Errorf("computing digest of '%s' failed: %w", ociURL, err)
+	}
+	digest := hash.String()
 
 	manifest, err := gcrv1.ParseManifest(bytes.NewReader(manifestJSON))
 	if err != nil {
