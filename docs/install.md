@@ -3,25 +3,31 @@
 Timoni is available as a binary executable for Linux, macOS and Windows.
 The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://github.com/stefanprodan/timoni/releases).
 
-=== "Install with brew"
+=== "brew"
 
-    Install the latest release on macOS or Linux with:
-    
+    Install timoni on macOS or Linux with:
+
+    ```shell
+    brew install timoni
+    ```
+
+    If you prefer to use the latest upstream binaries:
+
     ```shell
     brew install stefanprodan/tap/timoni
     ```
 
     Note that the Homebrew formula will setup shell autocompletion for Bash, Fish and Zsh.
 
-=== "arkade"
+=== "mise"
 
-    Install the latest release on Windows, macOS or Linux with:
+    Install the latest release on macOS, Linux or Windows with:
     
     ```shell
-    arkade get timoni
+    mise use timoni
     ```
 
-    Note that the [Arkade](https://github.com/alexellis/arkade) version must be 0.9.11 or newer.
+    Note that you need to manually configure shell autocompletion.
 
 === "scoop"
 
@@ -35,10 +41,16 @@ The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://gi
 
 === "nix"
 
-    Install the latest release with [nix-env](https://nixos.org/manual/nix/unstable/command-ref/nix-env.html):
-    
+    Install timoni with [nix-env](https://nixos.org/manual/nix/unstable/command-ref/nix-env.html):
+
     ```shell
     nix-env -i timoni
+    ```
+
+    or with Flakes:
+
+    ```shell
+    nix profile install nixpkgs#timoni
     ```
 
     Note that the Nix package will setup shell autocompletion for Bash, Fish and Zsh.
@@ -57,6 +69,19 @@ The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://gi
     yay -S timoni-bin
     ```
 
+=== "proto"
+
+    Manage multiple versions with [proto](https://moonrepo.dev/proto) for all supported systems:
+
+    ```toml
+    # .prototools file
+
+    timoni = "0.29.0"
+
+    [plugins]
+    timoni = "source:https://raw.githubusercontent.com/stefanprodan/timoni/main/proto-plugin.toml"
+    ```
+
 === "zypper"
 
     Install the latest release with [zypper](https://github.com/openSUSE/zypper) for openSUSE:
@@ -72,22 +97,18 @@ The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://gi
     zypper install timoni-fish-completion
     zypper install timoni-zsh-completion
     ```
-=== "proto"
 
-    Manage multiple versions with [proto](https://moonrepo.dev/proto) for all supported systems:
+=== "arkade"
 
-    ```toml
-    # .prototools file
-
-    timoni = "0.19.0"
-
-    [plugins]
-    timoni = "source:https://raw.githubusercontent.com/stefanprodan/timoni/main/proto-plugin.toml"
+    Install the latest release on Windows, macOS or Linux with:
+    
+    ```shell
+    arkade get timoni
     ```
 
 === "from source"
 
-    Using Go >= 1.21:
+    Using Go >= 1.26:
     
     ```shell
     go install github.com/stefanprodan/timoni/cmd/timoni@latest
@@ -99,52 +120,39 @@ Configure your shell to load timoni completions:
 
 === "Bash"
 
-    To load completion run:
-    
-    ```shell
-    . <(timoni completion bash)
-    ```
-
-    To configure your bash shell to load completions for each session add to your bashrc:
+    Add to your `~/.bashrc` or `~/.bash_profile`:
 
     ```shell
-    # ~/.bashrc or ~/.bash_profile
     command -v timoni >/dev/null && . <(timoni completion bash)
     ```
 
     If you have an alias for timoni, you can extend shell completion to work with that alias:
 
     ```shell
-    # ~/.bashrc or ~/.bash_profile
     alias tm=timoni
     complete -F __start_timoni tm
     ```
 
 === "Fish"
 
-    To configure your fish shell to [load completions](http://fishshell.com/docs/current/index.html#completion-own)
-    for each session write this script to your completions dir:
-    
+    Write the [completion script](http://fishshell.com/docs/current/index.html#completion-own)
+    to your completions dir:
+
     ```shell
     timoni completion fish > ~/.config/fish/completions/timoni.fish
     ```
 
 === "Powershell"
 
-    To load completion run:
+    Add the completion script to your powershell profile.
 
-    ```shell
-    . <(timoni completion powershell)
-    ```
-
-    To configure your powershell shell to load completions for each session add to your powershell profile:
-    
     Windows:
 
     ```shell
     cd "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
     timoni completion >> timoni-completion.ps1
     ```
+
     Linux:
 
     ```shell
@@ -154,25 +162,18 @@ Configure your shell to load timoni completions:
 
 === "Zsh"
 
-    To load completion run:
-    
-    ```shell
-    . <(timoni completion zsh) && compdef _timoni timoni
-    ```
+    Add to your `~/.zshrc` or `~/.profile`:
 
-    To configure your zsh shell to load completions for each session add to your zshrc:
-    
     ```shell
-    # ~/.zshrc or ~/.profile
     command -v timoni >/dev/null && . <(timoni completion zsh) && compdef _timoni timoni
     ```
 
-    or write a cached file in one of the completion directories in your ${fpath}:
-    
+    Alternatively, install the completion script into one of the directories in your `${fpath}`:
+
     ```shell
     echo "${fpath// /\n}" | grep -i completion
     timoni completion zsh > _timoni
-    
+
     mv _timoni ~/.oh-my-zsh/completions  # oh-my-zsh
     mv _timoni ~/.zprezto/modules/completion/external/src/  # zprezto
     ```
@@ -203,7 +204,7 @@ To verify a release artifact such as the Timoni binary tarball,
 you can use the [slsa-verifier](https://github.com/slsa-framework/slsa-verifier) tool:
 
 ```shell
-TIMONI_VER=0.10.0 && \
+TIMONI_VER=0.29.0 && \
 gh release download v${TIMONI_VER} -R=stefanprodan/timoni -p="*" && \
 slsa-verifier verify-artifact \
 --provenance-path timoni_${TIMONI_VER}_provenance.intoto.jsonl \
@@ -219,7 +220,7 @@ The SBOMs are generated on GitHub-hosted runners using
 To scan a release for vulnerabilities, you can use [Grype](https://github.com/anchore/grype):
 
 ```shell
-TIMONI_VER=0.10.0 && \
+TIMONI_VER=0.29.0 && \
 gh release download v${TIMONI_VER} -R=stefanprodan/timoni -p="*sbom.spdx.json" && \
 grype sbom:./timoni_${TIMONI_VER}_sbom.spdx.json
 ```
