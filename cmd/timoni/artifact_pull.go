@@ -127,8 +127,18 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid output path %s: %w", pullArtifactArgs.output, err)
 	}
 
+	opts := oci.Options(ctx, pullArtifactArgs.creds.String(), rootArgs.registryInsecure)
+
 	if pullArtifactArgs.verify != "" {
-		err := oci.VerifyArtifact(ctx, log,
+		// Resolve the reference to a digest and verify and pull that, so the
+		// signature that is checked covers the artifact that is extracted.
+		digestURL, err := oci.ResolveDigestURL(ociURL, opts)
+		if err != nil {
+			return err
+		}
+		ociURL = digestURL
+
+		err = oci.VerifyArtifact(ctx, log,
 			pullArtifactArgs.verify,
 			ociURL,
 			pullArtifactArgs.cosignKey,
@@ -146,7 +156,6 @@ func pullArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	spin := logger.StartSpinner("pulling artifact")
 	defer spin.Stop()
 
-	opts := oci.Options(ctx, pullArtifactArgs.creds.String(), rootArgs.registryInsecure)
 	err := oci.PullArtifact(ociURL, pullArtifactArgs.output, pullArtifactArgs.contentType, opts)
 	if err != nil {
 		return err

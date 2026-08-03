@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -57,6 +58,31 @@ func ParseDigest(ociURL string) (name.Digest, error) {
 	}
 
 	return name.NewDigest(ref.String())
+}
+
+// ResolveDigestURL resolves an OpenContainers URL to its immutable digest form.
+// A URL that already refers to a digest is returned unchanged.
+//
+// Callers that both verify and fetch an artifact resolve the reference once
+// with this function and use the result for every operation, so that a tag
+// pointing somewhere else on a later request cannot substitute the artifact
+// between the verification and the fetch.
+func ResolveDigestURL(ociURL string, opts []crane.Option) (string, error) {
+	ref, err := parseArtifactRef(ociURL)
+	if err != nil {
+		return "", err
+	}
+
+	if _, ok := ref.(name.Digest); ok {
+		return ociURL, nil
+	}
+
+	digest, err := crane.Digest(ref.String(), opts...)
+	if err != nil {
+		return "", fmt.Errorf("resolving digest of '%s' failed: %w", ociURL, err)
+	}
+
+	return apiv1.ArtifactPrefix + ref.Context().Digest(digest).String(), nil
 }
 
 // ValidateTag reports whether tag follows the OCI Distribution tag grammar.

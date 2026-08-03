@@ -139,8 +139,18 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
+	opts := oci.Options(ctx, pullModArgs.creds.String(), rootArgs.registryInsecure)
+
 	if pullModArgs.verify != "" {
-		err := oci.VerifyArtifact(ctx, log,
+		// Resolve the version to a digest and verify and pull that, so the
+		// signature that is checked covers the module that is extracted.
+		digestURL, err := oci.ResolveDigestURL(ociURL, opts)
+		if err != nil {
+			return err
+		}
+		ociURL = digestURL
+
+		err = oci.VerifyArtifact(ctx, log,
 			pullModArgs.verify,
 			ociURL,
 			pullModArgs.cosignKey,
@@ -156,7 +166,6 @@ func pullCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	spin := logger.StartSpinner(fmt.Sprintf("pulling %s", ociURL))
-	opts := oci.Options(ctx, pullModArgs.creds.String(), rootArgs.registryInsecure)
 	err := oci.PullArtifact(ociURL, pullModArgs.output, apiv1.AnyContentType, opts)
 	spin.Stop()
 	if err != nil {
