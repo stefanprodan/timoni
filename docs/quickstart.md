@@ -14,7 +14,7 @@ To follow this guide you'll need:
 Install Timoni with:
 
 ```shell
-brew install stefanprodan/tap/timoni
+brew install timoni
 ```
 
 For other methods,
