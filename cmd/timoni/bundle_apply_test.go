@@ -26,11 +26,12 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	. "github.com/onsi/gomega"
-	cp "github.com/otiai10/copy"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/stefanprodan/timoni/internal/fscopy"
 )
 
 func Test_BundleApply(t *testing.T) {
@@ -622,7 +623,7 @@ bundle: {
 	// This is needed because `bundlePath` below will be `tmpdir/bundle.cue`
 	// which means the `file://./testdata/module/` will be normalized to /tmpdir/testdata/module
 	bundleTmpDir := t.TempDir()
-	g.Expect(cp.Copy(modPath, filepath.Join(bundleTmpDir, modPath))).To(Succeed())
+	g.Expect(fscopy.CopyDir(modPath, filepath.Join(bundleTmpDir, modPath), fscopy.Options{FollowSymlinks: true})).To(Succeed())
 
 	bundlePath := filepath.Join(bundleTmpDir, "bundle.cue")
 	err := os.WriteFile(bundlePath, []byte(bundleCue), 0644)
@@ -681,7 +682,7 @@ func Test_BundleApply_Runtime_LocalModule_WithAbsolutePath(t *testing.T) {
 	// Copy testdata/module/ to /tmpdir/testdata/module/
 	// modPath will become an absolute path `/tmpdir/testdata/module/`
 	bundleTmpDir := t.TempDir()
-	g.Expect(cp.Copy("testdata/module", filepath.Join(bundleTmpDir, "testdata/module"))).To(Succeed())
+	g.Expect(fscopy.CopyDir("testdata/module", filepath.Join(bundleTmpDir, "testdata/module"), fscopy.Options{FollowSymlinks: true})).To(Succeed())
 
 	bundleName := "my-bundle"
 	modPath := filepath.Join(bundleTmpDir, "testdata/module")

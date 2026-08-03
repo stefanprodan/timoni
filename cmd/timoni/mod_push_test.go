@@ -18,6 +18,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -25,6 +28,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/fscopy"
 )
 
 func Test_PushMod(t *testing.T) {
@@ -92,6 +96,49 @@ func Test_PushMod(t *testing.T) {
 	manifest, err = image.Manifest()
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(manifest.Annotations[apiv1.VersionAnnotation]).To(BeEquivalentTo(newVer))
+}
+
+func Test_PushMod_Symlinks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires privileges on Windows")
+	}
+	g := NewWithT(t)
+
+	// Copy the test module and add a relative symlink
+	// to a file living outside the module root.
+	tmpDir := t.TempDir()
+	modPath := filepath.Join(tmpDir, "module")
+	g.Expect(fscopy.CopyDir("testdata/module", modPath, fscopy.Options{})).To(Succeed())
+	sharedFile := filepath.Join(tmpDir, "shared", "extra.txt")
+	g.Expect(os.MkdirAll(filepath.Dir(sharedFile), 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(sharedFile, []byte("extra"), 0o644)).To(Succeed())
+	g.Expect(os.Symlink(filepath.Join("..", "shared", "extra.txt"),
+		filepath.Join(modPath, "extra.txt"))).To(Succeed())
+
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modVer := "1.0.0"
+
+	// By default the symlinked file is materialized in the artifact.
+	_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s", modPath, modURL, modVer))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	pullDir := filepath.Join(t.TempDir(), "follow")
+	g.Expect(os.MkdirAll(pullDir, 0o755)).To(Succeed())
+	_, err = executeCommand(fmt.Sprintf("mod pull oci://%s -v %s -o %s", modURL, modVer, pullDir))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(filepath.Join(pullDir, "extra.txt")).To(BeARegularFile())
+
+	// With the opt-out, the symlinked file is left out of the artifact.
+	t.Setenv("TIMONI_FOLLOW_SYMLINKS", "false")
+	modVer = "1.0.1"
+	_, err = executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s", modPath, modURL, modVer))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	pullDir = filepath.Join(t.TempDir(), "skip")
+	g.Expect(os.MkdirAll(pullDir, 0o755)).To(Succeed())
+	_, err = executeCommand(fmt.Sprintf("mod pull oci://%s -v %s -o %s", modURL, modVer, pullDir))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(filepath.Join(pullDir, "extra.txt")).ToNot(BeAnExistingFile())
 }
 
 func Test_PushModRejectsBuildMetadataVersion(t *testing.T) {

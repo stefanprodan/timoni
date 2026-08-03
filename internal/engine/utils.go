@@ -25,9 +25,9 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/fluxcd/pkg/sourceignore"
-	cp "github.com/otiai10/copy"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
+	"github.com/stefanprodan/timoni/internal/fscopy"
 )
 
 // IsOCIUrl returns true if the given URL is an OCI URL.
@@ -51,10 +51,30 @@ func GetEnv() map[string]string {
 	return vars
 }
 
+// FollowSymlinks reports whether symbolic links should be resolved
+// when copying modules, which is the default behavior unless the
+// TIMONI_FOLLOW_SYMLINKS env var is set to false.
+func FollowSymlinks() bool {
+	return os.Getenv("TIMONI_FOLLOW_SYMLINKS") != "false"
+}
+
 // CopyModule copies the given module to the destination directory,
 // while excluding files that match the timoni.ignore patterns.
+// Symbolic links are resolved and their targets copied in place of
+// the links, unless FollowSymlinks reports false,
+// in which case symlinks are skipped.
 func CopyModule(srcDir string, dstDir string) (err error) {
-	srcDir = filepath.Clean(srcDir)
+	// The ignore matcher domain must be built from the same form of the
+	// source path that fscopy passes to the Skip callback: absolute, and
+	// fully resolved when following symlinks.
+	srcDir, err = filepath.Abs(srcDir)
+	if err != nil {
+		return err
+	}
+	srcDir, err = filepath.EvalSymlinks(srcDir)
+	if err != nil {
+		return err
+	}
 	dstDir = filepath.Clean(dstDir)
 
 	domain := strings.Split(srcDir, string(filepath.Separator))
@@ -64,13 +84,14 @@ func CopyModule(srcDir string, dstDir string) (err error) {
 	}
 	matcher := sourceignore.NewMatcher(ps)
 
-	opt := cp.Options{
-		Skip: func(info os.FileInfo, src, dest string) (bool, error) {
-			return matcher.Match(strings.Split(src, string(filepath.Separator)), info.IsDir()), nil
+	opt := fscopy.Options{
+		FollowSymlinks: FollowSymlinks(),
+		Skip: func(src string, isDir bool) bool {
+			return matcher.Match(strings.Split(src, string(filepath.Separator)), isDir)
 		},
 	}
 
-	return cp.Copy(srcDir, dstDir, opt)
+	return fscopy.CopyDir(srcDir, dstDir, opt)
 }
 
 // ReadIgnoreFile returns the module ignore patterns or an input error.

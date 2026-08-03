@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -58,6 +59,73 @@ func TestCopyModule_Ignore(t *testing.T) {
 		return nil
 	})
 	g.Expect(fsErr).ToNot(HaveOccurred())
+}
+
+func TestCopyModule_Symlinks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires privileges on Windows")
+	}
+	makeModule := func(t *testing.T) string {
+		t.Helper()
+		g := NewWithT(t)
+		tmpDir := t.TempDir()
+		srcDir := filepath.Join(tmpDir, "module")
+		g.Expect(os.MkdirAll(srcDir, 0o755)).To(Succeed())
+		// A shared file outside the module root, linked relatively.
+		sharedFile := filepath.Join(tmpDir, "shared", "schema.cue")
+		g.Expect(os.MkdirAll(filepath.Dir(sharedFile), 0o755)).To(Succeed())
+		g.Expect(os.WriteFile(sharedFile, []byte("shared"), 0o644)).To(Succeed())
+		g.Expect(os.Symlink(filepath.Join("..", "shared", "schema.cue"),
+			filepath.Join(srcDir, "schema.cue"))).To(Succeed())
+		return srcDir
+	}
+
+	t.Run("resolves symlinks by default", func(t *testing.T) {
+		g := NewWithT(t)
+		srcDir := makeModule(t)
+		dstDir := filepath.Join(t.TempDir(), "module")
+
+		g.Expect(CopyModule(srcDir, dstDir)).To(Succeed())
+
+		g.Expect(filepath.Join(dstDir, "schema.cue")).To(BeARegularFile())
+	})
+
+	t.Run("skips symlinks on opt-out", func(t *testing.T) {
+		g := NewWithT(t)
+		t.Setenv("TIMONI_FOLLOW_SYMLINKS", "false")
+		srcDir := makeModule(t)
+		dstDir := filepath.Join(t.TempDir(), "module")
+
+		g.Expect(CopyModule(srcDir, dstDir)).To(Succeed())
+
+		g.Expect(filepath.Join(dstDir, "schema.cue")).ToNot(BeAnExistingFile())
+	})
+
+	t.Run("applies ignore rules to symlinked dirs", func(t *testing.T) {
+		g := NewWithT(t)
+		tmpDir := t.TempDir()
+		srcDir := filepath.Join(tmpDir, "module")
+		g.Expect(os.MkdirAll(srcDir, 0o755)).To(Succeed())
+
+		sharedDir := filepath.Join(tmpDir, "shared")
+		g.Expect(os.MkdirAll(sharedDir, 0o755)).To(Succeed())
+		g.Expect(os.WriteFile(filepath.Join(sharedDir, "keep.txt"), []byte("keep"), 0o644)).To(Succeed())
+		g.Expect(os.WriteFile(filepath.Join(sharedDir, "secret.txt"), []byte("secret"), 0o644)).To(Succeed())
+
+		// Both links materialize the same target, one is excluded by a
+		// directory rule and the other has a descendant file excluded.
+		g.Expect(os.Symlink(filepath.Join("..", "shared"), filepath.Join(srcDir, "linked"))).To(Succeed())
+		g.Expect(os.Symlink(filepath.Join("..", "shared"), filepath.Join(srcDir, "dropped"))).To(Succeed())
+		g.Expect(os.WriteFile(filepath.Join(srcDir, "timoni.ignore"),
+			[]byte("dropped/\nlinked/secret.txt\n"), 0o644)).To(Succeed())
+
+		dstDir := filepath.Join(t.TempDir(), "module")
+		g.Expect(CopyModule(srcDir, dstDir)).To(Succeed())
+
+		g.Expect(filepath.Join(dstDir, "linked", "keep.txt")).To(BeARegularFile())
+		g.Expect(filepath.Join(dstDir, "linked", "secret.txt")).ToNot(BeAnExistingFile())
+		g.Expect(filepath.Join(dstDir, "dropped")).ToNot(BeADirectory())
+	})
 }
 
 func TestIsOCIUrl(t *testing.T) {

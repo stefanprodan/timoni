@@ -4,3 +4,7 @@ blueprints/**/cue.mod/** linguist-vendored
 
 # Pin CUE schemas to LF so embedded files parse consistently across platforms.
 *.cue text eol=lf
+
+# Hint Git for Windows to create directory-type NTFS symlinks
+# for the vendored schemas linked under cue.mod/pkg.
+**/cue.mod/pkg/timoni.sh symlink=dir

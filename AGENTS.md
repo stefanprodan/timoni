@@ -17,8 +17,7 @@ and the values fetched live from cluster resources (Secrets/ConfigMaps) for inje
 make build              # Build ./bin/timoni (CGO_ENABLED=0)
 make test               # tidy + generate + fmt + vet + run all Go tests with Kubernetes envtest
 make generate           # Regenerate api/v1alpha1/zz_generated.deepcopy.go via controller-gen
-make sync-schemas       # Sync schemas/timoni.sh/core/v1alpha1 to the vendored copies in blueprints, examples and testdata modules
-make cue-vet            # sync-schemas + cue fmt + cue vet schemas, and `timoni mod vet` the example/blueprint/testdata modules
+make cue-vet            # cue fmt + cue vet schemas, and `timoni mod vet` the example/blueprint/testdata modules
 make docs               # Regenerate docs/cmd/*.md from the cobra commands via `timoni docgen`
 ```
 
@@ -30,7 +29,7 @@ go test ./cmd/timoni/... -run TestApply -v
 
 - `make test` is the canonical pre-commit gate; it runs `go mod tidy`, code generation, fmt, and vet before testing, so a clean `make test` implies all of those pass.
 - Tests in `cmd/timoni` and packages that talk to the API server require **envtest** (`make install-envtest` downloads the Kubernetes test binaries into `./bin`).
-- After changing CUE schemas or example modules, run `make cue-vet`; it first runs `sync-schemas`, which propagates the canonical `schemas/timoni.sh/core/v1alpha1` files to their vendored copies (full set into blueprints/examples, refresh-only into the testdata modules). After changing types in `api/v1alpha1`, run `make generate`.
+- After changing CUE schemas or example modules, run `make cue-vet`. The blueprint, example and testdata modules vendor the canonical `schemas/timoni.sh/core/v1alpha1` package as relative symlinks under `cue.mod/pkg`, so schema changes propagate without a sync step. After changing types in `api/v1alpha1`, run `make generate`.
 - After changing any command's `Use`/`Short`/`Long`/flags in `cmd/timoni/`, run `make docs` — the CLI reference under `docs/cmd/` is generated and must be regenerated to match, or it goes stale.
 
 ## Architecture
