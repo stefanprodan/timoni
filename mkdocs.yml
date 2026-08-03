@@ -108,6 +108,7 @@ nav:
       - Module Development:
           - Get started with modules: cue/module/initialization.md
           - Immutable ConfigMaps and Secrets: cue/module/immutable-config.md
+          - Embedding files: cue/module/embedding-files.md
           - Add custom resources: cue/module/custom-resources.md
           - Cluster version constraints: cue/module/semver-constraints.md
           - Control the apply behavior: cue/module/apply-behavior.md
