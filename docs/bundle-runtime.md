@@ -359,6 +359,12 @@ At apply time, Timoni injects the fields values from the runtime,
 if a specified runtime var is not found and if a default is not provided,
 the apply with fail with an `incomplete value` error.
 
+Runtime values are validated against the type declared in the attribute before
+they are injected. A `number` value must be a CUE number literal, and a `bool`
+value must be `true` or `false`; anything else fails the apply with a
+`failed to parse attribute` error. A `string` value is quoted, so it may hold
+arbitrary text including newlines.
+
 ## Using values from environment variables
 
 To use values from environment variables,

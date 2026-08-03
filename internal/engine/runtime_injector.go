@@ -102,18 +102,15 @@ func (in *RuntimeInjector) inject(node ast.Node, vars map[string]string) (ast.No
 			ra, _ := apiv1.NewRuntimeAttribute(key, body)
 
 			if envVal, ok := vars[ra.Name]; ok {
-				switch ra.Type {
-				case "string":
-					field.Value = ast.NewLit(token.STRING, in.quoteString(envVal))
-				case "number":
-					field.Value = ast.NewLit(token.INT, envVal)
-				case "bool":
-					field.Value = ast.NewIdent(envVal)
-				default:
-					err = fmt.Errorf("failed to parse attribute '@%s(%s)', unknown type '%s' must be string, number or bool",
-						apiv1.FieldManager, body, ra.Type)
+				var value ast.Expr
+				value, err = in.valueExpr(ra.Type, envVal)
+				if err != nil {
+					err = fmt.Errorf("failed to parse attribute '@%s(%s)': %w",
+						apiv1.FieldManager, body, err)
 					return false
 				}
+
+				field.Value = value
 				c.Replace(field)
 			}
 		}
@@ -121,6 +118,39 @@ func (in *RuntimeInjector) inject(node ast.Node, vars map[string]string) (ast.No
 	}
 
 	return astutil.Apply(node, f, nil), err
+}
+
+// valueExpr converts a runtime value to the CUE expression matching the
+// attribute type. Number and bool values must be validated: unlike strings
+// they are emitted unquoted, so an unchecked value is read back as CUE source
+// instead of as data.
+func (in *RuntimeInjector) valueExpr(valType, val string) (ast.Expr, error) {
+	switch valType {
+	case "string":
+		return ast.NewLit(token.STRING, in.quoteString(val)), nil
+	case "number":
+		// ParseNum accepts exactly what CUE accepts as a number literal,
+		// including signs, multipliers and non-decimal bases. Its error
+		// quotes the value, so it is discarded rather than wrapped: runtime
+		// values may hold secrets and must not reach the logs.
+		var num literal.NumInfo
+		if err := literal.ParseNum(val, &num); err != nil {
+			return nil, fmt.Errorf("value must be a number")
+		}
+
+		tok := token.FLOAT
+		if num.IsInt() {
+			tok = token.INT
+		}
+		return ast.NewLit(tok, val), nil
+	case "bool":
+		if val != "true" && val != "false" {
+			return nil, fmt.Errorf("value must be 'true' or 'false'")
+		}
+		return ast.NewBool(val == "true"), nil
+	default:
+		return nil, fmt.Errorf("unknown type '%s' must be string, number or bool", valType)
+	}
 }
 
 func (in *RuntimeInjector) quoteString(s string) string {
