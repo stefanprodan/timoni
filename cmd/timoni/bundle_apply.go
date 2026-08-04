@@ -26,7 +26,6 @@ import (
 	"path"
 	"time"
 
-	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -226,7 +225,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 
 		for _, instance := range bundle.Instances {
 			instance.Cluster = cluster.Name
-			if err := applyBundleInstance(logr.NewContext(ctx, log), cuectx, instance, kubeVersion, tmpDir, cmd.OutOrStdout()); err != nil {
+			if err := applyBundleInstance(logr.NewContext(ctx, log), instance, kubeVersion, tmpDir, cmd.OutOrStdout()); err != nil {
 				return err
 			}
 		}
@@ -279,12 +278,17 @@ func fetchBundleInstanceModule(ctx context.Context, instance *apiv1.BundleInstan
 	return nil
 }
 
-func applyBundleInstance(ctx context.Context, cuectx *cue.Context, instance *apiv1.BundleInstance, kubeVersion string, rootDir string, diffOutput io.Writer) error {
+// applyBundleInstance builds an instance and reconciles its Kubernetes
+// objects onto the cluster. The instance is compiled in its own CUE context
+// so that the memory used during the build can be reclaimed once the objects
+// are extracted, keeping the peak usage constant regardless of how many
+// instances a bundle contains.
+func applyBundleInstance(ctx context.Context, instance *apiv1.BundleInstance, kubeVersion string, rootDir string, diffOutput io.Writer) error {
 	log := loggerBundleInstance(ctx, instance.Bundle, instance.Cluster, instance.Name, true)
 
 	modDir := path.Join(rootDir, instance.Name, "module")
 	builder := engine.NewModuleBuilder(
-		cuectx,
+		nil,
 		instance.Name,
 		instance.Namespace,
 		modDir,

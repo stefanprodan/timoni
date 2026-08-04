@@ -27,7 +27,6 @@ import (
 	"sort"
 	"strings"
 
-	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
@@ -173,12 +172,12 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	}
 
 	if bundleBuildArgs.outputDir != "" {
-		return writeBundleInstancesToDir(cmd, ctx, bundle.Instances, tmpDir)
+		return writeBundleInstancesToDir(cmd, bundle.Instances, tmpDir)
 	}
 
 	var sb strings.Builder
 	for i, instance := range bundle.Instances {
-		objects, err := buildBundleInstanceObjects(ctx, instance, tmpDir)
+		objects, err := buildBundleInstanceObjects(instance, tmpDir)
 		if err != nil {
 			return err
 		}
@@ -205,7 +204,7 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 // writeBundleInstancesToDir writes the resources of each instance to the
 // output directory as a tree: one directory per instance and one file per
 // resource, named with the same convention as 'kustomize build -o <dir>'.
-func writeBundleInstancesToDir(cmd *cobra.Command, cuectx *cue.Context, instances []*apiv1.BundleInstance, rootDir string) error {
+func writeBundleInstancesToDir(cmd *cobra.Command, instances []*apiv1.BundleInstance, rootDir string) error {
 	outputDir := bundleBuildArgs.outputDir
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
@@ -213,7 +212,7 @@ func writeBundleInstancesToDir(cmd *cobra.Command, cuectx *cue.Context, instance
 
 	log := LoggerFrom(cmd.Context())
 	for _, instance := range instances {
-		objects, err := buildBundleInstanceObjects(cuectx, instance, rootDir)
+		objects, err := buildBundleInstanceObjects(instance, rootDir)
 		if err != nil {
 			return err
 		}
@@ -284,12 +283,15 @@ func resourceFileName(obj *unstructured.Unstructured, withNamespace bool) string
 }
 
 // buildBundleInstanceObjects builds an instance and returns its sorted
-// Kubernetes objects.
-func buildBundleInstanceObjects(cuectx *cue.Context, instance *apiv1.BundleInstance, rootDir string) ([]*unstructured.Unstructured, error) {
+// Kubernetes objects. The instance is compiled in its own CUE context so
+// that the memory used during the build can be reclaimed once the objects
+// are extracted, keeping the peak usage constant regardless of how many
+// instances a bundle contains.
+func buildBundleInstanceObjects(instance *apiv1.BundleInstance, rootDir string) ([]*unstructured.Unstructured, error) {
 	modDir := path.Join(rootDir, instance.Name, "module")
 
 	builder := engine.NewModuleBuilder(
-		cuectx,
+		nil,
 		instance.Name,
 		instance.Namespace,
 		modDir,
