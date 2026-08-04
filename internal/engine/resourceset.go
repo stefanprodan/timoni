@@ -24,6 +24,7 @@ import (
 	"cuelang.org/go/encoding/yaml"
 	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // ResourceSet is a named list of Kubernetes resource objects.
@@ -61,12 +62,7 @@ func GetResources(value cue.Value) ([]ResourceSet, error) {
 			return nil, fmt.Errorf("listing objects in resource list %q failed: %w", name, err)
 		}
 
-		data, err := yaml.EncodeStream(items)
-		if err != nil {
-			return nil, fmt.Errorf("converting objects for resource list %q failed: %w", name, err)
-		}
-
-		objects, err := ssautil.ReadObjects(bytes.NewReader(data))
+		objects, err := decodeObjects(items)
 		if err != nil {
 			return nil, fmt.Errorf("loading objects for resource list %q failed: %w", name, err)
 		}
@@ -77,4 +73,85 @@ func GetResources(value cue.Value) ([]ResourceSet, error) {
 		})
 	}
 	return sets, nil
+}
+
+// decodeObjects converts the CUE values in the given iterator to Kubernetes
+// unstructured objects. Values which are not Kubernetes objects are silently
+// dropped from the result, and Kubernetes lists are expanded to their items.
+func decodeObjects(items cue.Iterator) ([]*unstructured.Unstructured, error) {
+	objects := make([]*unstructured.Unstructured, 0)
+
+	for items.Next() {
+		item := items.Value()
+		if item.Kind() == cue.NullKind {
+			continue
+		}
+
+		if needsYAMLDecoding(item) {
+			objs, err := decodeYAMLObjects(item)
+			if err != nil {
+				return nil, err
+			}
+			objects = append(objects, objs...)
+			continue
+		}
+
+		data, err := item.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+
+		obj := &unstructured.Unstructured{}
+		if err := obj.UnmarshalJSON(data); err != nil {
+			return nil, err
+		}
+
+		if obj.IsList() {
+			err = obj.EachListItem(func(item runtime.Object) error {
+				objects = append(objects, item.(*unstructured.Unstructured))
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		if ssautil.IsKubernetesObject(obj) && !ssautil.IsKustomization(obj) {
+			objects = append(objects, obj)
+		}
+	}
+
+	return objects, nil
+}
+
+// needsYAMLDecoding reports whether the value contains fields of a kind
+// (bytes, floats) whose JSON encoding differs from the YAML round-trip:
+// bytes decode from YAML to raw strings instead of base64, and integral
+// floats normalize to integers.
+func needsYAMLDecoding(value cue.Value) bool {
+	var found bool
+	value.Walk(func(v cue.Value) bool {
+		if found {
+			return false
+		}
+		switch v.Kind() {
+		case cue.BytesKind, cue.FloatKind:
+			found = true
+			return false
+		}
+		return true
+	}, nil)
+	return found
+}
+
+// decodeYAMLObjects converts the CUE value to Kubernetes unstructured
+// objects through a YAML round-trip, preserving the YAML decoding of
+// bytes and integral floats.
+func decodeYAMLObjects(value cue.Value) ([]*unstructured.Unstructured, error) {
+	data, err := yaml.Encode(value)
+	if err != nil {
+		return nil, err
+	}
+	return ssautil.ReadObjects(bytes.NewReader(data))
 }
