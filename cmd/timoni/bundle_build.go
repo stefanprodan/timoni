@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -165,19 +164,23 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	ctxPull, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
+	moduleCache := make(map[moduleCacheKey]*fetchedModule)
+	modDirs := make(map[string]string)
 	for _, instance := range bundle.Instances {
-		if err := fetchBundleInstanceModule(ctxPull, instance, tmpDir); err != nil {
+		modDir, err := fetchBundleInstanceModule(ctxPull, instance, tmpDir, bundleBuildArgs.creds.String(), moduleCache)
+		if err != nil {
 			return err
 		}
+		modDirs[instance.Name] = modDir
 	}
 
 	if bundleBuildArgs.outputDir != "" {
-		return writeBundleInstancesToDir(cmd, bundle.Instances, tmpDir)
+		return writeBundleInstancesToDir(cmd, bundle.Instances, modDirs)
 	}
 
 	var sb strings.Builder
 	for i, instance := range bundle.Instances {
-		objects, err := buildBundleInstanceObjects(instance, tmpDir)
+		objects, err := buildBundleInstanceObjects(instance, modDirs[instance.Name])
 		if err != nil {
 			return err
 		}
@@ -204,7 +207,7 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 // writeBundleInstancesToDir writes the resources of each instance to the
 // output directory as a tree: one directory per instance and one file per
 // resource, named with the same convention as 'kustomize build -o <dir>'.
-func writeBundleInstancesToDir(cmd *cobra.Command, instances []*apiv1.BundleInstance, rootDir string) error {
+func writeBundleInstancesToDir(cmd *cobra.Command, instances []*apiv1.BundleInstance, modDirs map[string]string) error {
 	outputDir := bundleBuildArgs.outputDir
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
@@ -212,7 +215,7 @@ func writeBundleInstancesToDir(cmd *cobra.Command, instances []*apiv1.BundleInst
 
 	log := LoggerFrom(cmd.Context())
 	for _, instance := range instances {
-		objects, err := buildBundleInstanceObjects(instance, rootDir)
+		objects, err := buildBundleInstanceObjects(instance, modDirs[instance.Name])
 		if err != nil {
 			return err
 		}
@@ -286,10 +289,10 @@ func resourceFileName(obj *unstructured.Unstructured, withNamespace bool) string
 // Kubernetes objects. The instance is compiled in its own CUE context so
 // that the memory used during the build can be reclaimed once the objects
 // are extracted, keeping the peak usage constant regardless of how many
-// instances a bundle contains.
-func buildBundleInstanceObjects(instance *apiv1.BundleInstance, rootDir string) ([]*unstructured.Unstructured, error) {
-	modDir := path.Join(rootDir, instance.Name, "module")
-
+// instances a bundle contains. The module directory is shared between the
+// instances referencing the same module version and is never modified; the
+// instance schema and values are injected as in-memory overlays.
+func buildBundleInstanceObjects(instance *apiv1.BundleInstance, modDir string) ([]*unstructured.Unstructured, error) {
 	builder := engine.NewModuleBuilder(
 		nil,
 		instance.Name,
@@ -298,7 +301,7 @@ func buildBundleInstanceObjects(instance *apiv1.BundleInstance, rootDir string) 
 		bundleBuildArgs.pkg.String(),
 	)
 
-	if err := builder.WriteSchemaFile(); err != nil {
+	if err := builder.OverlaySchemaFile(); err != nil {
 		return nil, err
 	}
 
@@ -308,7 +311,7 @@ func buildBundleInstanceObjects(instance *apiv1.BundleInstance, rootDir string) 
 	}
 	instance.Module.Name = modName
 
-	if err := builder.WriteValuesFileWithDefaults(instance.Values); err != nil {
+	if err := builder.OverlayValuesFileWithDefaults(instance.Values); err != nil {
 		return nil, err
 	}
 

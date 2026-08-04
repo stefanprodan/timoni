@@ -203,7 +203,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		applyArgs.pkg.String(),
 	)
 
-	if err := builder.WriteSchemaFile(); err != nil {
+	if err := builder.OverlaySchemaFile(); err != nil {
 		return err
 	}
 
@@ -219,7 +219,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		err = builder.MergeValuesFile(valuesCue)
+		err = builder.OverlayValuesFile(valuesCue)
 		if err != nil {
 			return err
 		}

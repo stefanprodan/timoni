@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/fscopy"
 )
 
@@ -126,6 +127,27 @@ bundle: {
 				g.Expect(err).ToNot(HaveOccurred())
 			})
 		}
+	})
+
+	t.Run("stores the bundle values in the instance inventory", func(t *testing.T) {
+		g := NewWithT(t)
+		frontendVals, err := executeCommand(fmt.Sprintf(
+			"inspect values -n %s frontend",
+			namespace,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(frontendVals).To(MatchRegexp(`server: \{\s*enabled: false`))
+		g.Expect(frontendVals).To(ContainSubstring(`team: "test"`))
+		g.Expect(frontendVals).ToNot(ContainSubstring("client:"))
+
+		backendVals, err := executeCommand(fmt.Sprintf(
+			"inspect values -n %s backend",
+			namespace,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(backendVals).To(MatchRegexp(`client: \{\s*enabled: false`))
+		g.Expect(backendVals).To(ContainSubstring(`team: "test"`))
+		g.Expect(backendVals).ToNot(ContainSubstring("server:"))
 	})
 
 	t.Run("fails to create instances from completely overlapping bundle", func(t *testing.T) {
@@ -754,4 +776,148 @@ runtime: {
 		g.Expect(err).ToNot(HaveOccurred())
 		t.Log("\n", output)
 	})
+}
+
+func Test_FetchBundleInstanceModule_Cache(t *testing.T) {
+	g := NewWithT(t)
+
+	modPath := "testdata/module"
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+
+	for _, v := range []string{"1.0.0", "1.1.0"} {
+		_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s", modPath, modURL, v))
+		g.Expect(err).ToNot(HaveOccurred())
+	}
+
+	digest, err := crane.Digest(fmt.Sprintf("%s:%s", modURL, "1.0.0"))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	rootDir := t.TempDir()
+	cache := make(map[moduleCacheKey]*fetchedModule)
+
+	instanceFor := func(name, version, digest string) *apiv1.BundleInstance {
+		return &apiv1.BundleInstance{
+			Name: name,
+			Module: apiv1.ModuleReference{
+				Repository: "oci://" + modURL,
+				Version:    version,
+				Digest:     digest,
+			},
+		}
+	}
+
+	t.Run("shares the module dir between instances of the same version", func(t *testing.T) {
+		g := NewWithT(t)
+		dirA, err := fetchBundleInstanceModule(context.Background(), instanceFor("a", "1.0.0", ""), rootDir, "", cache)
+		g.Expect(err).ToNot(HaveOccurred())
+
+		instB := instanceFor("b", "1.0.0", "")
+		dirB, err := fetchBundleInstanceModule(context.Background(), instB, rootDir, "", cache)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(dirB).To(Equal(dirA))
+		g.Expect(cache).To(HaveLen(1))
+		g.Expect(instB.Module.Digest).To(Equal(digest))
+	})
+
+	t.Run("verifies the digest pinning on cache hits", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := fetchBundleInstanceModule(context.Background(), instanceFor("c", "1.0.0", "sha256:1111111111111111111111111111111111111111111111111111111111111111"), rootDir, "", cache)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("doesn't match the specified digest"))
+	})
+
+	t.Run("fetches distinct versions into distinct dirs", func(t *testing.T) {
+		g := NewWithT(t)
+		dirA := cache[moduleCacheKey{repository: "oci://" + modURL, version: "1.0.0"}].dir
+		dirD, err := fetchBundleInstanceModule(context.Background(), instanceFor("d", "1.1.0", ""), rootDir, "", cache)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(dirD).ToNot(Equal(dirA))
+		g.Expect(cache).To(HaveLen(2))
+	})
+}
+
+func Test_BundleApply_Runtime_ModuleVersionPerCluster(t *testing.T) {
+	g := NewWithT(t)
+
+	bundleName := rnd("my-bundle", 5)
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+
+	for _, v := range []string{"1.0.0", "2.0.0"} {
+		_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s", modPath, modURL, v))
+		g.Expect(err).ToNot(HaveOccurred())
+	}
+
+	bundleData := fmt.Sprintf(`
+bundle: {
+	_cluster: string @timoni(runtime:string:TIMONI_CLUSTER_NAME)
+
+	_ver: string
+	if _cluster == "staging" {
+		_ver: "1.0.0"
+	}
+	if _cluster != "staging" {
+		_ver: "2.0.0"
+	}
+
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		"\(_cluster)-app": {
+			module: {
+				url:     "oci://%[2]s"
+				version: _ver
+			}
+			namespace: "%[3]s"
+		}
+	}
+}
+`, bundleName, modURL, namespace)
+
+	runtimeCue := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "fleet-test"
+	clusters: {
+		"staging": {
+			group:       "staging"
+			kubeContext: "envtest"
+		}
+		"production": {
+			group:       "production"
+			kubeContext: "envtest"
+		}
+	}
+}
+`
+
+	runtimePath := filepath.Join(t.TempDir(), "runtime.cue")
+	g.Expect(os.WriteFile(runtimePath, []byte(runtimeCue), 0644)).ToNot(HaveOccurred())
+
+	_, err := executeCommandWithIn(
+		fmt.Sprintf("bundle apply -f- -r %s -p main --wait", runtimePath),
+		strings.NewReader(bundleData))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	for name, version := range map[string]string{
+		"staging-app":    "1.0.0",
+		"production-app": "2.0.0",
+	} {
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name + "-server",
+				Namespace: namespace,
+			},
+		}
+		err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(cm), cm)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(cm.GetLabels()).To(HaveKeyWithValue("app.kubernetes.io/version", version))
+
+		output, err := executeCommand(fmt.Sprintf("inspect module -n %s %s", namespace, name))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).To(ContainSubstring(version))
+	}
 }

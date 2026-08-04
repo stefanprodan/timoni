@@ -18,6 +18,7 @@ package engine
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestModuleBuilder(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(moduleName).To(BeEquivalentTo("timoni.sh/test"))
 
-	err = mb.MergeValuesFile([][]byte{mustReadFile(g, "testdata/module-values/overlay.cue")})
+	err = mb.OverlayValuesFile([][]byte{mustReadFile(g, "testdata/module-values/overlay.cue")})
 	g.Expect(err).ToNot(HaveOccurred())
 
 	mb.SetVersionInfo("", "1.25.3")
@@ -79,7 +80,57 @@ func TestModuleBuilder_InvalidValues(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(moduleName).To(BeEquivalentTo("timoni.sh/test"))
 
-	err = mb.MergeValuesFile([][]byte{mustReadFile(g, "testdata/module-values/overlay-invalid.cue")})
+	err = mb.OverlayValuesFile([][]byte{mustReadFile(g, "testdata/module-values/overlay-invalid.cue")})
 	g.Expect(err).ToNot(BeNil())
 	g.Expect(err.Error()).To(Equal("values.list: incompatible list lengths (0 and 1)"))
+}
+
+func TestModuleBuilder_GetDefaultValuesPrefersOverlay(t *testing.T) {
+	g := NewWithT(t)
+	moduleRoot := path.Join(t.TempDir(), "module")
+
+	err := CopyModule("testdata/module", moduleRoot)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	mb := NewModuleBuilder(cuecontext.New(), "test-name", "test-namespace", moduleRoot, "main")
+
+	diskVals, err := mb.GetDefaultValues()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(diskVals).ToNot(ContainSubstring("test.internal"))
+
+	err = mb.OverlayValuesFile([][]byte{mustReadFile(g, "testdata/module-values/overlay.cue")})
+	g.Expect(err).ToNot(HaveOccurred())
+
+	overlayVals, err := mb.GetDefaultValues()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(overlayVals).To(ContainSubstring("test.internal"))
+}
+
+func TestModuleBuilder_OverlayKeepsModuleDirUnchanged(t *testing.T) {
+	g := NewWithT(t)
+	moduleRoot := path.Join(t.TempDir(), "module")
+
+	err := CopyModule("testdata/module", moduleRoot)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	valuesFile := path.Join(moduleRoot, "values.cue")
+	valuesBefore, err := os.ReadFile(valuesFile)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	mb := NewModuleBuilder(cuecontext.New(), "test-name", "test-namespace", moduleRoot, "main")
+
+	g.Expect(mb.OverlaySchemaFile()).ToNot(HaveOccurred())
+	g.Expect(mb.OverlayValuesFile([][]byte{mustReadFile(g, "testdata/module-values/overlay.cue")})).ToNot(HaveOccurred())
+
+	val, err := mb.Build()
+	g.Expect(err).ToNot(HaveOccurred())
+
+	objects := val.LookupPath(cue.ParsePath(apiv1.ApplySelector.String() + ".all"))
+	g.Expect(objects.Err()).ToNot(HaveOccurred())
+	g.Expect(fmt.Sprintf("%v", objects)).To(ContainSubstring("test.internal"))
+
+	valuesAfter, err := os.ReadFile(valuesFile)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(valuesAfter).To(Equal(valuesBefore))
+	g.Expect(path.Join(moduleRoot, "timoni.schema.cue")).ToNot(BeAnExistingFile())
 }

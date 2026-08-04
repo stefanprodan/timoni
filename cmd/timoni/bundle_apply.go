@@ -146,6 +146,8 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	ctxPull, cancel := context.WithTimeout(ctx, rootArgs.timeout)
 	defer cancel()
 
+	moduleCache := make(map[moduleCacheKey]*fetchedModule)
+
 	for _, cluster := range clusters {
 		kubeconfigArgs.Context = &cluster.KubeContext
 
@@ -198,13 +200,15 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 			}
 		}
 
+		modDirs := make(map[string]string)
 		for _, instance := range bundle.Instances {
 			spin := logger.StartSpinner(fmt.Sprintf("pulling %s", instance.Module.Repository))
-			pullErr := fetchBundleInstanceModule(ctxPull, instance, tmpDir)
+			modDir, pullErr := fetchBundleInstanceModule(ctxPull, instance, tmpDir, bundleApplyArgs.creds.String(), moduleCache)
 			spin.Stop()
 			if pullErr != nil {
 				return pullErr
 			}
+			modDirs[instance.Name] = modDir
 		}
 
 		kubeVersion, err := runtime.ServerVersion(kubeconfigArgs)
@@ -225,7 +229,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 
 		for _, instance := range bundle.Instances {
 			instance.Cluster = cluster.Name
-			if err := applyBundleInstance(logr.NewContext(ctx, log), instance, kubeVersion, tmpDir, cmd.OutOrStdout()); err != nil {
+			if err := applyBundleInstance(logr.NewContext(ctx, log), instance, kubeVersion, tmpDir, modDirs[instance.Name], cmd.OutOrStdout()); err != nil {
 				return err
 			}
 		}
@@ -241,52 +245,79 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func fetchBundleInstanceModule(ctx context.Context, instance *apiv1.BundleInstance, rootDir string) error {
-	modDir := path.Join(rootDir, instance.Name)
-	if err := os.MkdirAll(modDir, os.ModePerm); err != nil {
-		return err
-	}
+// fetchedModule holds the local root directory and resolved reference of a
+// module fetched during a bundle run.
+type fetchedModule struct {
+	dir string
+	mod *apiv1.ModuleReference
+}
 
+// moduleCacheKey identifies a fetched module by its repository address and
+// version, kept as separate fields so that neither can alias into the other.
+type moduleCacheKey struct {
+	repository string
+	version    string
+}
+
+// fetchBundleInstanceModule fetches the module of a bundle instance, reusing
+// the local copy when a previous instance in the same run already fetched
+// the identical module version. The instance digest pinning is verified on
+// every call, including cache hits. It returns the module root directory the
+// instance is to be built from.
+func fetchBundleInstanceModule(ctx context.Context, instance *apiv1.BundleInstance, rootDir, creds string, cache map[moduleCacheKey]*fetchedModule) (string, error) {
 	moduleVersion := instance.Module.Version
 	if moduleVersion == apiv1.LatestVersion && instance.Module.Digest != "" {
 		moduleVersion = "@" + instance.Module.Digest
 	}
 
-	f, err := fetcher.New(ctx, fetcher.Options{
-		Source:      instance.Module.Repository,
-		Version:     moduleVersion,
-		Destination: modDir,
-		CacheDir:    rootArgs.cacheDir,
-		Creds:       bundleApplyArgs.creds.String(),
-		Insecure:    rootArgs.registryInsecure,
-	})
-	if err != nil {
-		return err
+	key := moduleCacheKey{repository: instance.Module.Repository, version: moduleVersion}
+	cached, ok := cache[key]
+	if !ok {
+		dstDir := path.Join(rootDir, "modules", fmt.Sprintf("module%d", len(cache)))
+		if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
+			return "", err
+		}
+
+		f, err := fetcher.New(ctx, fetcher.Options{
+			Source:      instance.Module.Repository,
+			Version:     moduleVersion,
+			Destination: dstDir,
+			CacheDir:    rootArgs.cacheDir,
+			Creds:       creds,
+			Insecure:    rootArgs.registryInsecure,
+		})
+		if err != nil {
+			return "", err
+		}
+
+		mod, err := f.Fetch()
+		if err != nil {
+			return "", err
+		}
+
+		cached = &fetchedModule{dir: f.GetModuleRoot(), mod: mod}
+		cache[key] = cached
 	}
 
-	mod, err := f.Fetch()
-	if err != nil {
-		return err
+	if instance.Module.Digest != "" && cached.mod.Digest != instance.Module.Digest {
+		return "", fmt.Errorf("the upstream digest %s of version %s doesn't match the specified digest %s",
+			cached.mod.Digest, instance.Module.Version, instance.Module.Digest)
 	}
 
-	if instance.Module.Digest != "" && mod.Digest != instance.Module.Digest {
-		return fmt.Errorf("the upstream digest %s of version %s doesn't match the specified digest %s",
-			mod.Digest, instance.Module.Version, instance.Module.Digest)
-	}
-
-	instance.Module = *mod
-	return nil
+	instance.Module = *cached.mod
+	return cached.dir, nil
 }
 
 // applyBundleInstance builds an instance and reconciles its Kubernetes
 // objects onto the cluster. The instance is compiled in its own CUE context
 // so that the memory used during the build can be reclaimed once the objects
 // are extracted, keeping the peak usage constant regardless of how many
-// instances a bundle contains.
-func applyBundleInstance(ctx context.Context, instance *apiv1.BundleInstance, kubeVersion string, rootDir string, diffOutput io.Writer) error {
+// instances a bundle contains. The module directory is shared between the
+// instances referencing the same module version and is never modified; the
+// instance schema and values are injected as in-memory overlays.
+func applyBundleInstance(ctx context.Context, instance *apiv1.BundleInstance, kubeVersion string, rootDir string, modDir string, diffOutput io.Writer) error {
 	log := loggerBundleInstance(ctx, instance.Bundle, instance.Cluster, instance.Name, true)
 
-	modDir := path.Join(rootDir, instance.Name, "module")
 	builder := engine.NewModuleBuilder(
 		nil,
 		instance.Name,
@@ -295,7 +326,7 @@ func applyBundleInstance(ctx context.Context, instance *apiv1.BundleInstance, ku
 		bundleApplyArgs.pkg.String(),
 	)
 
-	if err := builder.WriteSchemaFile(); err != nil {
+	if err := builder.OverlaySchemaFile(); err != nil {
 		return err
 	}
 
@@ -307,7 +338,7 @@ func applyBundleInstance(ctx context.Context, instance *apiv1.BundleInstance, ku
 
 	log.Info(fmt.Sprintf("applying module %s version %s",
 		logger.ColorizeSubject(instance.Module.Name), logger.ColorizeSubject(instance.Module.Version)))
-	err = builder.WriteValuesFileWithDefaults(instance.Values)
+	err = builder.OverlayValuesFileWithDefaults(instance.Values)
 	if err != nil {
 		return err
 	}
