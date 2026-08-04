@@ -23,12 +23,14 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"sort"
 	"strings"
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
@@ -59,10 +61,11 @@ var bundleBuildCmd = &cobra.Command{
 }
 
 type bundleBuildFlags struct {
-	pkg       flags.Package
-	files     []string
-	creds     flags.Credentials
-	outputDir string
+	pkg         flags.Package
+	files       []string
+	creds       flags.Credentials
+	outputDir   string
+	concurrency int
 }
 
 var bundleBuildArgs bundleBuildFlags
@@ -74,6 +77,8 @@ func init() {
 	bundleBuildCmd.Flags().Var(&bundleBuildArgs.creds, bundleBuildArgs.creds.Type(), bundleBuildArgs.creds.Description())
 	bundleBuildCmd.Flags().StringVar(&bundleBuildArgs.outputDir, "output-dir", "",
 		"The path to a directory where the manifests are written as a tree, one directory per instance and one file per resource.")
+	bundleBuildCmd.Flags().IntVar(&bundleBuildArgs.concurrency, "concurrency", 0,
+		"The number of instances to build concurrently, defaults to the number of CPU cores capped at 8.")
 	bundleCmd.AddCommand(bundleBuildCmd)
 }
 
@@ -178,22 +183,37 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		return writeBundleInstancesToDir(cmd, bundle.Instances, modDirs)
 	}
 
+	// Build the instances concurrently, each in its own CUE context,
+	// and assemble the manifests in the order defined by the bundle.
+	manifests := make([]string, len(bundle.Instances))
+	eg := errgroup.Group{}
+	eg.SetLimit(buildConcurrency())
+	for i, instance := range bundle.Instances {
+		eg.Go(func() error {
+			objects, err := buildBundleInstanceObjects(instance, modDirs[instance.Name])
+			if err != nil {
+				return err
+			}
+
+			m, err := marshalObjectsToYAML(objects)
+			if err != nil {
+				return err
+			}
+
+			manifests[i] = m
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
 	var sb strings.Builder
 	for i, instance := range bundle.Instances {
-		objects, err := buildBundleInstanceObjects(instance, modDirs[instance.Name])
-		if err != nil {
-			return err
-		}
-
-		manifests, err := marshalObjectsToYAML(objects)
-		if err != nil {
-			return err
-		}
-
 		sb.WriteString("---\n")
 		sb.WriteString(fmt.Sprintf("# Instance: %s\n", instance.Name))
 		sb.WriteString("---\n")
-		sb.WriteString(manifests)
+		sb.WriteString(manifests[i])
 		if i < len(bundle.Instances)-1 {
 			sb.WriteString("\n")
 		}
@@ -202,6 +222,16 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	cmd.OutOrStdout().Write([]byte(sb.String()))
 
 	return nil
+}
+
+// buildConcurrency returns the number of instances to build concurrently,
+// by default bounded to keep the peak memory of large bundles in check as
+// every in-flight instance holds its own CUE evaluation context.
+func buildConcurrency() int {
+	if bundleBuildArgs.concurrency > 0 {
+		return bundleBuildArgs.concurrency
+	}
+	return min(goruntime.NumCPU(), 8)
 }
 
 // writeBundleInstancesToDir writes the resources of each instance to the
@@ -213,50 +243,66 @@ func writeBundleInstancesToDir(cmd *cobra.Command, instances []*apiv1.BundleInst
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	log := LoggerFrom(cmd.Context())
-	for _, instance := range instances {
-		objects, err := buildBundleInstanceObjects(instance, modDirs[instance.Name])
-		if err != nil {
-			return err
-		}
-
-		instanceDir := filepath.Join(outputDir, instance.Name)
-		if err := os.MkdirAll(instanceDir, 0o755); err != nil {
-			return fmt.Errorf("failed to create instance directory: %w", err)
-		}
-
-		// Prefix the file names with the namespace only when the instance's
-		// namespaced resources span more than one namespace, matching the
-		// behaviour of kustomize.
-		//
-		// The resource scope is approximated by the presence of
-		// metadata.namespace rather than the true cluster/namespaced scope
-		// (kustomize resolves this from type info). A cluster-scoped object
-		// that carries a stray namespace is therefore counted here and can
-		// enable the prefix for the whole instance. This is acceptable for
-		// Timoni's offline builds, where no REST mapper is available to
-		// resolve resource scopes.
-		namespaces := make(map[string]struct{})
-		for _, obj := range objects {
-			if ns := obj.GetNamespace(); ns != "" {
-				namespaces[ns] = struct{}{}
-			}
-		}
-		withNamespace := len(namespaces) > 1
-
-		for _, obj := range objects {
-			data, err := yaml.Marshal(obj)
+	// Build the instances and write their resources concurrently, each
+	// instance in its own CUE context and its own directory, then report
+	// the results in the order defined by the bundle.
+	exported := make([]string, len(instances))
+	eg := errgroup.Group{}
+	eg.SetLimit(buildConcurrency())
+	for i, instance := range instances {
+		eg.Go(func() error {
+			objects, err := buildBundleInstanceObjects(instance, modDirs[instance.Name])
 			if err != nil {
-				return fmt.Errorf("converting objects failed: %w", err)
+				return err
 			}
 
-			fileName := resourceFileName(obj, withNamespace && obj.GetNamespace() != "")
-			if err := os.WriteFile(filepath.Join(instanceDir, fileName), data, 0o644); err != nil {
-				return fmt.Errorf("failed to write manifest: %w", err)
+			instanceDir := filepath.Join(outputDir, instance.Name)
+			if err := os.MkdirAll(instanceDir, 0o755); err != nil {
+				return fmt.Errorf("failed to create instance directory: %w", err)
 			}
-		}
 
-		log.Info(fmt.Sprintf("exported %d resources to %s", len(objects), instanceDir))
+			// Prefix the file names with the namespace only when the instance's
+			// namespaced resources span more than one namespace, matching the
+			// behaviour of kustomize.
+			//
+			// The resource scope is approximated by the presence of
+			// metadata.namespace rather than the true cluster/namespaced scope
+			// (kustomize resolves this from type info). A cluster-scoped object
+			// that carries a stray namespace is therefore counted here and can
+			// enable the prefix for the whole instance. This is acceptable for
+			// Timoni's offline builds, where no REST mapper is available to
+			// resolve resource scopes.
+			namespaces := make(map[string]struct{})
+			for _, obj := range objects {
+				if ns := obj.GetNamespace(); ns != "" {
+					namespaces[ns] = struct{}{}
+				}
+			}
+			withNamespace := len(namespaces) > 1
+
+			for _, obj := range objects {
+				data, err := yaml.Marshal(obj)
+				if err != nil {
+					return fmt.Errorf("converting objects failed: %w", err)
+				}
+
+				fileName := resourceFileName(obj, withNamespace && obj.GetNamespace() != "")
+				if err := os.WriteFile(filepath.Join(instanceDir, fileName), data, 0o644); err != nil {
+					return fmt.Errorf("failed to write manifest: %w", err)
+				}
+			}
+
+			exported[i] = fmt.Sprintf("exported %d resources to %s", len(objects), instanceDir)
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
+	log := LoggerFrom(cmd.Context())
+	for _, msg := range exported {
+		log.Info(msg)
 	}
 
 	return nil
