@@ -602,6 +602,10 @@ the module version set to `0.0.0-devel`.
 By default, `timoni bundle build` prints the resulting Kubernetes resources of all
 instances to stdout. To write the manifests as files on disk, use the `--output-dir` flag.
 
+The instances are built concurrently, with the number of concurrent builds set by the
+`--concurrency` flag. It defaults to the number of CPU cores capped at 8; raising it
+can speed up large bundles at the cost of a higher peak memory usage.
+
 For example, given a bundle with two instances:
 
 ```cue

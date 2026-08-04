@@ -54,6 +54,7 @@ type ModuleBuilder struct {
 	namespace     string
 	moduleVersion string
 	kubeVersion   string
+	overlays      map[string]string
 }
 
 // NewModuleBuilder creates a ModuleBuilder for the given module and package.
@@ -70,6 +71,7 @@ func NewModuleBuilder(ctx *cue.Context, name, namespace, moduleRoot, pkgName str
 		namespace:     namespace,
 		moduleVersion: DefaultDevelVersion,
 		kubeVersion:   defaultKubeVersion,
+		overlays:      make(map[string]string),
 	}
 
 	if kv := os.Getenv("TIMONI_KUBE_VERSION"); kv != "" {
@@ -82,8 +84,10 @@ func NewModuleBuilder(ctx *cue.Context, name, namespace, moduleRoot, pkgName str
 	return b
 }
 
-// MergeValuesFile merges the given values overlays into the module's root values.cue.
-func (b *ModuleBuilder) MergeValuesFile(overlays [][]byte) error {
+// OverlayValuesFile merges the given values overlays into the module's root
+// values.cue as an in-memory file passed to the loader at build time, leaving
+// the module directory untouched so it can be shared between instances.
+func (b *ModuleBuilder) OverlayValuesFile(overlays [][]byte) error {
 	vb := NewValuesBuilder(b.ctx)
 	defaultFile := filepath.Join(b.pkgPath, defaultValuesFile)
 
@@ -96,17 +100,27 @@ func (b *ModuleBuilder) MergeValuesFile(overlays [][]byte) error {
 		return err
 	}
 
-	cueGen := fmt.Sprintf("package %s\n%s: %v", b.pkgName, apiv1.ValuesSelector, finalVal)
-
-	// overwrite the values.cue file with the merged values
-	if err := os.MkdirAll(b.moduleRoot, os.ModePerm); err != nil {
-		return err
-	}
-	return os.WriteFile(defaultFile, []byte(cueGen), 0644)
+	b.overlays[defaultFile] = fmt.Sprintf("package %s\n%s: %v", b.pkgName, apiv1.ValuesSelector, finalVal)
+	return nil
 }
 
-// WriteValuesFileWithDefaults merges the module's root values.cue with the supplied value.
-func (b *ModuleBuilder) WriteValuesFileWithDefaults(val cue.Value) error {
+// OverlaySchemaFile generates the module's instance schema as an in-memory
+// file passed to the loader at build time, leaving the module directory
+// untouched so it can be shared between instances.
+func (b *ModuleBuilder) OverlaySchemaFile() error {
+	if fs, err := os.Stat(b.pkgPath); err != nil || !fs.IsDir() {
+		return fmt.Errorf("cannot find package %s", b.pkgPath)
+	}
+
+	b.overlays[filepath.Join(b.pkgPath, defaultSchemaFile)] = fmt.Sprintf("package %s\n%v", b.pkgName, apiv1.InstanceSchema)
+	return nil
+}
+
+// OverlayValuesFileWithDefaults merges the module's root values.cue with the
+// supplied value into an in-memory file passed to the loader at build time,
+// leaving the module directory untouched so it can be shared between
+// instances.
+func (b *ModuleBuilder) OverlayValuesFileWithDefaults(val cue.Value) error {
 	valData := []byte(fmt.Sprintf("%s: %v", apiv1.ValuesSelector.String(), val))
 
 	vb := NewValuesBuilder(b.ctx)
@@ -121,24 +135,8 @@ func (b *ModuleBuilder) WriteValuesFileWithDefaults(val cue.Value) error {
 		return err
 	}
 
-	cueGen := fmt.Sprintf("package %s\n%s: %v", b.pkgName, apiv1.ValuesSelector, finalVal)
-
-	// overwrite the values.cue file with the merged values
-	if err := os.MkdirAll(b.moduleRoot, os.ModePerm); err != nil {
-		return err
-	}
-	return os.WriteFile(defaultFile, []byte(cueGen), 0644)
-}
-
-// WriteSchemaFile generates the module's instance schema.
-func (b *ModuleBuilder) WriteSchemaFile() error {
-	if fs, err := os.Stat(b.pkgPath); err != nil || !fs.IsDir() {
-		return fmt.Errorf("cannot find package %s", b.pkgPath)
-	}
-
-	cueGen := fmt.Sprintf("package %s\n%v", b.pkgName, apiv1.InstanceSchema)
-
-	return os.WriteFile(filepath.Join(b.pkgPath, defaultSchemaFile), []byte(cueGen), 0644)
+	b.overlays[defaultFile] = fmt.Sprintf("package %s\n%s: %v", b.pkgName, apiv1.ValuesSelector, finalVal)
+	return nil
 }
 
 // SetVersionInfo allows setting the Timoni module version and Kubernetes version,
@@ -184,6 +182,13 @@ func (b *ModuleBuilder) Build(tags ...string) (cue.Value, error) {
 
 	if len(tags) > 0 {
 		cfg.Tags = append(cfg.Tags, tags...)
+	}
+
+	if len(b.overlays) > 0 {
+		cfg.Overlay = make(map[string]load.Source, len(b.overlays))
+		for path, content := range b.overlays {
+			cfg.Overlay[path] = load.FromString(content)
+		}
 	}
 
 	modInstances := load.Instances([]string{}, cfg)
@@ -233,16 +238,22 @@ func (b *ModuleBuilder) GetApplySets(value cue.Value) ([]ResourceSet, error) {
 	return GetResources(steps)
 }
 
-// GetDefaultValues extracts the default values from the module.
+// GetDefaultValues extracts the values from the module's root values.cue,
+// preferring the in-memory overlay set with OverlayValuesFile or
+// OverlayValuesFileWithDefaults over the file on disk.
 func (b *ModuleBuilder) GetDefaultValues() (string, error) {
 	filePath := filepath.Join(b.pkgPath, defaultValuesFile)
-	var value cue.Value
-	vData, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", err
+
+	vData := []byte(b.overlays[filePath])
+	if len(vData) == 0 {
+		var err error
+		vData, err = os.ReadFile(filePath)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	value = b.ctx.CompileBytes(vData)
+	value := b.ctx.CompileBytes(vData)
 	if value.Err() != nil {
 		return "", value.Err()
 	}

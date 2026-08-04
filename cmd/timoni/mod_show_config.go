@@ -116,7 +116,7 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		configShowModArgs.pkg.String(),
 	)
 
-	if err := builder.WriteSchemaFile(); err != nil {
+	if err := builder.OverlaySchemaFile(); err != nil {
 		return err
 	}
 

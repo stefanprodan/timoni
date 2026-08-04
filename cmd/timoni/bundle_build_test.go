@@ -526,3 +526,78 @@ func manifestFileNames(dir string) ([]string, error) {
 	}
 	return names, nil
 }
+
+func Test_BundleBuild_Concurrency(t *testing.T) {
+	g := NewWithT(t)
+
+	modPath := "testdata/module"
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+	modVer := "1.0.0"
+
+	_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s", modPath, modURL, modVer))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	const numInstances = 6
+	var sb strings.Builder
+	sb.WriteString(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "concurrency-test"
+	instances: {
+`)
+	for i := range numInstances {
+		fmt.Fprintf(&sb, `		"app-%[1]d": {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "concurrency-test"
+			values: domain: "app-%[1]d.internal"
+		}
+`, i, modURL, modVer)
+	}
+	sb.WriteString("	}\n}\n")
+	bundleData := sb.String()
+
+	build := func(concurrency int) string {
+		output, err := executeCommandWithIn(
+			fmt.Sprintf("bundle build -f- -p main --concurrency %d", concurrency),
+			strings.NewReader(bundleData))
+		g.Expect(err).ToNot(HaveOccurred())
+		return output
+	}
+
+	concurrent := build(4)
+
+	t.Run("keeps the manifests in bundle order", func(t *testing.T) {
+		g := NewWithT(t)
+		lastIdx := -1
+		for i := range numInstances {
+			idx := strings.Index(concurrent, fmt.Sprintf("# Instance: app-%d\n", i))
+			g.Expect(idx).To(BeNumerically(">", lastIdx))
+			lastIdx = idx
+		}
+	})
+
+	t.Run("isolates the values of each instance", func(t *testing.T) {
+		g := NewWithT(t)
+		sections := strings.Split(concurrent, "# Instance: ")[1:]
+		g.Expect(sections).To(HaveLen(numInstances))
+		for i, section := range sections {
+			for j := range numInstances {
+				m := ContainSubstring(fmt.Sprintf("app-%d.internal", j))
+				if i == j {
+					g.Expect(section).To(m)
+				} else {
+					g.Expect(section).ToNot(m)
+				}
+			}
+		}
+	})
+
+	t.Run("produces identical output regardless of concurrency", func(t *testing.T) {
+		g := NewWithT(t)
+		g.Expect(build(1)).To(Equal(concurrent))
+	})
+}
