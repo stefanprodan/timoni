@@ -21,6 +21,7 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
@@ -40,4 +41,86 @@ func TestGetResources(t *testing.T) {
 		g.Expect(sets[s].Name).To(BeEquivalentTo(expectedNames[s]))
 		g.Expect(len(set.Objects)).To(BeEquivalentTo(2))
 	}
+}
+
+func TestGetResources_BytesValue(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	value := ctx.CompileString(`app: [{
+		apiVersion: "v1"
+		kind:       "Secret"
+		metadata: name: "test"
+		stringData: key: '\x68\x69'
+	}]`)
+	g.Expect(value.Err()).ToNot(HaveOccurred())
+
+	sets, err := GetResources(value)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(sets[0].Objects).To(HaveLen(1))
+
+	data, found, err := unstructured.NestedStringMap(sets[0].Objects[0].Object, "stringData")
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(found).To(BeTrue())
+	g.Expect(data["key"]).To(BeEquivalentTo("hi"))
+}
+
+func TestGetResources_NullItem(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	value := ctx.CompileString(`app: [null, {
+		apiVersion: "v1"
+		kind:       "ConfigMap"
+		metadata: name: "test"
+	}]`)
+	g.Expect(value.Err()).ToNot(HaveOccurred())
+
+	sets, err := GetResources(value)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(sets[0].Objects).To(HaveLen(1))
+	g.Expect(sets[0].Objects[0].GetName()).To(BeEquivalentTo("test"))
+}
+
+func TestGetResources_IntegralFloat(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	value := ctx.CompileString(`app: [{
+		apiVersion: "v1"
+		kind:       "ConfigMap"
+		metadata: name: "test"
+		replicas: 1.0
+	}]`)
+	g.Expect(value.Err()).ToNot(HaveOccurred())
+
+	sets, err := GetResources(value)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(sets[0].Objects).To(HaveLen(1))
+	g.Expect(sets[0].Objects[0].Object["replicas"]).To(BeEquivalentTo(int64(1)))
+}
+
+func TestGetResources_EmptyList(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	value := ctx.CompileString(`app: []`)
+	g.Expect(value.Err()).ToNot(HaveOccurred())
+
+	sets, err := GetResources(value)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(sets[0].Objects).ToNot(BeNil())
+	g.Expect(sets[0].Objects).To(BeEmpty())
+}
+
+func TestGetResources_MissingKind(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	value := ctx.CompileString(`app: [{foo: "bar"}]`)
+	g.Expect(value.Err()).ToNot(HaveOccurred())
+
+	_, err := GetResources(value)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("Kind"))
 }
