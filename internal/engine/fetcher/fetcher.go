@@ -54,10 +54,10 @@ func New(ctx context.Context, opts Options) (Fetcher, error) {
 	case strings.HasPrefix(opts.Source, apiv1.ArtifactPrefix):
 		return NewOCI(ctx, opts.Source, opts.Version, opts.Destination, opts.CacheDir, opts.Creds, opts.Insecure), nil
 	case strings.HasPrefix(opts.Source, apiv1.LocalPrefix):
-		return NewLocal(opts.Source, opts.Destination), nil
+		return NewLocal(opts.Source), nil
 	default:
 		if opts.DefaultLocal {
-			return NewLocal(opts.Source, opts.Destination), nil
+			return NewLocal(opts.Source), nil
 		}
 		return nil, fmt.Errorf("unsupported module source %s", opts.Source)
 	}

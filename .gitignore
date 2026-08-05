@@ -4,3 +4,4 @@ bin/
 docs/cmd/
 venv/
 .vscode
+workspace/

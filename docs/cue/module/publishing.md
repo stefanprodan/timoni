@@ -103,7 +103,6 @@ then it will tag the version as `latest` in the container registry.
 
 To automate the publishing of module versions, please see the [Timoni GitHub Actions doc](github-actions.md).
 
-
 ### Ignoring files
 
 Timoni modules can contain files that are not meant to be published.
@@ -137,17 +136,18 @@ debug_values.cue
 When packaging a module, Timoni resolves symbolic links and includes
 their targets in the artifact as regular files and directories.
 This allows sharing files between modules in a monorepo, for example
-by symlinking the vendored CUE schemas under `cue.mod/pkg`.
-Symlink cycles are detected and reported as errors.
+by symlinking the vendored CUE schemas under `cue.mod/gen`.
+
 The `timoni.ignore` rules apply to the resolved content at its
 in-module path, the same as for regular files and directories.
 
-The same resolution is applied when building a module from a local path,
-so `timoni build`, `timoni apply` and `timoni mod vet` see the exact same
-files as the published artifact.
+When building a module from a local path, `timoni build`, `timoni apply`
+and `timoni mod vet` read the module files in place from the source
+directory, following symbolic links the same way.
 
-To opt out of symlink resolution, set the `TIMONI_FOLLOW_SYMLINKS=false`
-env var, in which case symbolic links are skipped.
+To opt out of symlink resolution when packaging, set the
+`TIMONI_FOLLOW_SYMLINKS=false` env var, in which case symbolic links
+are skipped.
 
 !!! warning "Symlinks in CI"
 
