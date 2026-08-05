@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
@@ -35,9 +36,11 @@ import (
 
 // RuntimeBuilder compiles CUE definitions to Go Runtime objects.
 type RuntimeBuilder struct {
-	ctx             *cue.Context
-	files           []string
-	workspacesFiles map[string][]string
+	ctx               *cue.Context
+	files             []string
+	root              string
+	workspacesFiles   map[string][]string
+	workspacesSources map[string]map[string][]byte
 }
 
 // NewRuntimeBuilder creates a RuntimeBuilder for the given module and package.
@@ -46,17 +49,30 @@ func NewRuntimeBuilder(ctx *cue.Context, files []string) *RuntimeBuilder {
 		ctx = cuecontext.New()
 	}
 	b := &RuntimeBuilder{
-		ctx:             ctx,
-		files:           files,
-		workspacesFiles: make(map[string][]string),
+		ctx:               ctx,
+		files:             files,
+		root:              NewVirtualRoot(),
+		workspacesFiles:   make(map[string][]string),
+		workspacesSources: make(map[string]map[string][]byte),
 	}
 	return b
 }
 
-// InitWorkspace extracts the runtime definitions to the specified workspace.
-// A workspace must be initialised before calling Build.
+// WorkspaceDir returns the virtual directory under which the workspace
+// files are laid out. The directory does not exist on disk; it serves
+// as the base for rendering error positions relative.
+func (b *RuntimeBuilder) WorkspaceDir(workspace string) string {
+	return filepath.Join(b.root, workspace)
+}
+
+// InitWorkspace extracts the runtime definitions into the in-memory
+// workspace identified by the given name. Nothing is written to disk;
+// the workspace files are kept in memory and served to the CUE loader
+// as overlays. A workspace must be initialised before calling Build.
 func (b *RuntimeBuilder) InitWorkspace(workspace string) error {
 	var files []string
+	sources := make(map[string][]byte, len(b.files)+1)
+	workspaceDir := b.WorkspaceDir(workspace)
 	for i, file := range b.files {
 		_, fn := filepath.Split(file)
 		content, err := os.ReadFile(file)
@@ -90,31 +106,37 @@ func (b *RuntimeBuilder) InitWorkspace(workspace string) error {
 			return fmt.Errorf("failed to format node %s: %w", fn, err)
 		}
 
-		dstFile := filepath.Join(workspace, fmt.Sprintf("%v.%s.cue", i, fn))
-		if err := os.WriteFile(dstFile, data, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to write %s: %w", fn, err)
-		}
+		dstFile := filepath.Join(workspaceDir, fmt.Sprintf("%v.%s.cue", i, strings.TrimSuffix(fn, ".cue")))
+		sources[dstFile] = data
 
 		files = append(files, dstFile)
 	}
 
-	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.workspacesFiles[workspace])+1))
+	// The runtime files are indexed 0..len(files)-1, so naming the generated
+	// schema after len(files) cannot collide with a user file named schema.cue.
+	schemaFile := filepath.Join(workspaceDir, fmt.Sprintf("%v.schema.cue", len(b.files)))
 	files = append(files, schemaFile)
-	if err := os.WriteFile(schemaFile, []byte(apiv1.RuntimeSchema), os.ModePerm); err != nil {
-		return err
-	}
+	sources[schemaFile] = []byte(apiv1.RuntimeSchema)
 
 	b.workspacesFiles[workspace] = files
+	b.workspacesSources[workspace] = sources
 	return nil
 }
 
-// Build builds a CUE instance for the specified files and returns the CUE value.
+// Build builds a CUE instance for the specified workspace and returns the CUE value.
+// The workspace files are served to the CUE loader as in-memory overlays.
 // A workspace must be initialised with InitWorkspace before calling this function.
 func (b *RuntimeBuilder) Build(workspace string) (cue.Value, error) {
 	var value cue.Value
+	overlay := make(map[string]load.Source, len(b.workspacesSources[workspace]))
+	for f, data := range b.workspacesSources[workspace] {
+		overlay[f] = load.FromBytes(data)
+	}
+
 	cfg := &load.Config{
 		Package:   "_",
 		DataFiles: true,
+		Overlay:   overlay,
 	}
 
 	ix := load.Instances(b.workspacesFiles[workspace], cfg)

@@ -171,19 +171,15 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		// add cluster info
 		maps.Copy(clusterValues, cluster.NameGroupValues())
 
-		// create cluster workspace
-		workspace := path.Join(tmpDir, cluster.Name)
-		if err := os.MkdirAll(workspace, os.ModePerm); err != nil {
-			return err
-		}
-
+		// init the in-memory cluster workspace
+		workspace := cluster.Name
 		if err := bm.InitWorkspace(workspace, clusterValues); err != nil {
-			return describeErr(workspace, "failed to parse bundle", err)
+			return describeErr(bm.WorkspaceDir(workspace), "failed to parse bundle", err)
 		}
 
 		v, err := bm.Build(workspace)
 		if err != nil {
-			return describeErr(tmpDir, "failed to build bundle", err)
+			return describeErr(bm.WorkspaceDir(workspace), "failed to build bundle", err)
 		}
 
 		bundle, err := bm.GetBundle(v)
