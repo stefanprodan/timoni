@@ -111,6 +111,7 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	ctx := cuecontext.New()
 	bm := engine.NewBundleBuilder(ctx, files)
 
+	workspace := apiv1.RuntimeDefaultName
 	runtimeValues := make(map[string]string)
 
 	if bundleArgs.runtimeFromEnv {
@@ -135,6 +136,7 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		}
 
 		cluster := clusters[0]
+		workspace = cluster.Name
 		kubeconfigArgs.Context = &cluster.KubeContext
 
 		rm, err := runtime.NewResourceManager(kubeconfigArgs)
@@ -152,13 +154,13 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		maps.Copy(runtimeValues, cluster.NameGroupValues())
 	}
 
-	if err := bm.InitWorkspace(tmpDir, runtimeValues); err != nil {
-		return describeErr(tmpDir, "failed to parse bundle", err)
+	if err := bm.InitWorkspace(workspace, runtimeValues); err != nil {
+		return describeErr(bm.WorkspaceDir(workspace), "failed to parse bundle", err)
 	}
 
-	v, err := bm.Build(tmpDir)
+	v, err := bm.Build(workspace)
 	if err != nil {
-		return describeErr(tmpDir, "failed to build bundle", err)
+		return describeErr(bm.WorkspaceDir(workspace), "failed to build bundle", err)
 	}
 
 	bundle, err := bm.GetBundle(v)

@@ -37,7 +37,9 @@ import (
 type BundleBuilder struct {
 	ctx               *cue.Context
 	files             []string
+	root              string
 	workspacesFiles   map[string][]string
+	workspacesSources map[string]map[string][]byte
 	mapSourceToOrigin map[string]string
 	injector          *RuntimeInjector
 }
@@ -50,18 +52,31 @@ func NewBundleBuilder(ctx *cue.Context, files []string) *BundleBuilder {
 	b := &BundleBuilder{
 		ctx:               ctx,
 		files:             files,
+		root:              NewVirtualRoot(),
 		workspacesFiles:   make(map[string][]string),
+		workspacesSources: make(map[string]map[string][]byte),
 		mapSourceToOrigin: make(map[string]string, len(files)),
 		injector:          NewRuntimeInjector(ctx),
 	}
 	return b
 }
 
-// InitWorkspace copies the bundle definitions to the specified workspace,
-// sets the bundle schema, and then it injects the runtime values based on @timoni() attributes.
-// A workspace must be initialised before calling Build.
+// WorkspaceDir returns the virtual directory under which the workspace
+// files are laid out. The directory does not exist on disk; it serves
+// as the base for rendering error positions relative.
+func (b *BundleBuilder) WorkspaceDir(workspace string) string {
+	return filepath.Join(b.root, workspace)
+}
+
+// InitWorkspace loads the bundle definitions into the in-memory workspace
+// identified by the given name, sets the bundle schema, and then it injects
+// the runtime values based on @timoni() attributes. Nothing is written to
+// disk; the workspace files are kept in memory and served to the CUE loader
+// as overlays. A workspace must be initialised before calling Build.
 func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string]string) error {
 	var files []string
+	sources := make(map[string][]byte, len(b.files)+1)
+	workspaceDir := b.WorkspaceDir(workspace)
 	for i, file := range b.files {
 		_, fn := filepath.Split(file)
 		content, err := os.ReadFile(file)
@@ -95,32 +110,38 @@ func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string
 			return fmt.Errorf("failed to inject %s: %w", fn, err)
 		}
 
-		dstFile := filepath.Join(workspace, fmt.Sprintf("%v.%s.cue", i, fn))
-		if err := os.WriteFile(dstFile, data, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to write %s: %w", fn, err)
-		}
+		dstFile := filepath.Join(workspaceDir, fmt.Sprintf("%v.%s.cue", i, strings.TrimSuffix(fn, ".cue")))
+		sources[dstFile] = data
 		b.mapSourceToOrigin[dstFile] = file
 
 		files = append(files, dstFile)
 	}
 
-	schemaFile := filepath.Join(workspace, fmt.Sprintf("%v.schema.cue", len(b.workspacesFiles[workspace])+1))
+	// The bundle files are indexed 0..len(files)-1, so naming the generated
+	// schema after len(files) cannot collide with a user file named schema.cue.
+	schemaFile := filepath.Join(workspaceDir, fmt.Sprintf("%v.schema.cue", len(b.files)))
 	files = append(files, schemaFile)
-	if err := os.WriteFile(schemaFile, []byte(apiv1.BundleSchema), os.ModePerm); err != nil {
-		return err
-	}
+	sources[schemaFile] = []byte(apiv1.BundleSchema)
 
 	b.workspacesFiles[workspace] = files
+	b.workspacesSources[workspace] = sources
 	return nil
 }
 
-// Build builds a CUE instance for the specified files and returns the CUE value.
+// Build builds a CUE instance for the specified workspace and returns the CUE value.
+// The workspace files are served to the CUE loader as in-memory overlays.
 // A workspace must be initialised with InitWorkspace before calling this function.
 func (b *BundleBuilder) Build(workspace string) (cue.Value, error) {
 	var value cue.Value
+	overlay := make(map[string]load.Source, len(b.workspacesSources[workspace]))
+	for f, data := range b.workspacesSources[workspace] {
+		overlay[f] = load.FromBytes(data)
+	}
+
 	cfg := &load.Config{
 		Package:   "_",
 		DataFiles: true,
+		Overlay:   overlay,
 	}
 
 	ix := load.Instances(b.workspacesFiles[workspace], cfg)

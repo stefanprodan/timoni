@@ -134,22 +134,17 @@ func buildRuntime(files []string) (*apiv1.Runtime, error) {
 		return defaultRuntime, nil
 	}
 
-	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(tmpDir)
-
 	ctx := cuecontext.New()
 	rb := engine.NewRuntimeBuilder(ctx, files)
 
-	if err := rb.InitWorkspace(tmpDir); err != nil {
-		return nil, describeErr(tmpDir, "failed to init runtime", err)
+	workspace := apiv1.RuntimeDefaultName
+	if err := rb.InitWorkspace(workspace); err != nil {
+		return nil, describeErr(rb.WorkspaceDir(workspace), "failed to init runtime", err)
 	}
 
-	v, err := rb.Build(tmpDir)
+	v, err := rb.Build(workspace)
 	if err != nil {
-		return nil, describeErr(tmpDir, "failed to parse runtime", err)
+		return nil, describeErr(rb.WorkspaceDir(workspace), "failed to parse runtime", err)
 	}
 
 	rt, err := rb.GetRuntime(v)

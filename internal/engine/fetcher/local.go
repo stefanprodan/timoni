@@ -29,31 +29,54 @@ import (
 
 type Local struct {
 	src           string
-	dst           string
+	root          string
+	rootErr       error
 	requiredFiles []string
 }
 
-// NewLocal creates a local Fetcher for the given module.
-func NewLocal(src, dst string) *Local {
+// NewLocal creates a local Fetcher for the given module source directory.
+// The source is resolved to an absolute path at construction time, so a
+// later working directory change does not alter which module is fetched.
+func NewLocal(src string) *Local {
 	src = strings.TrimPrefix(src, apiv1.LocalPrefix)
+	root, rootErr := filepath.Abs(src)
+	if rootErr != nil {
+		root = src
+	}
 	requiredFiles := []string{
-		path.Join(src, "cue.mod", "module.cue"),
-		path.Join(src, "timoni.cue"),
-		path.Join(src, "values.cue"),
+		path.Join(root, "cue.mod", "module.cue"),
+		path.Join(root, "timoni.cue"),
+		path.Join(root, "values.cue"),
 	}
 	return &Local{
 		src:           src,
-		dst:           dst,
+		root:          root,
+		rootErr:       rootErr,
 		requiredFiles: requiredFiles,
 	}
 }
 
+// GetModuleRoot returns the absolute path of the module source directory.
+// Local modules build in place: the CUE loader reads the imported files
+// lazily from the source directory and build errors carry the positions
+// of the files the user is editing.
 func (f *Local) GetModuleRoot() string {
-	return filepath.Join(f.dst, "module")
+	return f.root
 }
 
+// Fetch validates the module source directory and returns the module
+// reference. The module is not copied; instance values are injected at
+// build time as in-memory overlays, leaving the directory untouched.
 func (f *Local) Fetch() (*apiv1.ModuleReference, error) {
-	if fs, err := os.Stat(f.src); err != nil || !fs.IsDir() {
+	if f.src == "" {
+		return nil, fmt.Errorf("module not found at path %s", f.src)
+	}
+
+	if f.rootErr != nil {
+		return nil, fmt.Errorf("failed to resolve module path %s: %w", f.src, f.rootErr)
+	}
+
+	if fs, err := os.Stat(f.root); err != nil || !fs.IsDir() {
 		return nil, fmt.Errorf("module not found at path %s", f.src)
 	}
 
@@ -69,5 +92,5 @@ func (f *Local) Fetch() (*apiv1.ModuleReference, error) {
 		Digest:     "unknown",
 	}
 
-	return &mr, engine.CopyModule(f.src, f.GetModuleRoot())
+	return &mr, nil
 }

@@ -17,16 +17,16 @@ limitations under the License.
 package fetcher
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/stefanprodan/timoni/internal/fscopy"
 	. "github.com/stefanprodan/timoni/internal/testutils"
 )
 
 func TestNewLocal(t *testing.T) {
 	g := NewWithT(t)
-	lf := NewLocal("src", "dst")
+	lf := NewLocal("src")
 
 	g.Expect(lf).ToNot(BeNil())
 	g.Expect(lf).To(Implement((*Fetcher)(nil)))
@@ -34,21 +34,30 @@ func TestNewLocal(t *testing.T) {
 
 func TestLocalGetModuleRoot(t *testing.T) {
 	g := NewWithT(t)
-	lf := NewLocal("src", "dst")
+	cwd, err := os.Getwd()
+	g.Expect(err).ToNot(HaveOccurred())
 
-	g.Expect(lf.GetModuleRoot()).To(Equal("dst/module"))
+	t.Run("resolves relative source", func(t *testing.T) {
+		g := NewWithT(t)
+		lf := NewLocal("src")
+
+		g.Expect(lf.GetModuleRoot()).To(Equal(filepath.Join(cwd, "src")))
+	})
+
+	t.Run("strips the file scheme", func(t *testing.T) {
+		g := NewWithT(t)
+		lf := NewLocal("file://src")
+
+		g.Expect(lf.GetModuleRoot()).To(Equal(filepath.Join(cwd, "src")))
+	})
 }
 
 func TestLocalFetch(t *testing.T) {
 	t.Run("nominal", func(t *testing.T) {
 		g := NewWithT(t)
-		src := filepath.Join(t.TempDir(), "src")
-		dst := filepath.Join(t.TempDir(), "dst")
-		testmod := "testdata/module"
+		src := "testdata/module"
 
-		g.Expect(fscopy.CopyDir(testmod, src, fscopy.Options{FollowSymlinks: true})).To(Succeed())
-
-		lf := NewLocal(src, dst)
+		lf := NewLocal(src)
 		mr, err := lf.Fetch()
 
 		g.Expect(err).To(BeNil())
@@ -56,12 +65,34 @@ func TestLocalFetch(t *testing.T) {
 		g.Expect(filepath.Join(lf.GetModuleRoot(), "cue.mod/module.cue")).To(BeARegularFile())
 	})
 
+	t.Run("builds in place without applying timoni.ignore", func(t *testing.T) {
+		g := NewWithT(t)
+		src := "testdata/module"
+
+		lf := NewLocal(src)
+		_, err := lf.Fetch()
+
+		g.Expect(err).To(BeNil())
+		g.Expect(filepath.Join(lf.GetModuleRoot(), "timoni.ignore")).To(BeARegularFile())
+		g.Expect(filepath.Join(lf.GetModuleRoot(), "ignore/ignore.txt")).To(BeARegularFile())
+	})
+
+	t.Run("resolves source at construction time", func(t *testing.T) {
+		g := NewWithT(t)
+		lf := NewLocal("testdata/module")
+		t.Chdir(t.TempDir())
+
+		mr, err := lf.Fetch()
+
+		g.Expect(err).To(BeNil())
+		g.Expect(mr.Repository).To(Equal("testdata/module"))
+	})
+
 	t.Run("lack of required files", func(t *testing.T) {
 		g := NewWithT(t)
 		src := t.TempDir()
-		dst := filepath.Join(t.TempDir(), "dst")
 
-		lf := NewLocal(src, dst)
+		lf := NewLocal(src)
 		_, err := lf.Fetch()
 
 		g.Expect(err).To(HaveOccurred())
@@ -70,7 +101,7 @@ func TestLocalFetch(t *testing.T) {
 
 	t.Run("non existent source", func(t *testing.T) {
 		g := NewWithT(t)
-		lf := NewLocal("", "dst")
+		lf := NewLocal("")
 		_, err := lf.Fetch()
 
 		g.Expect(err).To(HaveOccurred())

@@ -17,6 +17,8 @@ limitations under the License.
 package engine
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -143,4 +145,64 @@ runtime: {
 		Group:       "production",
 		KubeContext: "us-west-1:production",
 	}))
+}
+
+func TestRuntimeBuilderWorkspace(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	srcDir := t.TempDir()
+	runtimeFile := filepath.Join(srcDir, "runtime.cue")
+	runtimeData := `
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "fleet"
+	clusters: {
+		"staging": {
+			group:       "staging"
+			kubeContext: "eu-central-1:staging"
+		}
+	}
+}
+`
+	g.Expect(os.WriteFile(runtimeFile, []byte(runtimeData), 0o644)).To(Succeed())
+
+	builder := NewRuntimeBuilder(ctx, []string{runtimeFile})
+
+	workspace := apiv1.RuntimeDefaultName
+	g.Expect(builder.InitWorkspace(workspace)).To(Succeed())
+
+	_, err := os.Lstat(builder.WorkspaceDir(workspace))
+	g.Expect(err).To(MatchError(os.ErrNotExist))
+
+	v, err := builder.Build(workspace)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	rt, err := builder.GetRuntime(v)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(rt.Name).To(Equal("fleet"))
+	g.Expect(rt.Clusters).To(HaveLen(1))
+	g.Expect(rt.Clusters[0].KubeContext).To(Equal("eu-central-1:staging"))
+
+	t.Run("keeps a user file named schema.cue", func(t *testing.T) {
+		g := NewWithT(t)
+		userSchemaFile := filepath.Join(srcDir, "schema.cue")
+		userSchemaData := `
+runtime: clusters: "production": {
+	group:       "production"
+	kubeContext: "eu-central-1:production"
+}
+`
+		g.Expect(os.WriteFile(userSchemaFile, []byte(userSchemaData), 0o644)).To(Succeed())
+
+		builder := NewRuntimeBuilder(ctx, []string{runtimeFile, userSchemaFile})
+		g.Expect(builder.InitWorkspace(workspace)).To(Succeed())
+
+		v, err := builder.Build(workspace)
+		g.Expect(err).ToNot(HaveOccurred())
+
+		rt, err := builder.GetRuntime(v)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(rt.Clusters).To(HaveLen(2))
+	})
 }
