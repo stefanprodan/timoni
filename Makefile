@@ -34,14 +34,14 @@ vet: ## Vet Go code.
 	go vet ./...
 
 cue-vet: build ## Vet and fmt CUE files.
-	cue fmt ./schemas/...
+	./bin/timoni fmt ./schemas
 	cue vet ./schemas/...
 	for dir in ./blueprints/* ; do
-		cue fmt $$dir/...
+		./bin/timoni fmt $$dir
 		./bin/timoni mod vet $$dir
 	done
 	for dir in ./examples/* ; do
-		cue fmt $$dir/...
+		./bin/timoni fmt $$dir
 		if [ $$dir != "./examples/bundles" ]; then
 			./bin/timoni mod vet $$dir
 		fi
@@ -49,7 +49,7 @@ cue-vet: build ## Vet and fmt CUE files.
 	./bin/timoni mod vet ./cmd/timoni/testdata/module
 	./bin/timoni mod vet ./internal/engine/testdata/module
 	./bin/timoni mod vet ./internal/engine/fetcher/testdata/module
-	cue fmt ./internal/engine/testdata/module-values
+	./bin/timoni fmt ./internal/engine/testdata/module-values
 
 REDIS_VER=$(shell grep 'tag:' examples/redis/values.cue | awk '{ print $$2 }' | tr -d '"' | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
 push-redis: build

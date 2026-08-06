@@ -125,7 +125,7 @@ instance: tests: {
 }
 
 timoni: {
-	apply: app: [ for obj in instance.app {obj}]
-	apply: addons: [ for obj in instance.addons {obj}]
-	apply: tests: [ for obj in instance.tests {obj}]
+	apply: app: [for obj in instance.app {obj}]
+	apply: addons: [for obj in instance.addons {obj}]
+	apply: tests: [for obj in instance.tests {obj}]
 }

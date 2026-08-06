@@ -183,16 +183,17 @@ the file and line number where the error occurred.
 
 ### Format the module files
 
-Similar to Go, CUE has a built-in code formatter that can be used to format CUE files.
-
-To format all files in a module, run the following command:
+To format all files in a module:
 
 ```shell
-cue fmt ./...
+timoni fmt
 ```
 
-It is recommended to run this command after making changes to a module. Most editors
-have a CUE plugin that can run the `cue fmt` command automatically when saving a file.
+In CI, `timoni fmt --diff` prints the pending changes and exits with an error if
+any file needs formating.
+
+For editors, `timoni fmt -` reads CUE from standard input and writes the formatted
+result to standard output, so it can be wired up as a format-on-save command.
 
 ### Update the Kubernetes schemas
 
