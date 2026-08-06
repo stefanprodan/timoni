@@ -133,31 +133,32 @@ debug_values.cue
 
 ### Symbolic links
 
-When packaging a module, Timoni resolves symbolic links and includes
-their targets in the artifact as regular files and directories.
+When packaging a module, Timoni skips symbolic links by default.
+To include the link targets in the artifact as regular files and
+directories, run `timoni mod push` with the `--resolve-symlinks` flag:
+
+```shell
+timoni mod push ./path/to/module oci://docker.io/org/app-module \
+  --version=1.0.0 \
+  --resolve-symlinks
+```
+
 This allows sharing files between modules in a monorepo, for example
 by symlinking the vendored CUE schemas under `cue.mod/gen`.
 
 The `timoni.ignore` rules apply to the resolved content at its
 in-module path, the same as for regular files and directories.
 
-When building a module from a local path, `timoni build`, `timoni apply`
-and `timoni mod vet` read the module files in place from the source
-directory, following symbolic links the same way.
+The `timoni artifact push` command takes the same flag for packaging
+the symlink targets found in the pushed directory.
 
-To opt out of symlink resolution when packaging, set the
-`TIMONI_FOLLOW_SYMLINKS=false` env var, in which case symbolic links
-are skipped.
+!!! tip "Local modules"
 
-!!! warning "Symlinks in CI"
-
-    Symlink resolution follows links to any file readable by the user
-    running Timoni, including files outside the module directory and the
-    repository. When running `timoni mod push` in CI for repositories that
-    accept contributions from untrusted parties, a pull request could add
-    a symlink to a file on the CI runner, e.g. a credentials file, and get
-    it published inside the module artifact. In such pipelines, set
-    `TIMONI_FOLLOW_SYMLINKS=false` to skip symbolic links altogether.
+    When building a module from a local path, `timoni build`, `timoni apply`
+    and `timoni mod vet` read the module files in place from the source
+    directory, following symbolic links the same way as the operating system.
+    Note that a module which relies on symlinked files builds locally but
+    is published incomplete unless pushed with `--resolve-symlinks`.
 
 ## Listing module versions
 

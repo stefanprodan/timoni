@@ -51,22 +51,14 @@ func GetEnv() map[string]string {
 	return vars
 }
 
-// FollowSymlinks reports whether symbolic links should be resolved
-// when copying modules, which is the default behavior unless the
-// TIMONI_FOLLOW_SYMLINKS env var is set to false.
-func FollowSymlinks() bool {
-	return os.Getenv("TIMONI_FOLLOW_SYMLINKS") != "false"
-}
-
-// CopyModule copies the given module to the destination directory,
+// CopyDir copies the given directory to the destination directory,
 // while excluding files that match the timoni.ignore patterns.
-// Symbolic links are resolved and their targets copied in place of
-// the links, unless FollowSymlinks reports false,
-// in which case symlinks are skipped.
-func CopyModule(srcDir string, dstDir string) (err error) {
+// When resolveSymlinks is true, symbolic links are resolved and their
+// targets copied in place of the links, otherwise symlinks are skipped.
+func CopyDir(srcDir string, dstDir string, resolveSymlinks bool) (err error) {
 	// The ignore matcher domain must be built from the same form of the
 	// source path that fscopy passes to the Skip callback: absolute, and
-	// fully resolved when following symlinks.
+	// fully resolved when resolving symlinks.
 	srcDir, err = filepath.Abs(srcDir)
 	if err != nil {
 		return err
@@ -85,7 +77,7 @@ func CopyModule(srcDir string, dstDir string) (err error) {
 	matcher := sourceignore.NewMatcher(ps)
 
 	opt := fscopy.Options{
-		FollowSymlinks: FollowSymlinks(),
+		FollowSymlinks: resolveSymlinks,
 		Skip: func(src string, isDir bool) bool {
 			return matcher.Match(strings.Split(src, string(filepath.Separator)), isDir)
 		},

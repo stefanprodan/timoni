@@ -40,7 +40,7 @@ func Test_BundleStatus(t *testing.T) {
 	modVer := "1.0.0"
 
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -137,7 +137,7 @@ func Test_BundleStatus_Images(t *testing.T) {
 	modVer := "1.0.0"
 
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -185,7 +185,7 @@ func Test_BundleStatus_Runtime(t *testing.T) {
 	modVer := "1.0.0"
 
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,

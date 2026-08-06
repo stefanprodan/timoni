@@ -81,7 +81,7 @@ jobs:
       - name: Push minimal module
         run: |
           timoni mod push ./examples/minimal oci://ghcr.io/stefanprodan/timoni/minimal \
-          -v ${{ steps.info.outputs.version }} --latest \
+          -v ${{ steps.info.outputs.version }} --latest --resolve-symlinks \
           -a 'org.opencontainers.image.licenses=Apache-2.0' \
           -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni'  \
           -a 'org.opencontainers.image.description=A minimal timoni.sh module.' \
@@ -90,7 +90,7 @@ jobs:
       - name: Push blueprint starter
         run: |
           timoni mod push ./blueprints/starter oci://ghcr.io/stefanprodan/timoni/blueprints/starter \
-          -v ${{ steps.info.outputs.version }} --latest \
+          -v ${{ steps.info.outputs.version }} --latest --resolve-symlinks \
           -a 'org.opencontainers.image.licenses=Apache-2.0' \
           -a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni'  \
           -a 'org.opencontainers.image.description=Get started blueprint for timoni.sh modules.' \

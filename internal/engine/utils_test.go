@@ -31,11 +31,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCopyModule_Ignore(t *testing.T) {
+func TestCopyDir_Ignore(t *testing.T) {
 	g := NewWithT(t)
 	moduleRoot := path.Join(t.TempDir(), "module")
 
-	err := CopyModule("testdata/module", moduleRoot)
+	err := CopyDir("testdata/module", moduleRoot, true)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// Walk the original module and check that all files exist in tmp excluding ignored
@@ -61,7 +61,7 @@ func TestCopyModule_Ignore(t *testing.T) {
 	g.Expect(fsErr).ToNot(HaveOccurred())
 }
 
-func TestCopyModule_Symlinks(t *testing.T) {
+func TestCopyDir_Symlinks(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("symlink creation requires privileges on Windows")
 	}
@@ -80,23 +80,22 @@ func TestCopyModule_Symlinks(t *testing.T) {
 		return srcDir
 	}
 
-	t.Run("resolves symlinks by default", func(t *testing.T) {
+	t.Run("resolves symlinks on opt-in", func(t *testing.T) {
 		g := NewWithT(t)
 		srcDir := makeModule(t)
 		dstDir := filepath.Join(t.TempDir(), "module")
 
-		g.Expect(CopyModule(srcDir, dstDir)).To(Succeed())
+		g.Expect(CopyDir(srcDir, dstDir, true)).To(Succeed())
 
 		g.Expect(filepath.Join(dstDir, "schema.cue")).To(BeARegularFile())
 	})
 
-	t.Run("skips symlinks on opt-out", func(t *testing.T) {
+	t.Run("skips symlinks by default", func(t *testing.T) {
 		g := NewWithT(t)
-		t.Setenv("TIMONI_FOLLOW_SYMLINKS", "false")
 		srcDir := makeModule(t)
 		dstDir := filepath.Join(t.TempDir(), "module")
 
-		g.Expect(CopyModule(srcDir, dstDir)).To(Succeed())
+		g.Expect(CopyDir(srcDir, dstDir, false)).To(Succeed())
 
 		g.Expect(filepath.Join(dstDir, "schema.cue")).ToNot(BeAnExistingFile())
 	})
@@ -120,7 +119,7 @@ func TestCopyModule_Symlinks(t *testing.T) {
 			[]byte("dropped/\nlinked/secret.txt\n"), 0o644)).To(Succeed())
 
 		dstDir := filepath.Join(t.TempDir(), "module")
-		g.Expect(CopyModule(srcDir, dstDir)).To(Succeed())
+		g.Expect(CopyDir(srcDir, dstDir, true)).To(Succeed())
 
 		g.Expect(filepath.Join(dstDir, "linked", "keep.txt")).To(BeARegularFile())
 		g.Expect(filepath.Join(dstDir, "linked", "secret.txt")).ToNot(BeAnExistingFile())

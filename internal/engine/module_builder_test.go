@@ -33,7 +33,7 @@ func TestModuleBuilder(t *testing.T) {
 	g := NewWithT(t)
 	moduleRoot := path.Join(t.TempDir(), "module")
 
-	err := CopyModule("testdata/module", moduleRoot)
+	err := CopyDir("testdata/module", moduleRoot, true)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	ctx := cuecontext.New()
@@ -69,7 +69,7 @@ func TestModuleBuilder_InvalidValues(t *testing.T) {
 	g := NewWithT(t)
 	moduleRoot := path.Join(t.TempDir(), "module")
 
-	err := CopyModule("testdata/module-invalid", moduleRoot)
+	err := CopyDir("testdata/module-invalid", moduleRoot, true)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	ctx := cuecontext.New()
@@ -89,7 +89,7 @@ func TestModuleBuilder_GetDefaultValuesPrefersOverlay(t *testing.T) {
 	g := NewWithT(t)
 	moduleRoot := path.Join(t.TempDir(), "module")
 
-	err := CopyModule("testdata/module", moduleRoot)
+	err := CopyDir("testdata/module", moduleRoot, true)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	mb := NewModuleBuilder(cuecontext.New(), "test-name", "test-namespace", moduleRoot, "main")
@@ -110,7 +110,7 @@ func TestModuleBuilder_OverlayKeepsModuleDirUnchanged(t *testing.T) {
 	g := NewWithT(t)
 	moduleRoot := path.Join(t.TempDir(), "module")
 
-	err := CopyModule("testdata/module", moduleRoot)
+	err := CopyDir("testdata/module", moduleRoot, true)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	valuesFile := path.Join(moduleRoot, "values.cue")

@@ -26,7 +26,7 @@ func Test_BundleBuild(t *testing.T) {
 
 	// Push the module to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -168,7 +168,7 @@ bundle: {
 	cuePath := filepath.Join(wd, "bundle.cue")
 	g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
 
-	err := engine.CopyModule(modPath, filepath.Join(wd, modPath))
+	err := engine.CopyDir(modPath, filepath.Join(wd, modPath), true)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	output, err := executeCommand(fmt.Sprintf(
@@ -203,7 +203,7 @@ func Test_BundleBuild_Runtime(t *testing.T) {
 	modVer := "1.0.0"
 
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -328,7 +328,7 @@ bundle: {
 			wd := t.TempDir()
 			cuePath := filepath.Join(wd, "bundle.cue")
 			g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
-			g.Expect(engine.CopyModule("testdata/module", filepath.Join(wd, "testdata/module"))).ToNot(HaveOccurred())
+			g.Expect(engine.CopyDir("testdata/module", filepath.Join(wd, "testdata/module"), true)).ToNot(HaveOccurred())
 
 			_, err := executeCommand(fmt.Sprintf("bundle build -f %s -p main", cuePath))
 			g.Expect(err).To(HaveOccurred())
@@ -371,7 +371,7 @@ bundle: {
 	wd := t.TempDir()
 	cuePath := filepath.Join(wd, "bundle.cue")
 	g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
-	g.Expect(engine.CopyModule(modPath, filepath.Join(wd, modPath))).ToNot(HaveOccurred())
+	g.Expect(engine.CopyDir(modPath, filepath.Join(wd, modPath), true)).ToNot(HaveOccurred())
 
 	outDir := filepath.Join(wd, "out")
 	_, err := executeCommand(fmt.Sprintf(
@@ -443,7 +443,7 @@ bundle: {
 	wd := t.TempDir()
 	cuePath := filepath.Join(wd, "bundle.cue")
 	g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
-	g.Expect(engine.CopyModule(modPath, filepath.Join(wd, modPath))).ToNot(HaveOccurred())
+	g.Expect(engine.CopyDir(modPath, filepath.Join(wd, modPath), true)).ToNot(HaveOccurred())
 
 	outDir := filepath.Join(wd, "out")
 	_, err := executeCommand(fmt.Sprintf(
@@ -535,7 +535,7 @@ func Test_BundleBuild_Concurrency(t *testing.T) {
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
-	_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s", modPath, modURL, modVer))
+	_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s --resolve-symlinks", modPath, modURL, modVer))
 	g.Expect(err).ToNot(HaveOccurred())
 
 	const numInstances = 6

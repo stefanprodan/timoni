@@ -48,7 +48,7 @@ func Test_BundleDelete(t *testing.T) {
 	modVer := "1.0.0"
 
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -118,7 +118,7 @@ func Test_BundleDelete_MultiNamespace(t *testing.T) {
 	modVer := "1.0.0"
 
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -200,7 +200,7 @@ func Test_BundleDelete_Runtime(t *testing.T) {
 	modVer := "1.0.0"
 
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
