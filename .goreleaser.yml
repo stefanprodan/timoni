@@ -1,76 +1,77 @@
-project_name: timoni
+version: 2
+
+# xref: https://goreleaser.com/customization/hooks/
+before:
+  hooks:
+    - go mod download
+
+# xref: https://goreleaser.com/customization/env/
+env:
+  - CGO_ENABLED=0
+
+# xref: https://goreleaser.com/customization/changelog/
 changelog:
   use: github-native
+
+# xref: https://goreleaser.com/customization/build/
 builds:
   - <<: &build_defaults
-      binary: timoni
-      main: ./cmd/timoni
+      main: ./cmd/{{ .ProjectName }}
       ldflags:
         - -s -w -X main.VERSION={{ .Version }}
-      env:
-        - CGO_ENABLED=0
-    id: linux
+    id: linux-build
     goos:
       - linux
     goarch:
       - amd64
       - arm64
   - <<: *build_defaults
-    id: darwin
+    id: darwin-build
     goos:
       - darwin
     goarch:
       - amd64
       - arm64
   - <<: *build_defaults
-    id: windows
+    id: windows-build
     goos:
       - windows
     goarch:
       - amd64
+      - arm64
+
+# xref: https://goreleaser.com/customization/archive/
 archives:
   - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    id: nix
-    builds: [darwin, linux]
-    format: tar.gz
+    id: unix-cli
+    ids:
+      - darwin-build
+      - linux-build
+    formats:
+      - tar.gz
     files:
       - LICENSE
   - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    id: windows
-    builds: [windows]
-    format: zip
+    id: windows-cli
+    ids:
+      - windows-build
+    formats:
+      - zip
     files:
       - LICENSE
+
+# xref: https://goreleaser.com/customization/checksum/
+checksum:
+  algorithm: sha256
+
+# xref: https://goreleaser.com/customization/source/
 source:
   enabled: true
   name_template: '{{ .ProjectName }}_{{ .Version }}_source_code'
+
+# xref: https://goreleaser.com/customization/sbom/
 sboms:
   - id: source
     artifacts: source
     documents:
       - "{{ .ProjectName }}_{{ .Version }}_sbom.spdx.json"
-brews:
-  - name: timoni
-    repository:
-      owner: stefanprodan
-      name: homebrew-tap
-      branch: main
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Formula
-    homepage: "https://timoni.sh"
-    description: "Timoni CLI"
-    dependencies:
-      - name: cue
-        type: optional
-      - name: diffutils
-        type: optional
-    install: |
-      bin.install "timoni"
-      bash_output = Utils.safe_popen_read(bin/"timoni", "completion", "bash")
-      (bash_completion/"timoni").write bash_output
-      zsh_output = Utils.safe_popen_read(bin/"timoni", "completion", "zsh")
-      (zsh_completion/"_timoni").write zsh_output
-      fish_output = Utils.safe_popen_read(bin/"timoni", "completion", "fish")
-      (fish_completion/"timoni.fish").write fish_output
-    test: |
-      system "#{bin}/timoni version"

@@ -14,14 +14,16 @@ jobs:
       version: ${{ steps.hash.outputs.version }}
     runs-on: ubuntu-latest
     permissions:
+      artifact-metadata: write
+      attestations: write
       contents: write
       id-token: write
       packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Unshallow
-        run: git fetch --prune --unshallow
+        with:
+          fetch-depth: 0
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -29,15 +31,22 @@ jobs:
           cache: false
       - name: Setup Syft
         uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+      - name: Version info
+        id: ver
+        run: |
+          echo "SEMVER=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
       - name: Run GoReleaser
         id: run-goreleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           version: latest
-          args: release --skip=validate
+          args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
+      - name: Attest release assets
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-checksums: '${{ github.workspace }}/dist/${{ github.event.repository.name }}_${{ steps.ver.outputs.SEMVER }}_checksums.txt'
       - name: Generate SLSA subject
         id: hash
         env:
