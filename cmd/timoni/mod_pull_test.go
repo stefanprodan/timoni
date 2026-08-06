@@ -35,7 +35,7 @@ func Test_PullMod(t *testing.T) {
 
 	// Package the module as an OCI artifact and push it to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,

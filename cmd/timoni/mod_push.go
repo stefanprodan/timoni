@@ -53,6 +53,11 @@ container registry using the version as the image tag.`,
 	--version=2.0.0-rc.1 \
 	--latest=false
 
+  # Push a module that shares files with other modules using symbolic links
+  timoni mod push ./path/to/module oci://docker.io/org/app-module \
+	--version=1.0.0 \
+	--resolve-symlinks
+
   # Push a module with custom OCI annotations
   timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
 	--version=1.0.0 \
@@ -78,15 +83,16 @@ container registry using the version as the image tag.`,
 }
 
 type pushModFlags struct {
-	module      string
-	version     flags.Version
-	latest      bool
-	creds       flags.Credentials
-	ignorePaths []string
-	output      string
-	annotations []string
-	sign        string
-	cosignKey   string
+	module          string
+	version         flags.Version
+	latest          bool
+	creds           flags.Credentials
+	ignorePaths     []string
+	output          string
+	annotations     []string
+	resolveSymlinks bool
+	sign            string
+	cosignKey       string
 }
 
 var pushModArgs pushModFlags
@@ -100,6 +106,8 @@ func init() {
 		"Set custom OCI annotations in the format '<key>=<value>'.")
 	pushModCmd.Flags().StringVarP(&pushModArgs.output, "output", "o", "",
 		"The format in which the artifact digest should be printed, can be 'yaml' or 'json'.")
+	pushModCmd.Flags().BoolVar(&pushModArgs.resolveSymlinks, "resolve-symlinks", false,
+		"Resolve symbolic links and package their targets as regular files and directories.")
 	pushModCmd.Flags().StringVar(&pushModArgs.sign, "sign", "",
 		"Signs the module with the specified provider.")
 	pushModCmd.Flags().StringVar(&pushModArgs.cosignKey, "cosign-key", "",
@@ -158,10 +166,10 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 
 	// When symlink resolution is enabled, stage the module in a temp dir
 	// so that the artifact contains the resolved file set local builds
-	// see. With TIMONI_FOLLOW_SYMLINKS=false the archiver skips symlinks
-	// by itself, so the module is packaged straight from its source dir.
+	// see. Without it the archiver skips symlinks by itself, so the
+	// module is packaged straight from its source dir.
 	moduleDir := pushModArgs.module
-	if engine.FollowSymlinks() {
+	if pushModArgs.resolveSymlinks {
 		tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 		if err != nil {
 			return err
@@ -169,7 +177,7 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		defer os.RemoveAll(tmpDir)
 
 		moduleDir = path.Join(tmpDir, "module")
-		if err := engine.CopyModule(pushModArgs.module, moduleDir); err != nil {
+		if err := engine.CopyDir(pushModArgs.module, moduleDir, true); err != nil {
 			return err
 		}
 	}

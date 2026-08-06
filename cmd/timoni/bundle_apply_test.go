@@ -47,7 +47,7 @@ func Test_BundleApply(t *testing.T) {
 
 	// Push the module to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -287,7 +287,7 @@ func Test_BundleApply_Digest(t *testing.T) {
 	modVer2 := "2.0.0"
 
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer1,
@@ -298,7 +298,7 @@ func Test_BundleApply_Digest(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	_, err = executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s --latest",
+		"mod push %s oci://%s -v %s --latest --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer2,
@@ -446,7 +446,7 @@ func Test_BundleApply_Runtime(t *testing.T) {
 
 	// Push the module to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -786,7 +786,7 @@ func Test_FetchBundleInstanceModule_Cache(t *testing.T) {
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 
 	for _, v := range []string{"1.0.0", "1.1.0"} {
-		_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s", modPath, modURL, v))
+		_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s --resolve-symlinks", modPath, modURL, v))
 		g.Expect(err).ToNot(HaveOccurred())
 	}
 
@@ -847,7 +847,7 @@ func Test_BundleApply_Runtime_ModuleVersionPerCluster(t *testing.T) {
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 
 	for _, v := range []string{"1.0.0", "2.0.0"} {
-		_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s", modPath, modURL, v))
+		_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s --resolve-symlinks", modPath, modURL, v))
 		g.Expect(err).ToNot(HaveOccurred())
 	}
 

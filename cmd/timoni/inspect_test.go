@@ -40,7 +40,7 @@ func TestInspect(t *testing.T) {
 
 	// Package the module as an OCI artifact and push it to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s %s -v %s -a org.opencontainers.image.licenses=%s",
+		"mod push %s %s -v %s -a org.opencontainers.image.licenses=%s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -115,7 +115,7 @@ func TestInspect_Latest(t *testing.T) {
 
 	// Package the module as an OCI artifact and push it to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s %s -v %s --latest",
+		"mod push %s %s -v %s --latest --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -154,7 +154,7 @@ func TestInspect_StorageType(t *testing.T) {
 	namespace := rnd("my-namespace", 5)
 
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s %s -v %s --latest",
+		"mod push %s %s -v %s --latest --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,

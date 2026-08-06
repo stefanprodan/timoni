@@ -194,7 +194,7 @@ func TestApply_WithDigest(t *testing.T) {
 
 	// Push the module to registry
 	pushOut, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s -o json",
+		"mod push %s oci://%s -v %s -o json --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,
@@ -265,7 +265,7 @@ func TestApply_WithBundleConflicts(t *testing.T) {
 
 	// Push the module to registry
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s -v %s --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,

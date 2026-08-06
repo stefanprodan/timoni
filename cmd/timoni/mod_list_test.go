@@ -33,7 +33,7 @@ func Test_ListMod(t *testing.T) {
 
 	for _, v := range modVers {
 		_, err := executeCommand(fmt.Sprintf(
-			"mod push %s oci://%s -v %s --latest",
+			"mod push %s oci://%s -v %s --latest --resolve-symlinks",
 			modPath,
 			modURL,
 			v,

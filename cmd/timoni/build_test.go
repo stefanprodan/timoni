@@ -250,7 +250,7 @@ func TestBuild_WithDigest(t *testing.T) {
 
 	// Push the module to registry
 	pushOut, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s -o json",
+		"mod push %s oci://%s -v %s -o json --resolve-symlinks",
 		modPath,
 		modURL,
 		modVer,

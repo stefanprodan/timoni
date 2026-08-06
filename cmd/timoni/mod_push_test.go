@@ -118,27 +118,26 @@ func Test_PushMod_Symlinks(t *testing.T) {
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
 	modVer := "1.0.0"
 
-	// By default the symlinked file is materialized in the artifact.
+	// By default the symlinked file is left out of the artifact.
 	_, err := executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s", modPath, modURL, modVer))
 	g.Expect(err).ToNot(HaveOccurred())
 
-	pullDir := filepath.Join(t.TempDir(), "follow")
-	g.Expect(os.MkdirAll(pullDir, 0o755)).To(Succeed())
-	_, err = executeCommand(fmt.Sprintf("mod pull oci://%s -v %s -o %s", modURL, modVer, pullDir))
-	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(filepath.Join(pullDir, "extra.txt")).To(BeARegularFile())
-
-	// With the opt-out, the symlinked file is left out of the artifact.
-	t.Setenv("TIMONI_FOLLOW_SYMLINKS", "false")
-	modVer = "1.0.1"
-	_, err = executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s", modPath, modURL, modVer))
-	g.Expect(err).ToNot(HaveOccurred())
-
-	pullDir = filepath.Join(t.TempDir(), "skip")
+	pullDir := filepath.Join(t.TempDir(), "skip")
 	g.Expect(os.MkdirAll(pullDir, 0o755)).To(Succeed())
 	_, err = executeCommand(fmt.Sprintf("mod pull oci://%s -v %s -o %s", modURL, modVer, pullDir))
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(filepath.Join(pullDir, "extra.txt")).ToNot(BeAnExistingFile())
+
+	// With the opt-in, the symlinked file is materialized in the artifact.
+	modVer = "1.0.1"
+	_, err = executeCommand(fmt.Sprintf("mod push %s oci://%s -v %s --resolve-symlinks", modPath, modURL, modVer))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	pullDir = filepath.Join(t.TempDir(), "resolve")
+	g.Expect(os.MkdirAll(pullDir, 0o755)).To(Succeed())
+	_, err = executeCommand(fmt.Sprintf("mod pull oci://%s -v %s -o %s", modURL, modVer, pullDir))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(filepath.Join(pullDir, "extra.txt")).To(BeARegularFile())
 }
 
 func Test_PushModRejectsBuildMetadataVersion(t *testing.T) {

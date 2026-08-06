@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -50,6 +51,10 @@ the ignore rules will be used to exclude files from the artifact.`,
 	--annotation="org.opencontainers.image.revision=$(git rev-parse HEAD)' \
 	--content-type="timoni.sh/bundles"
 
+  # Push a dir contents including the targets of the symbolic links it contains
+  timoni artifact push oci://docker.io/org/app -t latest -f ./path/to/dir \
+	--resolve-symlinks
+
   # Push and sign with Cosign (the cosign binary must be present in PATH)
   echo $GITHUB_TOKEN | timoni registry login ghcr.io -u timoni --password-stdin
   export COSIGN_PASSWORD=password
@@ -63,14 +68,15 @@ the ignore rules will be used to exclude files from the artifact.`,
 }
 
 type pushArtifactFlags struct {
-	path        string
-	creds       flags.Credentials
-	ignorePaths []string
-	tags        []string
-	annotations []string
-	contentType string
-	sign        string
-	cosignKey   string
+	path            string
+	creds           flags.Credentials
+	ignorePaths     []string
+	tags            []string
+	annotations     []string
+	contentType     string
+	resolveSymlinks bool
+	sign            string
+	cosignKey       string
 }
 
 var pushArtifactArgs pushArtifactFlags
@@ -85,6 +91,8 @@ func init() {
 		"Annotation in the format '<key>=<value>'.")
 	pushArtifactCmd.Flags().StringVar(&pushArtifactArgs.contentType, "content-type", "generic",
 		"The content type of this artifact.")
+	pushArtifactCmd.Flags().BoolVar(&pushArtifactArgs.resolveSymlinks, "resolve-symlinks", false,
+		"Resolve symbolic links and package their targets as regular files and directories.")
 	pushArtifactCmd.Flags().StringVar(&pushArtifactArgs.sign, "sign", "",
 		"Signs the module with the specified provider.")
 	pushArtifactCmd.Flags().StringVar(&pushArtifactArgs.cosignKey, "cosign-key", "",
@@ -145,13 +153,37 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 	oci.AppendGitMetadata(cmd.Context(), pushArtifactArgs.path, annotations)
 
+	// When symlink resolution is enabled, stage the directory in a temp dir
+	// so that the artifact contains the symlink targets as regular files
+	// and directories, since the archiver skips symbolic links.
+	contentPath := pushArtifactArgs.path
+	if pushArtifactArgs.resolveSymlinks {
+		if fi.IsDir() {
+			tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+			if err != nil {
+				return err
+			}
+			defer os.RemoveAll(tmpDir)
+
+			contentPath = filepath.Join(tmpDir, "artifact")
+			if err := engine.CopyDir(pushArtifactArgs.path, contentPath, true); err != nil {
+				return err
+			}
+		} else {
+			contentPath, err = filepath.EvalSymlinks(contentPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	spin := logger.StartSpinner("pushing artifact")
 	defer spin.Stop()
 
 	opts := oci.Options(ctx, pushArtifactArgs.creds.String(), rootArgs.registryInsecure)
 	ociURL := fmt.Sprintf("%s:%s", args[0], pushArtifactArgs.tags[0])
 	digestURL, err := oci.PushArtifact(ociURL,
-		pushArtifactArgs.path,
+		contentPath,
 		pushArtifactArgs.ignorePaths,
 		pushArtifactArgs.contentType,
 		annotations,

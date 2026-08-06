@@ -18,6 +18,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -78,6 +81,48 @@ func Test_PushArtifact(t *testing.T) {
 	g.Expect(len(manifest.Layers)).To(BeEquivalentTo(1))
 	g.Expect(manifest.Layers[0].MediaType).To(BeEquivalentTo(apiv1.ContentMediaType))
 	g.Expect(manifest.Layers[0].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo("generic"))
+}
+
+func Test_PushArtifact_Symlinks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires privileges on Windows")
+	}
+	g := NewWithT(t)
+
+	// Create a dir with a relative symlink to a file living outside of it.
+	tmpDir := t.TempDir()
+	aPath := filepath.Join(tmpDir, "artifact")
+	g.Expect(os.MkdirAll(aPath, 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(aPath, "main.cue"), []byte("main"), 0o644)).To(Succeed())
+	sharedFile := filepath.Join(tmpDir, "shared", "extra.cue")
+	g.Expect(os.MkdirAll(filepath.Dir(sharedFile), 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(sharedFile, []byte("extra"), 0o644)).To(Succeed())
+	g.Expect(os.Symlink(filepath.Join("..", "shared", "extra.cue"),
+		filepath.Join(aPath, "extra.cue"))).To(Succeed())
+
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
+
+	// By default the symlinked file is left out of the artifact.
+	_, err := executeCommand(fmt.Sprintf("artifact push oci://%s -f %s -t skip --content-type=generic", aURL, aPath))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	pullDir := filepath.Join(t.TempDir(), "skip")
+	g.Expect(os.MkdirAll(pullDir, 0o755)).To(Succeed())
+	_, err = executeCommand(fmt.Sprintf("artifact pull oci://%s:skip -o %s", aURL, pullDir))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(filepath.Join(pullDir, "main.cue")).To(BeARegularFile())
+	g.Expect(filepath.Join(pullDir, "extra.cue")).ToNot(BeAnExistingFile())
+
+	// With the opt-in, the symlinked file is materialized in the artifact.
+	_, err = executeCommand(fmt.Sprintf("artifact push oci://%s -f %s -t resolve --content-type=generic --resolve-symlinks", aURL, aPath))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	pullDir = filepath.Join(t.TempDir(), "resolve")
+	g.Expect(os.MkdirAll(pullDir, 0o755)).To(Succeed())
+	_, err = executeCommand(fmt.Sprintf("artifact pull oci://%s:resolve -o %s", aURL, pullDir))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(filepath.Join(pullDir, "main.cue")).To(BeARegularFile())
+	g.Expect(filepath.Join(pullDir, "extra.cue")).To(BeARegularFile())
 }
 
 func TestPushArtifactRejectsInvalidTagsBeforeInput(t *testing.T) {

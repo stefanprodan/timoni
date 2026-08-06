@@ -35,7 +35,7 @@ jobs:
         run: make install
       - name: Push module
         run: |
-          timoni mod push ./examples/minimal oci://localhost:5000/minimal -v 1.0.0 --latest
+          timoni mod push ./examples/minimal oci://localhost:5000/minimal -v 1.0.0 --latest --resolve-symlinks
       - name: Install module
         run: |
           timoni -n test apply nginx oci://localhost:5000/minimal
@@ -86,7 +86,7 @@ jobs:
         run: make install
       - name: Push module
         run: |
-          timoni mod push ./blueprints/starter ${NGINX_MODULE_URL} -v 1.0.0 --latest
+          timoni mod push ./blueprints/starter ${NGINX_MODULE_URL} -v 1.0.0 --latest --resolve-symlinks
       - name: Vet bundle
         run: |
           timoni bundle vet -f hack/tests/nginx_bundle.cue --runtime-from-env

@@ -53,7 +53,7 @@ cue-vet: build ## Vet and fmt CUE files.
 
 REDIS_VER=$(shell grep 'tag:' examples/redis/values.cue | awk '{ print $$2 }' | tr -d '"' | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
 push-redis: build
-	./bin/timoni mod push ./examples/redis oci://ghcr.io/stefanprodan/modules/redis -v $(REDIS_VER) --latest \
+	./bin/timoni mod push ./examples/redis oci://ghcr.io/stefanprodan/modules/redis -v $(REDIS_VER) --latest --resolve-symlinks \
 		-a 'org.opencontainers.image.source=https://github.com/stefanprodan/timoni/tree/main/examples/redis'  \
 		-a 'org.opencontainers.image.description=A timoni.sh module for deploying Redis master-replica clusters.' \
 		-a 'org.opencontainers.image.documentation=https://github.com/stefanprodan/timoni/blob/main/examples/redis/README.md'
