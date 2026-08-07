@@ -113,6 +113,7 @@ nav:
           - Cluster version constraints: cue/module/semver-constraints.md
           - Control the apply behavior: cue/module/apply-behavior.md
           - Custom health checks: cue/module/health-checks.md
+          - Test modules with CUE: cue/module/unit-tests.md
           - Run tests with Kubernetes Jobs: cue/module/test-jobs.md
           - Import resources from YAML: cue/module/import-resources.md
       - Module Distribution:
@@ -140,6 +141,7 @@ nav:
           - cmd/timoni_mod_pull.md
           - cmd/timoni_mod_list.md
           - cmd/timoni_mod_vet.md
+          - cmd/timoni_mod_test.md
           - cmd/timoni_mod_vendor.md
           - cmd/timoni_mod_vendor_k8s.md
           - cmd/timoni_mod_vendor_crd.md
