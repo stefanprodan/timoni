@@ -22,17 +22,15 @@ which can be found by running: `timoni version`.
 
 !!! tip "Timoni CUE dependency"
 
-    Note that Timoni embeds the CUE engine, so you don't need to install
-    it separately in order to use Timoni. The CUE CLI is only required
-    when developing modules to format the CUE files before publishing the
-    modules to container registries.
+    Note that Timoni embeds the CUE engine and the CUE formatter
+    (`timoni fmt`), so you don't need to install CUE separately in order
+    to use Timoni or to develop modules. The CUE CLI is only used in
+    this guide for evaluating and validating standalone CUE expressions.
 
 CUE comes with a rich set of CLI commands. Throughout this guide, we'll be using the following commands:
 
-- `cue fmt` - format CUE files
 - `cue eval` - evaluate CUE expressions
 - `cue vet` - validate CUE definitions
-
 
 ## Builtin Types
 

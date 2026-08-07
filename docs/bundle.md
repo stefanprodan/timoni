@@ -545,13 +545,17 @@ Printing the computed value is particular useful when debugging runtime attribut
 
 ### Format
 
-To format Bundle files, you can use the `cue fmt` command.
+To format Bundle files, you can use the `timoni fmt` command.
 
 Example:
 
 ```shell
-cue fmt bundle.cue
+timoni fmt bundle.cue
 ```
+
+To verify formatting without rewriting the file, e.g. in CI,
+use `timoni fmt --diff bundle.cue`, which prints the pending changes
+and exits with a non-zero status if the file is not well formatted.
 
 ### Referencing local modules
 

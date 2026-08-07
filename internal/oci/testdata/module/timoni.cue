@@ -20,5 +20,5 @@ timoni: {
 		}
 	}
 
-	apply: all: [ for obj in instance.objects {obj}]
+	apply: all: [for obj in instance.objects {obj}]
 }

@@ -125,9 +125,12 @@ func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 	rootCmd.SetOut(buf)
 	rootCmd.SetErr(buf)
 	rootCmd.SetArgs(args)
-	if in != nil {
-		rootCmd.SetIn(in)
+	// Always set the input stream so a reader injected by a previous
+	// test does not leak into commands that read stdin.
+	if in == nil {
+		in = os.Stdin
 	}
+	rootCmd.SetIn(in)
 
 	zcfg := zerolog.ConsoleWriter{Out: buf, NoColor: true}
 	zcfg.PartsExclude = []string{
@@ -146,6 +149,7 @@ func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 
 func resetCmdArgs() {
 	applyArgs = applyFlags{}
+	fmtArgs = fmtFlags{}
 	buildArgs = buildFlags{output: "yaml"}
 	deleteArgs = deleteFlags{}
 	statusArgs = statusFlags{}

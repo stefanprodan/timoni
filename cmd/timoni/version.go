@@ -18,7 +18,9 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
 
+	"cuelang.org/go/cue"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
@@ -53,7 +55,7 @@ func runVersionCmd(cmd *cobra.Command, args []string) error {
 	info := map[string]string{}
 	info["client"] = VERSION
 	info["api"] = apiv1.GroupVersion.String()
-	info["cue"] = CUE_VERSION
+	info["cue"] = strings.TrimPrefix(cue.LanguageVersion(), "v")
 
 	var marshalled []byte
 	var err error

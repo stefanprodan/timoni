@@ -17,8 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
+	"cuelang.org/go/cue"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
@@ -37,7 +40,17 @@ func TestVersion(t *testing.T) {
 	expectedAPIVersion := apiv1.GroupVersion.String()
 	g.Expect(data).To(HaveKeyWithValue("api", expectedAPIVersion))
 	g.Expect(data).To(HaveKey("client"))
-	g.Expect(data).To(HaveKey("cue"))
+	g.Expect(data).To(HaveKeyWithValue("cue", strings.TrimPrefix(cue.LanguageVersion(), "v")))
+}
+
+func TestVersionJSON(t *testing.T) {
+	g := NewWithT(t)
+	output, err := executeCommand("version -o json")
+	g.Expect(err).ToNot(HaveOccurred())
+
+	var data map[string]string
+	g.Expect(json.Unmarshal([]byte(output), &data)).To(Succeed())
+	g.Expect(data).To(HaveKeyWithValue("cue", strings.TrimPrefix(cue.LanguageVersion(), "v")))
 }
 
 func TestVersionRejectsInvalidOutput(t *testing.T) {
