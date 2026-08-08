@@ -124,3 +124,108 @@ func TestGetResources_MissingKind(t *testing.T) {
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring("Kind"))
 }
+
+func TestGetResources_MissingAPIVersion(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	value := ctx.CompileString(`app: [{
+		kind: "ConfigMap"
+		metadata: name: "test"
+	}]`)
+	g.Expect(value.Err()).ToNot(HaveOccurred())
+
+	_, err := GetResources(value)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(SatisfyAll(
+		ContainSubstring("invalid object at path app[0]"),
+		ContainSubstring("missing required field(s) apiVersion"),
+	))
+}
+
+func TestGetResources_MissingName(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	value := ctx.CompileString(`app: [{
+		apiVersion: "v1"
+		kind:       "ConfigMap"
+	}]`)
+	g.Expect(value.Err()).ToNot(HaveOccurred())
+
+	_, err := GetResources(value)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(SatisfyAll(
+		ContainSubstring("invalid object at path app[0]"),
+		ContainSubstring("missing required field(s) metadata.name"),
+	))
+}
+
+func TestGetResources_MissingNameBytesValue(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	value := ctx.CompileString(`app: [{
+		apiVersion: "v1"
+		kind:       "Secret"
+		stringData: key: '\x68\x69'
+	}]`)
+	g.Expect(value.Err()).ToNot(HaveOccurred())
+
+	_, err := GetResources(value)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("missing required field(s) metadata.name"))
+}
+
+func TestGetResources_InvalidMetadata(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	value := ctx.CompileString(`app: [{
+		apiVersion: "v1"
+		kind:       "ConfigMap"
+		metadata: {
+			name:      "Test_App"
+			namespace: "Default"
+			labels: app: "Invalid Value!"
+		}
+	}]`)
+	g.Expect(value.Err()).ToNot(HaveOccurred())
+
+	_, err := GetResources(value)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(SatisfyAll(
+		ContainSubstring(`metadata.name "Test_App"`),
+		ContainSubstring(`metadata.namespace "Default"`),
+		ContainSubstring(`metadata.labels["app"] value`),
+	))
+}
+
+func TestGetResources_AggregatesErrors(t *testing.T) {
+	g := NewWithT(t)
+	ctx := cuecontext.New()
+
+	value := ctx.CompileString(`
+	app: [{
+		apiVersion: "v1"
+		kind:       "ConfigMap"
+	}]
+	addons: [{
+		apiVersion: "v1"
+		kind:       "ConfigMap"
+		metadata: name: "test"
+	}, {
+		kind: "ConfigMap"
+		metadata: name: "test"
+	}]`)
+	g.Expect(value.Err()).ToNot(HaveOccurred())
+
+	_, err := GetResources(value)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(SatisfyAll(
+		ContainSubstring(`resource list "app"`),
+		ContainSubstring("invalid object at path app[0]"),
+		ContainSubstring(`resource list "addons"`),
+		ContainSubstring("invalid object at path addons[1]"),
+	))
+}

@@ -311,6 +311,31 @@ timoni: {
 
 ```
 
+### Apply sets
+
+The `timoni: apply:` field holds one or more named lists of Kubernetes objects:
+
+```cue
+timoni: {
+	apply: app: [for obj in instance.objects {obj}]
+	apply: test: [for obj in instance.tests {obj}]
+}
+```
+
+The set names are chosen by the module author. When installing or upgrading
+an instance, Timoni applies the sets in the order they are defined. When
+waiting is enabled, Timoni waits for the objects in the current set to become
+ready before applying the next set.
+
+Every object in an apply set must have the `apiVersion`, `kind` and
+`metadata.name` fields set. The object's name, namespace, labels and
+annotations are validated at build time with the Kubernetes API server rules.
+When an object fails validation, Timoni reports an error containing the
+CUE path of the invalid object.
+
+Null values in apply sets are skipped, and Kubernetes `List` objects are
+expanded to their items.
+
 ### Kubernetes definitions
 
 The `deployment.cue` and `service.cue` files contain the
