@@ -36,6 +36,33 @@ const (
 
 	// ValuesSelector is the CUE path for the Timoni's module values.
 	ValuesSelector Selector = "values"
+
+	// TestCasesSelector is the CUE path for the test cases
+	// declared in a module's '*_test.cue' files.
+	TestCasesSelector Selector = "cases"
+
+	// TestNameSelector is the CUE path for the instance name a test case is built with.
+	TestNameSelector Selector = "name"
+
+	// TestNamespaceSelector is the CUE path for the instance namespace a test case is built with.
+	TestNamespaceSelector Selector = "namespace"
+
+	// TestModuleVersionSelector is the CUE path for the module version a test case is built with.
+	TestModuleVersionSelector Selector = "moduleVersion"
+
+	// TestKubeVersionSelector is the CUE path for the Kubernetes version a test case is built with.
+	TestKubeVersionSelector Selector = "kubeVersion"
+
+	// TestValuesSelector is the CUE path for the values a test case is built with.
+	TestValuesSelector Selector = "values"
+
+	// TestObjectsSelector is the CUE path for the Kubernetes objects a test case
+	// expects, keyed by '<kind>/<name>'.
+	TestObjectsSelector Selector = "objects"
+
+	// TestAssertSelector is the CUE path for the named predicates a test case
+	// requires to hold.
+	TestAssertSelector Selector = "assert"
 )
 
 // Instance holds the information about the module, values

@@ -120,11 +120,13 @@ func BuildArtifactImage(contentPath string, ignorePaths []string, contentType st
 }
 
 // BuildModuleImage packages a module as ordered vendor and module layers.
+// Test files are excluded from both layers: they are an input to
+// 'timoni mod test' and are never part of the published module.
 func BuildModuleImage(contentPath string, ignorePaths []string, annotations map[string]string) (*ImageBuild, error) {
 	// Copy caller rules before excluding vendored schemas from the module layer.
-	moduleIgnore := append(append([]string{}, ignorePaths...), "cue.mod/")
+	moduleIgnore := append(append([]string{}, ignorePaths...), "cue.mod/", apiv1.TestFilePattern)
 	return buildImage(contentPath, []contentLayer{
-		{name: "vendor", ignorePaths: []string{"/*", "!/cue.mod"}, contentType: apiv1.TimoniModVendorContentType},
+		{name: "vendor", ignorePaths: []string{"/*", "!/cue.mod", apiv1.TestFilePattern}, contentType: apiv1.TimoniModVendorContentType},
 		{name: "module", ignorePaths: moduleIgnore, contentType: apiv1.TimoniModContentType},
 	}, annotations)
 }

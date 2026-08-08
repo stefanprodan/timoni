@@ -145,6 +145,10 @@ func ColorizeWarning(subject string) string {
 	return color.YellowString(subject)
 }
 
+func ColorizeFailure(subject string) string {
+	return colorError.Sprint(subject)
+}
+
 func ColorizeUnstructured(object *unstructured.Unstructured) string {
 	return ColorizeSubject(ssautil.FmtUnstructured(object))
 }
