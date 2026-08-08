@@ -124,8 +124,14 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
 
+	workdir, err := resolveWorkdir(bundleArgs.workdir)
+	if err != nil {
+		return err
+	}
+
 	cuectx := cuecontext.New()
 	bm := engine.NewBundleBuilder(cuectx, files)
+	bm.SetWorkdir(workdir)
 
 	runtimeValues := make(map[string]string)
 
@@ -133,7 +139,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 		maps.Copy(runtimeValues, engine.GetEnv())
 	}
 
-	rt, err := buildRuntime(bundleArgs.runtimeFiles)
+	rt, err := buildRuntime(bundleArgs.runtimeFiles, bundleArgs.workdir)
 	if err != nil {
 		return err
 	}

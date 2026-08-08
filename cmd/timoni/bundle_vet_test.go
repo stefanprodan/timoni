@@ -406,3 +406,98 @@ runtime: {
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(output).To(BeEquivalentTo(bundleComputed))
 }
+
+func Test_BundleVet_Workdir(t *testing.T) {
+	g := NewWithT(t)
+
+	moduleCue := `
+module: "test.example/bundles"
+language: version: "v0.14.0"
+`
+	imagesJSON := `{"podinfo": {"digest": "sha256:abc123"}}`
+
+	instanceCue := `
+@extern(embed)
+
+package instance
+
+_images: _ @embed(file="images.json")
+
+Podinfo: {
+	module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+	module: version: "6.7.0"
+	namespace: "podinfo"
+	values: image: digest: _images.podinfo.digest
+}
+`
+	bundleCue := `
+import "test.example/bundles/instance"
+
+bundle: {
+	apiVersion: "v1alpha1"
+	name:       "podinfo"
+	instances: podinfo: instance.Podinfo
+}
+`
+	bundleComputed := `bundle: {
+	apiVersion: "v1alpha1"
+	name:       "podinfo"
+	instances: {
+		podinfo: {
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+				version: "6.7.0"
+			}
+			namespace: "podinfo"
+			values: {
+				image: {
+					digest: "sha256:abc123"
+				}
+			}
+		}
+	}
+}
+`
+	wd := t.TempDir()
+	g.Expect(os.MkdirAll(filepath.Join(wd, "cue.mod"), 0755)).ToNot(HaveOccurred())
+	g.Expect(os.MkdirAll(filepath.Join(wd, "instance"), 0755)).ToNot(HaveOccurred())
+	g.Expect(os.WriteFile(filepath.Join(wd, "cue.mod", "module.cue"), []byte(moduleCue), 0644)).ToNot(HaveOccurred())
+	g.Expect(os.WriteFile(filepath.Join(wd, "instance", "instance.cue"), []byte(instanceCue), 0644)).ToNot(HaveOccurred())
+	g.Expect(os.WriteFile(filepath.Join(wd, "instance", "images.json"), []byte(imagesJSON), 0644)).ToNot(HaveOccurred())
+
+	bundlePath := filepath.Join(wd, "bundle.cue")
+	g.Expect(os.WriteFile(bundlePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
+
+	t.Run("resolves imports and embeds from workdir", func(t *testing.T) {
+		g := NewWithT(t)
+
+		output, err := executeCommand(fmt.Sprintf(
+			"bundle vet -f %s --workdir %s -p main --print-value",
+			bundlePath, wd,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).To(BeEquivalentTo(bundleComputed))
+	})
+
+	t.Run("fails without workdir", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := executeCommand(fmt.Sprintf(
+			"bundle vet -f %s -p main --print-value",
+			bundlePath,
+		))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("imports are unavailable"))
+	})
+
+	t.Run("fails for workdir not found", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := executeCommand(fmt.Sprintf(
+			"bundle vet -f %s --workdir %s -p main --print-value",
+			bundlePath, filepath.Join(wd, "not-found"),
+		))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("invalid workdir"))
+	})
+}

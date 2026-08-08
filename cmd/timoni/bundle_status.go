@@ -77,7 +77,7 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 		bundleStatusArgs.name = args[0]
 	}
 
-	rt, err := buildRuntime(bundleArgs.runtimeFiles)
+	rt, err := buildRuntime(bundleArgs.runtimeFiles, bundleArgs.workdir)
 	if err != nil {
 		return err
 	}

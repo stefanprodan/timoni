@@ -108,8 +108,14 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	}
 	defer os.RemoveAll(tmpDir)
 
+	workdir, err := resolveWorkdir(bundleArgs.workdir)
+	if err != nil {
+		return err
+	}
+
 	ctx := cuecontext.New()
 	bm := engine.NewBundleBuilder(ctx, files)
+	bm.SetWorkdir(workdir)
 
 	workspace := apiv1.RuntimeDefaultName
 	runtimeValues := make(map[string]string)
@@ -122,7 +128,7 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		kctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 		defer cancel()
 
-		rt, err := buildRuntime(bundleArgs.runtimeFiles)
+		rt, err := buildRuntime(bundleArgs.runtimeFiles, bundleArgs.workdir)
 		if err != nil {
 			return err
 		}

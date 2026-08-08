@@ -25,6 +25,7 @@ type bundleFlags struct {
 	runtimeFiles        []string
 	runtimeCluster      string
 	runtimeClusterGroup string
+	workdir             string
 }
 
 var bundleArgs bundleFlags
@@ -43,5 +44,7 @@ func init() {
 		"Filter runtime cluster by name.")
 	bundleCmd.PersistentFlags().StringVar(&bundleArgs.runtimeClusterGroup, "runtime-group", "*",
 		"Filter runtime clusters by group.")
+	bundleCmd.PersistentFlags().StringVar(&bundleArgs.workdir, "workdir", "",
+		"The local path to the CUE module root (the directory containing cue.mod), used to resolve imports in the bundle and runtime definitions. Defaults to the current directory.")
 	rootCmd.AddCommand(bundleCmd)
 }

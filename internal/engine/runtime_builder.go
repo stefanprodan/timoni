@@ -39,6 +39,7 @@ type RuntimeBuilder struct {
 	ctx               *cue.Context
 	files             []string
 	root              string
+	workdir           string
 	workspacesFiles   map[string][]string
 	workspacesSources map[string]map[string][]byte
 }
@@ -63,6 +64,13 @@ func NewRuntimeBuilder(ctx *cue.Context, files []string) *RuntimeBuilder {
 // as the base for rendering error positions relative.
 func (b *RuntimeBuilder) WorkspaceDir(workspace string) string {
 	return filepath.Join(b.root, workspace)
+}
+
+// SetWorkdir sets the directory from which the CUE loader discovers the
+// cue.mod module root, enabling imports in the runtime definitions. When
+// unset, the loader uses the process working directory.
+func (b *RuntimeBuilder) SetWorkdir(dir string) {
+	b.workdir = dir
 }
 
 // InitWorkspace extracts the runtime definitions into the in-memory
@@ -137,6 +145,7 @@ func (b *RuntimeBuilder) Build(workspace string) (cue.Value, error) {
 		Package:   "_",
 		DataFiles: true,
 		Overlay:   overlay,
+		Dir:       b.workdir,
 	}
 
 	ix := load.Instances(b.workspacesFiles[workspace], cfg)
