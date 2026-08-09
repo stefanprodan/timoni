@@ -38,7 +38,10 @@ var pushModCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(2),
 	Short: "Push a module to a container registry",
 	Long: `The push command packages the module as an OCI artifact and pushes it to the
-container registry using the version as the image tag.`,
+container registry using the version as the image tag.
+
+The push command can also push a module OCI archive or layout produced by
+'timoni mod build' without accessing the original module directory.`,
 	Example: `  # Push a module to Docker Hub using the credentials from '~/.docker/config.json'
   echo $DOCKER_PAT | docker login --username timoni --password-stdin
   timoni mod push ./path/to/module oci://docker.io/org/app-module -v 1.0.0
@@ -78,6 +81,9 @@ container registry using the version as the image tag.`,
   timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
 	--version=1.0.0 \
 	--sign=cosign
+
+  # Push a pre-built module OCI archive produced by 'timoni mod build'
+  timoni mod push ./module-1.0.0.oci.tar oci://docker.io/org/app-module -v 1.0.0
 `,
 	RunE: pushModCmdRun,
 }
@@ -141,54 +147,72 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 
 	ociURL := fmt.Sprintf("%s:%s", args[1], version)
 
-	if fs, err := os.Stat(pushModArgs.module); err != nil || !fs.IsDir() {
+	fs, err := os.Stat(pushModArgs.module)
+	if err != nil {
 		return fmt.Errorf("module not found at path %s", pushModArgs.module)
 	}
 
 	log := LoggerFrom(cmd.Context())
 
-	annotations, err := oci.ParseAnnotations(pushModArgs.annotations)
-	if err != nil {
-		return err
-	}
-
-	annotations[apiv1.VersionAnnotation] = version
-	oci.AppendGitMetadata(cmd.Context(), pushModArgs.module, annotations)
-
 	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
 	defer cancel()
-
-	ps, err := engine.ReadIgnoreFile(pushModArgs.module)
-	if err != nil {
-		return fmt.Errorf("reading %s failed: %w", apiv1.IgnoreFile, err)
-	}
-	pushModArgs.ignorePaths = append(pushModArgs.ignorePaths, ps...)
-
-	// When symlink resolution is enabled, stage the module in a temp dir
-	// so that the artifact contains the resolved file set local builds
-	// see. Without it the archiver skips symlinks by itself, so the
-	// module is packaged straight from its source dir.
-	moduleDir := pushModArgs.module
-	if pushModArgs.resolveSymlinks {
-		tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
-		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(tmpDir)
-
-		moduleDir = path.Join(tmpDir, "module")
-		if err := engine.CopyDir(pushModArgs.module, moduleDir, true); err != nil {
-			return err
-		}
-	}
 
 	spin := logger.StartSpinner("pushing module")
 	defer spin.Stop()
 
 	opts := oci.Options(ctx, pushModArgs.creds.String(), rootArgs.registryInsecure)
-	digestURL, err := oci.PushModule(ociURL, moduleDir, pushModArgs.ignorePaths, annotations, opts)
-	if err != nil {
-		return err
+
+	var digestURL string
+	if !fs.IsDir() || oci.IsOCILayout(pushModArgs.module) {
+		// Push a pre-built OCI archive or layout as-is.
+		if pushModArgs.resolveSymlinks {
+			return fmt.Errorf("--resolve-symlinks is not supported when pushing a pre-built archive or layout")
+		}
+		if len(pushModArgs.annotations) > 0 {
+			return fmt.Errorf("--annotation is not supported when pushing a pre-built archive or layout")
+		}
+
+		digestURL, err = oci.PushModuleArchive(ociURL, pushModArgs.module, version, opts)
+		if err != nil {
+			return err
+		}
+	} else {
+		annotations, err := oci.ParseAnnotations(pushModArgs.annotations)
+		if err != nil {
+			return err
+		}
+
+		annotations[apiv1.VersionAnnotation] = version
+		oci.AppendGitMetadata(cmd.Context(), pushModArgs.module, annotations)
+
+		ps, err := engine.ReadIgnoreFile(pushModArgs.module)
+		if err != nil {
+			return fmt.Errorf("reading %s failed: %w", apiv1.IgnoreFile, err)
+		}
+		pushModArgs.ignorePaths = append(pushModArgs.ignorePaths, ps...)
+
+		// When symlink resolution is enabled, stage the module in a temp dir
+		// so that the artifact contains the resolved file set local builds
+		// see. Without it the archiver skips symlinks by itself, so the
+		// module is packaged straight from its source dir.
+		moduleDir := pushModArgs.module
+		if pushModArgs.resolveSymlinks {
+			tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+			if err != nil {
+				return err
+			}
+			defer os.RemoveAll(tmpDir)
+
+			moduleDir = path.Join(tmpDir, "module")
+			if err := engine.CopyDir(pushModArgs.module, moduleDir, true); err != nil {
+				return err
+			}
+		}
+
+		digestURL, err = oci.PushModule(ociURL, moduleDir, pushModArgs.ignorePaths, annotations, opts)
+		if err != nil {
+			return err
+		}
 	}
 
 	if pushModArgs.latest {
