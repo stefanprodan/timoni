@@ -197,12 +197,12 @@ func Test_PushMod_Archive(t *testing.T) {
 	g.Expect(archive).To(BeAnExistingFile())
 	g.Expect(buildOutput).To(ContainSubstring("digest: sha256:"))
 
-	// Push the pre-built archive to the registry.
+	// Push the pre-built archive without specifying a version: it is read
+	// from the archive manifest.
 	output, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
+		"mod push %s oci://%s",
 		archive,
 		modURL,
-		modVer,
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 
@@ -220,12 +220,6 @@ func Test_PushMod_Archive(t *testing.T) {
 	g.Expect(manifest.Annotations[apiv1.CreatedAnnotation]).To(BeEquivalentTo("2024-01-02T03:04:05Z"))
 	g.Expect(manifest.Annotations[apiv1.VersionAnnotation]).To(BeEquivalentTo(modVer))
 	g.Expect(manifest.Annotations[apiv1.SourceAnnotation]).To(ContainSubstring("github.com"))
-
-	// The module layer shape must be preserved.
-	g.Expect(manifest.Config.MediaType).To(BeEquivalentTo(apiv1.ConfigMediaType))
-	g.Expect(len(manifest.Layers)).To(BeEquivalentTo(2))
-	g.Expect(manifest.Layers[0].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo(apiv1.TimoniModVendorContentType))
-	g.Expect(manifest.Layers[1].Annotations[apiv1.ContentTypeAnnotation]).To(BeEquivalentTo(apiv1.TimoniModContentType))
 }
 
 func Test_PushMod_ArchiveRejectsBadMediaType(t *testing.T) {
@@ -233,7 +227,7 @@ func Test_PushMod_ArchiveRejectsBadMediaType(t *testing.T) {
 	archive := filepath.Join(t.TempDir(), "foreign.tar")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
 
-	// Write a non-Timoni image (default OCI config media type) as an archive.
+	// Write a non-Timoni image (Docker manifest media type) as an archive.
 	g.Expect(oci.WriteImage(empty.Image, archive, oci.FormatArchive, []string{"1.0.0"})).To(Succeed())
 
 	_, err := executeCommand(fmt.Sprintf(
@@ -241,37 +235,7 @@ func Test_PushMod_ArchiveRejectsBadMediaType(t *testing.T) {
 		archive,
 		modURL,
 	))
-	g.Expect(err).To(MatchError(ContainSubstring("unsupported artifact type")))
-}
-
-func Test_PushMod_LayoutDir(t *testing.T) {
-	g := NewWithT(t)
-	layoutDir := filepath.Join(t.TempDir(), "module")
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
-	modVer := "1.0.0"
-
-	buildOutput, err := executeCommand(fmt.Sprintf(
-		"mod build testdata/module -v %s -o %s --format oci-layout",
-		modVer,
-		layoutDir,
-	))
-	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(buildOutput).To(ContainSubstring("digest: sha256:"))
-
-	output, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v %s",
-		layoutDir,
-		modURL,
-		modVer,
-	))
-	g.Expect(err).ToNot(HaveOccurred())
-
-	image, err := crane.Pull(fmt.Sprintf("%s:%s", modURL, modVer))
-	g.Expect(err).ToNot(HaveOccurred())
-	digest, err := image.Digest()
-	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(output).To(ContainSubstring(digest.String()))
-	g.Expect(buildOutput).To(ContainSubstring(digest.String()))
+	g.Expect(err).To(MatchError(ContainSubstring("unsupported manifest media type")))
 }
 
 func Test_PushMod_ArchiveRejectsResolveSymlinks(t *testing.T) {
@@ -286,11 +250,11 @@ func Test_PushMod_ArchiveRejectsResolveSymlinks(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	_, err = executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v 1.0.0 --resolve-symlinks",
+		"mod push %s oci://%s --resolve-symlinks",
 		archive,
 		modURL,
 	))
-	g.Expect(err).To(MatchError(ContainSubstring("--resolve-symlinks is not supported when pushing a pre-built archive or layout")))
+	g.Expect(err).To(MatchError(ContainSubstring("--resolve-symlinks is not supported when pushing a pre-built archive")))
 }
 
 func Test_PushMod_ArchiveRejectsVersionMismatch(t *testing.T) {
@@ -316,7 +280,7 @@ func Test_PushMod_ArchiveMissingFile(t *testing.T) {
 	g := NewWithT(t)
 
 	_, err := executeCommand(fmt.Sprintf(
-		"mod push %s oci://%s -v 1.0.0",
+		"mod push %s oci://%s",
 		filepath.Join(t.TempDir(), "missing.tar"),
 		fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5)),
 	))

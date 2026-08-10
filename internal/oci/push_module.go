@@ -20,12 +20,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/fluxcd/pkg/tar"
 	"github.com/google/go-containerregistry/pkg/crane"
 	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
@@ -55,15 +55,15 @@ func PushModule(ociURL, contentPath string, ignorePaths []string, annotations ma
 }
 
 // PushModuleArchive pushes a pre-built module image from a local OCI archive
-// or OCI layout to a registry, then returns the module's digest URL. The
-// version must match the version the image was built with.
+// to a registry, then returns the module's digest URL. The version must match
+// the version annotation baked into the archive.
 func PushModuleArchive(ociURL, archivePath, version string, opts []crane.Option) (result string, err error) {
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
 		return "", err
 	}
 
-	image, digest, cleanup, err := loadLocalImage(archivePath, version)
+	image, cleanup, err := imageFromLocal(archivePath)
 	if err != nil {
 		return "", err
 	}
@@ -71,101 +71,128 @@ func PushModuleArchive(ociURL, archivePath, version string, opts []crane.Option)
 		err = errors.Join(err, cleanup())
 	}()
 
+	manifest, err := image.Manifest()
+	if err != nil {
+		return "", fmt.Errorf("reading artifact manifest failed: %w", err)
+	}
+	if err := validateModuleManifest(manifest, version); err != nil {
+		return "", err
+	}
+
 	if err := crane.Push(image, ref.String(), opts...); err != nil {
 		return "", fmt.Errorf("pushing artifact failed: %w", err)
 	}
 
+	digest, err := image.Digest()
+	if err != nil {
+		return "", fmt.Errorf("calculating artifact digest failed: %w", err)
+	}
 	digestURL := ref.Context().Digest(digest.String()).String()
 	return fmt.Sprintf("%s%s", apiv1.ArtifactPrefix, digestURL), nil
 }
 
-// IsOCILayout reports whether path is an OCI image layout directory, that is
-// a directory written by `mod build --format=oci-layout` rather than a module
-// source directory. It is cheap to call and reads no blobs.
-func IsOCILayout(path string) bool {
-	for _, name := range []string{"oci-layout", "index.json"} {
-		info, err := os.Stat(filepath.Join(path, name))
-		if err != nil || info.IsDir() {
-			return false
-		}
-	}
-	return true
-}
-
-// loadLocalImage loads a Timoni module image from a local OCI archive or OCI
-// layout. The version matches the local reference stored in the layout index;
-// when no descriptor carries it, the first image is returned. The returned
-// image reads its blobs lazily from disk, so the caller must run the returned
-// cleanup function after the image is consumed.
-func loadLocalImage(source, version string) (gcrv1.Image, gcrv1.Hash, func() error, error) {
-	info, err := os.Stat(source)
+// ModuleVersion reads the module version annotation from a local OCI archive.
+func ModuleVersion(archivePath string) (string, error) {
+	image, cleanup, err := imageFromLocal(archivePath)
 	if err != nil {
-		return nil, gcrv1.Hash{}, nil, fmt.Errorf("module not found at path %s", source)
+		return "", err
 	}
-
-	image, cleanup, err := imageFromLocal(source, info.IsDir(), version)
-	if err != nil {
-		if cleanup != nil {
-			_ = cleanup()
-		}
-		return nil, gcrv1.Hash{}, nil, err
-	}
+	defer func() {
+		_ = cleanup()
+	}()
 
 	manifest, err := image.Manifest()
 	if err != nil {
-		_ = cleanup()
-		return nil, gcrv1.Hash{}, nil, fmt.Errorf("reading artifact manifest failed: %w", err)
+		return "", fmt.Errorf("reading artifact manifest failed: %w", err)
 	}
-	if manifest.Config.MediaType != apiv1.ConfigMediaType {
-		_ = cleanup()
-		return nil, gcrv1.Hash{}, nil, fmt.Errorf("unsupported artifact type '%s', must be '%s'",
-			manifest.Config.MediaType, apiv1.ConfigMediaType)
+	version, ok := manifest.Annotations[apiv1.VersionAnnotation]
+	if !ok {
+		return "", fmt.Errorf("module version annotation is missing")
 	}
-	if builtVersion, ok := manifest.Annotations[apiv1.VersionAnnotation]; ok && builtVersion != version {
-		_ = cleanup()
-		return nil, gcrv1.Hash{}, nil, fmt.Errorf("version mismatch: archive was built with version %s, cannot push as %s",
-			builtVersion, version)
-	}
-
-	digest, err := image.Digest()
-	if err != nil {
-		_ = cleanup()
-		return nil, gcrv1.Hash{}, nil, fmt.Errorf("calculating artifact digest failed: %w", err)
-	}
-	return image, digest, cleanup, nil
+	return version, nil
 }
 
-// imageFromLocal loads the first image of a local OCI layout directory or,
-// when source is a file, extracts the archive to a temporary directory that
-// stays alive until the returned cleanup function runs.
-func imageFromLocal(source string, isDir bool, version string) (gcrv1.Image, func() error, error) {
-	path := source
-	cleanup := func() error { return nil }
-	if !isDir {
-		tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
-		if err != nil {
-			return nil, nil, err
-		}
-		cleanup = func() error { return os.RemoveAll(tmpDir) }
-
-		archive, err := os.Open(source)
-		if err != nil {
-			return nil, cleanup, fmt.Errorf("opening OCI archive failed: %w", err)
-		}
-		defer archive.Close()
-
-		// Archives are plain tar streams of an OCI image layout.
-		if err := tar.Untar(archive, tmpDir,
-			tar.WithSkipGzip(),
-			tar.WithSkipSymlinks(),
-			tar.WithMaxUntarSize(tar.UnlimitedUntarSize),
-		); err != nil {
-			return nil, cleanup, fmt.Errorf("extracting OCI archive failed: %w", err)
-		}
-		path = tmpDir
+// validateModuleManifest verifies that the manifest describes a Timoni module
+// artifact: an OCI manifest with the Timoni config media type, the expected
+// version annotation, and exactly two ordered vendor and module layers.
+func validateModuleManifest(manifest *gcrv1.Manifest, version string) error {
+	if manifest.MediaType != types.OCIManifestSchema1 {
+		return fmt.Errorf("unsupported manifest media type %q", manifest.MediaType)
 	}
 
-	layoutPath, err := layout.FromPath(path)
+	if manifest.Config.MediaType != apiv1.ConfigMediaType {
+		return fmt.Errorf("unsupported config media type %q", manifest.Config.MediaType)
+	}
+
+	if got, ok := manifest.Annotations[apiv1.VersionAnnotation]; !ok {
+		return fmt.Errorf("module version annotation is missing")
+	} else if got != version {
+		return fmt.Errorf(
+			"version mismatch: archive was built with version %s, cannot push as %s",
+			got, version,
+		)
+	}
+
+	if len(manifest.Layers) != 2 {
+		return fmt.Errorf("invalid module artifact: expected 2 layers, got %d", len(manifest.Layers))
+	}
+
+	expected := []string{
+		apiv1.TimoniModVendorContentType,
+		apiv1.TimoniModContentType,
+	}
+
+	for i, layer := range manifest.Layers {
+		if layer.MediaType != apiv1.ContentMediaType {
+			return fmt.Errorf("invalid module layer %d media type %q", i, layer.MediaType)
+		}
+
+		if got := layer.Annotations[apiv1.ContentTypeAnnotation]; got != expected[i] {
+			return fmt.Errorf(
+				"invalid module layer %d content type %q, expected %q",
+				i, got, expected[i],
+			)
+		}
+	}
+
+	return nil
+}
+
+// imageFromLocal loads the first image of an OCI archive, extracting the
+// plain tar stream to a temporary directory that stays alive until the
+// returned cleanup function runs.
+func imageFromLocal(source string) (gcrv1.Image, func() error, error) {
+	info, err := os.Stat(source)
+	if err != nil {
+		return nil, nil, fmt.Errorf("module not found at path %s", source)
+	}
+	if info.IsDir() {
+		return nil, nil, fmt.Errorf("module not found at path %s", source)
+	}
+
+	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+	if err != nil {
+		return nil, nil, err
+	}
+	cleanup := func() error { return os.RemoveAll(tmpDir) }
+
+	archive, err := os.Open(source)
+	if err != nil {
+		return nil, cleanup, fmt.Errorf("opening OCI archive failed: %w", err)
+	}
+	defer func() {
+		_ = archive.Close()
+	}()
+
+	// Archives are plain tar streams of an OCI image layout.
+	if err := tar.Untar(archive, tmpDir,
+		tar.WithSkipGzip(),
+		tar.WithSkipSymlinks(),
+	); err != nil {
+		return nil, cleanup, fmt.Errorf("extracting OCI archive failed: %w", err)
+	}
+
+	layoutPath, err := layout.FromPath(tmpDir)
 	if err != nil {
 		return nil, cleanup, fmt.Errorf("opening OCI layout failed: %w", err)
 	}
@@ -179,13 +206,6 @@ func imageFromLocal(source string, isDir bool, version string) (gcrv1.Image, fun
 	}
 	if len(manifest.Manifests) == 0 {
 		return nil, cleanup, fmt.Errorf("no image found in OCI layout")
-	}
-
-	for _, desc := range manifest.Manifests {
-		if desc.Annotations["org.opencontainers.image.ref.name"] == version {
-			image, err := index.Image(desc.Digest)
-			return image, cleanup, err
-		}
 	}
 
 	image, err := index.Image(manifest.Manifests[0].Digest)

@@ -40,18 +40,18 @@ var pushModCmd = &cobra.Command{
 	Long: `The push command packages the module as an OCI artifact and pushes it to the
 container registry using the version as the image tag.
 
-The push command can also push a module OCI archive or layout produced by
-'timoni mod build' without accessing the original module directory.`,
+The push command can also push an OCI archive produced by 'timoni mod build',
+extracting the version from the archive manifest.`,
 	Example: `  # Push a module to Docker Hub using the credentials from '~/.docker/config.json'
   echo $DOCKER_PAT | docker login --username timoni --password-stdin
   timoni mod push ./path/to/module oci://docker.io/org/app-module -v 1.0.0
 
-  # Push a module to GitHub Container Registry using a GitHub token
-  timoni mod push ./path/to/module oci://ghcr.io/org/modules/app \
+  # Push a module to a private registry with explicit credentials
+  timoni mod push ./path/to/module oci://registry.example.com/org/app-module \
 	--version=1.0.0 \
-	--creds timoni:$GITHUB_TOKEN
+	--creds user:password
 
-  # Push a release candidate without marking it as the latest stable
+  # Push a pre-release version without marking it as latest
   timoni mod push ./path/to/module oci://docker.io/org/app-module \
 	--version=2.0.0-rc.1 \
 	--latest=false
@@ -83,7 +83,7 @@ The push command can also push a module OCI archive or layout produced by
 	--sign=cosign
 
   # Push a pre-built module OCI archive produced by 'timoni mod build'
-  timoni mod push ./module-1.0.0.oci.tar oci://docker.io/org/app-module -v 1.0.0
+  timoni mod push ./module-1.0.0.oci.tar oci://docker.io/org/app-module
 `,
 	RunE: pushModCmdRun,
 }
@@ -130,9 +130,6 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	pushModArgs.module = args[0]
 
 	version := pushModArgs.version.String()
-	if err := flags.ValidateModuleVersion(version); err != nil {
-		return err
-	}
 	if err := validateOutputFormat(pushModArgs.output, true); err != nil {
 		return err
 	}
@@ -145,12 +142,33 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	ociURL := fmt.Sprintf("%s:%s", args[1], version)
-
 	fs, err := os.Stat(pushModArgs.module)
 	if err != nil {
 		return fmt.Errorf("module not found at path %s", pushModArgs.module)
 	}
+
+	// A regular file is a pre-built OCI archive: the version comes from the
+	// archive manifest, while a module directory still requires --version.
+	if !fs.IsDir() {
+		if pushModArgs.resolveSymlinks {
+			return fmt.Errorf("--resolve-symlinks is not supported when pushing a pre-built archive")
+		}
+		if len(pushModArgs.annotations) > 0 {
+			return fmt.Errorf("--annotation is not supported when pushing a pre-built archive")
+		}
+		if version == "" {
+			version, err = oci.ModuleVersion(pushModArgs.module)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		if err := flags.ValidateModuleVersion(version); err != nil {
+			return err
+		}
+	}
+
+	ociURL := fmt.Sprintf("%s:%s", args[1], version)
 
 	log := LoggerFrom(cmd.Context())
 
@@ -163,15 +181,8 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 	opts := oci.Options(ctx, pushModArgs.creds.String(), rootArgs.registryInsecure)
 
 	var digestURL string
-	if !fs.IsDir() || oci.IsOCILayout(pushModArgs.module) {
-		// Push a pre-built OCI archive or layout as-is.
-		if pushModArgs.resolveSymlinks {
-			return fmt.Errorf("--resolve-symlinks is not supported when pushing a pre-built archive or layout")
-		}
-		if len(pushModArgs.annotations) > 0 {
-			return fmt.Errorf("--annotation is not supported when pushing a pre-built archive or layout")
-		}
-
+	if !fs.IsDir() {
+		// Push a pre-built OCI archive as-is.
 		digestURL, err = oci.PushModuleArchive(ociURL, pushModArgs.module, version, opts)
 		if err != nil {
 			return err

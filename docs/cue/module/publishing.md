@@ -57,16 +57,17 @@ reference name. Use `--format=oci-layout` for directory output.
 Local outputs are unsigned; existing output paths are rejected.
 
 The archive produced by `mod build` can be pushed to a registry with
-`timoni mod push` without re-packaging the source module:
+`timoni mod push` without re-packaging the source module. The version is read
+from the archive manifest, so it must not be passed again:
 
 ```shell
 timoni mod build ./modules/my-app -v 1.0.0 -o ./my-app-1.0.0.oci.tar
-timoni mod push ./my-app-1.0.0.oci.tar oci://ghcr.io/org/modules/app -v 1.0.0
+timoni mod push ./my-app-1.0.0.oci.tar oci://ghcr.io/org/modules/app
 ```
 
-The version must match the version the archive was built with. Annotations and
-symlink resolution are fixed at build time, so `--annotation` and
-`--resolve-symlinks` are not supported when pushing a pre-built archive.
+Annotations and symlink resolution are fixed at build time, so
+`--annotation` and `--resolve-symlinks` are not supported when pushing a
+pre-built archive.
 
 ## Publishing module versions
 
