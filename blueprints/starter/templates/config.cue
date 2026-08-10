@@ -39,13 +39,21 @@ import (
 	// The image allows setting the container image repository,
 	// tag, digest and pull policy.
 	image: timoniv1.#Image & {
-		repository: *"docker.io/nginx" | string
+		repository: *"docker.io/nginxinc/nginx-unprivileged" | string
 		tag:        *"1-alpine" | string
 		digest:     *"" | string
 	}
 
+	// The securityProfile selects how the workload identity defaults are applied.
+	// The `hardened` profile pins the UID/GID the container image runs as;
+	// the `platform` profile omits them so that an admission controller
+	// (e.g. an OpenShift SecurityContextConstraint) can assign them from
+	// the range allocated to the namespace.
+	securityProfile: timoniv1.#SecurityProfile
+
 	// The pod allows setting the Kubernetes Pod annotations, image pull secrets,
-	// affinity and anti-affinity rules. By default, pods are scheduled on Linux nodes.
+	// security context, affinity and anti-affinity rules.
+	// By default, pods are scheduled on Linux nodes.
 	pod: {
 		annotations?: timoniv1.#Annotations
 
@@ -60,6 +68,14 @@ import (
 		} | corev1.#Affinity
 
 		imagePullSecrets?: [...timoniv1.#ObjectReference]
+
+		// The pod runs as non-root with the RuntimeDefault seccomp profile.
+		// Under the `hardened` profile, the identity defaults are pinned
+		// to the nginx-unprivileged image's non-root UID.
+		securityContext: corev1.#PodSecurityContext & timoniv1.#PodSecurityContext & {
+			#Profile: securityProfile
+			#User:    101
+		}
 	}
 
 	// The resources allows setting the container resource requirements.
@@ -76,16 +92,9 @@ import (
 	replicas: *1 | int & >0
 
 	// The securityContext allows setting the container security context.
-	// By default, the container is denined privilege escalation.
-	securityContext: corev1.#SecurityContext & {
-		allowPrivilegeEscalation: *false | true
-		privileged:               *false | true
-		capabilities:
-		{
-			drop: *["ALL"] | [...string]
-			add: *["CHOWN", "NET_BIND_SERVICE", "SETGID", "SETUID"] | [...string]
-		}
-	}
+	// By default, the container is denied privilege escalation, its root
+	// filesystem is read-only and all its capabilities are dropped.
+	securityContext: corev1.#SecurityContext & timoniv1.#ContainerSecurityContext
 
 	// The service allows setting the Kubernetes Service annotations and port.
 	// By default, the HTTP port is 80.

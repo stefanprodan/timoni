@@ -122,7 +122,8 @@ timoni -n test build nginx . --values debug_values.cue
 ```
 
 If you inspect the output, you'll notice that the Deployment container image
-has changed from `docker.io/nginx:1-alpine` to `docker.io/nginx:1-alpine-slim`,
+has changed from `docker.io/nginxinc/nginx-unprivileged:1-alpine` to
+`docker.io/nginxinc/nginx-unprivileged:1-alpine-slim`,
 as specified in the `debug_values.cue` file.
 
 !!! tip "Ignore rules"
@@ -153,7 +154,7 @@ To vet the module with default values, run the following command:
     INF vetting with default values
     INF Deployment/default/nginx valid resource
     INF Service/default/nginx valid resource
-    INF docker.io/nginx:1-alpine valid image (digest missing)
+    INF docker.io/nginxinc/nginx-unprivileged:1-alpine valid image (digest missing)
     INF timoni.sh/myapp valid module
     ```
 
@@ -174,7 +175,7 @@ It is also possible to verify the module using the debug values:
     INF vetting with debug values
     INF Deployment/test/nginx valid resource
     INF Service/test/nginx valid resource
-    INF docker.io/nginx:1-alpine-slim valid image (digest missing)
+    INF docker.io/nginxinc/nginx-unprivileged:1-alpine-slim valid image (digest missing)
     INF timoni.sh/myapp valid module
     ```
 

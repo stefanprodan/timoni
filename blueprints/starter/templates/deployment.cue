@@ -29,7 +29,7 @@ import (
 						ports: [
 							{
 								name:          "http"
-								containerPort: 80
+								containerPort: 8080
 								protocol:      "TCP"
 							},
 						]
@@ -54,6 +54,22 @@ import (
 						if #config.securityContext != _|_ {
 							securityContext: #config.securityContext
 						}
+
+						// The root filesystem being read-only, nginx needs
+						// a writable volume for its pid and cache files.
+						volumeMounts: [
+							{
+								name:      "tmp"
+								mountPath: "/tmp"
+							},
+						]
+					},
+				]
+				securityContext: #config.pod.securityContext
+				volumes: [
+					{
+						name: "tmp"
+						emptyDir: {}
 					},
 				]
 				if #config.pod.affinity != _|_ {
