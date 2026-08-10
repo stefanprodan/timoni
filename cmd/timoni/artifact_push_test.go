@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -145,4 +146,44 @@ func TestPushArtifactRejectsMissingCosignBeforeInput(t *testing.T) {
 
 	_, err := executeCommand("artifact push oci://registry.example.com/org/artifact -f /does/not/exist -t 1.0.0 --sign cosign")
 	g.Expect(err).To(MatchError(ContainSubstring("executing cosign failed")))
+}
+
+func TestPushArtifactRejectsInvalidOutputBeforeInput(t *testing.T) {
+	g := NewWithT(t)
+
+	_, err := executeCommand("artifact push oci://registry.example.com/org/artifact -f /does/not/exist -t 1.0.0 --output invalid")
+	g.Expect(err).To(MatchError("unknown --output=invalid, can be yaml or json"))
+}
+
+func Test_PushArtifact_OutputJSON(t *testing.T) {
+	g := NewWithT(t)
+	aPath := "testdata/module-values"
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	aTag := "1.0.0"
+
+	output, err := executeCommand(fmt.Sprintf(
+		"artifact push oci://%s -f %s -t %s --content-type=generic -o json",
+		aURL,
+		aPath,
+		aTag,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	var info struct {
+		URL        string `json:"url"`
+		Repository string `json:"repository"`
+		Tag        string `json:"tag"`
+		Digest     string `json:"digest"`
+	}
+	g.Expect(json.Unmarshal([]byte(output), &info)).To(Succeed())
+
+	image, err := crane.Pull(fmt.Sprintf("%s:%s", aURL, aTag))
+	g.Expect(err).ToNot(HaveOccurred())
+	digest, err := image.Digest()
+	g.Expect(err).ToNot(HaveOccurred())
+
+	g.Expect(info.Repository).To(Equal(aURL))
+	g.Expect(info.Tag).To(Equal(aTag))
+	g.Expect(info.Digest).To(Equal(digest.String()))
+	g.Expect(info.URL).To(Equal(fmt.Sprintf("oci://%s@%s", aURL, digest.String())))
 }

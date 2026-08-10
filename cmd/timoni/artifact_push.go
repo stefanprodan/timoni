@@ -18,11 +18,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
@@ -74,6 +76,7 @@ type pushArtifactFlags struct {
 	tags            []string
 	annotations     []string
 	contentType     string
+	output          string
 	resolveSymlinks bool
 	sign            string
 	cosignKey       string
@@ -91,6 +94,8 @@ func init() {
 		"Annotation in the format '<key>=<value>'.")
 	pushArtifactCmd.Flags().StringVar(&pushArtifactArgs.contentType, "content-type", "generic",
 		"The content type of this artifact.")
+	pushArtifactCmd.Flags().StringVarP(&pushArtifactArgs.output, "output", "o", "",
+		"The format in which the artifact digest should be printed, can be 'yaml' or 'json'.")
 	pushArtifactCmd.Flags().BoolVar(&pushArtifactArgs.resolveSymlinks, "resolve-symlinks", false,
 		"Resolve symbolic links and package their targets as regular files and directories.")
 	pushArtifactCmd.Flags().StringVar(&pushArtifactArgs.sign, "sign", "",
@@ -115,6 +120,9 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		if err := oci.ValidateTag(tag); err != nil {
 			return err
 		}
+	}
+	if err := validateOutputFormat(pushArtifactArgs.output, true); err != nil {
+		return err
 	}
 	if err := validateProviderCompanionFlags(cmd, pushArtifactArgs.sign, "sign", "cosign-key"); err != nil {
 		return err
@@ -213,8 +221,37 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	log.Info(fmt.Sprintf("artifact: %s", logger.ColorizeSubject(ociURL)))
-	log.Info(fmt.Sprintf("digest: %s", logger.ColorizeSubject(digest.DigestStr())))
+
+	info := struct {
+		URL        string `json:"url"`
+		Repository string `json:"repository"`
+		Tag        string `json:"tag"`
+		Digest     string `json:"digest"`
+	}{
+		URL:        digestURL,
+		Repository: digest.Repository.Name(),
+		Tag:        pushArtifactArgs.tags[0],
+		Digest:     digest.DigestStr(),
+	}
+
+	switch pushArtifactArgs.output {
+	case "json":
+		marshalled, err := json.MarshalIndent(&info, "", "  ")
+		if err != nil {
+			return fmt.Errorf("artifact info JSON conversion failed: %w", err)
+		}
+		marshalled = append(marshalled, "\n"...)
+		cmd.OutOrStdout().Write(marshalled)
+	case "yaml":
+		marshalled, err := yaml.Marshal(&info)
+		if err != nil {
+			return fmt.Errorf("artifact info YAML conversion failed: %w", err)
+		}
+		cmd.OutOrStdout().Write(marshalled)
+	default:
+		log.Info(fmt.Sprintf("artifact: %s", logger.ColorizeSubject(ociURL)))
+		log.Info(fmt.Sprintf("digest: %s", logger.ColorizeSubject(digest.DigestStr())))
+	}
 
 	return nil
 }

@@ -18,10 +18,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/flags"
 	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
@@ -42,6 +45,10 @@ var listArtifactCmd = &cobra.Command{
   # Print the tags and digests of an artifact stored in a private repository
   echo $DOCKER_TOKEN | timoni registry login docker.io -u timoni --password-stdin
   timoni artifact list oci://docker.io/org/app
+
+  # Check if a tag is published using the JSON output
+  timoni artifact list oci://ghcr.io/org/bundles/app -o json | \
+	jq -e --arg t "latest" 'any(.[]; .tag == $t)'
 `,
 	RunE: listArtifactCmdRun,
 }
@@ -49,6 +56,7 @@ var listArtifactCmd = &cobra.Command{
 type listArtifactFlags struct {
 	creds      flags.Credentials
 	withDigest bool
+	output     string
 }
 
 var listArtifactArgs listArtifactFlags
@@ -57,6 +65,8 @@ func init() {
 	listArtifactCmd.Flags().Var(&listArtifactArgs.creds, listArtifactArgs.creds.Type(), listArtifactArgs.creds.Description())
 	listArtifactCmd.Flags().BoolVar(&listArtifactArgs.withDigest, "with-digest", true,
 		"Resolve the digest of each version.")
+	listArtifactCmd.Flags().StringVarP(&listArtifactArgs.output, "output", "o", "",
+		"The format in which the tags should be printed, can be 'yaml' or 'json'.")
 	artifactCmd.AddCommand(listArtifactCmd)
 }
 
@@ -65,6 +75,10 @@ func listArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("repository URL is required")
 	}
 	ociURL := args[0]
+
+	if err := validateOutputFormat(listArtifactArgs.output, true); err != nil {
+		return err
+	}
 
 	spin := logger.StartSpinner("fetching tags")
 	defer spin.Stop()
@@ -79,16 +93,37 @@ func listArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	spin.Stop()
-	var rows [][]string
-	for _, v := range list {
-		row := []string{
-			v.Tag,
-			v.Digest,
+
+	if listArtifactArgs.output == "" {
+		var rows [][]string
+		for _, v := range list {
+			row := []string{
+				v.Tag,
+				v.Digest,
+			}
+			rows = append(rows, row)
 		}
-		rows = append(rows, row)
+
+		printTable(rootCmd.OutOrStdout(), []string{"tag", "digest"}, rows)
+
+		return nil
 	}
 
-	printTable(rootCmd.OutOrStdout(), []string{"tag", "digest"}, rows)
+	if list == nil {
+		list = []apiv1.ArtifactReference{}
+	}
 
-	return nil
+	var marshalled []byte
+	if listArtifactArgs.output == "json" {
+		marshalled, err = json.MarshalIndent(list, "", "  ")
+		marshalled = append(marshalled, "\n"...)
+	} else {
+		marshalled, err = yaml.Marshal(list)
+	}
+	if err != nil {
+		return err
+	}
+
+	_, err = cmd.OutOrStdout().Write(marshalled)
+	return err
 }

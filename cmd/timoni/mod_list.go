@@ -18,10 +18,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/flags"
 	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/oci"
@@ -42,6 +45,10 @@ var listModCmd = &cobra.Command{
   # Print the versions of a module from GitHub Container Registry
   timoni mod list oci://ghcr.io/org/manifests/app \
 	--creds timoni:$GITHUB_TOKEN
+
+  # Check if a version is published using the JSON output
+  timoni mod list oci://ghcr.io/org/modules/app -o json | \
+	jq -e --arg v "1.0.0" 'any(.[]; .version == $v)'
 `,
 	RunE: listModCmdRun,
 }
@@ -49,6 +56,7 @@ var listModCmd = &cobra.Command{
 type listModFlags struct {
 	creds      flags.Credentials
 	withDigest bool
+	output     string
 }
 
 var listModArgs listModFlags
@@ -57,6 +65,8 @@ func init() {
 	listModCmd.Flags().Var(&listModArgs.creds, listModArgs.creds.Type(), listModArgs.creds.Description())
 	listModCmd.Flags().BoolVar(&listModArgs.withDigest, "with-digest", true,
 		"Resolve the digest of each version.")
+	listModCmd.Flags().StringVarP(&listModArgs.output, "output", "o", "",
+		"The format in which the versions should be printed, can be 'yaml' or 'json'.")
 	modCmd.AddCommand(listModCmd)
 }
 
@@ -65,6 +75,10 @@ func listModCmdRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("module URL is required")
 	}
 	ociURL := args[0]
+
+	if err := validateOutputFormat(listModArgs.output, true); err != nil {
+		return err
+	}
 
 	spin := logger.StartSpinner("fetching versions")
 	defer spin.Stop()
@@ -79,16 +93,37 @@ func listModCmdRun(cmd *cobra.Command, args []string) error {
 	}
 
 	spin.Stop()
-	var rows [][]string
-	for _, v := range list {
-		row := []string{
-			v.Version,
-			v.Digest,
+
+	if listModArgs.output == "" {
+		var rows [][]string
+		for _, v := range list {
+			row := []string{
+				v.Version,
+				v.Digest,
+			}
+			rows = append(rows, row)
 		}
-		rows = append(rows, row)
+
+		printTable(rootCmd.OutOrStdout(), []string{"version", "digest"}, rows)
+
+		return nil
 	}
 
-	printTable(rootCmd.OutOrStdout(), []string{"version", "digest"}, rows)
+	if list == nil {
+		list = []apiv1.ModuleReference{}
+	}
 
-	return nil
+	var marshalled []byte
+	if listModArgs.output == "json" {
+		marshalled, err = json.MarshalIndent(list, "", "  ")
+		marshalled = append(marshalled, "\n"...)
+	} else {
+		marshalled, err = yaml.Marshal(list)
+	}
+	if err != nil {
+		return err
+	}
+
+	_, err = cmd.OutOrStdout().Write(marshalled)
+	return err
 }
