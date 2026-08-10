@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Stefan Prodan
+Copyright 2026 Stefan Prodan
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,83 +27,81 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
-func Test_ListMod(t *testing.T) {
+func Test_ListArtifact(t *testing.T) {
 	g := NewWithT(t)
-	modPath := "testdata/module"
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
-	modVers := []string{"1.0.0", "2.0.0", "1.1.0-rc.1"}
+	aPath := "testdata/module-values"
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	aTags := []string{"1.0.0", "latest"}
 
-	for _, v := range modVers {
-		_, err := executeCommand(fmt.Sprintf(
-			"mod push %s oci://%s -v %s --latest --resolve-symlinks",
-			modPath,
-			modURL,
-			v,
-		))
-		g.Expect(err).ToNot(HaveOccurred())
-	}
+	_, err := executeCommand(fmt.Sprintf(
+		"artifact push oci://%s -f %s -t %s -t %s",
+		aURL,
+		aPath,
+		aTags[0],
+		aTags[1],
+	))
+	g.Expect(err).ToNot(HaveOccurred())
 
 	t.Run("prints table", func(t *testing.T) {
 		g := NewWithT(t)
 		output, err := executeCommand(fmt.Sprintf(
-			"mod ls oci://%s",
-			modURL,
+			"artifact ls oci://%s",
+			aURL,
 		))
 		g.Expect(err).ToNot(HaveOccurred())
 
-		g.Expect(output).To(ContainSubstring("VERSION"))
-		g.Expect(output).To(ContainSubstring(apiv1.LatestVersion))
-		for _, v := range modVers {
-			g.Expect(output).To(ContainSubstring(v))
+		g.Expect(output).To(ContainSubstring("TAG"))
+		for _, tag := range aTags {
+			g.Expect(output).To(ContainSubstring(tag))
 		}
 	})
 
 	t.Run("prints JSON", func(t *testing.T) {
 		g := NewWithT(t)
 		output, err := executeCommand(fmt.Sprintf(
-			"mod ls oci://%s -o json",
-			modURL,
+			"artifact ls oci://%s -o json",
+			aURL,
 		))
 		g.Expect(err).ToNot(HaveOccurred())
 
-		var list []apiv1.ModuleReference
+		var list []apiv1.ArtifactReference
 		g.Expect(json.Unmarshal([]byte(output), &list)).To(Succeed())
 
-		versions := map[string]bool{}
+		tags := map[string]bool{}
 		for _, ref := range list {
-			g.Expect(ref.Repository).To(ContainSubstring(modURL))
+			g.Expect(ref.Repository).To(ContainSubstring(aURL))
 			g.Expect(ref.Digest).ToNot(BeEmpty())
-			versions[ref.Version] = true
+			tags[ref.Tag] = true
 		}
-		for _, v := range modVers {
-			g.Expect(versions).To(HaveKey(v))
+		for _, tag := range aTags {
+			g.Expect(tags).To(HaveKey(tag))
 		}
 	})
 
 	t.Run("prints YAML", func(t *testing.T) {
 		g := NewWithT(t)
 		output, err := executeCommand(fmt.Sprintf(
-			"mod ls oci://%s -o yaml",
-			modURL,
+			"artifact ls oci://%s -o yaml",
+			aURL,
 		))
 		g.Expect(err).ToNot(HaveOccurred())
 
-		var list []apiv1.ModuleReference
+		var list []apiv1.ArtifactReference
 		g.Expect(yaml.Unmarshal([]byte(output), &list)).To(Succeed())
 
-		versions := map[string]bool{}
+		tags := map[string]bool{}
 		for _, ref := range list {
 			g.Expect(ref.Digest).ToNot(BeEmpty())
-			versions[ref.Version] = true
+			tags[ref.Tag] = true
 		}
-		for _, v := range modVers {
-			g.Expect(versions).To(HaveKey(v))
+		for _, tag := range aTags {
+			g.Expect(tags).To(HaveKey(tag))
 		}
 	})
 
 	t.Run("fails for invalid output format", func(t *testing.T) {
 		g := NewWithT(t)
-		_, err := executeCommand("mod ls oci://registry.example.com/org/module -o junk")
+		_, err := executeCommand("artifact ls oci://registry.example.com/org/app -o junk")
 		g.Expect(err).To(MatchError("unknown --output=junk, can be yaml or json"))
 	})
 }
