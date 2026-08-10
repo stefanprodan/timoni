@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -46,6 +47,7 @@ type runtimeBuildFlags struct {
 	files                []string
 	clusterSelector      string
 	clusterGroupSelector string
+	workdir              string
 }
 
 var runtimeBuildArgs runtimeBuildFlags
@@ -57,6 +59,8 @@ func init() {
 		"Select cluster by name.")
 	runtimeBuildCmd.Flags().StringVar(&runtimeBuildArgs.clusterGroupSelector, "cluster-group", "*",
 		"Select clusters by group name.")
+	runtimeBuildCmd.Flags().StringVar(&runtimeBuildArgs.workdir, "workdir", "",
+		"The local path to the CUE module root (the directory containing cue.mod), used to resolve imports in the runtime definitions. Defaults to the current directory.")
 	runtimeCmd.AddCommand(runtimeBuildCmd)
 }
 
@@ -80,7 +84,7 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 		defer os.Remove(stdinFile)
 	}
 
-	rt, err := buildRuntime(files)
+	rt, err := buildRuntime(files, runtimeBuildArgs.workdir)
 	if err != nil {
 		return err
 	}
@@ -128,14 +132,23 @@ func runRuntimeBuildCmd(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func buildRuntime(files []string) (*apiv1.Runtime, error) {
+// buildRuntime compiles the runtime definitions into a Runtime object.
+// The workdir is the CUE module root used to resolve imports; when empty,
+// the CUE loader falls back to the process working directory.
+func buildRuntime(files []string, workdir string) (*apiv1.Runtime, error) {
 	defaultRuntime := apiv1.DefaultRuntime(*kubeconfigArgs.Context)
 	if len(files) == 0 {
 		return defaultRuntime, nil
 	}
 
+	dir, err := resolveWorkdir(workdir)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx := cuecontext.New()
 	rb := engine.NewRuntimeBuilder(ctx, files)
+	rb.SetWorkdir(dir)
 
 	workspace := apiv1.RuntimeDefaultName
 	if err := rb.InitWorkspace(workspace); err != nil {
@@ -156,4 +169,28 @@ func buildRuntime(files []string) (*apiv1.Runtime, error) {
 		rt.Clusters = defaultRuntime.Clusters
 	}
 	return rt, nil
+}
+
+// resolveWorkdir validates that the given workdir exists and is a
+// directory, and returns its absolute path. An empty workdir resolves
+// to empty, letting the CUE loader use the process working directory.
+func resolveWorkdir(workdir string) (string, error) {
+	if workdir == "" {
+		return "", nil
+	}
+
+	dir, err := filepath.Abs(workdir)
+	if err != nil {
+		return "", fmt.Errorf("invalid workdir %s: %w", workdir, err)
+	}
+
+	fi, err := os.Stat(dir)
+	if err != nil {
+		return "", fmt.Errorf("invalid workdir: %w", err)
+	}
+	if !fi.IsDir() {
+		return "", fmt.Errorf("invalid workdir %s: not a directory", dir)
+	}
+
+	return dir, nil
 }

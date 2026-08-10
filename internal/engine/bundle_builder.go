@@ -38,6 +38,7 @@ type BundleBuilder struct {
 	ctx               *cue.Context
 	files             []string
 	root              string
+	workdir           string
 	workspacesFiles   map[string][]string
 	workspacesSources map[string]map[string][]byte
 	mapSourceToOrigin map[string]string
@@ -66,6 +67,13 @@ func NewBundleBuilder(ctx *cue.Context, files []string) *BundleBuilder {
 // as the base for rendering error positions relative.
 func (b *BundleBuilder) WorkspaceDir(workspace string) string {
 	return filepath.Join(b.root, workspace)
+}
+
+// SetWorkdir sets the directory from which the CUE loader discovers the
+// cue.mod module root, enabling imports in the bundle definitions. When
+// unset, the loader uses the process working directory.
+func (b *BundleBuilder) SetWorkdir(dir string) {
+	b.workdir = dir
 }
 
 // InitWorkspace loads the bundle definitions into the in-memory workspace
@@ -142,6 +150,7 @@ func (b *BundleBuilder) Build(workspace string) (cue.Value, error) {
 		Package:   "_",
 		DataFiles: true,
 		Overlay:   overlay,
+		Dir:       b.workdir,
 	}
 
 	ix := load.Instances(b.workspacesFiles[workspace], cfg)

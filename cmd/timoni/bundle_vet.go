@@ -97,8 +97,14 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 		defer os.Remove(stdinFile)
 	}
 
+	workdir, err := resolveWorkdir(bundleArgs.workdir)
+	if err != nil {
+		return err
+	}
+
 	cuectx := cuecontext.New()
 	bm := engine.NewBundleBuilder(cuectx, files)
+	bm.SetWorkdir(workdir)
 
 	runtimeValues := make(map[string]string)
 
@@ -106,7 +112,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 		maps.Copy(runtimeValues, engine.GetEnv())
 	}
 
-	rt, err := buildRuntime(bundleArgs.runtimeFiles)
+	rt, err := buildRuntime(bundleArgs.runtimeFiles, bundleArgs.workdir)
 	if err != nil {
 		return err
 	}

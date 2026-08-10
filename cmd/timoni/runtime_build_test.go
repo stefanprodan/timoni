@@ -225,3 +225,73 @@ runtime: {
 		g.Expect(i).To(BeEquivalentTo(1))
 	})
 }
+
+func Test_RuntimeBuild_Workdir(t *testing.T) {
+	g := NewWithT(t)
+
+	moduleCue := `
+module: "test.example/runtimes"
+language: version: "v0.14.0"
+`
+	fleetCue := `
+package fleet
+
+clusters: {
+	"staging": {
+		group:       "staging"
+		kubeContext: "envtest"
+	}
+}
+`
+	runtimeData := `
+import "test.example/runtimes/fleet"
+
+runtime: {
+	apiVersion: "v1alpha1"
+	name:       "fleet"
+	clusters: fleet.clusters
+	values: [
+		{
+			query: "k8s:v1:Namespace:kube-system"
+			for: {
+				"CLUSTER_UID": "obj.metadata.uid"
+			}
+		},
+	]
+}
+`
+	wd := t.TempDir()
+	g.Expect(os.MkdirAll(filepath.Join(wd, "cue.mod"), 0755)).ToNot(HaveOccurred())
+	g.Expect(os.MkdirAll(filepath.Join(wd, "fleet"), 0755)).ToNot(HaveOccurred())
+	g.Expect(os.WriteFile(filepath.Join(wd, "cue.mod", "module.cue"), []byte(moduleCue), 0644)).ToNot(HaveOccurred())
+	g.Expect(os.WriteFile(filepath.Join(wd, "fleet", "clusters.cue"), []byte(fleetCue), 0644)).ToNot(HaveOccurred())
+
+	runtimePath := filepath.Join(wd, "runtime.cue")
+	g.Expect(os.WriteFile(runtimePath, []byte(runtimeData), 0644)).ToNot(HaveOccurred())
+
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "kube-system",
+		},
+	}
+
+	err := envTestClient.Get(context.Background(), client.ObjectKeyFromObject(ns), ns)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Run("resolves imports from workdir", func(t *testing.T) {
+		g := NewWithT(t)
+
+		output, err := executeCommand(fmt.Sprintf("runtime build -f %s --workdir %s", runtimePath, wd))
+		g.Expect(err).ToNot(HaveOccurred())
+		t.Log("\n", output)
+		g.Expect(output).To(MatchRegexp("staging.*CLUSTER_UID.*%s", string(ns.UID)))
+	})
+
+	t.Run("fails without workdir", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := executeCommand(fmt.Sprintf("runtime build -f %s", runtimePath))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("imports are unavailable"))
+	})
+}
