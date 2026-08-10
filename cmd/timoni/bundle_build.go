@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"path/filepath"
@@ -227,7 +228,14 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	cmd.OutOrStdout().Write([]byte(sb.String()))
+	data := []byte(sb.String())
+	n, err := cmd.OutOrStdout().Write(data)
+	if err != nil {
+		return err
+	}
+	if n < len(data) {
+		return io.ErrShortWrite
+	}
 
 	return nil
 }

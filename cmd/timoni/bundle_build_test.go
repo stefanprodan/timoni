@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +13,7 @@ import (
 
 	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	. "github.com/onsi/gomega"
+	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/stefanprodan/timoni/internal/engine"
@@ -599,5 +604,93 @@ bundle: {
 	t.Run("produces identical output regardless of concurrency", func(t *testing.T) {
 		g := NewWithT(t)
 		g.Expect(build(1)).To(Equal(concurrent))
+	})
+}
+
+// failWriter is an io.Writer that rejects every write with a fixed error.
+type failWriter struct {
+	err error
+}
+
+func (w failWriter) Write(p []byte) (int, error) {
+	return 0, w.err
+}
+
+// shortWriter is an io.Writer that accepts no bytes but never returns an
+// error, so the command must report io.ErrShortWrite itself.
+type shortWriter struct{}
+
+func (shortWriter) Write(p []byte) (int, error) {
+	return 0, nil
+}
+
+func Test_BundleBuild_OutputWriter(t *testing.T) {
+	g := NewWithT(t)
+
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+
+	bundleCue := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "my-bundle"
+	instances: {
+		backend: {
+			module: {
+				url: "file://%[1]s"
+			}
+			namespace: "%[2]s"
+			values: client: enabled: true
+		}
+	}
+}
+`, modPath, namespace)
+
+	wd := t.TempDir()
+	cuePath := filepath.Join(wd, "bundle.cue")
+	g.Expect(os.WriteFile(cuePath, []byte(bundleCue), 0644)).ToNot(HaveOccurred())
+	g.Expect(engine.CopyDir(modPath, filepath.Join(wd, modPath), true)).ToNot(HaveOccurred())
+
+	run := func(out io.Writer) error {
+		defer resetCmdArgs()
+		bundleBuildArgs.files = []string{cuePath}
+		cmd := &cobra.Command{Use: "build"}
+		cmd.SetContext(context.Background())
+		cmd.SetOut(out)
+		cmd.SetErr(io.Discard)
+		return runBundleBuildCmd(cmd, nil)
+	}
+
+	t.Run("returns the writer error", func(t *testing.T) {
+		g := NewWithT(t)
+		sentinel := errors.New("output sink closed")
+		err := run(failWriter{err: sentinel})
+		g.Expect(err).To(MatchError(sentinel))
+	})
+
+	t.Run("returns io.ErrShortWrite on a short write", func(t *testing.T) {
+		g := NewWithT(t)
+		err := run(shortWriter{})
+		g.Expect(err).To(MatchError(io.ErrShortWrite))
+	})
+
+	t.Run("leaves the writer empty when rendering fails", func(t *testing.T) {
+		g := NewWithT(t)
+
+		badPath := filepath.Join(wd, "bad.cue")
+		badCue := strings.Replace(bundleCue, "values: client: enabled: true", "values: domain: 123", 1)
+		g.Expect(os.WriteFile(badPath, []byte(badCue), 0644)).ToNot(HaveOccurred())
+
+		defer resetCmdArgs()
+		bundleBuildArgs.files = []string{badPath}
+		var out bytes.Buffer
+		cmd := &cobra.Command{Use: "build"}
+		cmd.SetContext(context.Background())
+		cmd.SetOut(&out)
+		cmd.SetErr(io.Discard)
+
+		err := runBundleBuildCmd(cmd, nil)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(out.Len()).To(BeZero())
 	})
 }
