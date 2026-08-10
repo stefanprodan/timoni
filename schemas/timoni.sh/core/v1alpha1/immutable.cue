@@ -18,8 +18,16 @@ import (
 	// Kind of the generated object.
 	#Kind: *#ConfigMapKind | #SecretKind
 
-	// Metadata of the generated object.
-	#Meta: #Metadata
+	// Metadata of the generated object. Accepts both #Metadata and
+	// #MetaComponent values: the object name may carry a component
+	// suffix while the name label keeps the instance name.
+	#Meta: {
+		name!:        string
+		namespace!:   string
+		labels:       #Labels
+		annotations?: #Annotations
+		...
+	}
 
 	// Optional suffix appended to the generate name.
 	#Suffix: *"" | string
