@@ -32,7 +32,9 @@ import (
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
@@ -44,6 +46,8 @@ var ownerRef = ssa.Owner{
 }
 
 // NewResourceManager creates a ResourceManager for the given cluster.
+// The manager's client and status poller share a dynamic RESTMapper that
+// discovers kinds registered by CRDs applied during the current run.
 // The optional factories add custom kstatus readers to the status poller,
 // next to the built-in Kubernetes Job one.
 func NewResourceManager(rcg genericclioptions.RESTClientGetter, readers ...StatusReaderFactory) (*ssa.ResourceManager, error) {
@@ -56,12 +60,22 @@ func NewResourceManager(rcg genericclioptions.RESTClientGetter, readers ...Statu
 	cfg.QPS = 100.0
 	cfg.Burst = 300
 
-	restMapper, err := rcg.ToRESTMapper()
+	httpClient, err := rest.HTTPClientFor(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	kubeClient, err := client.New(cfg, client.Options{Mapper: restMapper, Scheme: defaultScheme()})
+	// The dynamic RESTMapper reloads the API discovery data on unknown kinds.
+	restMapper, err := apiutil.NewDynamicRESTMapper(cfg, httpClient)
+	if err != nil {
+		return nil, err
+	}
+
+	kubeClient, err := client.New(cfg, client.Options{
+		HTTPClient: httpClient,
+		Mapper:     restMapper,
+		Scheme:     defaultScheme(),
+	})
 	if err != nil {
 		return nil, err
 	}
