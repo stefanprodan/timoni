@@ -17,6 +17,8 @@ limitations under the License.
 package runtime
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -25,12 +27,16 @@ import (
 	"github.com/fluxcd/cli-utils/pkg/kstatus/polling/clusterreader"
 	pollingEngine "github.com/fluxcd/cli-utils/pkg/kstatus/polling/engine"
 	"github.com/fluxcd/pkg/ssa"
+	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -121,6 +127,8 @@ func SelectObjectsFromSet(set *ssa.ChangeSet, action ssa.Action) []*unstructured
 }
 
 // ApplyOptions returns the default options for server-side apply operations.
+// The cleanup options transfer the ownership of objects managed with kubectl
+// or Helm to Timoni, and remove their tracking metadata.
 func ApplyOptions(force bool, wait time.Duration) ssa.ApplyOptions {
 	return ssa.ApplyOptions{
 		Force: force,
@@ -130,7 +138,101 @@ func ApplyOptions(force bool, wait time.Duration) ssa.ApplyOptions {
 		IfNotPresentSelector: map[string]string{
 			apiv1.IfNotPresentAction: apiv1.EnabledValue,
 		},
+		Cleanup: ssa.ApplyCleanupOptions{
+			// Remove the kubectl and Helm tracking metadata.
+			Annotations: []string{
+				corev1.LastAppliedConfigAnnotation,
+				"meta.helm.sh/release-name",
+				"meta.helm.sh/release-namespace",
+			},
+			// Take ownership of existing objects and
+			// undo changes made with kubectl or Helm.
+			FieldManagers: takeOwnershipFrom(),
+		},
 		WaitTimeout: wait,
+	}
+}
+
+// TakeOwnership transfers the ownership of the given objects' fields from
+// kubectl and Helm to Timoni's field manager before server-side applying
+// them, so that the apply replaces the fields set with these tools instead
+// of merging with them. Objects not found on the cluster, without matching
+// field managers, or annotated with the if-not-present action are skipped.
+func TakeOwnership(ctx context.Context, kubeClient client.Client, objects []*unstructured.Unstructured) error {
+	skipSelector := map[string]string{
+		apiv1.IfNotPresentAction: apiv1.EnabledValue,
+	}
+
+	for _, object := range objects {
+		if ssautil.AnyInMetadata(object, skipSelector) {
+			continue
+		}
+
+		existing := &unstructured.Unstructured{}
+		existing.SetGroupVersionKind(object.GroupVersionKind())
+		if err := kubeClient.Get(ctx, client.ObjectKeyFromObject(object), existing); err != nil {
+			if apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err) {
+				continue
+			}
+			return fmt.Errorf("%s failed to read object: %w", ssautil.FmtUnstructured(object), err)
+		}
+
+		if ssautil.AnyInMetadata(existing, skipSelector) {
+			continue
+		}
+
+		patch, err := ssa.PatchReplaceFieldsManagers(existing, takeOwnershipFrom(), ownerRef.Field)
+		if err != nil {
+			return fmt.Errorf("%s failed to compute ownership patch: %w", ssautil.FmtUnstructured(existing), err)
+		}
+		if len(patch) == 0 {
+			continue
+		}
+
+		rawPatch, err := json.Marshal(patch)
+		if err != nil {
+			return err
+		}
+		if err := kubeClient.Patch(ctx, existing, client.RawPatch(types.JSONPatchType, rawPatch),
+			client.FieldOwner(ownerRef.Field)); err != nil {
+			return fmt.Errorf("%s failed to take ownership: %w", ssautil.FmtUnstructured(existing), err)
+		}
+	}
+
+	return nil
+}
+
+// takeOwnershipFrom returns the list of field managers whose ownership
+// over objects is transferred to Timoni during server-side apply.
+func takeOwnershipFrom() []ssa.FieldManager {
+	return []ssa.FieldManager{
+		{
+			// to take over objects managed with Helm v3 client-side apply
+			Name:          "helm",
+			OperationType: metav1.ManagedFieldsOperationUpdate,
+			ExactMatch:    true,
+		},
+		{
+			// to take over objects managed with Helm v4 server-side apply
+			Name:          "helm",
+			OperationType: metav1.ManagedFieldsOperationApply,
+			ExactMatch:    true,
+		},
+		{
+			// to take over changes made with 'kubectl apply'
+			Name:          "kubectl",
+			OperationType: metav1.ManagedFieldsOperationUpdate,
+		},
+		{
+			// to take over changes made with 'kubectl apply --server-side'
+			Name:          "before-first-apply",
+			OperationType: metav1.ManagedFieldsOperationUpdate,
+		},
+		{
+			// to take over changes made with 'kubectl apply --server-side --force-conflicts'
+			Name:          "kubectl",
+			OperationType: metav1.ManagedFieldsOperationApply,
+		},
 	}
 }
 

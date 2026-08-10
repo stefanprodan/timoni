@@ -156,3 +156,22 @@ timoni: healthChecks: {
 The above definition tells Timoni to look for the `Ready=True` condition in
 all kinds under the `cert-manager.io` group (`ClusterIssuer`, `Issuer`, `Certificate`) and
 to look for `Synced=True` for the trust-manager kinds (`ClusterBundle`, `Bundle`).
+
+## Taking Ownership of Existing Resources
+
+When a module's resources already exist on the cluster, Timoni takes ownership
+of them during the server-side apply. Objects created with `kubectl apply` or
+`helm install` (both Helm v3 and Helm v4 releases) become managed by Timoni:
+the field ownership is transferred from the `kubectl` and `helm` field managers
+to `timoni` before the objects are applied, and the fields set with these tools
+are replaced with the module's desired state.
+
+When taking ownership, Timoni removes the following metadata from the objects:
+
+- the `kubectl.kubernetes.io/last-applied-configuration` annotation
+- the `meta.helm.sh/release-name` annotation
+- the `meta.helm.sh/release-namespace` annotation
+
+This allows migrating an app from Helm to Timoni by installing the module
+instance over the existing Helm release, then deleting the Helm release
+secrets without uninstalling the app.

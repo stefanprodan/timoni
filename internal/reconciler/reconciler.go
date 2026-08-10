@@ -228,7 +228,14 @@ func (r *Reconciler) ApplyAllSets(ctx context.Context, log logr.Logger, withChan
 	return nil
 }
 
+// ApplyAllStaged transfers the ownership of the set's existing objects
+// from kubectl and Helm to Timoni, then server-side applies the objects
+// in stages, waiting for the CRDs and Namespaces to register before
+// applying the rest of the set.
 func (r *Reconciler) ApplyAllStaged(ctx context.Context, set engine.ResourceSet) (*ssa.ChangeSet, error) {
+	if err := runtime.TakeOwnership(ctx, r.resourceManager.Client(), set.Objects); err != nil {
+		return nil, err
+	}
 	return r.resourceManager.ApplyAllStaged(ctx, set.Objects, r.applyOptions)
 }
 
