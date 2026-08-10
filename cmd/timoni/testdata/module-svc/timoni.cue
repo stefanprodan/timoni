@@ -20,6 +20,42 @@ timoni: {
 		}
 
 		objects: {
+			// The Role is applied in a separate stage before the Service.
+			role: {
+				apiVersion: "rbac.authorization.k8s.io/v1"
+				kind:       "Role"
+				metadata: {
+					name:      config.metadata.name
+					namespace: config.metadata.namespace
+				}
+				rules: [{
+					apiGroups: [""]
+					resources: ["configmaps"]
+					verbs: ["get", "list"]
+				}]
+			}
+
+			// The RoleBinding is applied in the main stage, after the
+			// Role it references has registered.
+			binding: {
+				apiVersion: "rbac.authorization.k8s.io/v1"
+				kind:       "RoleBinding"
+				metadata: {
+					name:      config.metadata.name
+					namespace: config.metadata.namespace
+				}
+				roleRef: {
+					apiGroup: "rbac.authorization.k8s.io"
+					kind:     "Role"
+					name:     config.metadata.name
+				}
+				subjects: [{
+					kind:      "ServiceAccount"
+					name:      "default"
+					namespace: config.metadata.namespace
+				}]
+			}
+
 			svc: {
 				apiVersion: "v1"
 				kind:       "Service"

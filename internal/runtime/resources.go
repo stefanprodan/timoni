@@ -149,6 +149,13 @@ func ApplyOptions(force bool, wait time.Duration) ssa.ApplyOptions {
 			// undo changes made with kubectl or Helm.
 			FieldManagers: takeOwnershipFrom(),
 		},
+		// Apply the RBAC Roles in a separate stage before the other
+		// namespaced objects, so that the RoleBindings referencing them
+		// pass the RBAC escalation checks when applied by a user which
+		// is not a cluster-admin.
+		CustomStageKinds: map[schema.GroupKind]struct{}{
+			{Group: "rbac.authorization.k8s.io", Kind: "Role"}: {},
+		},
 		WaitTimeout: wait,
 	}
 }
