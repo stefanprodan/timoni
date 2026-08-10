@@ -28,6 +28,7 @@ The Timoni's CUE schemas are included in the modules generated with `timoni mod 
 
 - `#ImmutableConfig` - Schema for generating immutable Kubernetes ConfigMaps and Secrets.
   The `metadata.name` of the generated object is suffixed with the hash of the input data.
+  The `#Meta` input accepts both `#Metadata` and `#MetaComponent` values.
 
 ### Container Image
 
