@@ -24,11 +24,13 @@ import (
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/gomega"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/fscopy"
+	"github.com/stefanprodan/timoni/internal/oci"
 )
 
 func Test_PushMod(t *testing.T) {
@@ -173,4 +175,114 @@ func TestPushModRejectsInvalidOutputBeforeInput(t *testing.T) {
 
 	_, err := executeCommand("mod push /does/not/exist oci://registry.example.com/org/module -v 1.0.0 --output invalid")
 	g.Expect(err).To(MatchError("unknown --output=invalid, can be yaml or json"))
+}
+
+func Test_PushMod_Archive(t *testing.T) {
+	modPath := "testdata/module"
+
+	g := NewWithT(t)
+	archive := filepath.Join(t.TempDir(), "module.tar")
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modVer := "1.0.0"
+
+	// Build the module to a local OCI archive first.
+	buildOutput, err := executeCommand(fmt.Sprintf(
+		"mod build %s -v %s -o %s -a %s=2024-01-02T03:04:05Z",
+		modPath,
+		modVer,
+		archive,
+		apiv1.CreatedAnnotation,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(archive).To(BeAnExistingFile())
+	g.Expect(buildOutput).To(ContainSubstring("digest: sha256:"))
+
+	// Push the pre-built archive without specifying a version: it is read
+	// from the archive manifest.
+	output, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s",
+		archive,
+		modURL,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	// The pushed digest must equal the build-time digest.
+	image, err := crane.Pull(fmt.Sprintf("%s:%s", modURL, modVer))
+	g.Expect(err).ToNot(HaveOccurred())
+	digest, err := image.Digest()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(output).To(ContainSubstring(digest.String()))
+	g.Expect(buildOutput).To(ContainSubstring(digest.String()))
+
+	// The baked annotations must be preserved on push.
+	manifest, err := image.Manifest()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(manifest.Annotations[apiv1.CreatedAnnotation]).To(BeEquivalentTo("2024-01-02T03:04:05Z"))
+	g.Expect(manifest.Annotations[apiv1.VersionAnnotation]).To(BeEquivalentTo(modVer))
+	g.Expect(manifest.Annotations[apiv1.SourceAnnotation]).To(ContainSubstring("github.com"))
+}
+
+func Test_PushMod_ArchiveRejectsBadMediaType(t *testing.T) {
+	g := NewWithT(t)
+	archive := filepath.Join(t.TempDir(), "foreign.tar")
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+
+	// Write a non-Timoni image (Docker manifest media type) as an archive.
+	g.Expect(oci.WriteImage(empty.Image, archive, oci.FormatArchive, []string{"1.0.0"})).To(Succeed())
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v 1.0.0",
+		archive,
+		modURL,
+	))
+	g.Expect(err).To(MatchError(ContainSubstring("unsupported manifest media type")))
+}
+
+func Test_PushMod_ArchiveRejectsResolveSymlinks(t *testing.T) {
+	g := NewWithT(t)
+	archive := filepath.Join(t.TempDir(), "module.tar")
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod build testdata/module -v 1.0.0 -o %s",
+		archive,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	_, err = executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s --resolve-symlinks",
+		archive,
+		modURL,
+	))
+	g.Expect(err).To(MatchError(ContainSubstring("--resolve-symlinks is not supported when pushing a pre-built archive")))
+}
+
+func Test_PushMod_ArchiveRejectsVersionMismatch(t *testing.T) {
+	g := NewWithT(t)
+	archive := filepath.Join(t.TempDir(), "module.tar")
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod build testdata/module -v 1.0.0 -o %s",
+		archive,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	_, err = executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v 1.0.1",
+		archive,
+		modURL,
+	))
+	g.Expect(err).To(MatchError(ContainSubstring("version mismatch")))
+}
+
+func Test_PushMod_ArchiveMissingFile(t *testing.T) {
+	g := NewWithT(t)
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s",
+		filepath.Join(t.TempDir(), "missing.tar"),
+		fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5)),
+	))
+	g.Expect(err).To(MatchError(ContainSubstring("module not found at path")))
 }
