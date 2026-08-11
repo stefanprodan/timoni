@@ -115,6 +115,18 @@ List all the artifact's tags and digest with [timoni artifact list](cmd/timoni_a
 timoni artifact list oci://docker.io/my-org/my-app-bundle
 ```
 
+The tags can be filtered with a regular expression using `--filter-regex`,
+and with a semantic version range using `--filter-semver`:
+
+```shell
+timoni artifact list oci://docker.io/my-org/my-app-bundle \
+  --filter-regex '^1\.' \
+  --filter-semver '>=1.1.0'
+```
+
+Tags that are not valid semantic versions, such as `latest`, are excluded
+when `--filter-semver` is set.
+
 Verify the signature and download a specific artifact tag with [timoni artifact pull](cmd/timoni_artifact_pull.md):
 
 ```shell
