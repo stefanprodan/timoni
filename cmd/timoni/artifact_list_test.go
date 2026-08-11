@@ -31,16 +31,32 @@ func Test_ListArtifact(t *testing.T) {
 	g := NewWithT(t)
 	aPath := "testdata/module-values"
 	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
-	aTags := []string{"1.0.0", "latest"}
+	aTags := []string{"1.0.0", "1.1.0", "2.0.0", "dev", "latest"}
 
-	_, err := executeCommand(fmt.Sprintf(
-		"artifact push oci://%s -f %s -t %s -t %s",
-		aURL,
-		aPath,
-		aTags[0],
-		aTags[1],
-	))
+	pushCmd := fmt.Sprintf("artifact push oci://%s -f %s", aURL, aPath)
+	for _, tag := range aTags {
+		pushCmd += fmt.Sprintf(" -t %s", tag)
+	}
+
+	_, err := executeCommand(pushCmd)
 	g.Expect(err).ToNot(HaveOccurred())
+
+	listTags := func(t *testing.T, args string) []string {
+		t.Helper()
+		g := NewWithT(t)
+
+		output, err := executeCommand(fmt.Sprintf("artifact ls oci://%s -o json %s", aURL, args))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		var list []apiv1.ArtifactReference
+		g.Expect(json.Unmarshal([]byte(output), &list)).To(Succeed())
+
+		var tags []string
+		for _, ref := range list {
+			tags = append(tags, ref.Tag)
+		}
+		return tags
+	}
 
 	t.Run("prints table", func(t *testing.T) {
 		g := NewWithT(t)
@@ -97,6 +113,41 @@ func Test_ListArtifact(t *testing.T) {
 		for _, tag := range aTags {
 			g.Expect(tags).To(HaveKey(tag))
 		}
+	})
+
+	t.Run("filters tags by regex", func(t *testing.T) {
+		g := NewWithT(t)
+		tags := listTags(t, `--filter-regex '^1\.'`)
+
+		g.Expect(tags).To(ConsistOf("1.0.0", "1.1.0"))
+	})
+
+	t.Run("filters tags by semver", func(t *testing.T) {
+		g := NewWithT(t)
+		tags := listTags(t, `--filter-semver '>=1.1.0'`)
+
+		g.Expect(tags).To(ConsistOf("1.1.0", "2.0.0"))
+	})
+
+	t.Run("filters tags by regex and semver", func(t *testing.T) {
+		g := NewWithT(t)
+		tags := listTags(t, `--filter-regex '^1\.' --filter-semver '>=1.1.0'`)
+
+		g.Expect(tags).To(ConsistOf("1.1.0"))
+	})
+
+	t.Run("fails for invalid regex filter", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := executeCommand(fmt.Sprintf("artifact ls oci://%s --filter-regex '['", aURL))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("invalid regex filter"))
+	})
+
+	t.Run("fails for invalid semver filter", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := executeCommand(fmt.Sprintf("artifact ls oci://%s --filter-semver 'junk'", aURL))
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("invalid semver filter"))
 	})
 
 	t.Run("fails for invalid output format", func(t *testing.T) {

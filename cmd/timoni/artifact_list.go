@@ -42,6 +42,12 @@ var listArtifactCmd = &cobra.Command{
   # Print the tags without digests
   timoni artifact list oci://ghcr.io/org/bundles/app --with-digest=false
 
+  # Print the tags matching a regular expression
+  timoni artifact list oci://docker.io/org/app --filter-regex '^1\.'
+
+  # Print the tags matching a semver range
+  timoni artifact list oci://docker.io/org/app --filter-semver '>=1.0.0 <2.0.0'
+
   # Print the tags and digests of an artifact stored in a private repository
   echo $DOCKER_TOKEN | timoni registry login docker.io -u timoni --password-stdin
   timoni artifact list oci://docker.io/org/app
@@ -54,9 +60,11 @@ var listArtifactCmd = &cobra.Command{
 }
 
 type listArtifactFlags struct {
-	creds      flags.Credentials
-	withDigest bool
-	output     string
+	creds        flags.Credentials
+	withDigest   bool
+	output       string
+	filterRegex  string
+	filterSemver string
 }
 
 var listArtifactArgs listArtifactFlags
@@ -67,6 +75,10 @@ func init() {
 		"Resolve the digest of each version.")
 	listArtifactCmd.Flags().StringVarP(&listArtifactArgs.output, "output", "o", "",
 		"The format in which the tags should be printed, can be 'yaml' or 'json'.")
+	listArtifactCmd.Flags().StringVar(&listArtifactArgs.filterRegex, "filter-regex", "",
+		"Filter tags returned from the OCI repository using regular expressions.")
+	listArtifactCmd.Flags().StringVar(&listArtifactArgs.filterSemver, "filter-semver", "",
+		"Filter tags returned from the OCI repository using semantic version ranges.")
 	artifactCmd.AddCommand(listArtifactCmd)
 }
 
@@ -87,7 +99,11 @@ func listArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	opts := oci.Options(ctx, listArtifactArgs.creds.String(), rootArgs.registryInsecure)
-	list, err := oci.ListArtifactTags(ociURL, listArtifactArgs.withDigest, opts)
+	list, err := oci.ListArtifactTags(ociURL, oci.ListArtifactOptions{
+		WithDigest:   listArtifactArgs.withDigest,
+		FilterRegex:  listArtifactArgs.filterRegex,
+		FilterSemver: listArtifactArgs.filterSemver,
+	}, opts)
 	if err != nil {
 		return err
 	}
