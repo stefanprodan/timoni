@@ -184,6 +184,12 @@ To uninstall an instance and delete all the managed Kubernetes resources:
 By default, the delete command will wait for all the resources to be removed.
 To skip waiting, use the `--wait=false` flag.
 
+The release-state record (`Secret/timoni.<instance>`) is removed only after
+every owned object is confirmed absent. If the termination cannot be verified
+(`--wait=false`, a timeout, or an error), the record is retained as a
+deletion-in-progress receipt and a subsequent delete finalizes the removal
+from the exact retained inventory.
+
 ## Bundling instances
 
 For deploying complex applications to production, it is recommended to use

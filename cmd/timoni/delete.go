@@ -23,10 +23,14 @@ import (
 	"sort"
 
 	"github.com/fluxcd/pkg/ssa"
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/stefanprodan/timoni/internal/logger"
 	"github.com/stefanprodan/timoni/internal/runtime"
+
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
 var deleteCmd = &cobra.Command{
@@ -34,6 +38,14 @@ var deleteCmd = &cobra.Command{
 	Args:    cobra.MaximumNArgs(1),
 	Aliases: []string{"uninstall"},
 	Short:   "Uninstall a module instance from the cluster",
+	Long: `The delete command uninstalls the instance and deletes all its
+Kubernetes resources from the cluster.
+
+The release-state record (Secret/timoni.<instance>) is removed only after
+every owned object is confirmed absent. If the termination cannot be
+verified (--wait=false, a timeout, or an error), the record is retained as
+a deletion-in-progress receipt and a subsequent delete finalizes the
+removal from the exact retained inventory.`,
 	Example: `  # Uninstall the app module from the default namespace
   timoni -n default delete app
 
@@ -105,10 +117,25 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Info(fmt.Sprintf("deleting %v resource(s)...", len(objects)))
+	return deleteInstanceObjects(ctx, log, sm, iStorage, inst, objects, deleteArgs.wait)
+}
+
+// deleteInstanceObjects sends delete requests for every object in the instance
+// inventory and removes the release-state record only after the owned objects
+// are confirmed absent. On timeout or unknown outcome the record is retained
+// as a deletion-in-progress receipt so the deletion can be resumed.
+func deleteInstanceObjects(ctx context.Context, log logr.Logger, sm *ssa.ResourceManager, iStorage *runtime.StorageManager, inst *apiv1.Instance, objects []*unstructured.Unstructured, wait bool) error {
+	// Retain the release state as a deletion-in-progress receipt until every
+	// owned object is confirmed absent. The instance data and exact inventory
+	// are kept so a timed-out or interrupted delete can be resumed.
+	if err := iStorage.SetDeleting(ctx, inst.Name, inst.Namespace); err != nil {
+		return err
+	}
+
 	hasErrors := false
 	cs := ssa.NewChangeSet()
 	for _, object := range objects {
-		deleteOpts := runtime.DeleteOptions(deleteArgs.name, *kubeconfigArgs.Namespace)
+		deleteOpts := runtime.DeleteOptions(inst.Name, inst.Namespace)
 		change, err := sm.Delete(ctx, object, deleteOpts)
 		if err != nil {
 			log.Error(err, "deletion failed")
@@ -123,22 +150,27 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	if err := iStorage.Delete(ctx, inst.Name, inst.Namespace); err != nil {
-		return err
-	}
-
 	deletedObjects := runtime.SelectObjectsFromSet(cs, ssa.DeletedAction)
-	if deleteArgs.wait && len(deletedObjects) > 0 {
+	if wait && len(deletedObjects) > 0 {
 		waitOpts := ssa.DefaultWaitOptions()
 		waitOpts.Timeout = rootArgs.timeout
 		spin := logger.StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
-		err = sm.WaitForTermination(deletedObjects, waitOpts)
+		err := sm.WaitForTermination(deletedObjects, waitOpts)
 		spin.Stop()
 		if err != nil {
+			// Keep the deletion-in-progress receipt so the delete can be resumed.
 			return err
 		}
 		log.Info("all resources have been deleted")
 	}
 
+	// Drop the release state only after every exact object is proven absent
+	// (termination wait succeeded) or when nothing was deleted at all. When
+	// waiting is disabled, the owned objects may still be terminating, so the
+	// receipt is retained for a subsequent delete to finish and remove it.
+	if wait || len(deletedObjects) == 0 {
+		return iStorage.Delete(ctx, inst.Name, inst.Namespace)
+	}
+	log.Info("delete requests issued, release state retained for recovery; re-run delete to finalize")
 	return nil
 }
