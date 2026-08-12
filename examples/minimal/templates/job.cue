@@ -42,9 +42,7 @@ import (
 				if #config.topologySpreadConstraints != _|_ {
 					topologySpreadConstraints: #config.topologySpreadConstraints
 				}
-				if #config.affinity != _|_ {
-					affinity: #config.affinity
-				}
+				nodeSelector: #config.nodeSelector
 				if #config.tolerations != _|_ {
 					tolerations: #config.tolerations
 				}

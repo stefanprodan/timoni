@@ -47,17 +47,51 @@ The Timoni's CUE schemas are included in the modules generated with `timoni mod 
 
 ### Security Contexts
 
-- `#SecurityProfile` - Values of the `securityProfile` module knob:
-  `hardened` (default) pins the numeric UID/GID defaults, `platform`
-  omits them so that an admission controller (e.g. OpenShift) can assign them.
+- `#SecurityContextPreset` - Values of the `securityContextPreset`
+  module knob: `hardened` (default) pins the numeric UID/GID defaults,
+  `platform` omits them so that an admission controller
+  (e.g. OpenShift) can assign them.
 - `#ContainerSecurityContext` - Schema for the restricted container
   security context: denies privilege escalation, makes the root
   filesystem read-only and drops all capabilities.
 - `#PodSecurityContext` - Schema for generating the pod-level security
-  context from `#Profile` and `#User` (optionally `#Group` and
+  context from `#Preset` and `#User` (optionally `#Group` and
   `#FSGroup`) inputs. Defaults to `runAsNonRoot` with the
   `RuntimeDefault` seccomp profile, and pins the numeric identity
-  fields only under the `hardened` profile.
+  fields only under the `hardened` preset.
+
+### Pod Scheduling
+
+- `#AffinityPreset` - Values of the `affinity.podAntiAffinity` module
+  knob: `soft` (default) prefers spreading the workload replicas
+  across topology domains, `hard` requires it, `none` disables it.
+- `#AffinityValues` - Schema for the module values of a workload's
+  `affinity` setting: an `#AffinityPreset` or raw rules for
+  `podAntiAffinity`, raw rules for `nodeAffinity` and `podAffinity`.
+- `#Affinity` - Schema for generating the pod affinity rules from the
+  `#Values`, `#MatchLabels`, `#TopologyKey` and `#Weight` inputs;
+  the `#Enabled` field tells whether any rules are set, letting
+  modules omit the affinity field from the pod spec.
+
+### Prometheus Monitoring
+
+- `#PromDuration` - Schema for validating durations in Prometheus
+  format, e.g. `30s` or `1m30s`.
+- `#Monitor` - Schema for the module values shared by the Prometheus
+  Operator ServiceMonitor and PodMonitor resources: the enable knob,
+  monitor metadata, per-scrape limits and target labels.
+- `#MonitorEndpoint` - Schema for the module values of one monitor
+  scrape endpoint; duration fields left empty defer to the
+  Prometheus defaults.
+- `#MonitorValues` - The canonical values block for a module's
+  `serviceMonitor` or `podMonitor` setting scraping a single
+  endpoint, unifying `#Monitor` and `#MonitorEndpoint`.
+- `#MonitorSpec` - Schema for generating the ServiceMonitor/PodMonitor
+  spec fields common to both kinds from the `#Values` input,
+  omitting the unset limits and target labels.
+- `#MonitorEndpointSpec` - Schema for generating a ServiceMonitor
+  endpoint or a PodMonitor podMetricsEndpoint from the `#Values`
+  input, omitting the unset scrape settings.
 
 ### Semantic Versioning
 

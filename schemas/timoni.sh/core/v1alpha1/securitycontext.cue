@@ -3,15 +3,15 @@
 
 package v1alpha1
 
-// SecurityProfile selects how the workload identity defaults are applied.
-// The "hardened" profile pins the numeric UID/GID defaults; the "platform"
-// profile omits them so that an admission controller (e.g. an OpenShift
-// SecurityContextConstraint) can assign them from the range allocated
-// to the namespace.
-#SecurityProfile: *#SecurityProfileHardened | #SecurityProfilePlatform
+// SecurityContextPreset selects how the workload identity defaults are
+// applied. The "hardened" preset pins the numeric UID/GID defaults; the
+// "platform" preset omits them so that an admission controller (e.g. an
+// OpenShift SecurityContextConstraint) can assign them from the range
+// allocated to the namespace.
+#SecurityContextPreset: *#SecurityContextPresetHardened | #SecurityContextPresetPlatform
 
-#SecurityProfileHardened: "hardened"
-#SecurityProfilePlatform: "platform"
+#SecurityContextPresetHardened: "hardened"
+#SecurityContextPresetPlatform: "platform"
 
 // ContainerSecurityContext is the restricted security context module
 // containers should default to. It denies privilege escalation, makes
@@ -27,20 +27,20 @@ package v1alpha1
 }
 
 // PodSecurityContext generates the pod-level security context for the
-// given #SecurityProfile. The runAsNonRoot and RuntimeDefault seccomp
-// profile defaults satisfy the Kubernetes restricted Pod Security
-// Standard under both profiles; the numeric identity defaults
+// given #SecurityContextPreset. The runAsNonRoot and RuntimeDefault
+// seccomp profile defaults satisfy the Kubernetes restricted Pod
+// Security Standard under both presets; the numeric identity defaults
 // (runAsUser, runAsGroup, fsGroup) are added only under the "hardened"
-// profile and only when the module declares its image's non-root UID
+// preset and only when the module declares its image's non-root UID
 // via #User. The struct stays open for unification with the
 // corev1.#PodSecurityContext schema.
 #PodSecurityContext: {
-	// The security profile, wired to the module's securityProfile value.
-	#Profile: #SecurityProfile
+	// The preset, wired to the module's securityContextPreset value.
+	#Preset: #SecurityContextPreset
 
 	// The non-root UID the container image runs as. Modules whose
 	// upstream pins no identity leave it unset, which makes the
-	// profile a no-op (identity fields are never rendered).
+	// preset a no-op (identity fields are never rendered).
 	#User?: int
 
 	// Optional overrides when the group or volume group differs from
@@ -50,7 +50,7 @@ package v1alpha1
 
 	runAsNonRoot: *true | bool
 	seccompProfile: type: *"RuntimeDefault" | string
-	if #Profile == #SecurityProfileHardened if #User != _|_ {
+	if #Preset == #SecurityContextPresetHardened if #User != _|_ {
 		runAsUser: *#User | int
 		runAsGroup: *[if #Group != _|_ {#Group}, #User][0] | int
 		fsGroup: *[if #FSGroup != _|_ {#FSGroup}, #User][0] | int

@@ -44,37 +44,40 @@ import (
 		digest:     *"" | string
 	}
 
-	// The securityProfile selects how the workload identity defaults are applied.
-	// The `hardened` profile pins the UID/GID the container image runs as;
-	// the `platform` profile omits them so that an admission controller
-	// (e.g. an OpenShift SecurityContextConstraint) can assign them from
-	// the range allocated to the namespace.
-	securityProfile: timoniv1.#SecurityProfile
+	// The securityContextPreset selects how the workload identity defaults
+	// are applied. The `hardened` preset pins the UID/GID the container
+	// image runs as; the `platform` preset omits them so that an admission
+	// controller (e.g. an OpenShift SecurityContextConstraint) can assign
+	// them from the range allocated to the namespace.
+	securityContextPreset: timoniv1.#SecurityContextPreset
 
 	// The pod allows setting the Kubernetes Pod annotations, image pull secrets,
-	// security context, affinity and anti-affinity rules.
-	// By default, pods are scheduled on Linux nodes.
+	// security context, node selector, affinity and anti-affinity rules.
+	// By default, pods are scheduled on Linux nodes and prefer spreading
+	// the replicas across nodes.
 	pod: {
 		annotations?: timoniv1.#Annotations
 
-		affinity: *{
-			nodeAffinity: requiredDuringSchedulingIgnoredDuringExecution: nodeSelectorTerms: [{
-				matchExpressions: [{
-					key:      corev1.#LabelOSStable
-					operator: "In"
-					values: ["linux"]
-				}]
-			}]
-		} | corev1.#Affinity
+		// The affinity rules: `podAntiAffinity` accepts the `soft` (default),
+		// `hard` and `none` presets for spreading the replicas across nodes,
+		// or raw pod anti-affinity rules.
+		affinity: timoniv1.#AffinityValues & {
+			podAntiAffinity: timoniv1.#AffinityPreset | corev1.#PodAntiAffinity
+			nodeAffinity?:   corev1.#NodeAffinity
+			podAffinity?:    corev1.#PodAffinity
+		}
+
+		// Pods are scheduled on Linux nodes by default.
+		nodeSelector: *{(corev1.#LabelOSStable): "linux"} | {[string]: string}
 
 		imagePullSecrets?: [...timoniv1.#ObjectReference]
 
 		// The pod runs as non-root with the RuntimeDefault seccomp profile.
-		// Under the `hardened` profile, the identity defaults are pinned
+		// Under the `hardened` preset, the identity defaults are pinned
 		// to the nginx-unprivileged image's non-root UID.
 		securityContext: corev1.#PodSecurityContext & timoniv1.#PodSecurityContext & {
-			#Profile: securityProfile
-			#User:    101
+			#Preset: securityContextPreset
+			#User:   101
 		}
 	}
 

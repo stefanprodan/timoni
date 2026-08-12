@@ -13,6 +13,14 @@ import (
 	_selectorLabel: {
 		(timoniv1.#StdLabelName): "\(#config.metadata.name)-replica"
 	}
+
+	// The affinity rules generated from the affinity values;
+	// the anti-affinity presets spread the replicas across nodes.
+	_affinity: timoniv1.#Affinity & {
+		#Values:      #config.affinity
+		#MatchLabels: _selectorLabel
+	}
+
 	apiVersion: "apps/v1"
 	kind:       "Deployment"
 	metadata: timoniv1.#MetaComponent & {
@@ -106,8 +114,9 @@ import (
 				if #config.topologySpreadConstraints != _|_ {
 					topologySpreadConstraints: #config.topologySpreadConstraints
 				}
-				if #config.affinity != _|_ {
-					affinity: #config.affinity
+				nodeSelector: #config.nodeSelector
+				if _affinity.#Enabled {
+					affinity: _affinity
 				}
 				if #config.tolerations != _|_ {
 					tolerations: #config.tolerations

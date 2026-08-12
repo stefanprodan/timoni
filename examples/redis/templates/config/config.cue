@@ -76,15 +76,18 @@ import (
 		seccompProfile: type: "RuntimeDefault"
 	} | corev1.#SecurityContext
 
-	// Pod affinity settings (common to all deployments)
-	affinity: corev1.#Affinity
-	affinity: nodeAffinity: requiredDuringSchedulingIgnoredDuringExecution: nodeSelectorTerms: [{
-		matchExpressions: [{
-			key:      "kubernetes.io/os"
-			operator: "In"
-			values: ["linux"]
-		}]
-	}]
+	// Pod scheduling settings (common to all deployments);
+	// pods are scheduled on Linux nodes by default.
+	nodeSelector: *{"kubernetes.io/os": "linux"} | {[string]: string}
+
+	// The affinity rules: `podAntiAffinity` accepts the `soft` (default),
+	// `hard` and `none` presets for spreading each deployment's replicas
+	// across nodes, or raw pod anti-affinity rules.
+	affinity: timoniv1.#AffinityValues & {
+		podAntiAffinity: timoniv1.#AffinityPreset | corev1.#PodAntiAffinity
+		nodeAffinity?:   corev1.#NodeAffinity
+		podAffinity?:    corev1.#PodAffinity
+	}
 
 	// Pod optional settings (common to all deployments)
 	podAnnotations?: {[string]: string}

@@ -13,6 +13,14 @@ import (
 	_selectorLabel: {
 		(timoniv1.#StdLabelName): "\(#config.metadata.name)-master"
 	}
+
+	// The affinity rules generated from the affinity values;
+	// the anti-affinity presets match the master pods.
+	_affinity: timoniv1.#Affinity & {
+		#Values:      #config.affinity
+		#MatchLabels: _selectorLabel
+	}
+
 	apiVersion: "apps/v1"
 	kind:       "Deployment"
 	metadata: timoniv1.#MetaComponent & {
@@ -103,8 +111,9 @@ import (
 				if #config.topologySpreadConstraints != _|_ {
 					topologySpreadConstraints: #config.topologySpreadConstraints
 				}
-				if #config.affinity != _|_ {
-					affinity: #config.affinity
+				nodeSelector: #config.nodeSelector
+				if _affinity.#Enabled {
+					affinity: _affinity
 				}
 				if #config.tolerations != _|_ {
 					tolerations: #config.tolerations

@@ -79,8 +79,19 @@ import (
 	podSecurityContext?: corev1.#PodSecurityContext
 	imagePullSecrets?: [...timoniv1.#ObjectReference]
 	tolerations?: [...corev1.#Toleration]
-	affinity?: corev1.#Affinity
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
+
+	// Pods are scheduled on Linux nodes by default.
+	nodeSelector: *{"kubernetes.io/os": "linux"} | {[string]: string}
+
+	// The affinity rules: `podAntiAffinity` accepts the `soft` (default),
+	// `hard` and `none` presets for spreading the replicas across nodes,
+	// or raw pod anti-affinity rules.
+	affinity: timoniv1.#AffinityValues & {
+		podAntiAffinity: timoniv1.#AffinityPreset | corev1.#PodAntiAffinity
+		nodeAffinity?:   corev1.#NodeAffinity
+		podAffinity?:    corev1.#PodAffinity
+	}
 
 	// Test Job disabled by default.
 	test: {
