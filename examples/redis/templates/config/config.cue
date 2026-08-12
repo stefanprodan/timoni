@@ -63,18 +63,20 @@ import (
 	}
 
 	// Security (common to all deployments)
-	podSecurityContext: *{
-		fsGroup:    1001
-		runAsUser:  1001
-		runAsGroup: 1001
-	} | corev1.#PodSecurityContext
-	securityContext: *{
-		allowPrivilegeEscalation: false
-		readOnlyRootFilesystem:   true
-		runAsNonRoot:             true
-		capabilities: drop: ["ALL"]
-		seccompProfile: type: "RuntimeDefault"
-	} | corev1.#SecurityContext
+	securityContextPreset: timoniv1.#SecurityContextPreset
+
+	// The pods run as non-root with the RuntimeDefault seccomp profile.
+	// Under the `hardened` preset, the identity defaults are pinned to
+	// the Redis image's non-root UID.
+	podSecurityContext: corev1.#PodSecurityContext & timoniv1.#PodSecurityContext & {
+		#Preset: securityContextPreset
+		#User:   1001
+	}
+
+	// The securityContext allows setting the container security context.
+	// By default, the containers are denied privilege escalation, their root
+	// filesystem is read-only and all their capabilities are dropped.
+	securityContext: corev1.#SecurityContext & timoniv1.#ContainerSecurityContext
 
 	// Pod scheduling settings (common to all deployments);
 	// pods are scheduled on Linux nodes by default.
