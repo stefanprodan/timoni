@@ -47,17 +47,18 @@ The Timoni's CUE schemas are included in the modules generated with `timoni mod 
 
 ### Security Contexts
 
-- `#SecurityProfile` - Values of the `securityProfile` module knob:
-  `hardened` (default) pins the numeric UID/GID defaults, `platform`
-  omits them so that an admission controller (e.g. OpenShift) can assign them.
+- `#SecurityContextPreset` - Values of the `securityContextPreset`
+  module knob: `hardened` (default) pins the numeric UID/GID defaults,
+  `platform` omits them so that an admission controller
+  (e.g. OpenShift) can assign them.
 - `#ContainerSecurityContext` - Schema for the restricted container
   security context: denies privilege escalation, makes the root
   filesystem read-only and drops all capabilities.
 - `#PodSecurityContext` - Schema for generating the pod-level security
-  context from `#Profile` and `#User` (optionally `#Group` and
+  context from `#Preset` and `#User` (optionally `#Group` and
   `#FSGroup`) inputs. Defaults to `runAsNonRoot` with the
   `RuntimeDefault` seccomp profile, and pins the numeric identity
-  fields only under the `hardened` profile.
+  fields only under the `hardened` preset.
 
 ### Semantic Versioning
 
