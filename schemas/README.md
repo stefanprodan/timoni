@@ -60,6 +60,26 @@ The Timoni's CUE schemas are included in the modules generated with `timoni mod 
   `RuntimeDefault` seccomp profile, and pins the numeric identity
   fields only under the `hardened` preset.
 
+### Prometheus Monitoring
+
+- `#PromDuration` - Schema for validating durations in Prometheus
+  format, e.g. `30s` or `1m30s`.
+- `#Monitor` - Schema for the module values shared by the Prometheus
+  Operator ServiceMonitor and PodMonitor resources: the enable knob,
+  monitor metadata, per-scrape limits and target labels.
+- `#MonitorEndpoint` - Schema for the module values of one monitor
+  scrape endpoint; duration fields left empty defer to the
+  Prometheus defaults.
+- `#MonitorValues` - The canonical values block for a module's
+  `serviceMonitor` or `podMonitor` setting scraping a single
+  endpoint, unifying `#Monitor` and `#MonitorEndpoint`.
+- `#MonitorSpec` - Schema for generating the ServiceMonitor/PodMonitor
+  spec fields common to both kinds from the `#Values` input,
+  omitting the unset limits and target labels.
+- `#MonitorEndpointSpec` - Schema for generating a ServiceMonitor
+  endpoint or a PodMonitor podMetricsEndpoint from the `#Values`
+  input, omitting the unset scrape settings.
+
 ### Semantic Versioning
 
 - `#SemVer` - Schema for validating semantic versions and enforcing
