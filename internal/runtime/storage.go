@@ -162,6 +162,28 @@ func (s *StorageManager) List(ctx context.Context, namespace, bundle string) ([]
 	return res, nil
 }
 
+// SetDeleting marks the instance storage as being deleted by adding the
+// DeleteInProgressAnnotation to the storage Secret. The inventory stays
+// intact so a delete that times out can be retried from the exact object
+// list. Safe to call more than once.
+func (s *StorageManager) SetDeleting(ctx context.Context, name, namespace string) error {
+	original := s.newSecret(name, namespace)
+	secretKey := client.ObjectKeyFromObject(original)
+	if err := s.resManager.Client().Get(ctx, secretKey, original); err != nil {
+		return fmt.Errorf("instance storage not found: %w", err)
+	}
+
+	// Only touch the annotation: keep the instance data as-is and keep the
+	// field owned by Timoni, so a later apply can drop the marker.
+	modified := original.DeepCopy()
+	if modified.Annotations == nil {
+		modified.Annotations = map[string]string{}
+	}
+	modified.Annotations[apiv1.DeleteInProgressAnnotation] = time.Now().UTC().Format(time.RFC3339)
+
+	return s.resManager.Client().Patch(ctx, modified, client.MergeFrom(original), client.FieldOwner(ownerRef.Field))
+}
+
 // Delete removes the storage for the given instance name and namespace.
 func (s *StorageManager) Delete(ctx context.Context, name, namespace string) error {
 	secret := s.newSecret(name, namespace)

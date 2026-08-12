@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -39,7 +38,12 @@ var bundleDelCmd = &cobra.Command{
 	Short:   "Delete all instances from a bundle",
 	Args:    cobra.MaximumNArgs(1),
 	Long: `The bundle delete command uninstalls the instances and
-deletes all their Kubernetes resources from the cluster.'.
+deletes all their Kubernetes resources from the cluster.
+
+By default it waits until the resources are gone. With --wait=false it
+only sends the delete requests and returns right away, like kubectl.
+
+If a delete times out, the instance record is kept so you can retry it.
 `,
 	Example: `  # Uninstall all instances in a bundle
   timoni bundle delete -f bundle.cue
@@ -129,7 +133,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		// delete in revers order (last installed, first to uninstall)
+		// delete in reverse order (last installed, first to uninstall)
 		for index := len(instances) - 1; index >= 0; index-- {
 			instance := instances[index]
 			log.Info(fmt.Sprintf("deleting instance %s in namespace %s",
@@ -179,40 +183,5 @@ func deleteBundleInstance(ctx context.Context, instance *apiv1.BundleInstance, w
 		return nil
 	}
 
-	hasErrors := false
-	cs := ssa.NewChangeSet()
-	for _, object := range objects {
-		deleteOpts := runtime.DeleteOptions(instance.Name, instance.Namespace)
-		change, err := sm.Delete(ctx, object, deleteOpts)
-		if err != nil {
-			log.Error(err, "deletion failed")
-			hasErrors = true
-			continue
-		}
-		cs.Add(*change)
-		log.Info(logger.ColorizeJoin(change))
-	}
-
-	if hasErrors {
-		os.Exit(1)
-	}
-
-	if err := iStorage.Delete(ctx, inst.Name, inst.Namespace); err != nil {
-		return err
-	}
-
-	deletedObjects := runtime.SelectObjectsFromSet(cs, ssa.DeletedAction)
-	if wait && len(deletedObjects) > 0 {
-		waitOpts := ssa.DefaultWaitOptions()
-		waitOpts.Timeout = rootArgs.timeout
-		spin := logger.StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
-		err = sm.WaitForTermination(deletedObjects, waitOpts)
-		spin.Stop()
-		if err != nil {
-			return err
-		}
-		log.Info("all resources have been deleted")
-	}
-
-	return nil
+	return deleteInstanceObjects(ctx, log, sm, iStorage, inst, objects, wait)
 }
