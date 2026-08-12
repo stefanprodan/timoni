@@ -18,7 +18,9 @@ package reconciler
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"cuelang.org/go/cue"
@@ -26,7 +28,6 @@ import (
 	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
@@ -52,6 +53,19 @@ func NewReconciler(log logr.Logger, opts *CommonOptions, timeout time.Duration) 
 		},
 	}
 	reconciler.applyOptions.WaitInterval = reconciler.waitOptions.Interval
+
+	reconciler.applySetsFn = func(ctx context.Context, log logr.Logger) error {
+		return reconciler.ApplyAllSets(ctx, log, reconciler.Wait)
+	}
+	reconciler.updateInventoryFn = func(ctx context.Context, builder *engine.ModuleBuilder, buildResult cue.Value) error {
+		return reconciler.PostApplyUpdateInventory(ctx, builder, buildResult)
+	}
+	reconciler.pruneStaleFn = func(ctx context.Context, log logr.Logger) error {
+		return reconciler.PostApplyPruneStaleObjects(ctx, log, reconciler.WaitForTermination)
+	}
+	reconciler.savePendingFn = func(ctx context.Context) error {
+		return reconciler.storageManager.SavePending(ctx, &reconciler.instanceManager.Instance)
+	}
 
 	return reconciler
 }
@@ -92,6 +106,7 @@ func (r *Reconciler) Init(ctx context.Context, builder *engine.ModuleBuilder, bu
 	storedInstance, err := r.storageManager.Get(ctx, instance.Name, instance.Namespace)
 	if err == nil {
 		r.instanceExists = true
+		r.predecessorInventory = storedInstance.Inventory
 	}
 
 	isStandaloneInstance := instance.Bundle == ""
@@ -129,25 +144,123 @@ func (r *Reconciler) Init(ctx context.Context, builder *engine.ModuleBuilder, bu
 		return fmt.Errorf("adding objects to instance failed: %w", err)
 	}
 
-	r.staleObjects, err = r.storageManager.GetStaleObjects(ctx, &r.instanceManager.Instance)
+	if err := r.computeStaleObjects(ctx, instance.Name, instance.Namespace); err != nil {
+		return err
+	}
+	return nil
+}
+
+// computeStaleObjects works out which previously applied objects are missing
+// from the desired render. Objects from an unfinished upgrade are covered by
+// the pending record, so they are pruned too once they leave the desired set.
+func (r *Reconciler) computeStaleObjects(ctx context.Context, name, namespace string) error {
+	stale, err := r.storageManager.GetStaleObjects(ctx, &r.instanceManager.Instance)
 	if err != nil {
 		return fmt.Errorf("getting stale objects failed: %w", err)
 	}
+
+	pending, err := r.storageManager.GetPending(ctx, name, namespace)
+	if err != nil {
+		return fmt.Errorf("getting pending revision failed: %w", err)
+	}
+	if pending != nil {
+		tm := runtime.InstanceManager{Instance: *pending}
+		pendingStale, err := tm.Diff(r.instanceManager.Instance.Inventory)
+		if err != nil {
+			return fmt.Errorf("getting pending stale objects failed: %w", err)
+		}
+		stale = mergeObjects(stale, pendingStale)
+	}
+
+	r.staleObjects = stale
 	return nil
 }
 
 func (r *Reconciler) ApplyInstance(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value) error {
 	if !r.instanceExists {
+		// Install: record the intended inventory up front so that a later
+		// delete can clean up whatever a failed apply left behind.
 		if err := r.UpdateStoredInstance(ctx); err != nil {
 			return fmt.Errorf("instance init failed: %w", err)
 		}
+	} else if !sameInventory(r.instanceManager.Instance.Inventory, r.predecessorInventory) {
+		// Upgrade: persist the intended revision before touching the cluster,
+		// so a crashed run still has a durable record of what it wanted.
+		if err := r.savePendingFn(ctx); err != nil {
+			return fmt.Errorf("recording pending revision failed: %w", err)
+		}
 	}
 
-	return kerrors.NewAggregate([]error{
-		r.ApplyAllSets(ctx, log, r.Wait),
-		r.PostApplyUpdateInventory(ctx, builder, buildResult),
-		r.PostApplyPruneStaleObjects(ctx, log, r.WaitForTermination),
-	})
+	return r.applyInstanceStages(ctx, log, builder, buildResult)
+}
+
+// applyInstanceStages applies the sets, prunes the stale objects and then
+// finalizes the stored inventory. An apply error stops the run; a readiness
+// error still lets the prune run, because stale objects are never part of the
+// desired render and removing them unblocks the replacements they hold up.
+func (r *Reconciler) applyInstanceStages(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value) error {
+	err := r.applySetsFn(ctx, log)
+	if err != nil {
+		var readinessErr *ReadinessError
+		if !errors.As(err, &readinessErr) {
+			return err
+		}
+	}
+
+	pruneErr := r.pruneStaleFn(ctx, log)
+	if pruneErr != nil {
+		if err != nil {
+			return errors.Join(err, pruneErr)
+		}
+		return pruneErr
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return r.updateInventoryFn(ctx, builder, buildResult)
+}
+
+// sameInventory reports whether two inventories hold the same object
+// references, regardless of order.
+func sameInventory(a, b *apiv1.ResourceInventory) bool {
+	set := func(inv *apiv1.ResourceInventory) map[apiv1.ResourceRef]struct{} {
+		out := map[apiv1.ResourceRef]struct{}{}
+		if inv != nil {
+			for _, ref := range inv.Entries {
+				out[ref] = struct{}{}
+			}
+		}
+		return out
+	}
+	aSet, bSet := set(a), set(b)
+	if len(aSet) != len(bSet) {
+		return false
+	}
+	for ref := range aSet {
+		if _, ok := bSet[ref]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// mergeObjects combines two object lists without duplicates.
+func mergeObjects(a, b []*unstructured.Unstructured) []*unstructured.Unstructured {
+	seen := map[string]struct{}{}
+	merged := make([]*unstructured.Unstructured, 0, len(a)+len(b))
+	for _, obj := range append(a, b...) {
+		gvk := obj.GroupVersionKind()
+		key := obj.GetNamespace() + "/" + obj.GetName() + "/" + gvk.Group + "/" + gvk.Kind
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		merged = append(merged, obj)
+	}
+	sort.Sort(ssa.SortableUnstructureds(merged))
+	return merged
 }
 
 func (r *Reconciler) Wait(ctx context.Context, log logr.Logger, _ *ssa.ChangeSet, rs *engine.ResourceSet) error {
@@ -176,7 +289,7 @@ func (r *Reconciler) doWait(_ context.Context, log logr.Logger, rs *engine.Resou
 	err := r.resourceManager.Wait(waitForObjects, r.waitOptions)
 	progress.Stop()
 	if err != nil {
-		return err
+		return &ReadinessError{Err: err}
 	}
 	if doneMsg != "" {
 		doneMsg = "resources are ready"

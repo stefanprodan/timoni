@@ -25,7 +25,6 @@ import (
 	"cuelang.org/go/cue"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
-	kerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/stefanprodan/timoni/internal/dyff"
 	"github.com/stefanprodan/timoni/internal/engine"
@@ -44,6 +43,15 @@ func NewInteractiveReconciler(log logr.Logger, copts *CommonOptions, iopts *Inte
 
 	if iopts.ProgressStart != nil {
 		reconciler.progressStartFn = iopts.ProgressStart
+	}
+
+	// Re-bind the post-apply stage seams so that the interactive wait
+	// implementations are used for readiness and termination.
+	reconciler.applySetsFn = func(ctx context.Context, log logr.Logger) error {
+		return reconciler.ApplyAllSets(ctx, log, reconciler.Wait)
+	}
+	reconciler.pruneStaleFn = func(ctx context.Context, log logr.Logger) error {
+		return reconciler.PostApplyPruneStaleObjects(ctx, log, reconciler.WaitForTermination)
 	}
 
 	return reconciler
@@ -82,13 +90,15 @@ func (r *InteractiveReconciler) ApplyInstance(ctx context.Context, log logr.Logg
 	} else {
 		log.Info(fmt.Sprintf("upgrading %s in namespace %s",
 			logger.ColorizeSubject(r.Name()), logger.ColorizeSubject(r.Namespace())))
+
+		if !sameInventory(r.instanceManager.Instance.Inventory, r.predecessorInventory) {
+			if err := r.savePendingFn(ctx); err != nil {
+				return fmt.Errorf("recording pending revision failed: %w", err)
+			}
+		}
 	}
 
-	return kerrors.NewAggregate([]error{
-		r.ApplyAllSets(ctx, log, r.Wait),
-		r.PostApplyUpdateInventory(ctx, builder, buildResult),
-		r.PostApplyPruneStaleObjects(ctx, log, r.WaitForTermination),
-	})
+	return r.applyInstanceStages(ctx, log, builder, buildResult)
 }
 
 func (r *InteractiveReconciler) DryRunDiff(ctx context.Context, namespaceExists bool) error {

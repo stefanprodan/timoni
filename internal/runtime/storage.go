@@ -38,6 +38,7 @@ import (
 var (
 	storagePrefix     = fmt.Sprintf("%s.", apiv1.FieldManager)
 	storageDataKey    = strings.ToLower(apiv1.InstanceKind)
+	pendingDataKey    = "pending"
 	nameLabelKey      = "app.kubernetes.io/name"
 	componentLabelKey = "app.kubernetes.io/component"
 	createdByLabelKey = "app.kubernetes.io/created-by"
@@ -184,7 +185,8 @@ func (s *StorageManager) SetDeleting(ctx context.Context, name, namespace string
 	return s.resManager.Client().Patch(ctx, modified, client.MergeFrom(original), client.FieldOwner(ownerRef.Field))
 }
 
-// Delete removes the storage for the given instance name and namespace.
+// Delete removes the storage for the given instance name and namespace,
+// including any pending revision.
 func (s *StorageManager) Delete(ctx context.Context, name, namespace string) error {
 	secret := s.newSecret(name, namespace)
 	secretKey := client.ObjectKeyFromObject(secret)
@@ -194,6 +196,119 @@ func (s *StorageManager) Delete(ctx context.Context, name, namespace string) err
 		return fmt.Errorf("failed to delete Secret/%s: %w", secretKey, err)
 	}
 	return nil
+}
+
+// SavePending stores the in-flight revision of an upgrade next to the stored
+// instance, in one atomic write. The stored instance bytes stay unchanged, so
+// the predecessor record survives until the pending revision is promoted.
+func (s *StorageManager) SavePending(ctx context.Context, instance *apiv1.Instance) error {
+	instance.LastTransitionTime = time.Now().UTC().Format(time.RFC3339)
+	pendingData, err := json.Marshal(instance)
+	if err != nil {
+		return err
+	}
+
+	secret := s.newSecret(instance.Name, instance.Namespace)
+	existing := &corev1.Secret{}
+	if err := s.resManager.Client().Get(ctx, client.ObjectKeyFromObject(secret), existing); err != nil {
+		return err
+	}
+
+	storedData, ok := existing.Data[storageDataKey]
+	if !ok {
+		return fmt.Errorf("instance data not found in Secret/%s/%s", existing.GetNamespace(), existing.GetName())
+	}
+
+	// Keep the stored bytes and the secret labels untouched, so the bundle
+	// ownership label and the predecessor record survive the pending write.
+	for labelKey, labelValue := range existing.Labels {
+		secret.Labels[labelKey] = labelValue
+	}
+
+	secret.Data = map[string][]byte{
+		storageDataKey: storedData,
+		pendingDataKey: pendingData,
+	}
+
+	opts := []client.PatchOption{
+		client.ForceOwnership,
+		client.FieldOwner(ownerRef.Field),
+	}
+	if err := s.resManager.Client().Patch(ctx, secret, client.Apply, opts...); err != nil {
+		return fmt.Errorf("saving pending revision failed: %w", err)
+	}
+	return nil
+}
+
+// GetPending returns the in-flight revision of the instance, or nil when
+// there is none.
+func (s *StorageManager) GetPending(ctx context.Context, name, namespace string) (*apiv1.Instance, error) {
+	secret := s.newSecret(name, namespace)
+	if err := s.resManager.Client().Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	data, ok := secret.Data[pendingDataKey]
+	if !ok {
+		return nil, nil
+	}
+
+	var instance apiv1.Instance
+	if err := json.Unmarshal(data, &instance); err != nil {
+		return nil, fmt.Errorf("invalid pending revision found in Secret/%s/%s: %w",
+			secret.GetNamespace(), secret.GetName(), err)
+	}
+	return &instance, nil
+}
+
+// ListAllObjects returns the objects of the stored and pending instance
+// records, deduplicated, so that delete can cover an unfinished upgrade.
+func (s *StorageManager) ListAllObjects(ctx context.Context, name, namespace string) ([]*unstructured.Unstructured, error) {
+	inst, err := s.Get(ctx, name, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	pending, err := s.GetPending(ctx, name, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	seen := map[string]struct{}{}
+	var objects []*unstructured.Unstructured
+	collect := func(inv *apiv1.ResourceInventory) error {
+		if inv == nil {
+			return nil
+		}
+		im := InstanceManager{Instance: apiv1.Instance{Inventory: inv}}
+		objs, err := im.ListObjects()
+		if err != nil {
+			return err
+		}
+		for _, obj := range objs {
+			gvk := obj.GroupVersionKind()
+			key := obj.GetNamespace() + "/" + obj.GetName() + "/" + gvk.Group + "/" + gvk.Kind
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			objects = append(objects, obj)
+		}
+		return nil
+	}
+
+	if err := collect(inst.Inventory); err != nil {
+		return nil, err
+	}
+	if pending != nil {
+		if err := collect(pending.Inventory); err != nil {
+			return nil, err
+		}
+	}
+	return objects, nil
 }
 
 // GetStaleObjects returns the list of objects metadata subject to pruning.
