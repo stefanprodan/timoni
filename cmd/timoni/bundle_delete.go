@@ -168,8 +168,8 @@ func deleteBundleInstance(ctx context.Context, instance *apiv1.BundleInstance, w
 		return err
 	}
 
-	iManager := runtime.InstanceManager{Instance: *inst}
-	objects, err := iManager.ListObjects()
+	// Cover the pending revision of an unfinished upgrade too.
+	objects, err := iStorage.ListAllObjects(ctx, instance.Name, instance.Namespace)
 	if err != nil {
 		return err
 	}

@@ -22,10 +22,12 @@ import (
 	"io"
 	"strings"
 
+	"cuelang.org/go/cue"
 	"github.com/fluxcd/pkg/ssa"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
@@ -62,6 +64,15 @@ type Reconciler struct {
 	waitOptions  ssa.WaitOptions
 
 	progressStartFn func(string) interface{ Stop() }
+
+	// Post-apply stage seams, overridable in tests.
+	applySetsFn       func(context.Context, logr.Logger) error
+	updateInventoryFn func(context.Context, *engine.ModuleBuilder, cue.Value) error
+	pruneStaleFn      func(context.Context, logr.Logger) error
+	savePendingFn     func(context.Context) error
+
+	// predecessorInventory is the inventory stored before the current run.
+	predecessorInventory *apiv1.ResourceInventory
 }
 
 type InteractiveReconciler struct {
@@ -74,6 +85,15 @@ type noopProgressStopper struct{}
 func (*noopProgressStopper) Stop() {}
 
 type withChangeSetFunc func(context.Context, logr.Logger, *ssa.ChangeSet, *engine.ResourceSet) error
+
+// ReadinessError marks a readiness wait failure so that callers can tell it
+// apart from an apply error and still prune after a failed wait.
+type ReadinessError struct {
+	Err error
+}
+
+func (e *ReadinessError) Error() string { return e.Err.Error() }
+func (e *ReadinessError) Unwrap() error { return e.Err }
 
 type InstanceOwnershipConflict struct{ InstanceName, CurrentOwnerBundle string }
 type InstanceOwnershipConflictErr []InstanceOwnershipConflict

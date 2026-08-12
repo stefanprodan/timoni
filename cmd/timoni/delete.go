@@ -100,8 +100,8 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	iManager := runtime.InstanceManager{Instance: *inst}
-	objects, err := iManager.ListObjects()
+	// Cover the pending revision of an unfinished upgrade too.
+	objects, err := iStorage.ListAllObjects(ctx, deleteArgs.name, *kubeconfigArgs.Namespace)
 	if err != nil {
 		return err
 	}

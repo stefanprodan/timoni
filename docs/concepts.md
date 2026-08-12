@@ -77,6 +77,11 @@ Timoni's garbage collector keeps track of the applied resources
 and prunes the Kubernetes objects that were previously applied
 but are missing from the current revision.
 
+On upgrade, Timoni records the new revision as pending in the instance
+storage before touching the cluster, and marks it as applied only after
+the reconciliation has succeeded. If an upgrade is interrupted, the next
+run resumes from the recorded state, and `timoni delete` cleans up both revisions.
+
 After an installation or upgrade, Timoni waits for the
 applied resources to be fully reconciled by checking the ready status
 of deployments, jobs, services, ingresses, and Kubernetes custom resources.
