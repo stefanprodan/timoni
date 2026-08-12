@@ -60,6 +60,19 @@ The Timoni's CUE schemas are included in the modules generated with `timoni mod 
   `RuntimeDefault` seccomp profile, and pins the numeric identity
   fields only under the `hardened` preset.
 
+### Pod Scheduling
+
+- `#AffinityPreset` - Values of the `affinity.podAntiAffinity` module
+  knob: `soft` (default) prefers spreading the workload replicas
+  across topology domains, `hard` requires it, `none` disables it.
+- `#AffinityValues` - Schema for the module values of a workload's
+  `affinity` setting: an `#AffinityPreset` or raw rules for
+  `podAntiAffinity`, raw rules for `nodeAffinity` and `podAffinity`.
+- `#Affinity` - Schema for generating the pod affinity rules from the
+  `#Values`, `#MatchLabels`, `#TopologyKey` and `#Weight` inputs;
+  the `#Enabled` field tells whether any rules are set, letting
+  modules omit the affinity field from the pod spec.
+
 ### Prometheus Monitoring
 
 - `#PromDuration` - Schema for validating durations in Prometheus
