@@ -336,7 +336,7 @@ bundle: {
 	g.Expect(envTestClient.Update(context.Background(), clientCM)).ToNot(HaveOccurred())
 
 	// The delete requests succeed, but the termination wait times out and the
-	// bundle delete must retain the release state as a resumable receipt.
+	// bundle delete must keep the instance record for a retry.
 	output, err := executeCommand(fmt.Sprintf("bundle delete %s --wait --timeout=5s", bundleName))
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring("termination timeout"))
@@ -351,8 +351,8 @@ bundle: {
 	g.Expect(envTestClient.Get(context.Background(), client.ObjectKeyFromObject(secret), secret)).ToNot(HaveOccurred())
 	g.Expect(secret.GetAnnotations()).To(HaveKey(apiv1.DeleteInProgressAnnotation))
 
-	// Once the finalizer clears, a restarted bundle delete reconciles the
-	// exact retained inventory and only then drops the release state.
+	// Once the finalizer clears, retrying the bundle delete finishes the
+	// job and removes the record.
 	g.Expect(envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)).ToNot(HaveOccurred())
 	clientCM.SetFinalizers(nil)
 	g.Expect(envTestClient.Update(context.Background(), clientCM)).ToNot(HaveOccurred())
@@ -364,4 +364,79 @@ bundle: {
 	g.Expect(errors.IsNotFound(err)).To(BeTrue())
 	err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
 	g.Expect(errors.IsNotFound(err)).To(BeTrue())
+}
+
+func Test_BundleDelete_WaitFalseRemovesStateWithoutWaiting(t *testing.T) {
+	g := NewWithT(t)
+
+	bundleName := rnd("my-bundle", 5)
+	modPath := "testdata/module"
+	namespace := rnd("my-namespace", 5)
+	modName := rnd("my-mod", 5)
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
+	modVer := "1.0.0"
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s --resolve-symlinks",
+		modPath,
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	bundleData := fmt.Sprintf(`
+bundle: {
+	apiVersion: "v1alpha1"
+	name: "%[1]s"
+	instances: {
+		frontend: {
+			module: {
+				url:     "oci://%[2]s"
+				version: "%[3]s"
+			}
+			namespace: "%[4]s"
+		}
+	}
+}
+`, bundleName, modURL, modVer, namespace)
+
+	_, err = executeCommandWithIn("bundle apply -f - -p main --wait", strings.NewReader(bundleData))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	clientCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "frontend-client",
+			Namespace: namespace,
+		},
+	}
+	g.Expect(envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)).ToNot(HaveOccurred())
+	clientCM.SetFinalizers(append(clientCM.GetFinalizers(), "timoni.test/finalizer"))
+	g.Expect(envTestClient.Update(context.Background(), clientCM)).ToNot(HaveOccurred())
+
+	// Like kubectl, --wait=false removes the instance record right away and
+	// does not wait for finalizers.
+	_, err = executeCommand(fmt.Sprintf("bundle delete %s --wait=false", bundleName))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s.%s", apiv1.FieldManager, "frontend"),
+			Namespace: namespace,
+		},
+	}
+	err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(secret), secret)
+	g.Expect(errors.IsNotFound(err)).To(BeTrue())
+
+	// The finalizer is still blocking the object: nothing was waited on.
+	err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(clientCM.GetDeletionTimestamp()).ToNot(BeNil())
+
+	// Once the finalizer clears, the pending deletion completes on its own.
+	clientCM.SetFinalizers(nil)
+	g.Expect(envTestClient.Update(context.Background(), clientCM)).ToNot(HaveOccurred())
+	g.Eventually(func() bool {
+		err := envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
+		return errors.IsNotFound(err)
+	}, "10s", "500ms").Should(BeTrue())
 }

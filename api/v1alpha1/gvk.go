@@ -31,10 +31,9 @@ var (
 	// Secret type used to store the instance metadata and inventory.
 	InstanceStorageType = "timoni.sh/instance"
 
-	// DeleteInProgressAnnotation is the annotation that marks the instance
-	// storage as deletion-in-progress. It is set when the delete requests
-	// are issued and retained until every owned object is confirmed absent,
-	// serving as a machine-readable receipt for resuming the deletion.
+	// DeleteInProgressAnnotation marks the instance storage as being deleted.
+	// It is set while a delete waits for the resources to be removed, so the
+	// inventory survives a timeout and the delete can be retried.
 	DeleteInProgressAnnotation = "status.timoni.sh/deleting"
 
 	// FieldManager is the name of the manager performing Kubernetes patch operations.

@@ -40,10 +40,10 @@ var bundleDelCmd = &cobra.Command{
 	Long: `The bundle delete command uninstalls the instances and
 deletes all their Kubernetes resources from the cluster.
 
-The release-state record of each instance is removed only after its owned
-objects are confirmed absent. If the termination cannot be verified
-(--wait=false, a timeout, or an error), the record is retained as a
-deletion-in-progress receipt and a subsequent delete finalizes the removal.
+By default it waits until the resources are gone. With --wait=false it
+only sends the delete requests and returns right away, like kubectl.
+
+If a delete times out, the instance record is kept so you can retry it.
 `,
 	Example: `  # Uninstall all instances in a bundle
   timoni bundle delete -f bundle.cue
@@ -133,7 +133,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		// delete in revers order (last installed, first to uninstall)
+		// delete in reverse order (last installed, first to uninstall)
 		for index := len(instances) - 1; index >= 0; index-- {
 			instance := instances[index]
 			log.Info(fmt.Sprintf("deleting instance %s in namespace %s",

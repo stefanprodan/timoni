@@ -41,11 +41,10 @@ var deleteCmd = &cobra.Command{
 	Long: `The delete command uninstalls the instance and deletes all its
 Kubernetes resources from the cluster.
 
-The release-state record (Secret/timoni.<instance>) is removed only after
-every owned object is confirmed absent. If the termination cannot be
-verified (--wait=false, a timeout, or an error), the record is retained as
-a deletion-in-progress receipt and a subsequent delete finalizes the
-removal from the exact retained inventory.`,
+By default it waits until the resources are gone. With --wait=false it
+only sends the delete requests and returns right away, like kubectl.
+
+If a delete times out, the instance record is kept so you can retry it.`,
 	Example: `  # Uninstall the app module from the default namespace
   timoni -n default delete app
 
@@ -120,16 +119,17 @@ func runDeleteCmd(cmd *cobra.Command, args []string) error {
 	return deleteInstanceObjects(ctx, log, sm, iStorage, inst, objects, deleteArgs.wait)
 }
 
-// deleteInstanceObjects sends delete requests for every object in the instance
-// inventory and removes the release-state record only after the owned objects
-// are confirmed absent. On timeout or unknown outcome the record is retained
-// as a deletion-in-progress receipt so the deletion can be resumed.
+// deleteInstanceObjects deletes every object in the instance inventory and
+// then removes the instance record: with --wait after the objects are
+// confirmed gone, with --wait=false right away, like kubectl. On a timeout
+// the record is kept so the delete can be retried.
 func deleteInstanceObjects(ctx context.Context, log logr.Logger, sm *ssa.ResourceManager, iStorage *runtime.StorageManager, inst *apiv1.Instance, objects []*unstructured.Unstructured, wait bool) error {
-	// Retain the release state as a deletion-in-progress receipt until every
-	// owned object is confirmed absent. The instance data and exact inventory
-	// are kept so a timed-out or interrupted delete can be resumed.
-	if err := iStorage.SetDeleting(ctx, inst.Name, inst.Namespace); err != nil {
-		return err
+	if wait {
+		// Keep the record while waiting, so a timeout does not lose the
+		// inventory needed to retry the delete.
+		if err := iStorage.SetDeleting(ctx, inst.Name, inst.Namespace); err != nil {
+			return err
+		}
 	}
 
 	hasErrors := false
@@ -150,27 +150,24 @@ func deleteInstanceObjects(ctx context.Context, log logr.Logger, sm *ssa.Resourc
 		os.Exit(1)
 	}
 
-	deletedObjects := runtime.SelectObjectsFromSet(cs, ssa.DeletedAction)
-	if wait && len(deletedObjects) > 0 {
-		waitOpts := ssa.DefaultWaitOptions()
-		waitOpts.Timeout = rootArgs.timeout
-		spin := logger.StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
-		err := sm.WaitForTermination(deletedObjects, waitOpts)
-		spin.Stop()
-		if err != nil {
-			// Keep the deletion-in-progress receipt so the delete can be resumed.
-			return err
+	if wait {
+		deletedObjects := runtime.SelectObjectsFromSet(cs, ssa.DeletedAction)
+		if len(deletedObjects) > 0 {
+			waitOpts := ssa.DefaultWaitOptions()
+			waitOpts.Timeout = rootArgs.timeout
+			spin := logger.StartSpinner(fmt.Sprintf("waiting for %v resource(s) to be finalized...", len(deletedObjects)))
+			err := sm.WaitForTermination(deletedObjects, waitOpts)
+			spin.Stop()
+			if err != nil {
+				// Keep the record; the delete can be retried later.
+				return err
+			}
+			log.Info("all resources have been deleted")
 		}
-		log.Info("all resources have been deleted")
 	}
 
-	// Drop the release state only after every exact object is proven absent
-	// (termination wait succeeded) or when nothing was deleted at all. When
-	// waiting is disabled, the owned objects may still be terminating, so the
-	// receipt is retained for a subsequent delete to finish and remove it.
-	if wait || len(deletedObjects) == 0 {
-		return iStorage.Delete(ctx, inst.Name, inst.Namespace)
-	}
-	log.Info("delete requests issued, release state retained for recovery; re-run delete to finalize")
-	return nil
+	// The record goes away now: the delete was confirmed with --wait, or
+	// --wait=false sent the requests without waiting for finalizers, like
+	// kubectl.
+	return iStorage.Delete(ctx, inst.Name, inst.Namespace)
 }

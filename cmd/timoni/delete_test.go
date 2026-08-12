@@ -116,7 +116,7 @@ func TestDelete_RetainsInventoryOnTerminationTimeout(t *testing.T) {
 	g.Expect(err.Error()).To(ContainSubstring("termination timeout"))
 	t.Log("\n", output)
 
-	// The release state must survive as a resumable inventory receipt.
+	// The instance record must survive so the delete can be retried.
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s.%s", apiv1.FieldManager, name),
@@ -143,8 +143,8 @@ func TestDelete_RetainsInventoryOnTerminationTimeout(t *testing.T) {
 	err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(serverCM), serverCM)
 	g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 
-	// Resume: once the finalizer clears, a restarted delete reconciles the
-	// exact retained inventory and only then drops the release state.
+	// Resume: once the finalizer clears, retrying the delete finishes the
+	// job and removes the record.
 	clientCM.SetFinalizers(nil)
 	g.Expect(envTestClient.Update(context.Background(), clientCM)).ToNot(HaveOccurred())
 
@@ -161,7 +161,7 @@ func TestDelete_RetainsInventoryOnTerminationTimeout(t *testing.T) {
 	g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 }
 
-func TestDelete_WaitFalseRetainsReleaseState(t *testing.T) {
+func TestDelete_WaitFalseRemovesStateWithoutWaiting(t *testing.T) {
 	modPath := "testdata/module"
 	name := rnd("my-instance", 5)
 	namespace := rnd("my-namespace", 5)
@@ -175,8 +175,18 @@ func TestDelete_WaitFalseRetainsReleaseState(t *testing.T) {
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 
-	// Waiting is disabled, so the absence of the objects is not proven and
-	// the release state must be retained as a deletion-in-progress receipt.
+	clientCM := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-client", name),
+			Namespace: namespace,
+		},
+	}
+	g.Expect(envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)).ToNot(HaveOccurred())
+	clientCM.SetFinalizers(append(clientCM.GetFinalizers(), "timoni.test/finalizer"))
+	g.Expect(envTestClient.Update(context.Background(), clientCM)).ToNot(HaveOccurred())
+
+	// Like kubectl, --wait=false sends the delete requests and returns right
+	// away, without waiting for finalizers, and removes the instance record.
 	_, err = executeCommand(fmt.Sprintf(
 		"delete -n %s %s --wait=false",
 		namespace,
@@ -190,28 +200,21 @@ func TestDelete_WaitFalseRetainsReleaseState(t *testing.T) {
 			Namespace: namespace,
 		},
 	}
-	g.Expect(envTestClient.Get(context.Background(), client.ObjectKeyFromObject(secret), secret)).ToNot(HaveOccurred())
-	g.Expect(secret.GetAnnotations()).To(HaveKey(apiv1.DeleteInProgressAnnotation))
-
-	// A restarted delete finalizes the termination and drops the release state.
-	_, err = executeCommand(fmt.Sprintf(
-		"delete -n %s %s --wait",
-		namespace,
-		name,
-	))
-	g.Expect(err).ToNot(HaveOccurred())
-
 	err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(secret), secret)
 	g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
 
-	clientCM := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-client", name),
-			Namespace: namespace,
-		},
-	}
+	// The finalizer is still blocking the object: nothing was waited on.
 	err = envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
-	g.Expect(apierrors.IsNotFound(err)).To(BeTrue())
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(clientCM.GetDeletionTimestamp()).ToNot(BeNil())
+
+	// Once the finalizer clears, the pending deletion completes on its own.
+	clientCM.SetFinalizers(nil)
+	g.Expect(envTestClient.Update(context.Background(), clientCM)).ToNot(HaveOccurred())
+	g.Eventually(func() bool {
+		err := envTestClient.Get(context.Background(), client.ObjectKeyFromObject(clientCM), clientCM)
+		return apierrors.IsNotFound(err)
+	}, "10s", "500ms").Should(BeTrue())
 }
 
 func TestDelete_RemovesStateWhenNothingDeleted(t *testing.T) {
@@ -255,8 +258,8 @@ func TestDelete_RemovesStateWhenNothingDeleted(t *testing.T) {
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 
-	// With no objects deleted, the release state is dropped right away while
-	// the prune-disabled objects are left in place.
+	// Nothing was deleted, so the instance record is removed right away and
+	// the prune-disabled objects stay.
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s.%s", apiv1.FieldManager, name),
