@@ -30,6 +30,7 @@ func TestCommandsRejectExtraArgs(t *testing.T) {
 		args []string
 	}{
 		{name: "apply", cmd: applyCmd, args: []string{"instance", "module", "extra"}},
+		{name: "artifact digest", cmd: digestArtifactCmd, args: []string{"url", "extra"}},
 		{name: "artifact list", cmd: listArtifactCmd, args: []string{"url", "extra"}},
 		{name: "artifact pull", cmd: pullArtifactCmd, args: []string{"url", "extra"}},
 		{name: "artifact push", cmd: pushArtifactCmd, args: []string{"url", "extra"}},

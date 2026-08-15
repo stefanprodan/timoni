@@ -160,6 +160,7 @@ nav:
       - Artifact:
           - cmd/timoni_artifact.md
           - cmd/timoni_artifact_build.md
+          - cmd/timoni_artifact_digest.md
           - cmd/timoni_artifact_list.md
           - cmd/timoni_artifact_push.md
           - cmd/timoni_artifact_pull.md

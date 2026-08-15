@@ -29,6 +29,7 @@ func TestRequiredOperandsAreNotOptionalInUsage(t *testing.T) {
 		want string
 	}{
 		{applyCmd, "apply INSTANCE_NAME MODULE_URL"},
+		{digestArtifactCmd, "digest ARTIFACT_URL"},
 		{listArtifactCmd, "list ARTIFACT_URL"},
 		{pullArtifactCmd, "pull ARTIFACT_URL"},
 		{pushArtifactCmd, "push REPOSITORY_URL"},

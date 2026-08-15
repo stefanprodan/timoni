@@ -127,6 +127,12 @@ timoni artifact list oci://docker.io/my-org/my-app-bundle \
 Tags that are not valid semantic versions, such as `latest`, are excluded
 when `--filter-semver` is set.
 
+Resolve the digest of a single tag with [timoni artifact digest](cmd/timoni_artifact_digest.md):
+
+```shell
+timoni artifact digest oci://docker.io/my-org/my-app-bundle:1.0.0
+```
+
 Verify the signature and download a specific artifact tag with [timoni artifact pull](cmd/timoni_artifact_pull.md):
 
 ```shell
