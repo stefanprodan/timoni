@@ -182,6 +182,7 @@ func resetCmdArgs() {
 		contentType: "generic",
 	}
 	pullArtifactArgs = pullArtifactFlags{}
+	digestArtifactArgs = digestArtifactFlags{}
 	runtimeBuildArgs = runtimeBuildFlags{}
 	versionArgs = versionFlags{output: "yaml"}
 }
