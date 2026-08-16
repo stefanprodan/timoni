@@ -37,20 +37,14 @@ Run manual tests using the locally built binary:
 
 ## How to render the docs locally
 
-Prerequisites can be found and installed from [`./hack/mkdocs/requirements.txt`](/hack/mkdocs/requirements.txt):
+The docs under `docs/` are built with [Mintlify](https://mintlify.com) and require Node.js 18+.
+Generate the CLI reference, validate the site and start the local preview:
 
 ```shell
-python -m venv venv && source venv/bin/activate
-pip install -r hack/mkdocs/requirements.txt
+make docs-preview
 ```
 
-The docs can then be built and served locally with:
-
-```shell
-mkdocs serve
-```
-
-By default, MKDocs will be served at [http://127.0.0.1:8000](http://127.0.0.1:8000)
+By default, the site is served at [http://localhost:3000](http://localhost:3000).
 
 ## Acceptance policy
 

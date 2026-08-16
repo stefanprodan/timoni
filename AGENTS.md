@@ -18,7 +18,7 @@ make build              # Build ./bin/timoni (CGO_ENABLED=0)
 make test               # tidy + generate + fmt + vet + run all Go tests with Kubernetes envtest
 make generate           # Regenerate api/v1alpha1/zz_generated.deepcopy.go via controller-gen
 make cue-vet            # cue fmt + cue vet schemas, and `timoni mod vet` the example/blueprint/testdata modules
-make docs               # Regenerate docs/cmd/*.md from the cobra commands via `timoni docgen`
+make docgen            # Regenerate docs/cmd/*.mdx from the cobra commands via `timoni docgen`
 ```
 
 Run a single test:
@@ -30,7 +30,7 @@ go test ./cmd/timoni/... -run TestApply -v
 - `make test` is the canonical pre-commit gate; it runs `go mod tidy`, code generation, fmt, and vet before testing, so a clean `make test` implies all of those pass.
 - Tests in `cmd/timoni` and packages that talk to the API server require **envtest** (`make install-envtest` downloads the Kubernetes test binaries into `./bin`).
 - After changing CUE schemas or example modules, run `make cue-vet`. The blueprint, example and testdata modules vendor the canonical `schemas/timoni.sh/core/v1alpha1` package as relative symlinks under `cue.mod/pkg`, so schema changes propagate without a sync step. After changing types in `api/v1alpha1`, run `make generate`.
-- After changing any command's `Use`/`Short`/`Long`/flags in `cmd/timoni/`, run `make docs` — the CLI reference under `docs/cmd/` is generated and must be regenerated to match, or it goes stale.
+- After changing any command's `Use`/`Short`/`Long`/flags in `cmd/timoni/`, run `make docgen` — the CLI reference under `docs/cmd/` is generated and must be regenerated to match, or it goes stale.
 
 ## Architecture
 
@@ -73,10 +73,12 @@ Go structs for Bundle, Instance, Runtime, Module, Artifact, Inventory, plus the 
 `schemas/timoni.sh/core/v1alpha1/*.cue` are the canonical CUE definitions (Bundle, Instance, Runtime, etc.), embedded into the binary via `schemas/embed.go` (`//go:embed`) **and** published as the importable `timoni.sh/core/v1alpha1` CUE package that module authors import. Changing a schema here changes both the Go-side validation and what users import.
 
 ### `docs/` — user-facing documentation (published to timoni.sh)
-The Markdown site served via mkdocs (`mkdocs.yml`, prereqs in `hack/mkdocs/`). Three tiers, all hand-written except `cmd/`:
-- **`docs/` root — the feature/concept guides** (one `.md` per feature, e.g. `bundle*.md`, `concepts.md`, `module.md`, plus Flux/GitOps integration pages). Most-missed when behavior changes. The Bundle/Runtime feature set lives here; note `bundle-runtime.md` documents the non-obvious `@timoni(runtime:…)` attributes and env-var values. `ls docs/*.md` for the full set.
+The MDX site built with Mintlify (`docs/docs.json` holds the theme, navigation and redirects; preview with `cd docs && npx mint dev`). Pages use Mintlify components (`<Tip>`, `<Tabs>`, `<Card>`), root-relative links without extensions (`/bundle`, `/cue/module/signing`) and `title`/`description` frontmatter. Three tiers, all hand-written except `cmd/`:
+- **`docs/` root — the feature/concept guides** (one `.mdx` per feature, e.g. `bundle*.mdx`, `concepts.mdx`, `module.mdx`, plus Flux/GitOps integration pages). Most-missed when behavior changes. The Bundle/Runtime feature set lives here; note `bundle-runtime.mdx` documents the non-obvious `@timoni(runtime:…)` attributes and env-var values. `ls docs/*.mdx` for the full set.
 - **`docs/cue/module/`** — the module-authoring behavior contracts that mirror code (apply/prune/wait semantics, immutability, signing, CRD vendoring, test jobs, semver). `ls docs/cue/module/` for the full set.
-- **`docs/cmd/`** — the generated CLI reference (do not hand-edit — produced by `make docs`).
+- **`docs/cmd/`** — the generated CLI reference (do not hand-edit — produced by `make docgen`, gitignored, published from the `website` branch by the docs workflow). New commands must also be added to the CLI Reference tab in `docs/docs.json`.
+
+New pages must be added to the navigation in `docs/docs.json` or they will not appear in the sidebar. The site is published from the `website` branch, which `.github/workflows/docs.yaml` rebuilds from `docs/` plus the generated `cmd/` pages on release tags; never edit that branch by hand.
 
 When you change behavior — flags, apply/prune/wait semantics, the `action.timoni.sh/*` annotations, the Runtime/Bundle schema, vendoring, signing — update the matching page(s) under `docs/` in the same change, not as a follow-up. A Runtime or Bundle change almost always touches a `docs/` root guide *and* a schema; a module-rendering change touches `docs/cue/module/`.
 

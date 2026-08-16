@@ -1,0 +1,223 @@
+---
+title: "Installation Guide"
+sidebarTitle: "Installation"
+description: "Install the Timoni CLI on Linux, macOS and Windows."
+---
+
+Timoni is available as a binary executable for Linux, macOS and Windows.
+The AMD64 and ARM64 binaries can be downloaded from GitHub [releases](https://github.com/stefanprodan/timoni/releases).
+
+<Tabs sync={false}>
+  <Tab title="brew">
+    Install timoni on macOS or Linux with:
+
+    ```shell
+    brew install timoni
+    ```
+
+    If you prefer to use the latest upstream binaries:
+
+    ```shell
+    brew install stefanprodan/tap/timoni
+    ```
+
+    Note that the Homebrew formula will setup shell autocompletion for Bash, Fish and Zsh.
+  </Tab>
+  <Tab title="mise">
+    Install the latest release on macOS, Linux or Windows with:
+
+    ```shell
+    mise use timoni
+    ```
+
+    Note that you need to manually configure shell autocompletion.
+  </Tab>
+  <Tab title="scoop">
+    Install the latest release on Windows with:
+
+    ```shell
+    scoop install timoni
+    ```
+
+    View the available versions using [scoop.sh](https://scoop.sh/#/apps?q=timoni). The `cue` dependency will also be installed if necessary.
+  </Tab>
+  <Tab title="nix">
+    Install timoni with [nix-env](https://nixos.org/manual/nix/unstable/command-ref/nix-env.html):
+
+    ```shell
+    nix-env -i timoni
+    ```
+
+    or with Flakes:
+
+    ```shell
+    nix profile install nixpkgs#timoni
+    ```
+
+    Note that the Nix package will setup shell autocompletion for Bash, Fish and Zsh.
+  </Tab>
+  <Tab title="yay">
+    Install the latest release with [yay](https://github.com/Jguer/yay) (or another [AUR helper](https://wiki.archlinux.org/title/AUR_helpers)) for Arch Linux:
+
+    ```shell
+    yay -S timoni
+    ```
+
+    If you prefer to use the upstream binaries:
+
+    ```shell
+    yay -S timoni-bin
+    ```
+  </Tab>
+  <Tab title="proto">
+    Manage multiple versions with [proto](https://moonrepo.dev/proto) for all supported systems:
+
+    ```toml
+    # .prototools file
+
+    timoni = "0.29.0"
+
+    [plugins]
+    timoni = "source:https://raw.githubusercontent.com/stefanprodan/timoni/main/proto-plugin.toml"
+    ```
+  </Tab>
+  <Tab title="zypper">
+    Install the latest release with [zypper](https://github.com/openSUSE/zypper) for openSUSE:
+
+    ```shell
+    zypper install timoni
+    ```
+
+    To setup shell autocompletion:
+
+    ```shell
+    zypper install timoni-bash-completion
+    zypper install timoni-fish-completion
+    zypper install timoni-zsh-completion
+    ```
+  </Tab>
+  <Tab title="arkade">
+    Install the latest release on Windows, macOS or Linux with:
+
+    ```shell
+    arkade get timoni
+    ```
+  </Tab>
+  <Tab title="from source">
+    Using Go &gt;= 1.26:
+
+    ```shell
+    go install github.com/stefanprodan/timoni/cmd/timoni@latest
+    ```
+  </Tab>
+</Tabs>
+
+## Shell autocompletion
+
+Configure your shell to load timoni completions:
+
+<Tabs sync={false}>
+  <Tab title="Bash">
+    Add to your `~/.bashrc` or `~/.bash_profile`:
+
+    ```shell
+    command -v timoni >/dev/null && . <(timoni completion bash)
+    ```
+
+    If you have an alias for timoni, you can extend shell completion to work with that alias:
+
+    ```shell
+    alias tm=timoni
+    complete -F __start_timoni tm
+    ```
+  </Tab>
+  <Tab title="Fish">
+    Write the [completion script](http://fishshell.com/docs/current/index.html#completion-own)
+    to your completions dir:
+
+    ```shell
+    timoni completion fish > ~/.config/fish/completions/timoni.fish
+    ```
+  </Tab>
+  <Tab title="Powershell">
+    Add the completion script to your powershell profile.
+
+    Windows:
+
+    ```shell
+    cd "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
+    timoni completion >> timoni-completion.ps1
+    ```
+
+    Linux:
+
+    ```shell
+    cd "${XDG_CONFIG_HOME:-"$HOME/.config/"}/powershell/modules"
+    timoni completion >> timoni-completions.ps1
+    ```
+  </Tab>
+  <Tab title="Zsh">
+    Add to your `~/.zshrc` or `~/.profile`:
+
+    ```shell
+    command -v timoni >/dev/null && . <(timoni completion zsh) && compdef _timoni timoni
+    ```
+
+    Alternatively, install the completion script into one of the directories in your `${fpath}`:
+
+    ```shell
+    echo "${fpath// /\n}" | grep -i completion
+    timoni completion zsh > _timoni
+
+    mv _timoni ~/.oh-my-zsh/completions  # oh-my-zsh
+    mv _timoni ~/.zprezto/modules/completion/external/src/  # zprezto
+    ```
+  </Tab>
+</Tabs>
+
+## Local cache
+
+Timoni maintains a local cache of modules pulled from remote container registries.
+Cashing is meant to reduce network traffic for sequential pull operations and speeds up
+applying bundles which refer to modules with identical layers.
+
+The default cache location is `$HOME/.timoni/cache` and can be changed with either the
+`--cache-dir` global flag or `TIMONI_CACHE_DIR` environment variable. The global flag
+takes precedence over the environment variable.
+
+If the home directory is not writable, caching can be disabled by
+setting the `TIMONI_CACHING=false` environment variable.
+
+## SLSA Provenance & SBOMs
+
+The build, release and provenance portions of Timoni's supply chain meet the
+[SLSA Build Level 3](https://slsa.dev/spec/v1.0/levels) requirements.
+
+The release artifacts are produced on GitHub-hosted runners using
+[GoReleaser](https://goreleaser.com) and the provenance generation is handled by the official
+[SLSA GitHub Generator](https://github.com/slsa-framework/slsa-github-generator).
+
+To verify a release artifact such as the Timoni binary tarball,
+you can use the [slsa-verifier](https://github.com/slsa-framework/slsa-verifier) tool:
+
+```shell
+TIMONI_VER=0.29.0 && \
+gh release download v${TIMONI_VER} -R=stefanprodan/timoni -p="*" && \
+slsa-verifier verify-artifact \
+--provenance-path timoni_${TIMONI_VER}_provenance.intoto.jsonl \
+--source-uri github.com/stefanprodan/timoni  \
+--source-tag v${TIMONI_VER} \
+timoni_${TIMONI_VER}_darwin_arm64.tar.gz
+```
+
+Each release comes with a Software Bill of Materials (SBOM) in [SPDX](https://spdx.dev) format.
+The SBOMs are generated on GitHub-hosted runners using
+[GoReleaser](https://goreleaser.com) and [Syft](https://github.com/anchore/syft).
+
+To scan a release for vulnerabilities, you can use [Grype](https://github.com/anchore/grype):
+
+```shell
+TIMONI_VER=0.29.0 && \
+gh release download v${TIMONI_VER} -R=stefanprodan/timoni -p="*sbom.spdx.json" && \
+grype sbom:./timoni_${TIMONI_VER}_sbom.spdx.json
+```
