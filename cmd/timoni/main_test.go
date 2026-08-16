@@ -159,6 +159,7 @@ func resetCmdArgs() {
 	vetModArgs = vetModFlags{
 		name: "default",
 	}
+	testModArgs = testModFlags{}
 	listArgs = listFlags{}
 	listModArgs = listModFlags{withDigest: true}
 	listArtifactArgs = listArtifactFlags{withDigest: true}

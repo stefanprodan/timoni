@@ -17,7 +17,13 @@ limitations under the License.
 package v1alpha1
 
 const (
-	IgnoreFile            = "timoni.ignore"
+	IgnoreFile = "timoni.ignore"
+
+	// TestFilePattern matches the CUE files holding a module's test cases.
+	// These files are an input to 'timoni mod test' and are always excluded
+	// from the published module, regardless of the module's ignore rules.
+	TestFilePattern = "*_test.cue"
+
 	DefaultIgnorePatterns = `# VCS
 .git/
 .gitignore
@@ -31,6 +37,7 @@ go.sum
 
 # CUE
 *_tool.cue
+*_test.cue
 debug_values.cue
 `
 )
