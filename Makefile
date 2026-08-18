@@ -68,8 +68,14 @@ generate: controller-gen ## Generate API code.
 docgen: build ## Generate the CLI reference under docs/cmd.
 	./bin/timoni docgen
 
+.PHONY: docs-skills
+docs-skills: ## Copy the agent skills under docs/.mintlify/skills.
+	rm -rf docs/.mintlify/skills
+	mkdir -p docs/.mintlify/skills
+	cp -R skills/. docs/.mintlify/skills/
+
 .PHONY: docs-preview
-docs-preview: docgen ## Validate the docs and start the Mintlify preview server.
+docs-preview: docgen docs-skills ## Validate the docs and start the Mintlify preview server.
 	cd docs && npx --yes mint validate && npx --yes mint broken-links && npx --yes mint dev
 
 CONTROLLER_GEN=$(BIN_DIR)/controller-gen

@@ -77,6 +77,7 @@ The MDX site built with Mintlify (`docs/docs.json` holds the theme, navigation a
 - **`docs/` root — the feature/concept guides** (one `.mdx` per feature, e.g. `bundle*.mdx`, `concepts.mdx`, `module.mdx`, plus Flux/GitOps integration pages). Most-missed when behavior changes. The Bundle/Runtime feature set lives here; note `bundle-runtime.mdx` documents the non-obvious `@timoni(runtime:…)` attributes and env-var values. `ls docs/*.mdx` for the full set.
 - **`docs/cue/module/`** — the module-authoring behavior contracts that mirror code (apply/prune/wait semantics, immutability, signing, CRD vendoring, test jobs, semver). `ls docs/cue/module/` for the full set.
 - **`docs/cmd/`** — the generated CLI reference (do not hand-edit — produced by `make docgen`, gitignored, published from the `website` branch by the docs workflow). New commands must also be added to the CLI Reference tab in `docs/docs.json`.
+- **`skills/timoni/SKILL.md`** — the agent skill published at `timoni.sh/skill.md` and `/.well-known/agent-skills/`. Hand-written; `make docs-skills` copies `skills/` to the gitignored `docs/.mintlify/skills/`, which the docs workflow publishes. Update it when commands, flags or Bundle/Runtime semantics change.
 
 New pages must be added to the navigation in `docs/docs.json` or they will not appear in the sidebar. The site is published from the `website` branch, which `.github/workflows/docs.yaml` rebuilds from `docs/` plus the generated `cmd/` pages on release tags; never edit that branch by hand.
 

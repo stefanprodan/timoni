@@ -38,7 +38,7 @@ Run manual tests using the locally built binary:
 ## How to render the docs locally
 
 The docs under `docs/` are built with [Mintlify](https://mintlify.com) and require Node.js 18+.
-Generate the CLI reference, validate the site and start the local preview:
+Generate the CLI reference, copy the agent skills, validate the site and start the local preview:
 
 ```shell
 make docs-preview
