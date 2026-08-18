@@ -104,6 +104,8 @@ Timoni will create it.
 When making changes to the module, you can use the `timoni apply --diff`
 flag to see the differences between the in-cluster resources
 and the newly generated ones.
+The values of the Kubernetes Secrets data entries are masked in the diff. To mask them in the
+`timoni build` output as well, use the `--mask-secrets` flag.
 </Tip>
 
 To delete the module instance:

@@ -38,6 +38,7 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/mask"
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
@@ -67,6 +68,7 @@ type bundleBuildFlags struct {
 	creds       flags.Credentials
 	outputDir   string
 	concurrency int
+	maskSecrets bool
 }
 
 var bundleBuildArgs bundleBuildFlags
@@ -80,6 +82,8 @@ func init() {
 		"The path to a directory where the manifests are written as a tree, one directory per instance and one file per resource.")
 	bundleBuildCmd.Flags().IntVar(&bundleBuildArgs.concurrency, "concurrency", 0,
 		"The number of instances to build concurrently, defaults to the number of CPU cores capped at 8.")
+	bundleBuildCmd.Flags().BoolVar(&bundleBuildArgs.maskSecrets, "mask-secrets", false,
+		"Hide the values of Kubernetes Secrets in the printed objects, ignored with --output-dir.")
 	bundleCmd.AddCommand(bundleBuildCmd)
 }
 
@@ -202,6 +206,12 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 			objects, err := buildBundleInstanceObjects(instance, modDirs[instance.Name])
 			if err != nil {
 				return err
+			}
+
+			if bundleBuildArgs.maskSecrets {
+				for i, obj := range objects {
+					objects[i] = mask.SecretData(obj)
+				}
 			}
 
 			m, err := marshalObjectsToYAML(objects)

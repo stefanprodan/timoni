@@ -40,6 +40,7 @@ import (
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
+	"github.com/stefanprodan/timoni/internal/mask"
 )
 
 var buildCmd = &cobra.Command{
@@ -76,6 +77,7 @@ type buildFlags struct {
 	digest      flags.Digest
 	valuesFiles []string
 	output      string
+	maskSecrets bool
 	creds       flags.Credentials
 }
 
@@ -89,6 +91,8 @@ func init() {
 		"The local path to values files (cue, yaml or json format).")
 	buildCmd.Flags().StringVarP(&buildArgs.output, "output", "o", "yaml",
 		"The format in which the Kubernetes objects should be printed, can be 'yaml' or 'json'.")
+	buildCmd.Flags().BoolVar(&buildArgs.maskSecrets, "mask-secrets", false,
+		"Hide the values of Kubernetes Secrets in the printed objects.")
 	buildCmd.Flags().Var(&buildArgs.creds, buildArgs.creds.Type(), buildArgs.creds.Description())
 
 	rootCmd.AddCommand(buildCmd)
@@ -196,6 +200,12 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	var objects []*unstructured.Unstructured
 	for _, set := range applySets {
 		objects = append(objects, set.Objects...)
+	}
+
+	if buildArgs.maskSecrets {
+		for i, obj := range objects {
+			objects[i] = mask.SecretData(obj)
+		}
 	}
 
 	switch buildArgs.output {
