@@ -221,12 +221,10 @@
   "contextual": {
     "options": [
       "copy",
+      "mcp",
       "view",
-      "chatgpt",
-      "claude",
       "cursor",
-      "vscode",
-      "mcp"
+      "vscode"
     ]
   },
   "seo": {
