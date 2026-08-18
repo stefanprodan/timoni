@@ -1,0 +1,255 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "aspen",
+  "name": "Timoni",
+  "description": "Timoni is a package manager for Kubernetes powered by CUE lang.",
+  "colors": {
+    "primary": "#7e56c2",
+    "light": "#a98be0",
+    "dark": "#6500b0"
+  },
+  "logo": {
+    "light": "/images/logo_text_black.svg",
+    "dark": "/images/logo_text_white.svg",
+    "href": "/"
+  },
+  "favicon": "/images/favicon.png",
+  "appearance": {
+    "default": "system"
+  },
+  "background": {
+    "decoration": "gradient"
+  },
+  "styling": {
+    "eyebrows": "breadcrumbs",
+    "codeblocks": "system"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "quickstart",
+              "concepts",
+              "install",
+              "comparison"
+            ]
+          },
+          {
+            "group": "App Delivery",
+            "pages": [
+              "bundle",
+              "bundle-runtime",
+              "bundle-distribution",
+              "bundle-secrets",
+              "bundle-multi-cluster"
+            ]
+          },
+          {
+            "group": "App Packaging",
+            "pages": [
+              "module"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "github-actions",
+              "flux-aio",
+              "flux-helm-interop",
+              "gitops-flux"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CUE Reference",
+        "icon": "code",
+        "groups": [
+          {
+            "group": "CUE Language",
+            "pages": [
+              "cue/introduction",
+              "cue/walkthrough"
+            ]
+          },
+          {
+            "group": "Module Development",
+            "pages": [
+              "cue/module/initialization",
+              "cue/module/immutable-config",
+              "cue/module/embedding-files",
+              "cue/module/custom-resources",
+              "cue/module/semver-constraints",
+              "cue/module/apply-behavior",
+              "cue/module/health-checks",
+              "cue/module/test-jobs",
+              "cue/module/import-resources"
+            ]
+          },
+          {
+            "group": "Module Distribution",
+            "pages": [
+              "cue/module/publishing",
+              "cue/module/signing",
+              "cue/module/github-actions"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI Reference",
+        "icon": "terminal",
+        "groups": [
+          {
+            "group": "Command Line",
+            "pages": [
+              "cmd/timoni",
+              "cmd/timoni_version",
+              "cmd/timoni_fmt"
+            ]
+          },
+          {
+            "group": "Instance",
+            "pages": [
+              "cmd/timoni_apply",
+              "cmd/timoni_build",
+              "cmd/timoni_delete",
+              "cmd/timoni_list",
+              "cmd/timoni_inspect",
+              "cmd/timoni_inspect_module",
+              "cmd/timoni_inspect_values",
+              "cmd/timoni_inspect_resources",
+              "cmd/timoni_status"
+            ]
+          },
+          {
+            "group": "Module",
+            "pages": [
+              "cmd/timoni_mod",
+              "cmd/timoni_mod_init",
+              "cmd/timoni_mod_build",
+              "cmd/timoni_mod_vet",
+              "cmd/timoni_mod_show",
+              "cmd/timoni_mod_show_config",
+              "cmd/timoni_mod_push",
+              "cmd/timoni_mod_pull",
+              "cmd/timoni_mod_list",
+              "cmd/timoni_mod_vendor",
+              "cmd/timoni_mod_vendor_k8s",
+              "cmd/timoni_mod_vendor_crd"
+            ]
+          },
+          {
+            "group": "Bundle",
+            "pages": [
+              "cmd/timoni_bundle",
+              "cmd/timoni_bundle_apply",
+              "cmd/timoni_bundle_build",
+              "cmd/timoni_bundle_delete",
+              "cmd/timoni_bundle_status",
+              "cmd/timoni_bundle_vet"
+            ]
+          },
+          {
+            "group": "Runtime",
+            "pages": [
+              "cmd/timoni_runtime",
+              "cmd/timoni_runtime_build"
+            ]
+          },
+          {
+            "group": "Registry",
+            "pages": [
+              "cmd/timoni_registry",
+              "cmd/timoni_registry_login",
+              "cmd/timoni_registry_logout"
+            ]
+          },
+          {
+            "group": "Artifact",
+            "pages": [
+              "cmd/timoni_artifact",
+              "cmd/timoni_artifact_build",
+              "cmd/timoni_artifact_digest",
+              "cmd/timoni_artifact_list",
+              "cmd/timoni_artifact_push",
+              "cmd/timoni_artifact_pull",
+              "cmd/timoni_artifact_tag"
+            ]
+          },
+          {
+            "group": "Completion",
+            "pages": [
+              "cmd/timoni_completion",
+              "cmd/timoni_completion_bash",
+              "cmd/timoni_completion_fish",
+              "cmd/timoni_completion_powershell",
+              "cmd/timoni_completion_zsh"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Install",
+        "icon": "download",
+        "href": "/install"
+      },
+      {
+        "label": "GitHub",
+        "icon": "github-alt",
+        "href": "https://github.com/stefanprodan/timoni"
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/stefanprodan/timoni",
+      "slack": "https://cloud-native.slack.com/team/ULPRMFH38",
+      "x": "https://x.com/stefanprodan",
+      "linkedin": "https://linkedin.com/in/stefanprodan"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "mcp",
+      "view",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "seo": {
+    "indexing": "navigable",
+    "metatags": {
+      "twitter:site": "@stefanprodan",
+      "twitter:creator": "@stefanprodan",
+      "twitter:card": "summary_large_image"
+    }
+  },
+  "redirects": [
+    {
+      "source": "/module-sign",
+      "destination": "/cue/module/signing"
+    },
+    {
+      "source": "/module-distribution",
+      "destination": "/cue/module/publishing"
+    }
+  ],
+  "errors": {
+    "404": {
+      "redirect": false,
+      "title": "Page not found",
+      "description": "The page you are looking for does not exist or has moved.\n\n<CardGroup cols={2}>\n  <Card title=\"Quickstart\" icon=\"rocket\" href=\"/quickstart\">Deploy your first module in minutes.</Card>\n  <Card title=\"Installation\" icon=\"download\" href=\"/install\">Get the Timoni CLI for your OS.</Card>\n  <Card title=\"CUE Reference\" icon=\"code\" href=\"/cue/module/initialization\">Author Timoni modules with CUE.</Card>\n  <Card title=\"CLI Reference\" icon=\"terminal\" href=\"/cmd/timoni\">Every timoni command and flag.</Card>\n</CardGroup>\n\nFollowed a broken link? [Open an issue](https://github.com/stefanprodan/timoni/issues) so we can fix it."
+    }
+  }
+}

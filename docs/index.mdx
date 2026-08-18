@@ -1,0 +1,244 @@
+---
+title: "Timoni"
+description: "Distribution and lifecycle management for cloud-native applications, powered by CUE."
+mode: "custom"
+---
+
+<div id="timoni-home">
+  <section className="mx-auto max-w-6xl px-6 pt-12 pb-14 lg:pt-16 lg:pb-20">
+    <div className="grid items-center gap-10 lg:grid-cols-[1.4fr_1fr]">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+          Distribution and Lifecycle Management for Cloud-Native Applications
+        </h1>
+        <p className="mt-4 max-w-xl text-base leading-7 text-gray-600 dark:text-gray-400">
+          Timoni brings CUE's type safety, code generation, and data validation features to Kubernetes,
+          making the experience of crafting complex deployments into a pleasant journey.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <a
+            href="/quickstart"
+            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark dark:bg-primary-light dark:text-gray-950 dark:hover:bg-primary"
+          >
+            Get started
+          </a>
+          <a
+            href="/install"
+            className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-900 transition hover:border-primary hover:text-primary dark:border-gray-700 dark:text-white dark:hover:border-primary-light dark:hover:text-primary-light"
+          >
+            Install
+          </a>
+        </div>
+      </div>
+      <div className="flex justify-center lg:justify-end">
+        <div className="tm-gradient rounded-2xl p-10 shadow-xl lg:p-12">
+          <img
+            src="/images/logo_icons.svg"
+            alt="Timoni"
+            className="w-56 max-w-full lg:w-72"
+            noZoom
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section className="tm-band">
+    <div className="mx-auto max-w-6xl px-6 py-16">
+      <h2 className="text-center text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+        Next Gen Package Manager for Kubernetes
+      </h2>
+      <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-gray-600 dark:text-gray-400">
+        Timoni uses CUE for defining apps and OCI artifacts for distributing them.
+        Bundles compose apps into deployable units, and the CLI manages their lifecycle on Kubernetes clusters.
+      </p>
+      <div className="mt-10">
+        <CardGroup cols={3}>
+          <Card title="App definition" icon="layer-group" href="/module">
+            Software vendors define complex application deployments packaged as modules,
+            using type-safe Kubernetes templates and rich customisation options for end-users.
+          </Card>
+          <Card title="App distribution" icon="cloud-arrow-up" href="/cue/module/publishing">
+            The app configuration contained in a module is distributed as an OCI artifact,
+            next to the app container images. Modules are semantically versioned and cryptographically signed.
+          </Card>
+          <Card title="App lifecycle" icon="arrows-spin" href="/bundle">
+            With bundles, users manage the whole lifecycle of applications deployed on Kubernetes:
+            customised installation, seamless upgrades, end-to-end testing, safe rollback and uninstallation.
+          </Card>
+          <Card title="App composition" icon="object-group" href="/bundle-runtime">
+            Bundle microservices and distributed monoliths into a deployable unit. The Bundle Runtime API
+            offers a declarative way of managing the app delivery across environments.
+          </Card>
+          <Card title="Kubernetes CRD support" icon="/images/icons/kubernetes.svg" href="/cue/module/custom-resources">
+            Manage the lifecycle of Kubernetes controllers, including the upgrade of CRDs.
+            Module authors can import CRD schemas from YAML files and use custom resources in their modules.
+          </Card>
+          <Card title="Drift detection and correction" icon="code-fork" href="/cmd/timoni_apply">
+            Review the cluster state diff before an upgrade. When correcting drift, Timoni waits for the
+            changes to roll out and reports back the application health status.
+          </Card>
+        </CardGroup>
+      </div>
+    </div>
+  </section>
+
+  <section className="mx-auto max-w-6xl px-6 py-16 lg:py-20">
+    <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.35fr]">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+          Define once, deploy everywhere
+        </h2>
+        <p className="mt-4 text-sm leading-6 text-gray-600 dark:text-gray-400">
+          Describe the apps you want to run in a bundle and the clusters you want to run them on in a runtime.
+          A single command then deploys the bundle to every selected cluster and waits for the workloads to become ready.
+        </p>
+        <ul className="mt-6 space-y-3 text-sm text-gray-600 dark:text-gray-400">
+          <li className="flex gap-3">
+            <span className="tm-check">
+              <Icon icon="check" />
+            </span>
+            <span>Target all clusters, a group, or a single cluster.</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="tm-check">
+              <Icon icon="check" />
+            </span>
+            <span>Vary the configuration by cluster name and group.</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="tm-check">
+              <Icon icon="check" />
+            </span>
+            <span>Inject values from Secrets, ConfigMaps or CI env vars.</span>
+          </li>
+        </ul>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <a
+            href="/bundle-multi-cluster"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark dark:bg-primary-light dark:text-gray-950 dark:hover:bg-primary"
+          >
+            Multi-cluster deployments
+          </a>
+          <a
+            href="/bundle-runtime"
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-900 transition hover:border-primary hover:text-primary dark:border-gray-700 dark:text-white dark:hover:border-primary-light dark:hover:text-primary-light"
+          >
+            Bundle Runtime API
+          </a>
+        </div>
+      </div>
+      <div className="tm-diagram-frame">
+        <img
+          src="/images/multi-cluster-light.svg"
+          alt="A bundle and a runtime applied by timoni to a staging cluster and two production clusters"
+          className="block w-full dark:hidden"
+          noZoom
+        />
+        <img
+          src="/images/multi-cluster-dark.svg"
+          alt="A bundle and a runtime applied by timoni to a staging cluster and two production clusters"
+          className="hidden w-full dark:block"
+          noZoom
+        />
+      </div>
+    </div>
+  </section>
+
+  <section className="tm-band">
+    <div className="mx-auto max-w-6xl px-6 py-16">
+      <h2 className="text-center text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+        Where to go next
+      </h2>
+      <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <Card title="Coming from Helm?" icon="/images/icons/helm.svg" href="/comparison">
+          A module is the equivalent of a chart, a bundle of an umbrella chart, and an instance of a release.
+          See how Timoni compares to Helm and Kustomize.
+        </Card>
+        <Card title="New to CUE?" icon="/images/icons/cue.svg" href="/cue/introduction">
+          Learn why Timoni is built on CUE and walk through the language features used to
+          generate and validate Kubernetes objects.
+        </Card>
+        <Card title="GitOps with Flux" icon="/images/icons/flux.svg" href="/gitops-flux">
+          Combine Timoni with Flux to build a GitOps delivery pipeline for module instances
+          and to orchestrate Helm charts.
+        </Card>
+      </div>
+    </div>
+  </section>
+
+  <section className="mx-auto max-w-6xl px-6 py-16">
+    <div className="tm-gradient rounded-2xl px-8 py-12 text-center shadow-xl lg:px-16">
+      <h2 className="text-2xl font-bold tracking-tight text-white">
+        Ready to try Timoni?
+      </h2>
+      <p className="mx-auto mt-3 max-w-xl text-sm leading-6 tm-on-gradient">
+        Install the CLI, deploy your first module and compose a bundle in a few minutes.
+      </p>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <a
+          href="/quickstart"
+          className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm transition hover:bg-gray-100"
+        >
+          Quickstart
+        </a>
+        <a
+          href="https://github.com/stefanprodan/timoni"
+          className="rounded-lg tm-outline-light px-5 py-2.5 text-sm font-semibold transition"
+        >
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <div className="tm-footer">
+    <div className="mx-auto max-w-6xl px-6 py-12">
+      <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+        <div>
+          <img src="/images/logo_text_black.svg" alt="Timoni" className="block h-7 w-auto dark:hidden" noZoom />
+          <img src="/images/logo_text_white.svg" alt="Timoni" className="hidden h-7 w-auto dark:block" noZoom />
+          <p className="mt-4 max-w-xs text-sm text-gray-600 dark:text-gray-400">
+            Package manager for Kubernetes, powered by CUE and inspired by Helm.
+          </p>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Documentation</h3>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li><a href="/quickstart">Quickstart</a></li>
+            <li><a href="/concepts">Concepts</a></li>
+            <li><a href="/cue/introduction">CUE reference</a></li>
+            <li><a href="/cmd/timoni">CLI reference</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Project</h3>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li><a href="https://github.com/stefanprodan/timoni">Source code</a></li>
+            <li><a href="https://github.com/stefanprodan/timoni/releases">Releases</a></li>
+            <li><a href="https://github.com/stefanprodan/timoni/blob/main/CONTRIBUTING.md">Contributing</a></li>
+            <li><a href="https://github.com/stefanprodan/timoni/blob/main/LICENSE">License</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Community</h3>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li><a href="https://github.com/stefanprodan/timoni/discussions">Discussions</a></li>
+            <li><a href="https://github.com/stefanprodan/timoni/issues">Issues</a></li>
+            <li><a href="https://github.com/sponsors/stefanprodan">Sponsors</a></li>
+            <li><a href="https://cloud-native.slack.com/team/ULPRMFH38">Slack</a></li>
+          </ul>
+        </div>
+      </div>
+      <div className="tm-footer-bottom mt-10 flex flex-wrap items-center justify-between gap-4 pt-6 text-sm text-gray-500 dark:text-gray-400">
+        <span>Copyright 2026 Stefan Prodan. Released under the Apache 2.0 license.</span>
+        <span className="tm-footer-socials">
+          <a href="https://github.com/stefanprodan/timoni" aria-label="GitHub"><Icon icon="github" iconType="brands" /></a>
+          <a href="https://cloud-native.slack.com/team/ULPRMFH38" aria-label="Slack"><Icon icon="slack" iconType="brands" /></a>
+          <a href="https://x.com/stefanprodan" aria-label="X"><Icon icon="x-twitter" iconType="brands" /></a>
+          <a href="https://linkedin.com/in/stefanprodan" aria-label="LinkedIn"><Icon icon="linkedin" iconType="brands" /></a>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

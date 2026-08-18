@@ -1,0 +1,260 @@
+---
+title: "Quickstart Guide"
+sidebarTitle: "Quickstart"
+description: "Deploy a demo application on Kubernetes using a Timoni module published in a container registry."
+---
+
+This guide shows you the basics of Timoni.
+You'll deploy a demo application on Kubernetes using a Timoni module
+published in a container registry.
+
+## Prerequisites
+
+To follow this guide you'll need:
+
+* A Kubernetes cluster
+* Timoni installed on a system with writable `/tmp`
+
+Install Timoni with:
+
+```shell
+brew install timoni
+```
+
+For other methods,
+see the [installation guide](/install).
+
+## Install a module
+
+To install a [Timoni module](/module) on a Kubernetes cluster,
+you have to specify the container registry address and the version of a module.
+
+<Tip>
+**Modules and Instances**
+
+If you are familiar with Helm,
+a Timoni **module** is the equivalent of a **chart**,
+and a Timoni **instance** is the equivalent of a Helm **release**.
+To learn more about modules and instances, please see the [concepts doc](/concepts).
+</Tip>
+
+For example, to install the latest stable version of [podinfo](https://github.com/stefanprodan/podinfo)
+in a new namespace:
+
+<Tabs sync={false}>
+  <Tab title="command">
+    ```shell
+    timoni -n test apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo
+    ```
+  </Tab>
+  <Tab title="output">
+    ```text
+    pulling oci://ghcr.io/stefanprodan/modules/podinfo:latest
+    using module timoni.sh/podinfo version 6.14.0
+    installing podinfo in namespace test
+    Namespace/test created
+    ServiceAccount/test/podinfo created
+    Service/test/podinfo created
+    Deployment/test/podinfo created
+    waiting for 3 resource(s) to become ready...
+    all resources are ready
+    ```
+  </Tab>
+</Tabs>
+
+The apply command pulls the module from the container registry,
+creates the Kubernetes resources in the specified namespace,
+and waits for all resources to become ready.
+
+To learn more about all the available apply options, use `timoni apply --help`.
+
+## List and inspect instances
+
+You can list all instances in a cluster with:
+
+<Tabs sync={false}>
+  <Tab title="command">
+    ```shell
+    timoni list -A
+    ```
+  </Tab>
+  <Tab title="output">
+    ```text
+    NAME   	NAMESPACE	MODULE                                    	VERSION	LAST APPLIED        	BUNDLE 
+    podinfo	test     	oci://ghcr.io/stefanprodan/modules/podinfo	6.14.0  	2024-01-20T19:51:17Z	- 
+    ```
+  </Tab>
+</Tabs>
+
+To see the status of the Kubernetes resources managed by an instance:
+
+<Tabs sync={false}>
+  <Tab title="command">
+    ```shell
+    timoni -n test status podinfo
+    ```
+  </Tab>
+  <Tab title="output">
+    ```text
+    last applied 2024-01-20T19:51:17Z
+    module oci://ghcr.io/stefanprodan/modules/podinfo:6.14.0
+    digest sha256:32082e8ac0bba9ee2a3f95534f52c94f5a41dc642bb396c73b04fa18aff147d7
+    container image ghcr.io/curl/curl-container/curl-multi:master
+    container image ghcr.io/stefanprodan/podinfo:6.14.0
+    ServiceAccount/test/podinfo Current - Resource is current
+    Service/test/podinfo Current - Service is ready
+    Deployment/test/podinfo Current - Deployment is available. Replicas: 1
+    ```
+  </Tab>
+</Tabs>
+
+To get more information on an instance, you can use the `timoni inspect` sub-commands.
+
+For example, to list the module URL, version and OCI digest of the podinfo instance:
+
+<Tabs sync={false}>
+  <Tab title="command">
+    ```shell
+    timoni -n test inspect module podinfo
+    ```
+  </Tab>
+  <Tab title="output">
+    ```text
+    digest: sha256:32082e8ac0bba9ee2a3f95534f52c94f5a41dc642bb396c73b04fa18aff147d7
+    name: timoni.sh/podinfo
+    repository: oci://ghcr.io/stefanprodan/modules/podinfo
+    version: 6.14.0
+    ```
+  </Tab>
+</Tabs>
+
+To learn more about the available commands, use `timoni inspect --help`.
+
+## Configure a module instance
+
+To customise an instance, you can supply the configuration using values files.
+
+For example, to set the [QoS](https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/)
+class to guaranteed, create a `qos-values.cue` file that sets the resources limits equal to the requests:
+
+```cue
+values: {
+	resources: requests: {
+		cpu:    "100m"
+		memory: "128Mi"
+	}
+	resources: limits: resources.requests
+}
+```
+
+Apply the config to the podinfo module to perform an upgrade:
+
+<Tabs sync={false}>
+  <Tab title="command">
+    ```shell
+    timoni -n test apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo \
+      --values qos-values.cue
+    ```
+  </Tab>
+  <Tab title="output">
+    ```text
+    pulling oci://ghcr.io/stefanprodan/modules/podinfo:latest
+    using module timoni.sh/podinfo version 6.14.1
+    upgrading podinfo in namespace test
+    ServiceAccount/test/podinfo unchanged
+    Service/test/podinfo unchanged
+    Deployment/test/podinfo configured
+    resources are ready
+    ```
+  </Tab>
+</Tabs>
+
+Before running an upgrade, you can review the changes that will
+be made on the cluster with `timoni apply --dry-run --diff`.
+
+## Uninstall a module instance
+
+To uninstall an instance and delete all the managed Kubernetes resources:
+
+<Tabs sync={false}>
+  <Tab title="command">
+    ```shell
+    timoni -n test delete podinfo
+    ```
+  </Tab>
+  <Tab title="output">
+    ```text
+    deleting 3 resource(s)...
+    Deployment/test/podinfo deleted
+    Service/test/podinfo deleted
+    ServiceAccount/test/podinfo deleted
+    all resources have been deleted
+    ```
+  </Tab>
+</Tabs>
+
+By default, the delete command will wait for all the resources to be removed.
+To skip waiting, use the `--wait=false` flag, which sends the delete requests
+and returns right away, like kubectl.
+
+The instance record is kept while a delete waits for the resources to be
+removed, so if the delete times out you can retry it instead of losing track
+of what is left behind.
+
+## Bundling instances
+
+For deploying complex applications to production, it is recommended to use
+Timoni [Bundles](/bundle).
+
+A Timoni Bundle is a CUE file for defining a group of instances together
+with their values and module references.
+
+The following is an example of a Bundle that defines a Redis master-replica cluster
+and a podinfo instance connected to the Redis instance.
+
+```cue
+bundle: {
+	apiVersion: "v1alpha1"
+	name:       "podinfo"
+	instances: {
+		redis: {
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/modules/redis"
+				version: "8.10.0"
+			}
+			namespace: "podinfo"
+			values: maxmemory: 256
+		}
+		podinfo: {
+			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+			module: version: "6.14.1"
+			namespace: "podinfo"
+			values: caching: {
+				enabled:  true
+				redisURL: "tcp://redis:6379"
+			}
+		}
+	}
+}
+```
+
+To apply the above bundle on a cluster, save the file as `podinfo.bundle.cue` and run:
+
+```shell
+timoni bundle apply -f podinfo.bundle.cue
+```
+
+To list all the instances managed by a bundle:
+
+```shell
+timoni list -A --bundle podinfo
+```
+
+To delete all the instances defined in a bundle:
+
+```shell
+timoni bundle delete -f podinfo.bundle.cue
+```
+
+To learn more about bundles, please see the [Bundle API](/bundle)
+and the [Bundle distribution](/bundle-distribution) documentation.

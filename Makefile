@@ -65,11 +65,12 @@ install: ## Build and install the CLI binary.
 generate: controller-gen ## Generate API code.
 	cd api; $(CONTROLLER_GEN) object:headerFile="license.go.txt" paths="./..."
 
-docs: build
+docgen: build ## Generate the CLI reference under docs/cmd.
 	./bin/timoni docgen
 
-prep-docs: docs
-	find ./docs -name '*.md' -print0 | xargs -0 sed -i 's/```cue/```go/g'
+.PHONY: docs-preview
+docs-preview: docgen ## Validate the docs and start the Mintlify preview server.
+	cd docs && npx --yes mint validate && npx --yes mint broken-links && npx --yes mint dev
 
 CONTROLLER_GEN=$(BIN_DIR)/controller-gen
 .PHONY: controller-gen

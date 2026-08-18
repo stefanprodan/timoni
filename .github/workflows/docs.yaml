@@ -21,12 +21,28 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 1.26.x
-      - name: Generate cmd docs
-        run: make prep-docs
-      - name: Run mkdocs
-        uses: mhausenblas/mkdocs-deploy-gh-pages@a31c6b13a80e4a4fbb525eeb7a2a78253bb15fa5 # master
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Generate CLI reference
+        run: make docgen
+      - name: Validate site
+        working-directory: docs
+        run: |
+          npx --yes mint validate
+          npx --yes mint broken-links
+      - name: Publish website branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CUSTOM_DOMAIN: timoni.sh
-          CONFIG_FILE: mkdocs.yml
-          REQUIREMENTS: hack/mkdocs/requirements.txt
+        run: |
+          set -euo pipefail
+          site=$(mktemp -d)
+          cp -R docs/. "$site"/
+          cd "$site"
+          git init -q -b website
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish docs from ${GITHUB_REF_NAME} (${GITHUB_SHA})"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" website
