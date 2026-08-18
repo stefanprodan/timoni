@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "timoni-docs": {
+      "type": "http",
+      "url": "https://timoni.sh/mcp"
+    }
+  }
+}
