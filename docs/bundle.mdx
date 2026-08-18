@@ -396,6 +396,9 @@ Example:
 timoni bundle apply --dry-run --diff -f bundle.cue
 ```
 
+The values of the Kubernetes Secrets `data` entries are masked in the diff
+output: changed entries are printed as `*** (before)` and `*** (after)`.
+
 ### Force Upgrade
 
 If an upgrade contains changes to immutable fields, such as changing the image
@@ -449,6 +452,14 @@ Example:
 
 ```shell
 timoni bundle build -f bundle.cue
+```
+
+To print the manifests without exposing credentials, for example when sharing
+the output or reviewing it in a CI log, use the `--mask-secrets` flag which
+replaces the values of Kubernetes Secrets with `***`:
+
+```shell
+timoni bundle build -f bundle.cue --mask-secrets
 ```
 
 To write the generated manifests to disk as a directory tree instead of printing them
@@ -617,6 +628,7 @@ the module version set to `0.0.0-devel`.
 
 By default, `timoni bundle build` prints the resulting Kubernetes resources of all
 instances to stdout. To write the manifests as files on disk, use the `--output-dir` flag.
+The files always contain the Secret values, the `--mask-secrets` flag applies to stdout only.
 
 Stdout mode is render-only: every instance is built and marshalled in memory first,
 and the complete result is written to stdout in one pass only after all instances
