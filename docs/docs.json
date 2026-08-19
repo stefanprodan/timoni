@@ -58,6 +58,7 @@
           {
             "group": "Integrations",
             "pages": [
+              "ai-agents",
               "github-actions",
               "flux-aio",
               "flux-helm-interop",

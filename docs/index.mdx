@@ -146,7 +146,60 @@ mode: "custom"
   </section>
 
   <section className="tm-band">
-    <div className="mx-auto max-w-6xl px-6 py-16">
+    <div className="mx-auto max-w-6xl px-6 py-16 lg:py-20">
+      <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.35fr]">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Built for AI agents
+          </h2>
+          <p className="mt-4 text-sm leading-6 text-gray-600 dark:text-gray-400">
+            Timoni ships agent skills and a documentation MCP server so that AI coding agents
+            can operate Timoni end-to-end, from authoring modules and bundles to orchestrating
+            multi-cluster deployments.
+          </p>
+          <ul className="mt-6 space-y-3 text-sm text-gray-600 dark:text-gray-400">
+            <li className="flex gap-3">
+              <span className="tm-check">
+                <Icon icon="check" />
+              </span>
+              <span>Skills evaluated by running agents through the full deployment lifecycle.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="tm-check">
+                <Icon icon="check" />
+              </span>
+              <span>Safe by default: diff and dry-run previews before every apply.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="tm-check">
+                <Icon icon="check" />
+              </span>
+              <span>Docs searchable over MCP and available as markdown.</span>
+            </li>
+          </ul>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a
+              href="/ai-agents"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark dark:bg-primary-light dark:text-gray-950 dark:hover:bg-primary"
+            >
+              Set up your agent
+            </a>
+          </div>
+        </div>
+        <CardGroup cols={1}>
+          <Card title="Agent skills" icon="wand-magic-sparkles" href="/ai-agents#agent-skills" horizontal>
+            Install the Timoni skills into any agent with: <span className="block mt-1"><code>{"npx skills add https://timoni.sh"}</code></span>
+          </Card>
+          <Card title="Docs MCP server" icon="plug" href="/ai-agents#docs-mcp-server" horizontal>
+            Connect your agent to grep and fetch the docs: <span className="block mt-1"><code>{"https://timoni.sh/mcp"}</code></span>
+          </Card>
+        </CardGroup>
+      </div>
+    </div>
+  </section>
+
+  <section className="mx-auto max-w-6xl px-6 py-16">
+    <div>
       <h2 className="text-center text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
         Where to go next
       </h2>
@@ -167,7 +220,8 @@ mode: "custom"
     </div>
   </section>
 
-  <section className="mx-auto max-w-6xl px-6 py-16">
+  <section className="tm-band">
+    <div className="mx-auto max-w-6xl px-6 py-16">
     <div className="tm-gradient rounded-2xl px-8 py-12 text-center shadow-xl lg:px-16">
       <h2 className="text-2xl font-bold tracking-tight text-white">
         Ready to try Timoni?
@@ -189,6 +243,7 @@ mode: "custom"
           View on GitHub
         </a>
       </div>
+    </div>
     </div>
   </section>
 

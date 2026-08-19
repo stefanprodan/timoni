@@ -27,6 +27,8 @@ jobs:
           node-version: 22
       - name: Generate CLI reference
         run: make docgen
+      - name: Add agent skills
+        run: make docs-skills
       - name: Validate site
         working-directory: docs
         run: |

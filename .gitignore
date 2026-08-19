@@ -5,3 +5,4 @@ docs/cmd/
 venv/
 .vscode
 workspace/
+docs/.mintlify/

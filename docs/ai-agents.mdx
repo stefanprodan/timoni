@@ -1,0 +1,172 @@
+---
+title: "AI Agents"
+description: "Equip AI coding agents with the Timoni skills and the docs MCP server to deploy apps and author modules."
+---
+
+Timoni ships **agent skills** and a **documentation MCP server** so that AI coding agents
+can operate Timoni end-to-end: from authoring modules and bundles to orchestrating multi-cluster deployments.
+
+<Tip>
+**Evaluated with agents**
+
+The skills are evaluated by running agents against them with no other documentation,
+on realistic tasks that cover the full lifecycle: from discovering a module's config schema
+to previewing changes with a server-side diff, applying, checking status and cleaning up.
+</Tip>
+
+## Agent skills
+
+Timoni publishes its skills following the [Agent Skills](https://agentskills.io) standard.
+Each skill is a self-contained `SKILL.md` file that an agent loads into its context
+when a task calls for it.
+
+### Install the skills
+
+<Tabs sync={false}>
+  <Tab title="skills CLI">
+    Install all the Timoni skills into any supported agent (Claude Code, Cursor, Codex, Copilot and others) with:
+
+    ```shell
+    npx skills add https://timoni.sh
+    ```
+
+    The command discovers the skills from the Timoni website and places them in the agent's skills directory.
+  </Tab>
+  <Tab title="Claude Code">
+    Add a skill to a project so that it is shared with your team:
+
+    ```shell
+    mkdir -p .claude/skills/timoni
+    curl -sL https://timoni.sh/.well-known/agent-skills/timoni/SKILL.md \
+      -o .claude/skills/timoni/SKILL.md
+    ```
+
+    To make the skill available in all your projects, place it under `~/.claude/skills/timoni/SKILL.md` instead.
+  </Tab>
+  <Tab title="Manual">
+    Download a skill file and place it in the skills directory of your agent,
+    in a sub-directory named after the skill:
+
+    ```shell
+    mkdir -p timoni
+    curl -sL https://timoni.sh/.well-known/agent-skills/timoni/SKILL.md -o timoni/SKILL.md
+    ```
+
+    Agents that don't support skills can load the file as an instruction
+    by referencing it from `AGENTS.md` or the equivalent project instructions file.
+  </Tab>
+</Tabs>
+
+### What the skills cover
+
+| Area | Capabilities |
+|------|--------------|
+| Instances | Install, upgrade, diff, status, inspect and delete apps from OCI modules |
+| Bundles | Compose multi-app deployments, validate, preview and apply them |
+| Runtimes | Inject values from Secrets, ConfigMaps, custom resources and CI environment variables |
+| Multi-cluster | Deploy the same bundle to a fleet of clusters, with per-cluster and per-group overrides |
+| Module authoring | Scaffold a module, define the config schema, template objects, vendor CRDs, add tests and health checks |
+| Distribution | Push, tag, sign and verify modules and bundles in container registries |
+| Safety | Preview with `--diff` and `--dry-run`, namespace scoping, and the apply, prune and wait semantics |
+
+## Docs MCP server
+
+The Timoni documentation is exposed as a streamable HTTP [MCP](https://modelcontextprotocol.io) server at
+`https://timoni.sh/mcp`. It requires no authentication and provides tools for searching
+the documentation and fetching pages as markdown, so that agents can answer questions
+and look up details that go beyond the skills, using the latest published docs.
+
+### Connect the MCP server
+
+<Tabs sync={false}>
+  <Tab title="Claude Code">
+    Register the server for the current project with:
+
+    ```shell
+    claude mcp add --transport http timoni-docs https://timoni.sh/mcp
+    ```
+
+    Or add it to the project `.mcp.json` file to share it with your team:
+
+    ```json
+    {
+      "mcpServers": {
+        "timoni-docs": {
+          "type": "http",
+          "url": "https://timoni.sh/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Codex">
+    Register the server with the Codex CLI:
+
+    ```shell
+    codex mcp add timoni-docs --url https://timoni.sh/mcp
+    ```
+  </Tab>
+  <Tab title="Cursor">
+    Add the server to `.cursor/mcp.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "timoni-docs": {
+          "url": "https://timoni.sh/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="OpenCode">
+    Add the server to `opencode.jsonc`:
+
+    ```jsonc
+    {
+      "mcp": {
+        "timoni-docs": {
+          "url": "https://timoni.sh/mcp",
+          "type": "remote",
+          "enabled": true,
+          "oauth": false
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="VS Code">
+    Add the server to `.vscode/mcp.json` in your project:
+
+    ```json
+    {
+      "servers": {
+        "timoni-docs": {
+          "type": "http",
+          "url": "https://timoni.sh/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+Every page of this website is also available as markdown by appending `.md` to its URL,
+for example [timoni.sh/bundle.md](https://timoni.sh/bundle.md). The full index is published at
+[timoni.sh/llms.txt](https://timoni.sh/llms.txt) for agents that work without MCP.
+
+## Example prompts
+
+With the skills installed and the MCP server connected, agents can carry out tasks such as:
+
+- *Deploy the `oci://ghcr.io/stefanprodan/modules/redis` module in the `cache` namespace with persistence enabled, and show me the diff before applying.*
+- *Create a bundle that deploys podinfo and redis to the `apps` namespace, reading the redis password from the `redis-auth` Secret at apply time.*
+- *Write a runtime for the `staging` and `production` kube contexts and apply the bundle to both, with two replicas in staging and three in production.*
+- *Scaffold a Timoni module for my web app with a typed config for the image, replicas and ingress host, vendor the cert-manager CRDs, and add a test job.*
+- *Upgrade all the instances in the `monitoring` namespace to the latest module versions and report their status.*
+
+<Tip>
+Agents operating Timoni follow the same safe workflow as humans: validate with `timoni mod vet` and `timoni bundle vet`,
+preview with `--diff` or `--dry-run`, apply, then confirm with `timoni status`.
+Scope an agent's cluster access with a dedicated kube context and namespace when trying it out.
+</Tip>

@@ -77,10 +77,25 @@ The MDX site built with Mintlify (`docs/docs.json` holds the theme, navigation a
 - **`docs/` root — the feature/concept guides** (one `.mdx` per feature, e.g. `bundle*.mdx`, `concepts.mdx`, `module.mdx`, plus Flux/GitOps integration pages). Most-missed when behavior changes. The Bundle/Runtime feature set lives here; note `bundle-runtime.mdx` documents the non-obvious `@timoni(runtime:…)` attributes and env-var values. `ls docs/*.mdx` for the full set.
 - **`docs/cue/module/`** — the module-authoring behavior contracts that mirror code (apply/prune/wait semantics, immutability, signing, CRD vendoring, test jobs, semver). `ls docs/cue/module/` for the full set.
 - **`docs/cmd/`** — the generated CLI reference (do not hand-edit — produced by `make docgen`, gitignored, published from the `website` branch by the docs workflow). New commands must also be added to the CLI Reference tab in `docs/docs.json`.
+- **`skills/timoni/SKILL.md`** — the agent skill; see the `skills/` section below.
+- **`.mcp.json`** — points AI agents at the docs MCP server Mintlify hosts at `https://timoni.sh/mcp` (search over the published docs).
 
 New pages must be added to the navigation in `docs/docs.json` or they will not appear in the sidebar. The site is published from the `website` branch, which `.github/workflows/docs.yaml` rebuilds from `docs/` plus the generated `cmd/` pages on release tags; never edit that branch by hand.
 
 When you change behavior — flags, apply/prune/wait semantics, the `action.timoni.sh/*` annotations, the Runtime/Bundle schema, vendoring, signing — update the matching page(s) under `docs/` in the same change, not as a follow-up. A Runtime or Bundle change almost always touches a `docs/` root guide *and* a schema; a module-rendering change touches `docs/cue/module/`.
+
+### `skills/` — the agent skill
+
+`skills/timoni/SKILL.md` is a self-contained Timoni skill for AI agents, published at `timoni.sh/skill.md` and `/.well-known/agent-skills/` (`make docs-skills` copies `skills/` to the gitignored `docs/.mintlify/skills/`, which the docs workflow publishes). It must let an agent operate Timoni with no other documentation. Update it when commands, flags or Bundle/Runtime semantics change.
+
+Evaluate skill changes by running a sub-agent against it:
+
+1. `make build` so the sub-agent has `./bin/timoni` to drive.
+2. Spawn a fresh sub-agent whose only documentation is `skills/timoni/SKILL.md`. Forbid reading `docs/`, the source code, and web/MCP docs tools; allow `timoni <cmd> --help`, files the agent creates or pulls itself, and one example module (e.g. `examples/redis`) as the deployment target.
+3. Give it a realistic end-to-end task that exercises the changed sections. A good baseline: bundle `examples/redis` twice with different values, discover the config schema from the module's README and `config.cue`, run the fmt/vet/build editing loop, and inject a secret from an env var with `--runtime-from-env`. With a cluster, extend it through the full lifecycle: `--diff` preview, apply, status, inspect, delete.
+4. Cluster access is fine but must be confined to a unique `timoni-test` namespace, with full cleanup at the end (bundle delete, then namespace delete). Without registry access, reference modules with `file://` paths. Working files go in a temp dir outside the repo.
+5. Require a critical report as the deliverable: per-step completion with the exact commands used, a scorecard of which skill sections pulled their weight, gaps only `--help` filled, statements that proved wrong or misleading, and ambiguities that cost a retry.
+6. Fold confirmed findings back into `SKILL.md` and re-run. Testing with a weaker model than the author is a stronger signal that the skill carries the task on its own.
 
 ### Other dirs
 - `examples/` — runnable modules (redis, etc.) used as docs and as `make cue-vet` / `make push-redis` targets.
