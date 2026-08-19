@@ -4,8 +4,8 @@
 [![release](https://img.shields.io/github/release/stefanprodan/timoni/all.svg)](https://github.com/stefanprodan/timoni/releases)
 [![platforms](https://img.shields.io/badge/platforms-linux|macos|windows-9cf.svg)](https://timoni.sh/install)
 [![build](https://github.com/stefanprodan/timoni/workflows/build/badge.svg)](https://github.com/stefanprodan/timoni/actions)
-[![license](https://img.shields.io/github/license/stefanprodan/timoni.svg)](https://github.com/stefanprodan/timoni/blob/main/LICENSE)
 [![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/stefanprodan/timoni)
 
 [Timoni](https://timoni.sh) is a package manager for Kubernetes,
 powered by [CUE](https://cuelang.org/)
@@ -14,8 +14,8 @@ and inspired by [Helm](https://helm.sh/).
 The Timoni project strives to improve the UX of authoring Kubernetes configs.
 Instead of mingling Go templates with YAML like Helm,
 or layering YAML on top of each-other like Kustomize,
-Timoni relies on cuelang's type safety, code generation and data validation features
-to offer a better experience of creating, packaging and delivering apps to Kubernetes.
+Timoni relies on cuelang's type safety, code generation, and data validation features
+to offer a better experience of creating, packaging, and delivering apps to Kubernetes.
 
 > [!IMPORTANT]
 > Note that Timoni in under active development and is still in its infancy.
@@ -55,18 +55,15 @@ Local build outputs are unsigned OCI archives or layouts for offline handoff.
 Module distribution:
 
 ```shell
-timoni mod push ./my-app -v 1.0.0 oci://registry.example.com/my-app
-timoni mod build ./my-app -v 1.0.0 -o ./my-app-1.0.0.oci.tar
+timoni mod build ./my-app -v 1.0.0 -o my-app-1.0.0.oci.tar
+timoni mod push my-app-1.0.0.oci.tar oci://registry.example.com/my-app
 ```
 
 Generic artifacts transport bundle files, runtime files, and other content without module, instance, or deployment semantics:
 
 ```shell
 timoni artifact push -f ./delivery -t 1.0.0 oci://registry.example.com/my-app
-timoni artifact build -f ./delivery -t 1.0.0 -o ./my-app-delivery-1.0.0.oci.tar
 ```
-
-The timoni CLI consumes module artifacts; Kubernetes nodes consume separate workload images. Local OCI outputs are for transport, not `apply` inputs; use a module directory for registry-free apply.
 
 With Timoni, platform engineers can manage the lifecycle of Kubernetes
 controllers, including the upgrade of CRDs. Module authors can
@@ -78,7 +75,7 @@ in their app deployments.
 
 With Timoni, users can manage the whole lifecycle of applications deployed on Kubernetes.
 From highly customised installation to seamless upgrades,
-end-to-end testing, safe rollback and uninstallation.
+end-to-end testing, safe rollback, and uninstallation.
 
 With Timoni, users can bundle microservices and distributed monoliths into a deployable unit.
 The Timoni [Bundle](https://timoni.sh/bundle/) offers a declarative way of managing
@@ -89,11 +86,28 @@ Bundle lifecycle:
 
 ```shell
 timoni bundle build  -f ./bundle.cue # Render without applying (optional)
+timoni bundle apply  -f ./bundle.cue --diff # Preview changes before applying
 timoni bundle apply  -f ./bundle.cue # Install or upgrade
 timoni bundle delete -f ./bundle.cue # Uninstall
 ```
+
+### AI Agents Integration
+
+Timoni ships [agent skills](https://timoni.sh/ai-agents#agent-skills) and a
+[docs MCP server](https://timoni.sh/ai-agents#docs-mcp-server) so that AI agents
+can operate Timoni end-to-end, from authoring modules and bundles to multi-cluster deployments.
+
+```shell
+npx skills add https://timoni.sh # Install the skills for your agent
+claude mcp add --transport http timoni-docs https://timoni.sh/mcp # Connect the docs MCP server
+```
+
+See the [AI Agents guide](https://timoni.sh/ai-agents) for more information
+on how to configure Codex, Copilot, Cursor, OpenCode, and other agents.
 
 ## License
 
 Timoni is [Apache 2.0 licensed](LICENSE) and accepts contributions via GitHub pull requests.
 Please see the [contributing guide](CONTRIBUTING.md) for more information.
+
+When using AI coding agents to contribute to Timoni, please point the agents to [AGENTS.md](AGENTS.md).
