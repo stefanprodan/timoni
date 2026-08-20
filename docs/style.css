@@ -202,8 +202,9 @@ html.dark #navbar .navbar-link > a:hover > svg {
   height: 30px;
 }
 
-/* Brand icons on the landing page cards: paint the local SVGs with the primary color, like the built-in icons. */
-[data-component-part="card-icon"] img[src^="/images/icons/"] {
+/* Brand icons on the landing page cards: paint the local SVGs with the primary color, like the built-in icons.
+   The src is matched by substring, the hosted site serves the icons from an absolute CDN URL. */
+[data-component-part="card-icon"] img[src*="/images/icons/"] {
   object-fit: none;
   object-position: -9999px -9999px;
   background-color: rgb(var(--primary));
@@ -212,22 +213,37 @@ html.dark #navbar .navbar-link > a:hover > svg {
   mask-size: contain;
 }
 
-html.dark [data-component-part="card-icon"] img[src^="/images/icons/"] {
+html.dark [data-component-part="card-icon"] img[src*="/images/icons/"] {
   background-color: rgb(var(--primary-light));
 }
 
-[data-component-part="card-icon"] img[src="/images/icons/kubernetes.svg"] {
+[data-component-part="card-icon"] img[src*="/images/icons/kubernetes.svg"] {
   mask-image: url("/images/icons/kubernetes.svg");
 }
 
-[data-component-part="card-icon"] img[src="/images/icons/helm.svg"] {
+[data-component-part="card-icon"] img[src*="/images/icons/helm.svg"] {
   mask-image: url("/images/icons/helm.svg");
 }
 
-[data-component-part="card-icon"] img[src="/images/icons/cue.svg"] {
+[data-component-part="card-icon"] img[src*="/images/icons/cue.svg"] {
   mask-image: url("/images/icons/cue.svg");
 }
 
-[data-component-part="card-icon"] img[src="/images/icons/flux.svg"] {
+[data-component-part="card-icon"] img[src*="/images/icons/flux.svg"] {
   mask-image: url("/images/icons/flux.svg");
+}
+
+/* Hero logo: paint the single-color SVG to match the theme, black on light and white on dark. */
+img.tm-hero-logo {
+  object-fit: none;
+  object-position: -9999px -9999px;
+  background-color: #111827;
+  mask-image: url("/images/logo_icons.svg");
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+html.dark img.tm-hero-logo {
+  background-color: #fff;
 }
