@@ -81,7 +81,7 @@ below.
 | Task | Command |
 |------|---------|
 | Log in to a registry | `echo $TOKEN \| timoni registry login ghcr.io -u <user> --password-stdin` |
-| List published versions | `timoni mod list oci://<repo>` |
+| List published versions | `timoni mod list oci://<repo>` (newest 100; `--limit 0` for all, `--with-digest=false` to skip digests) |
 | Pull a module to disk | `timoni mod pull oci://<repo> -v <version> -o ./module` |
 | Verify signature on pull | `... mod pull ... --verify=cosign --cosign-key=cosign.pub`, or keyless: `--verify=cosign --certificate-identity-regexp=<re> --certificate-oidc-issuer=<url>` |
 | Create a module | `timoni mod init <name> --blueprint oci://ghcr.io/stefanprodan/timoni/blueprints/starter` |

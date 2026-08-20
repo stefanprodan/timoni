@@ -114,16 +114,29 @@ func TestRestoreSignalHandlingAfterCancellation(t *testing.T) {
 }
 
 func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
+	buf := new(bytes.Buffer)
+	err := executeCommandWithStreams(cmd, in, buf, buf)
+	return buf.String(), err
+}
+
+// executeCommandWithOutErr runs the command and returns the stdout
+// and stderr streams separately, the logger writes to stderr.
+func executeCommandWithOutErr(cmd string) (string, string, error) {
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	err := executeCommandWithStreams(cmd, nil, stdout, stderr)
+	return stdout.String(), stderr.String(), err
+}
+
+func executeCommandWithStreams(cmd string, in io.Reader, stdout, stderr io.Writer) error {
 	defer resetCmdArgs()
 	args, err := shellwords.Parse(cmd)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	buf := new(bytes.Buffer)
-
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
+	rootCmd.SetOut(stdout)
+	rootCmd.SetErr(stderr)
 	rootCmd.SetArgs(args)
 	// Always set the input stream so a reader injected by a previous
 	// test does not leak into commands that read stdin.
@@ -132,7 +145,7 @@ func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 	}
 	rootCmd.SetIn(in)
 
-	zcfg := zerolog.ConsoleWriter{Out: buf, NoColor: true}
+	zcfg := zerolog.ConsoleWriter{Out: stderr, NoColor: true}
 	zcfg.PartsExclude = []string{
 		zerolog.TimestampFieldName,
 		zerolog.LevelFieldName,
@@ -142,9 +155,7 @@ func executeCommandWithIn(cmd string, in io.Reader) (string, error) {
 	runtimeLog.SetLogger(cliLogger)
 
 	_, err = rootCmd.ExecuteC()
-	result := buf.String()
-
-	return result, err
+	return err
 }
 
 func resetCmdArgs() {
@@ -160,8 +171,8 @@ func resetCmdArgs() {
 		name: "default",
 	}
 	listArgs = listFlags{}
-	listModArgs = listModFlags{withDigest: true}
-	listArtifactArgs = listArtifactFlags{withDigest: true}
+	listModArgs = listModFlags{withDigest: true, limit: 100}
+	listArtifactArgs = listArtifactFlags{withDigest: true, limit: 100}
 	pullModArgs = pullModFlags{}
 	pushModArgs = pushModFlags{}
 	buildModArgs = buildModFlags{format: "oci-archive"}

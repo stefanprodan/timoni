@@ -35,19 +35,23 @@ var listModCmd = &cobra.Command{
 	Args:    cobra.MaximumNArgs(1),
 	Aliases: []string{"ls"},
 	Short:   "List the versions of a module",
-	Long:    `The list command prints a table with the module versions and their digests.`,
-	Example: `  # Print the versions and digests of a module
-  timoni mod list oci://docker.io/org/app 
+	Long: `The list command prints a table with the module versions and their digests.
+By default, the newest 100 versions are listed, use '--limit 0' to list all versions.`,
+	Example: `  # Print the newest 100 versions and their digests
+  timoni mod list oci://docker.io/org/app
 
-  # Print the versions without digests
-  timoni mod list oci://docker.io/org/app --with-digest=false
+  # Print the newest 10 versions
+  timoni mod list oci://docker.io/org/app --limit 10
+
+  # Print all the versions without digests
+  timoni mod list oci://docker.io/org/app --limit 0 --with-digest=false
 
   # Print the versions of a module from GitHub Container Registry
   timoni mod list oci://ghcr.io/org/manifests/app \
 	--creds timoni:$GITHUB_TOKEN
 
   # Check if a version is published using the JSON output
-  timoni mod list oci://ghcr.io/org/modules/app -o json | \
+  timoni mod list oci://ghcr.io/org/modules/app --limit 0 -o json | \
 	jq -e --arg v "1.0.0" 'any(.[]; .version == $v)'
 `,
 	RunE: listModCmdRun,
@@ -56,6 +60,7 @@ var listModCmd = &cobra.Command{
 type listModFlags struct {
 	creds      flags.Credentials
 	withDigest bool
+	limit      int
 	output     string
 }
 
@@ -65,6 +70,8 @@ func init() {
 	listModCmd.Flags().Var(&listModArgs.creds, listModArgs.creds.Type(), listModArgs.creds.Description())
 	listModCmd.Flags().BoolVar(&listModArgs.withDigest, "with-digest", true,
 		"Resolve the digest of each version.")
+	listModCmd.Flags().IntVar(&listModArgs.limit, "limit", 100,
+		"Limit the number of versions listed, newest first (0 for all).")
 	listModCmd.Flags().StringVarP(&listModArgs.output, "output", "o", "",
 		"The format in which the versions should be printed, can be 'yaml' or 'json'.")
 	modCmd.AddCommand(listModCmd)
@@ -80,6 +87,10 @@ func listModCmdRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if listModArgs.limit < 0 {
+		return fmt.Errorf("--limit must be greater than or equal to 0")
+	}
+
 	spin := logger.StartSpinner("fetching versions")
 	defer spin.Stop()
 
@@ -87,12 +98,21 @@ func listModCmdRun(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	opts := oci.Options(ctx, listModArgs.creds.String(), rootArgs.registryInsecure)
-	list, err := oci.ListModuleVersions(ociURL, listModArgs.withDigest, opts)
+	list, total, err := oci.ListModuleVersions(ctx, ociURL, oci.ListModuleOptions{
+		WithDigest: listModArgs.withDigest,
+		Limit:      listModArgs.limit,
+	}, opts)
 	if err != nil {
 		return err
 	}
 
 	spin.Stop()
+
+	if listModArgs.limit > 0 && total > listModArgs.limit {
+		log := LoggerFrom(cmd.Context())
+		log.Info(fmt.Sprintf("showing %d of %d versions, use --limit 0 for all",
+			listModArgs.limit, total))
+	}
 
 	if listModArgs.output == "" {
 		var rows [][]string

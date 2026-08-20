@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -27,25 +28,40 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 )
 
+// ListModuleOptions holds the options for listing the versions
+// of a module repository.
+type ListModuleOptions struct {
+	// WithDigest enables the resolving of the digest for each version.
+	WithDigest bool
+
+	// Limit caps the number of versions returned, newest first,
+	// all versions are returned if 0. The latest tag, when present,
+	// is always included and does not count towards the limit.
+	Limit int
+}
+
 // ListModuleVersions performs the following operations:
-// - lists all the tags from to this module repository
-// - filters and orders the tags based on semver
-// - fetches the digest of the latest version
-// - fetches the digest of each version (if configured to do so)
-// - returns an array of ModuleReference objects
-func ListModuleVersions(ociURL string, withDigest bool, opts []crane.Option) ([]apiv1.ModuleReference, error) {
+//   - lists all the tags from to this module repository
+//   - filters and orders the tags based on semver
+//   - truncates the versions to the configured limit
+//   - fetches the digest of the latest version
+//   - fetches the digest of each version concurrently (if configured to do so)
+//   - returns an array of ModuleReference objects along with the total
+//     number of versions found before the limit was applied (excluding latest)
+func ListModuleVersions(ctx context.Context, ociURL string, listOpts ListModuleOptions, opts []crane.Option) ([]apiv1.ModuleReference, int, error) {
 	var list []apiv1.ModuleReference
+	withDigest := listOpts.WithDigest
 
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	repoURL := ref.Context().Name()
 
 	tags, err := crane.ListTags(repoURL, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("listing tags failed: %w", err)
+		return nil, 0, fmt.Errorf("listing tags failed: %w", err)
 	}
 
 	var versions []*semver.Version
@@ -58,6 +74,13 @@ func ListModuleVersions(ociURL string, withDigest bool, opts []crane.Option) ([]
 	}
 	sort.Sort(sort.Reverse(semver.Collection(versions)))
 
+	tags = make([]string, 0, len(versions))
+	for _, v := range versions {
+		tags = append(tags, v.String())
+	}
+	total := len(tags)
+	tags = limitTags(tags, listOpts.Limit)
+
 	if digest, err := crane.Digest(fmt.Sprintf("%s:%s", repoURL, name.DefaultTag), opts...); err == nil {
 		if !withDigest {
 			digest = ""
@@ -69,22 +92,21 @@ func ListModuleVersions(ociURL string, withDigest bool, opts []crane.Option) ([]
 		})
 	}
 
-	for _, v := range versions {
-		digest := ""
-		if withDigest {
-			d, err := crane.Digest(fmt.Sprintf("%s:%s", repoURL, v.String()), opts...)
-			if err != nil {
-				return nil, fmt.Errorf("faild to get digest for '%s': %w", v.String(), err)
-			}
-			digest = d
+	digests := make([]string, len(tags))
+	if withDigest {
+		digests, err = resolveDigests(ctx, repoURL, tags, opts)
+		if err != nil {
+			return nil, 0, err
 		}
-		list = append(list, apiv1.ModuleReference{
-			Repository: ociURL,
-			Version:    v.String(),
-			Digest:     digest,
-		})
-
 	}
 
-	return list, nil
+	for i, tag := range tags {
+		list = append(list, apiv1.ModuleReference{
+			Repository: ociURL,
+			Version:    tag,
+			Digest:     digests[i],
+		})
+	}
+
+	return list, total, nil
 }

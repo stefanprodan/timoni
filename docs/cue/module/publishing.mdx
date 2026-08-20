@@ -187,7 +187,10 @@ Timoni offers a command for listing all the versions available in a
 container registry for a particular module.
 
 The `timoni mod list oci://<module-url>` prints a table with the versions order
-by semver and the OCI digest corresponding to each version.
+by semver and the OCI digest corresponding to each version. The newest 100 versions
+are listed by default, use `--limit 0` to list all of them or `--limit <n>` to
+change the number of versions shown. Pass `--with-digest=false` to skip the
+digest lookups when only the version list is needed.
 
 Example:
 

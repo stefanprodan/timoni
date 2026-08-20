@@ -55,7 +55,7 @@ func TestModuleOperations(t *testing.T) {
 	err = TagArtifact(digestURL, apiv1.LatestVersion, opts)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	list, err := ListModuleVersions(imgURL, true, opts)
+	list, _, err := ListModuleVersions(ctx, imgURL, ListModuleOptions{WithDigest: true}, opts)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(len(list)).To(BeEquivalentTo(2))
 	g.Expect(list[0].Version).To(BeEquivalentTo(apiv1.LatestVersion))
@@ -157,4 +157,94 @@ func TestWriteCachedLayer(t *testing.T) {
 	contents, err := os.ReadFile(cachedLayer)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(contents).To(Equal([]byte("layer")))
+}
+
+func TestListModuleVersions(t *testing.T) {
+	g := NewWithT(t)
+	ctx := context.Background()
+
+	srcPath := "testdata/module/"
+	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module", 5))
+	opts := Options(ctx, "", false)
+
+	const count = 25
+	versions := make([]string, 0, count)
+	digests := map[string]string{}
+	for i := range count {
+		v := fmt.Sprintf("1.0.%d", i)
+		annotations := map[string]string{apiv1.VersionAnnotation: v}
+		digestURL, err := PushModule(fmt.Sprintf("%s:%s", imgURL, v), srcPath, nil, annotations, opts)
+		g.Expect(err).ToNot(HaveOccurred())
+		versions = append(versions, v)
+		digests[v] = digestURL[strings.LastIndex(digestURL, "@")+1:]
+	}
+	g.Expect(TagArtifact(fmt.Sprintf("%s:%s", imgURL, versions[count-1]), apiv1.LatestVersion, opts)).To(Succeed())
+
+	// newest first
+	expected := make([]string, 0, count)
+	for i := count - 1; i >= 0; i-- {
+		expected = append(expected, versions[i])
+	}
+
+	t.Run("lists all versions with digests", func(t *testing.T) {
+		g := NewWithT(t)
+		list, total, err := ListModuleVersions(ctx, imgURL, ListModuleOptions{WithDigest: true}, opts)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(total).To(Equal(count))
+		g.Expect(list).To(HaveLen(count + 1))
+		g.Expect(list[0].Version).To(Equal(apiv1.LatestVersion))
+		g.Expect(list[0].Digest).To(Equal(digests[versions[count-1]]))
+		for i, v := range expected {
+			g.Expect(list[i+1].Version).To(Equal(v))
+			g.Expect(list[i+1].Digest).To(Equal(digests[v]))
+			g.Expect(list[i+1].Repository).To(Equal(imgURL))
+		}
+	})
+
+	t.Run("limits to the newest versions", func(t *testing.T) {
+		g := NewWithT(t)
+		list, total, err := ListModuleVersions(ctx, imgURL, ListModuleOptions{WithDigest: true, Limit: 10}, opts)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(total).To(Equal(count))
+		g.Expect(list).To(HaveLen(11))
+		g.Expect(list[0].Version).To(Equal(apiv1.LatestVersion))
+		for i, v := range expected[:10] {
+			g.Expect(list[i+1].Version).To(Equal(v))
+			g.Expect(list[i+1].Digest).To(Equal(digests[v]))
+		}
+	})
+
+	t.Run("limits without digests", func(t *testing.T) {
+		g := NewWithT(t)
+		list, total, err := ListModuleVersions(ctx, imgURL, ListModuleOptions{Limit: 3}, opts)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(total).To(Equal(count))
+		g.Expect(list).To(HaveLen(4))
+		for _, ref := range list {
+			g.Expect(ref.Digest).To(BeEmpty())
+		}
+	})
+
+	t.Run("ignores non-semver tags", func(t *testing.T) {
+		g := NewWithT(t)
+		otherURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module", 5))
+		_, err := PushModule(fmt.Sprintf("%s:%s", otherURL, "dev"), srcPath, nil, map[string]string{}, opts)
+		g.Expect(err).ToNot(HaveOccurred())
+
+		list, total, err := ListModuleVersions(ctx, otherURL, ListModuleOptions{WithDigest: true, Limit: 10}, opts)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(total).To(BeZero())
+		g.Expect(list).To(BeEmpty())
+	})
+
+	t.Run("propagates digest errors", func(t *testing.T) {
+		g := NewWithT(t)
+		cancelled, cancel := context.WithCancel(ctx)
+		cancel()
+
+		list, _, err := ListModuleVersions(cancelled, imgURL, ListModuleOptions{WithDigest: true}, opts)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(MatchRegexp(`failed to get digest for '1\.0\.\d+'`))
+		g.Expect(list).To(BeNil())
+	})
 }
