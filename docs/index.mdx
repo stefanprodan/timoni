@@ -1,5 +1,5 @@
 ---
-title: "Timoni"
+title: "Package Manager for Kubernetes"
 description: "Distribution and lifecycle management for cloud-native applications, powered by CUE."
 mode: "custom"
 ---
@@ -30,15 +30,13 @@ mode: "custom"
           </a>
         </div>
       </div>
-      <div className="flex justify-center lg:justify-end">
-        <div className="tm-gradient rounded-2xl p-10 shadow-xl lg:p-12">
-          <img
-            src="/images/logo_icons.svg"
-            alt="Timoni"
-            className="w-56 max-w-full lg:w-72"
-            noZoom
-          />
-        </div>
+      <div className="hidden lg:flex lg:justify-end">
+        <img
+          src="/images/logo_icons.svg"
+          alt="Timoni"
+          className="tm-hero-logo w-64 max-w-full lg:w-80"
+          noZoom
+        />
       </div>
     </div>
   </section>
@@ -162,7 +160,7 @@ mode: "custom"
               <span className="tm-check">
                 <Icon icon="check" />
               </span>
-              <span>Skills evaluated by running agents through the full deployment lifecycle.</span>
+              <span>Skills tested end-to-end with various LLMs.</span>
             </li>
             <li className="flex gap-3">
               <span className="tm-check">
@@ -188,7 +186,7 @@ mode: "custom"
         </div>
         <CardGroup cols={1}>
           <Card title="Agent skills" icon="wand-magic-sparkles" href="/ai-agents#agent-skills" horizontal>
-            Install the Timoni skills into any agent with: <span className="block mt-1"><code>{"npx skills add https://timoni.sh"}</code></span>
+            Install the Timoni skills for any agent with: <span className="block mt-1"><code>{"npx skills add https://timoni.sh"}</code></span>
           </Card>
           <Card title="Docs MCP server" icon="plug" href="/ai-agents#docs-mcp-server" horizontal>
             Connect your agent to grep and fetch the docs: <span className="block mt-1"><code>{"https://timoni.sh/mcp"}</code></span>
@@ -286,7 +284,7 @@ mode: "custom"
         </div>
       </div>
       <div className="tm-footer-bottom mt-10 flex flex-wrap items-center justify-between gap-4 pt-6 text-sm text-gray-500 dark:text-gray-400">
-        <span>Copyright 2026 Stefan Prodan. Released under the Apache 2.0 license.</span>
+        <span>Copyright © 2026 <a href="https://stefanprodan.com">Stefan Prodan</a></span>
         <span className="tm-footer-socials">
           <a href="https://github.com/stefanprodan/timoni" aria-label="GitHub"><Icon icon="github" iconType="brands" /></a>
           <a href="https://cloud-native.slack.com/team/ULPRMFH38" aria-label="Slack"><Icon icon="slack" iconType="brands" /></a>

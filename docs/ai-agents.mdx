@@ -6,14 +6,6 @@ description: "Equip AI coding agents with the Timoni skills and the docs MCP ser
 Timoni ships **agent skills** and a **documentation MCP server** so that AI coding agents
 can operate Timoni end-to-end: from authoring modules and bundles to orchestrating multi-cluster deployments.
 
-<Tip>
-**Evaluated with agents**
-
-The skills are evaluated by running agents against them with no other documentation,
-on realistic tasks that cover the full lifecycle: from discovering a module's config schema
-to previewing changes with a server-side diff, applying, checking status and cleaning up.
-</Tip>
-
 ## Agent skills
 
 Timoni publishes its skills following the [Agent Skills](https://agentskills.io) standard.
@@ -24,7 +16,7 @@ when a task calls for it.
 
 <Tabs sync={false}>
   <Tab title="skills CLI">
-    Install all the Timoni skills into any supported agent (Claude Code, Cursor, Codex, Copilot and others) with:
+    Install all the Timoni skills for supported agents (Claude Code, Cursor, Codex, Copilot and others) with:
 
     ```shell
     npx skills add https://timoni.sh
@@ -32,20 +24,9 @@ when a task calls for it.
 
     The command discovers the skills from the Timoni website and places them in the agent's skills directory.
   </Tab>
-  <Tab title="Claude Code">
-    Add a skill to a project so that it is shared with your team:
-
-    ```shell
-    mkdir -p .claude/skills/timoni
-    curl -sL https://timoni.sh/.well-known/agent-skills/timoni/SKILL.md \
-      -o .claude/skills/timoni/SKILL.md
-    ```
-
-    To make the skill available in all your projects, place it under `~/.claude/skills/timoni/SKILL.md` instead.
-  </Tab>
   <Tab title="Manual">
-    Download a skill file and place it in the skills directory of your agent,
-    in a sub-directory named after the skill:
+    Download the skill file into a directory named `timoni`,
+    inside your agent's skills directory:
 
     ```shell
     mkdir -p timoni
@@ -68,6 +49,14 @@ when a task calls for it.
 | Module authoring | Scaffold a module, define the config schema, template objects, vendor CRDs, add tests and health checks |
 | Distribution | Push, tag, sign and verify modules and bundles in container registries |
 | Safety | Preview with `--diff` and `--dry-run`, namespace scoping, and the apply, prune and wait semantics |
+
+<Tip>
+**Tested end-to-end**
+
+The skills are periodically evaluated by running agents against them with no other documentation,
+on realistic tasks that cover the full lifecycle: from discovering a module's config schema
+to previewing changes with a server-side diff, applying, checking status and cleaning up.
+</Tip>
 
 ## Docs MCP server
 
@@ -164,9 +153,3 @@ With the skills installed and the MCP server connected, agents can carry out tas
 - *Write a runtime for the `staging` and `production` kube contexts and apply the bundle to both, with two replicas in staging and three in production.*
 - *Scaffold a Timoni module for my web app with a typed config for the image, replicas and ingress host, vendor the cert-manager CRDs, and add a test job.*
 - *Upgrade all the instances in the `monitoring` namespace to the latest module versions and report their status.*
-
-<Tip>
-Agents operating Timoni follow the same safe workflow as humans: validate with `timoni mod vet` and `timoni bundle vet`,
-preview with `--diff` or `--dry-run`, apply, then confirm with `timoni status`.
-Scope an agent's cluster access with a dedicated kube context and namespace when trying it out.
-</Tip>

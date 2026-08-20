@@ -101,6 +101,54 @@ func Test_ListMod(t *testing.T) {
 		}
 	})
 
+	t.Run("limits the versions", func(t *testing.T) {
+		g := NewWithT(t)
+		stdout, stderr, err := executeCommandWithOutErr(fmt.Sprintf(
+			"mod ls oci://%s --limit 2",
+			modURL,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		g.Expect(stdout).To(ContainSubstring(apiv1.LatestVersion))
+		g.Expect(stdout).To(ContainSubstring("2.0.0"))
+		g.Expect(stdout).To(ContainSubstring("1.1.0-rc.1"))
+		g.Expect(stdout).ToNot(ContainSubstring("1.0.0"))
+		g.Expect(stdout).ToNot(ContainSubstring("showing"))
+		g.Expect(stderr).To(ContainSubstring("showing 2 of 3 versions, use --limit 0 for all"))
+	})
+
+	t.Run("keeps the JSON output clean when limited", func(t *testing.T) {
+		g := NewWithT(t)
+		stdout, stderr, err := executeCommandWithOutErr(fmt.Sprintf(
+			"mod ls oci://%s --limit 1 -o json",
+			modURL,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		var list []apiv1.ModuleReference
+		g.Expect(json.Unmarshal([]byte(stdout), &list)).To(Succeed())
+		g.Expect(list).To(HaveLen(2))
+		g.Expect(list[0].Version).To(Equal(apiv1.LatestVersion))
+		g.Expect(list[1].Version).To(Equal("2.0.0"))
+		g.Expect(stderr).To(ContainSubstring("showing 1 of 3 versions"))
+	})
+
+	t.Run("prints no notice when all versions fit", func(t *testing.T) {
+		g := NewWithT(t)
+		_, stderr, err := executeCommandWithOutErr(fmt.Sprintf(
+			"mod ls oci://%s --limit 0",
+			modURL,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(stderr).ToNot(ContainSubstring("showing"))
+	})
+
+	t.Run("fails for negative limit", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := executeCommand("mod ls oci://registry.example.com/org/module --limit -1")
+		g.Expect(err).To(MatchError("--limit must be greater than or equal to 0"))
+	})
+
 	t.Run("fails for invalid output format", func(t *testing.T) {
 		g := NewWithT(t)
 		_, err := executeCommand("mod ls oci://registry.example.com/org/module -o junk")

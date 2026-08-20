@@ -45,7 +45,7 @@ func Test_ListArtifact(t *testing.T) {
 		t.Helper()
 		g := NewWithT(t)
 
-		output, err := executeCommand(fmt.Sprintf("artifact ls oci://%s -o json %s", aURL, args))
+		output, _, err := executeCommandWithOutErr(fmt.Sprintf("artifact ls oci://%s -o json %s", aURL, args))
 		g.Expect(err).ToNot(HaveOccurred())
 
 		var list []apiv1.ArtifactReference
@@ -148,6 +148,35 @@ func Test_ListArtifact(t *testing.T) {
 		_, err := executeCommand(fmt.Sprintf("artifact ls oci://%s --filter-semver 'junk'", aURL))
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("invalid semver filter"))
+	})
+
+	t.Run("limits the tags", func(t *testing.T) {
+		g := NewWithT(t)
+		stdout, stderr, err := executeCommandWithOutErr(fmt.Sprintf(
+			"artifact ls oci://%s --limit 2 -o json",
+			aURL,
+		))
+		g.Expect(err).ToNot(HaveOccurred())
+
+		var list []apiv1.ArtifactReference
+		g.Expect(json.Unmarshal([]byte(stdout), &list)).To(Succeed())
+		var tags []string
+		for _, ref := range list {
+			tags = append(tags, ref.Tag)
+		}
+		g.Expect(tags).To(Equal([]string{"latest", "dev", "2.0.0"}))
+		g.Expect(stderr).To(ContainSubstring("showing 2 of 4 tags, use --limit 0 for all"))
+	})
+
+	t.Run("limits the filtered tags", func(t *testing.T) {
+		g := NewWithT(t)
+		g.Expect(listTags(t, "--filter-semver '>=1.0.0' --limit 1")).To(Equal([]string{"2.0.0"}))
+	})
+
+	t.Run("fails for negative limit", func(t *testing.T) {
+		g := NewWithT(t)
+		_, err := executeCommand("artifact ls oci://registry.example.com/org/app --limit -1")
+		g.Expect(err).To(MatchError("--limit must be greater than or equal to 0"))
 	})
 
 	t.Run("fails for invalid output format", func(t *testing.T) {

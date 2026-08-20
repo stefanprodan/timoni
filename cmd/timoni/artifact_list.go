@@ -35,12 +35,17 @@ var listArtifactCmd = &cobra.Command{
 	Args:    cobra.MaximumNArgs(1),
 	Aliases: []string{"ls"},
 	Short:   "List the tags of an artifact",
-	Long:    `The list command prints a table with the artifact tags and their digests.`,
-	Example: `  # Print the tags and digests of an artifact
-  timoni artifact ls oci://docker.io/org/app 
+	Long: `The list command prints a table with the artifact tags and their digests.
+By default, the last 100 tags in descending lexical order are listed,
+use '--limit 0' to list all tags.`,
+	Example: `  # Print the last 100 tags and their digests
+  timoni artifact ls oci://docker.io/org/app
 
-  # Print the tags without digests
-  timoni artifact list oci://ghcr.io/org/bundles/app --with-digest=false
+  # Print the last 10 tags
+  timoni artifact list oci://docker.io/org/app --limit 10
+
+  # Print all the tags without digests
+  timoni artifact list oci://ghcr.io/org/bundles/app --limit 0 --with-digest=false
 
   # Print the tags matching a regular expression
   timoni artifact list oci://docker.io/org/app --filter-regex '^1\.'
@@ -53,7 +58,7 @@ var listArtifactCmd = &cobra.Command{
   timoni artifact list oci://docker.io/org/app
 
   # Check if a tag is published using the JSON output
-  timoni artifact list oci://ghcr.io/org/bundles/app -o json | \
+  timoni artifact list oci://ghcr.io/org/bundles/app --limit 0 -o json | \
 	jq -e --arg t "latest" 'any(.[]; .tag == $t)'
 `,
 	RunE: listArtifactCmdRun,
@@ -62,6 +67,7 @@ var listArtifactCmd = &cobra.Command{
 type listArtifactFlags struct {
 	creds        flags.Credentials
 	withDigest   bool
+	limit        int
 	output       string
 	filterRegex  string
 	filterSemver string
@@ -72,7 +78,9 @@ var listArtifactArgs listArtifactFlags
 func init() {
 	listArtifactCmd.Flags().Var(&listArtifactArgs.creds, listArtifactArgs.creds.Type(), listArtifactArgs.creds.Description())
 	listArtifactCmd.Flags().BoolVar(&listArtifactArgs.withDigest, "with-digest", true,
-		"Resolve the digest of each version.")
+		"Resolve the digest of each tag.")
+	listArtifactCmd.Flags().IntVar(&listArtifactArgs.limit, "limit", 100,
+		"Limit the number of tags listed in descending lexical order (0 for all).")
 	listArtifactCmd.Flags().StringVarP(&listArtifactArgs.output, "output", "o", "",
 		"The format in which the tags should be printed, can be 'yaml' or 'json'.")
 	listArtifactCmd.Flags().StringVar(&listArtifactArgs.filterRegex, "filter-regex", "",
@@ -92,6 +100,10 @@ func listArtifactCmdRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if listArtifactArgs.limit < 0 {
+		return fmt.Errorf("--limit must be greater than or equal to 0")
+	}
+
 	spin := logger.StartSpinner("fetching tags")
 	defer spin.Stop()
 
@@ -99,16 +111,23 @@ func listArtifactCmdRun(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	opts := oci.Options(ctx, listArtifactArgs.creds.String(), rootArgs.registryInsecure)
-	list, err := oci.ListArtifactTags(ociURL, oci.ListArtifactOptions{
+	list, total, err := oci.ListArtifactTags(ctx, ociURL, oci.ListArtifactOptions{
 		WithDigest:   listArtifactArgs.withDigest,
 		FilterRegex:  listArtifactArgs.filterRegex,
 		FilterSemver: listArtifactArgs.filterSemver,
+		Limit:        listArtifactArgs.limit,
 	}, opts)
 	if err != nil {
 		return err
 	}
 
 	spin.Stop()
+
+	if listArtifactArgs.limit > 0 && total > listArtifactArgs.limit {
+		log := LoggerFrom(cmd.Context())
+		log.Info(fmt.Sprintf("showing %d of %d tags, use --limit 0 for all",
+			listArtifactArgs.limit, total))
+	}
 
 	if listArtifactArgs.output == "" {
 		var rows [][]string

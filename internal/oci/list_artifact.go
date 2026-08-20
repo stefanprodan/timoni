@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"sort"
@@ -41,25 +42,32 @@ type ListArtifactOptions struct {
 	// FilterSemver is a semantic version range used to filter the tags,
 	// all tags are returned if empty.
 	FilterSemver string
+
+	// Limit caps the number of tags returned in descending lexical order,
+	// all tags are returned if 0. The latest tag, when present,
+	// is always included and does not count towards the limit.
+	Limit int
 }
 
 // ListArtifactTags performs the following operations:
-// - fetches the digest of the latest tag (if it exists)
-// - lists all the tags from the artifact repository
-// - filters the tags based on the regex and semver expressions (if configured to do so)
-// - fetches the digest of each tag (if configured to do so)
-// - returns an array of ArtifactReference objects
-func ListArtifactTags(ociURL string, listOpts ListArtifactOptions, opts []crane.Option) ([]apiv1.ArtifactReference, error) {
+//   - fetches the digest of the latest tag (if it exists)
+//   - lists all the tags from the artifact repository
+//   - filters the tags based on the regex and semver expressions (if configured to do so)
+//   - truncates the tags to the configured limit
+//   - fetches the digest of each tag concurrently (if configured to do so)
+//   - returns an array of ArtifactReference objects along with the total
+//     number of tags found before the limit was applied (excluding latest)
+func ListArtifactTags(ctx context.Context, ociURL string, listOpts ListArtifactOptions, opts []crane.Option) ([]apiv1.ArtifactReference, int, error) {
 	var list []apiv1.ArtifactReference
 
 	ref, err := parseArtifactRef(ociURL)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	filter, err := newTagFilter(listOpts.FilterRegex, listOpts.FilterSemver)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	withDigest := listOpts.WithDigest
@@ -80,31 +88,38 @@ func ListArtifactTags(ociURL string, listOpts ListArtifactOptions, opts []crane.
 
 	tags, err := crane.ListTags(repoURL, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("listing tags failed: %w", err)
+		return nil, 0, fmt.Errorf("listing tags failed: %w", err)
 	}
 
 	sort.Slice(tags, func(i, j int) bool { return tags[i] > tags[j] })
 
+	filtered := make([]string, 0, len(tags))
 	for _, tag := range tags {
 		if tag == name.DefaultTag || !filter.matches(tag) {
 			continue
 		}
-		digest := ""
-		if withDigest {
-			d, err := crane.Digest(fmt.Sprintf("%s:%s", repoURL, tag), opts...)
-			if err != nil {
-				return nil, fmt.Errorf("faild to get digest for '%s': %w", tag, err)
-			}
-			digest = d
+		filtered = append(filtered, tag)
+	}
+	total := len(filtered)
+	tags = limitTags(filtered, listOpts.Limit)
+
+	digests := make([]string, len(tags))
+	if withDigest {
+		digests, err = resolveDigests(ctx, repoURL, tags, opts)
+		if err != nil {
+			return nil, 0, err
 		}
+	}
+
+	for i, tag := range tags {
 		list = append(list, apiv1.ArtifactReference{
 			Repository: ociURL,
 			Tag:        tag,
-			Digest:     digest,
+			Digest:     digests[i],
 		})
 	}
 
-	return list, nil
+	return list, total, nil
 }
 
 // tagFilter filters OCI tags by regular expression and semantic version range.
