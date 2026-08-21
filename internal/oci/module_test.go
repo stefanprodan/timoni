@@ -38,7 +38,7 @@ func TestModuleOperations(t *testing.T) {
 
 	srcPath := "testdata/module/"
 	imgVersion := "1.0.0"
-	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module", 5))
+	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module"))
 	imgVersionURL := fmt.Sprintf("%s:%s", imgURL, imgVersion)
 	imgIgnore := []string{"timoni.ignore"}
 	imgLicense := "org.opencontainers.image.licenses=Apache-2.0"
@@ -164,7 +164,7 @@ func TestListModuleVersions(t *testing.T) {
 	ctx := context.Background()
 
 	srcPath := "testdata/module/"
-	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module", 5))
+	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module"))
 	opts := Options(ctx, "", false)
 
 	const count = 25
@@ -227,7 +227,7 @@ func TestListModuleVersions(t *testing.T) {
 
 	t.Run("ignores non-semver tags", func(t *testing.T) {
 		g := NewWithT(t)
-		otherURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module", 5))
+		otherURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module"))
 		_, err := PushModule(fmt.Sprintf("%s:%s", otherURL, "dev"), srcPath, nil, map[string]string{}, opts)
 		g.Expect(err).ToNot(HaveOccurred())
 

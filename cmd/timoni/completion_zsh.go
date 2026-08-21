@@ -42,8 +42,8 @@ timoni completion zsh > _timoni
 
 mv _timoni ~/.oh-my-zsh/completions  # oh-my-zsh
 mv _timoni ~/.zprezto/modules/completion/external/src/  # zprezto`,
-	Run: func(cmd *cobra.Command, args []string) {
-		rootCmd.GenZshCompletion(os.Stdout)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return rootCmd.GenZshCompletion(os.Stdout)
 	},
 }
 

@@ -47,12 +47,12 @@ func TestApplyWithCRDs(t *testing.T) {
 	g := NewWithT(t)
 	ctx := context.Background()
 	modPath := "testdata/module-crd"
-	name := rnd("my-widget", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-widget")
+	namespace := rnd("my-namespace")
 
 	// A unique API group per run guarantees the kind is unknown to
 	// any discovery data cached before the apply starts.
-	group := fmt.Sprintf("%s.testing.timoni.sh", rnd("apply", 5))
+	group := fmt.Sprintf("%s.testing.timoni.sh", rnd("apply"))
 
 	valuesPath := filepath.Join(t.TempDir(), "values.cue")
 	g.Expect(os.WriteFile(valuesPath,
@@ -93,13 +93,13 @@ func TestApplyWithCRDs(t *testing.T) {
 func Test_BundleApplyWithCRDs(t *testing.T) {
 	g := NewWithT(t)
 	ctx := context.Background()
-	bundleName := rnd("my-bundle", 5)
+	bundleName := rnd("my-bundle")
 	modPath := "testdata/module-crd"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
-	group := fmt.Sprintf("%s.testing.timoni.sh", rnd("bundle", 5))
+	group := fmt.Sprintf("%s.testing.timoni.sh", rnd("bundle"))
 
 	// Push the module to registry
 	_, err := executeCommand(fmt.Sprintf(

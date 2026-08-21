@@ -41,6 +41,9 @@ import (
 	"github.com/stefanprodan/timoni/internal/flags"
 )
 
+// markdownTableRowRegex matches a markdown table row.
+var markdownTableRowRegex = regexp.MustCompile(`^\|.*\|$`)
+
 var configShowModCmd = &cobra.Command{
 	Use:   "config [MODULE PATH]",
 	Args:  cobra.MaximumNArgs(1),
@@ -79,7 +82,7 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		configShowModArgs.path = args[0]
 	}
 
-	if fs, err := os.Stat(configShowModArgs.path); err != nil || !fs.IsDir() {
+	if fi, err := os.Stat(configShowModArgs.path); err != nil || !fi.IsDir() {
 		return fmt.Errorf("module not found at path %s", configShowModArgs.path)
 	}
 
@@ -164,7 +167,9 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 	var tableBuffer bytes.Buffer
 	tableWriter := bufio.NewWriter(&tableBuffer)
 	printMarkDownTable(tableWriter, header, rows)
-	tableWriter.Flush()
+	if err := tableWriter.Flush(); err != nil {
+		return "", describeErr(f.GetModuleRoot(), "Flushing the table buffer failed", err)
+	}
 	// get a temporary file name
 	tmpFileName := readFile + ".tmp"
 	// open the input file
@@ -210,22 +215,25 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 				configSection = true
 			}
 
-			matched, err := regexp.MatchString(`^\|.*\|$`, line)
-			if err != nil {
-				return "", describeErr(f.GetModuleRoot(), "Regex Match for table content failed", err)
-			}
+			matched := markdownTableRowRegex.MatchString(line)
 
 			if configSection && !foundTable && matched {
 				foundTable = true
-				outputWriter.WriteString(tableBuffer.String() + "\n")
+				if _, err := outputWriter.WriteString(tableBuffer.String() + "\n"); err != nil {
+					return "", describeErr(f.GetModuleRoot(), "Writing the output file failed", err)
+				}
 			} else if configSection && foundTable && matched {
 			} else if configSection && foundTable && !matched {
 				configSection = false
 			} else {
-				outputWriter.WriteString(line + "\n")
+				if _, err := outputWriter.WriteString(line + "\n"); err != nil {
+					return "", describeErr(f.GetModuleRoot(), "Writing the output file failed", err)
+				}
 			}
 		} else {
-			outputWriter.WriteString(line + "\n")
+			if _, err := outputWriter.WriteString(line + "\n"); err != nil {
+				return "", describeErr(f.GetModuleRoot(), "Writing the output file failed", err)
+			}
 		}
 	}
 	if err := inputScanner.Err(); err != nil {
@@ -234,7 +242,9 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 
 	// If no table was found, append it to the end of the file
 	if !foundTable {
-		outputWriter.WriteString("\n" + tableBuffer.String())
+		if _, err := outputWriter.WriteString("\n" + tableBuffer.String()); err != nil {
+			return "", describeErr(f.GetModuleRoot(), "Writing the output file failed", err)
+		}
 	}
 
 	err = outputWriter.Flush()

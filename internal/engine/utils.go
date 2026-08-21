@@ -35,8 +35,8 @@ func IsOCIUrl(url string) bool {
 	return strings.HasPrefix(url, apiv1.ArtifactPrefix)
 }
 
-// IsFileUrl returns true if the given URL is a file URL.
-func IsFileUrl(url string) bool {
+// IsFileURL returns true if the given URL is a file URL.
+func IsFileURL(url string) bool {
 	return strings.HasPrefix(url, apiv1.LocalPrefix)
 }
 

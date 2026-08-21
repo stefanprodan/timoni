@@ -18,9 +18,11 @@ package oci
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -66,14 +68,18 @@ func setupRegistryServer(ctx context.Context) error {
 		return fmt.Errorf("failed to create docker registry: %w", err)
 	}
 
-	go dockerRegistry.ListenAndServe()
+	go func() {
+		if err := dockerRegistry.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
+	}()
 
 	return nil
 }
 
-func rnd(prefix string, n int) string {
+func rnd(prefix string) string {
 	runes := []rune("abcdefghijklmnopqrstuvwxyz1234567890")
-	b := make([]rune, n)
+	b := make([]rune, 5)
 	for i := range b {
 		b[i] = runes[rand.Intn(len(runes))]
 	}

@@ -193,7 +193,7 @@ func runBundleApplyCmd(cmd *cobra.Command, _ []string) error {
 			return err
 		}
 
-		log := loggerBundle(cmd.Context(), bundle.Name, cluster.Name, true)
+		log := loggerBundle(cmd.Context(), bundle.Name, cluster.Name)
 
 		if !bundleApplyArgs.overwriteOwnership {
 			err = bundleInstancesOwnershipConflicts(cmd.Context(), bundle.Instances)
@@ -391,11 +391,11 @@ func saveReaderToFile(reader io.Reader) (string, error) {
 	if err != nil {
 		return "", errors.New("unable to create temp dir for stdin")
 	}
-	path := f.Name()
+	tmpPath := f.Name()
 	keep := false
 	defer func() {
 		if !keep {
-			_ = os.Remove(path)
+			_ = os.Remove(tmpPath)
 		}
 	}()
 
@@ -408,7 +408,7 @@ func saveReaderToFile(reader io.Reader) (string, error) {
 	}
 
 	keep = true
-	return path, nil
+	return tmpPath, nil
 }
 
 func bundleInstancesOwnershipConflicts(parent context.Context, bundleInstances []*apiv1.BundleInstance) error {

@@ -32,8 +32,8 @@ func TestBuild(t *testing.T) {
 
 	t.Run("builds module with default values", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-instance", 5)
-		namespace := rnd("my-namespace", 5)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
 		output, err := executeCommand(fmt.Sprintf(
 			"build -n %s %s %s -p main -o yaml",
 			namespace,
@@ -56,8 +56,8 @@ func TestBuild(t *testing.T) {
 
 	t.Run("builds module and outputs JSON", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-instance", 5)
-		namespace := rnd("my-namespace", 5)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
 		output, err := executeCommand(fmt.Sprintf(
 			"build -n %s %s %s -p main -o json",
 			namespace,
@@ -75,8 +75,8 @@ func TestBuild(t *testing.T) {
 
 	t.Run("builds module with custom values", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-instance", 5)
-		namespace := rnd("my-namespace", 5)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
 		output, err := executeCommand(fmt.Sprintf(
 			"build -n %s %s %s -f %s -p main -o yaml",
 			namespace,
@@ -99,8 +99,8 @@ func TestBuild(t *testing.T) {
 
 	t.Run("builds module with YAML and JSON values", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-instance", 5)
-		namespace := rnd("my-namespace", 5)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
 		output, err := executeCommand(fmt.Sprintf(
 			"build -n %s %s %s -f %s -f %s -p main -o yaml",
 			namespace,
@@ -125,8 +125,8 @@ func TestBuild(t *testing.T) {
 
 	t.Run("builds module with merged values", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-instance", 5)
-		namespace := rnd("my-namespace", 5)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
 		output, err := executeCommand(fmt.Sprintf(
 			"build -n %s %s %s -f %s -f %s -f %s -p main -o yaml",
 			namespace,
@@ -153,8 +153,8 @@ func TestBuild(t *testing.T) {
 
 	t.Run("fails to build with syntactically invalid file", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-instance", 5)
-		namespace := rnd("my-namespace", 5)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
 		output, err := executeCommand(fmt.Sprintf(
 			"build -n %s %s %s -f %s -p main -o yaml",
 			namespace,
@@ -169,8 +169,8 @@ func TestBuild(t *testing.T) {
 
 	t.Run("fails to build with invalid values", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-instance", 5)
-		namespace := rnd("my-namespace", 5)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
 		output, err := executeCommand(fmt.Sprintf(
 			"build -n %s %s %s -f %s -p main -o yaml",
 			namespace,
@@ -185,8 +185,8 @@ func TestBuild(t *testing.T) {
 
 	t.Run("fails to build with undefined package", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-instance", 5)
-		namespace := rnd("my-namespace", 5)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
 		output, err := executeCommand(fmt.Sprintf(
 			"build -n %s %s %s -p test -o yaml",
 			namespace,
@@ -200,8 +200,8 @@ func TestBuild(t *testing.T) {
 
 	t.Run("fails to build with missing values file", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-instance", 5)
-		namespace := rnd("my-namespace", 5)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
 		output, err := executeCommand(fmt.Sprintf(
 			"build -n %s %s %s -f %s -p main -o yaml",
 			namespace,
@@ -217,8 +217,8 @@ func TestBuild(t *testing.T) {
 	t.Run("fails to build with kube version", func(t *testing.T) {
 		g := NewWithT(t)
 		t.Setenv("TIMONI_KUBE_VERSION", "1.19.0")
-		name := rnd("my-instance", 5)
-		namespace := rnd("my-namespace", 5)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
 		output, err := executeCommand(fmt.Sprintf(
 			"build -n %s %s %s -p main -o yaml",
 			namespace,
@@ -243,8 +243,8 @@ func TestBuild_WithDigest(t *testing.T) {
 
 	instanceName := "frontend"
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 

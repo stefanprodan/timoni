@@ -18,8 +18,10 @@ package testutils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 
 	"github.com/distribution/distribution/v3/configuration"
@@ -52,7 +54,11 @@ func (t *WithT) SetupTestRegistry() string {
 		t.Fatalf("failed to create docker registry: %s", err)
 	}
 
-	go dockerRegistry.ListenAndServe()
+	go func() {
+		if err := dockerRegistry.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
+	}()
 
 	return address
 }

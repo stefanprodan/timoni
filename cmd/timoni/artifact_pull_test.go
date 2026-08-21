@@ -31,7 +31,7 @@ func Test_PullArtifact(t *testing.T) {
 	aPath := "testdata/crd/golden/cue.mod/gen/"
 
 	g := NewWithT(t)
-	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-crds", 5))
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-crds"))
 	aTag := "latest"
 
 	// Push the artifact to registry

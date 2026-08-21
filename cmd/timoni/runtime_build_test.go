@@ -34,7 +34,7 @@ import (
 func Test_RuntimeBuild(t *testing.T) {
 	g := NewWithT(t)
 
-	resName := rnd("my-data", 5)
+	resName := rnd("my-data")
 
 	runtimeData := fmt.Sprintf(`
 runtime: {

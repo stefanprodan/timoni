@@ -175,9 +175,9 @@ func (b *BundleBuilder) Build(workspace string) (cue.Value, error) {
 	return v, nil
 }
 
-func (b *BundleBuilder) getInstanceUrl(v cue.Value) string {
+func (b *BundleBuilder) getInstanceURL(v cue.Value) string {
 	url, _ := v.String()
-	if path := strings.TrimPrefix(url, apiv1.LocalPrefix); IsFileUrl(url) && !filepath.IsAbs(path) {
+	if path := strings.TrimPrefix(url, apiv1.LocalPrefix); IsFileURL(url) && !filepath.IsAbs(path) {
 		source := v.Pos().Filename()
 		if origin, ok := b.mapSourceToOrigin[source]; ok {
 			source = origin
@@ -211,7 +211,7 @@ func (b *BundleBuilder) GetBundle(v cue.Value) (*apiv1.Bundle, error) {
 		expr := iter.Value()
 
 		vURL := expr.LookupPath(cue.ParsePath(apiv1.BundleModuleURLSelector.String()))
-		url := b.getInstanceUrl(vURL)
+		url := b.getInstanceURL(vURL)
 
 		vDigest := expr.LookupPath(cue.ParsePath(apiv1.BundleModuleDigestSelector.String()))
 		digest, _ := vDigest.String()

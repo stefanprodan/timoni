@@ -37,8 +37,8 @@ import (
 func TestApply(t *testing.T) {
 	modPath := "testdata/module"
 	tGroup := fmt.Sprintf("%s.%s", strings.ToLower(apiv1.InstanceKind), apiv1.GroupVersion.Group)
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 
 	t.Run("creates instance with default values", func(t *testing.T) {
 		g := NewWithT(t)
@@ -187,8 +187,8 @@ func TestApply_WithDigest(t *testing.T) {
 
 	instanceName := "frontend"
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -258,8 +258,8 @@ func TestApply_WithBundleConflicts(t *testing.T) {
 	bundleName := "my-bundle"
 	instanceName := "frontend"
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -336,8 +336,8 @@ bundle: {
 
 func TestApply_Actions(t *testing.T) {
 	modPath := "testdata/module"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 
 	t.Run("sets prune and force annotation", func(t *testing.T) {
 		g := NewWithT(t)
@@ -390,8 +390,8 @@ func TestApply_Actions(t *testing.T) {
 
 func TestApply_GlobalResources(t *testing.T) {
 	modPath := "testdata/module"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 	nsObj := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s-ns", name),

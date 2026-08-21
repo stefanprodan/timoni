@@ -32,10 +32,10 @@ import (
 func Test_BundleStatus(t *testing.T) {
 	g := NewWithT(t)
 
-	bundleName := rnd("my-bundle", 5)
+	bundleName := rnd("my-bundle")
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -129,10 +129,10 @@ bundle: {
 func Test_BundleStatus_Images(t *testing.T) {
 	g := NewWithT(t)
 
-	bundleName := rnd("my-bundle", 5)
+	bundleName := rnd("my-bundle")
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -177,10 +177,10 @@ bundle: {
 func Test_BundleStatus_Runtime(t *testing.T) {
 	g := NewWithT(t)
 
-	bundleName := rnd("my-bundle", 5)
+	bundleName := rnd("my-bundle")
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 

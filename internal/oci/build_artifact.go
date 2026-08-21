@@ -19,6 +19,7 @@ package oci
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -72,7 +73,7 @@ func BuildArtifact(dstFile, contentPath string, ignorePaths []string) error {
 		}
 
 		// Ignore anything that is not a file or directories e.g. symlinks
-		if m := fi.Mode(); !(m.IsRegular() || m.IsDir()) {
+		if m := fi.Mode(); !m.IsRegular() && !m.IsDir() {
 			return nil
 		}
 
@@ -116,20 +117,14 @@ func BuildArtifact(dstFile, contentPath string, ignorePaths []string) error {
 		}
 		return copyArtifactFile(tw, p)
 	}); err != nil {
-		tw.Close()
-		gw.Close()
-		tf.Close()
-		return err
+		return errors.Join(err, tw.Close(), gw.Close(), tf.Close())
 	}
 
 	if err := tw.Close(); err != nil {
-		gw.Close()
-		tf.Close()
-		return err
+		return errors.Join(err, gw.Close(), tf.Close())
 	}
 	if err := gw.Close(); err != nil {
-		tf.Close()
-		return err
+		return errors.Join(err, tf.Close())
 	}
 	if err := tf.Close(); err != nil {
 		return err

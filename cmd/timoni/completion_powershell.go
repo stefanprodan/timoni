@@ -41,8 +41,8 @@ Linux:
 
 cd "${XDG_CONFIG_HOME:-"$HOME/.config/"}/powershell/modules"
 timoni completion >> timoni-completions.ps1`,
-	Run: func(cmd *cobra.Command, args []string) {
-		rootCmd.GenPowerShellCompletion(os.Stdout)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return rootCmd.GenPowerShellCompletion(os.Stdout)
 	},
 }
 

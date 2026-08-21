@@ -82,7 +82,7 @@ func TestApplyWithHealthChecks(t *testing.T) {
 	g := NewWithT(t)
 	ctx := context.Background()
 	modPath := "testdata/module-hc"
-	namespace := rnd("my-namespace", 5)
+	namespace := rnd("my-namespace")
 
 	// Install the Demo CRD used by the module's health check.
 	crd := &unstructured.Unstructured{}
@@ -149,7 +149,7 @@ func TestApplyWithHealthChecks(t *testing.T) {
 
 	t.Run("waits for custom resource readiness", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-demo", 5)
+		name := rnd("my-demo")
 
 		applyResult := applyInstance(name)
 
@@ -173,7 +173,7 @@ func TestApplyWithHealthChecks(t *testing.T) {
 
 	t.Run("fails fast on stalled custom resource", func(t *testing.T) {
 		g := NewWithT(t)
-		name := rnd("my-demo", 5)
+		name := rnd("my-demo")
 
 		applyResult := applyInstance(name)
 

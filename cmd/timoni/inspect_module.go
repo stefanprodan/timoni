@@ -79,6 +79,6 @@ func runInspectModuleCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read module info: %w", err)
 	}
-	cmd.OutOrStdout().Write(data)
-	return nil
+	_, err = cmd.OutOrStdout().Write(data)
+	return err
 }

@@ -30,7 +30,7 @@ import (
 func Test_ListMod(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/module"
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
 	modVers := []string{"1.0.0", "2.0.0", "1.1.0-rc.1"}
 
 	for _, v := range modVers {

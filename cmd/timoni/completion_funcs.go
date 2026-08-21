@@ -27,7 +27,7 @@ import (
 // completeNamespaceList completes a Cobra argument or flag with
 // a Timoni instance, based on the current context in ~/.kube/config,
 // and the current namespace set via --namespace.
-func completeInstanceList(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func completeInstanceList(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	instances, err := listInstancesFromFlags(cmd.Context())
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError

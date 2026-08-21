@@ -77,7 +77,7 @@ func runListCmd(cmd *cobra.Command, args []string) error {
 
 	var rows [][]string
 	for _, inv := range instances {
-		row := []string{}
+		var row []string
 		if listArgs.allNamespaces {
 			row = []string{
 				inv.Name,

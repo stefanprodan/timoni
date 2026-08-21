@@ -39,8 +39,8 @@ func TestApplyTakeoverServicePorts(t *testing.T) {
 	g := NewWithT(t)
 	ctx := context.Background()
 	modPath := "testdata/module-svc"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: namespace},
@@ -155,8 +155,8 @@ func TestApplyTakeoverFromHelm(t *testing.T) {
 			g := NewWithT(t)
 			ctx := context.Background()
 			modPath := "testdata/module"
-			name := rnd("my-instance", 5)
-			namespace := rnd("my-namespace", 5)
+			name := rnd("my-instance")
+			namespace := rnd("my-namespace")
 
 			ns := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{Name: namespace},

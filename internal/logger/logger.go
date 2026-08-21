@@ -172,11 +172,11 @@ func ColorizeError(err error) string {
 	return colorError.Sprint(err.Error())
 }
 
-func ColorizeStatus(status status.Status) string {
-	if c, ok := colorPerStatus[status]; ok {
-		return c.Sprint(status)
+func ColorizeStatus(st status.Status) string {
+	if c, ok := colorPerStatus[st]; ok {
+		return c.Sprint(st)
 	}
-	return status.String()
+	return st.String()
 }
 
 func ColorizeBundle(bundle string) string {

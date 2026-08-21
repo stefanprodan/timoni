@@ -68,7 +68,7 @@ func buildImage(contentPath string, layers []contentLayer, annotations map[strin
 	}
 	defer func() {
 		if err != nil {
-			os.RemoveAll(tmpDir)
+			_ = os.RemoveAll(tmpDir)
 		}
 	}()
 

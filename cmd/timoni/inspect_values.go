@@ -75,6 +75,6 @@ func runInspectValuesCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Fprintln(cmd.OutOrStdout(), "values:", inst.Values)
-	return nil
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), "values:", inst.Values)
+	return err
 }

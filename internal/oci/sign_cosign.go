@@ -203,8 +203,8 @@ func replaceCommandEnv(env []string, key string, value string) []string {
 func removeCommandEnv(env []string, key string) []string {
 	result := make([]string, 0, len(env))
 	for _, entry := range env {
-		name, _, _ := strings.Cut(entry, "=")
-		if !strings.EqualFold(name, key) {
+		n, _, _ := strings.Cut(entry, "=")
+		if !strings.EqualFold(n, key) {
 			result = append(result, entry)
 		}
 	}

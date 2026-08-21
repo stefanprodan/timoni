@@ -1,3 +1,19 @@
+/*
+Copyright 2023 Stefan Prodan
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
@@ -24,8 +40,8 @@ func Test_BundleBuild(t *testing.T) {
 
 	bundleName := "my-bundle"
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -70,7 +86,7 @@ bundle: name: "%[1]s"
 bundle: instances: backend: namespace: "%[2]s"
 `, bundleName, namespace)
 
-	bundleJson := fmt.Sprintf(`
+	bundleJSON := fmt.Sprintf(`
 {
 	"bundle": {
 		"name": "%[1]s"
@@ -93,7 +109,7 @@ bundle:
 	g.Expect(os.WriteFile(yamlPath, []byte(bundleYaml), 0644)).ToNot(HaveOccurred())
 
 	jsonPath := filepath.Join(wd, "bundle.json")
-	g.Expect(os.WriteFile(jsonPath, []byte(bundleJson), 0644)).ToNot(HaveOccurred())
+	g.Expect(os.WriteFile(jsonPath, []byte(bundleJSON), 0644)).ToNot(HaveOccurred())
 
 	t.Setenv("TEST_BBUILD_NAME", "frontend")
 	t.Setenv("TEST_BBUILD_HOST", "my.host")
@@ -151,7 +167,7 @@ func Test_BundleBuild_LocalModule(t *testing.T) {
 	g := NewWithT(t)
 
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
+	namespace := rnd("my-namespace")
 
 	bundleCue := fmt.Sprintf(`
 bundle: {
@@ -200,10 +216,10 @@ bundle: {
 func Test_BundleBuild_Runtime(t *testing.T) {
 	g := NewWithT(t)
 
-	bundleName := rnd("my-bundle", 5)
+	bundleName := rnd("my-bundle")
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -345,7 +361,7 @@ func Test_BundleBuild_OutputDir(t *testing.T) {
 	g := NewWithT(t)
 
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
+	namespace := rnd("my-namespace")
 
 	bundleCue := fmt.Sprintf(`
 bundle: {
@@ -536,7 +552,7 @@ func Test_BundleBuild_Concurrency(t *testing.T) {
 	g := NewWithT(t)
 
 	modPath := "testdata/module"
-	modName := rnd("my-mod", 5)
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -628,7 +644,7 @@ func Test_BundleBuild_OutputWriter(t *testing.T) {
 	g := NewWithT(t)
 
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
+	namespace := rnd("my-namespace")
 
 	bundleCue := fmt.Sprintf(`
 bundle: {

@@ -135,8 +135,8 @@ func TestIsOCIUrl(t *testing.T) {
 
 func TestIsFileUrl(t *testing.T) {
 	g := NewWithT(t)
-	g.Expect(IsFileUrl("file://afile.txt")).To(BeTrueBecause("file:// is a file URL"))
-	g.Expect(IsFileUrl("oci://foo/bar")).To(BeFalseBecause("oci:// is not a file URL"))
+	g.Expect(IsFileURL("file://afile.txt")).To(BeTrueBecause("file:// is a file URL"))
+	g.Expect(IsFileURL("oci://foo/bar")).To(BeFalseBecause("oci:// is not a file URL"))
 }
 
 func TestExtractValueFromBytesLookupError(t *testing.T) {

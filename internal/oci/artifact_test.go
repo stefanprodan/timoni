@@ -35,7 +35,7 @@ func TestArtifactOperations(t *testing.T) {
 
 	srcPath := "testdata/module/"
 	imgVersion := "0.0.1"
-	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-artifact"))
 	imgVersionURL := fmt.Sprintf("%s:%s", imgURL, imgVersion)
 	imgIgnore := []string{"timoni.ignore"}
 	imgContentType := "generic"
@@ -92,7 +92,7 @@ func TestListArtifactTags(t *testing.T) {
 	ctx := context.Background()
 
 	srcPath := "testdata/module/"
-	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-artifact"))
 	opts := Options(ctx, "", false)
 
 	tags := []string{"1.0.0", "1.1.0", "2.0.0", "dev", "stable"}

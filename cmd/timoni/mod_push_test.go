@@ -37,7 +37,7 @@ func Test_PushMod(t *testing.T) {
 	modPath := "testdata/module"
 
 	g := NewWithT(t)
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
 	modVer := "1.0.0"
 	modLicense := "org.opencontainers.image.licenses=Apache-2.0"
 	modAbout := "org.opencontainers.image.description=My, test."
@@ -117,7 +117,7 @@ func Test_PushMod_Symlinks(t *testing.T) {
 	g.Expect(os.Symlink(filepath.Join("..", "shared", "extra.txt"),
 		filepath.Join(modPath, "extra.txt"))).To(Succeed())
 
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
 	modVer := "1.0.0"
 
 	// By default the symlinked file is left out of the artifact.
@@ -145,7 +145,7 @@ func Test_PushMod_Symlinks(t *testing.T) {
 func Test_PushModRejectsBuildMetadataVersion(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/module"
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
 
 	_, err := executeCommand(fmt.Sprintf(
 		"mod push %s oci://%s -v 1.0.0+demo",
@@ -182,7 +182,7 @@ func Test_PushMod_Archive(t *testing.T) {
 
 	g := NewWithT(t)
 	archive := filepath.Join(t.TempDir(), "module.tar")
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
 	modVer := "1.0.0"
 
 	// Build the module to a local OCI archive first.
@@ -225,7 +225,7 @@ func Test_PushMod_Archive(t *testing.T) {
 func Test_PushMod_ArchiveRejectsBadMediaType(t *testing.T) {
 	g := NewWithT(t)
 	archive := filepath.Join(t.TempDir(), "foreign.tar")
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
 
 	// Write a non-Timoni image (Docker manifest media type) as an archive.
 	g.Expect(oci.WriteImage(empty.Image, archive, oci.FormatArchive, []string{"1.0.0"})).To(Succeed())
@@ -241,7 +241,7 @@ func Test_PushMod_ArchiveRejectsBadMediaType(t *testing.T) {
 func Test_PushMod_ArchiveRejectsResolveSymlinks(t *testing.T) {
 	g := NewWithT(t)
 	archive := filepath.Join(t.TempDir(), "module.tar")
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
 
 	_, err := executeCommand(fmt.Sprintf(
 		"mod build testdata/module -v 1.0.0 -o %s",
@@ -260,7 +260,7 @@ func Test_PushMod_ArchiveRejectsResolveSymlinks(t *testing.T) {
 func Test_PushMod_ArchiveRejectsVersionMismatch(t *testing.T) {
 	g := NewWithT(t)
 	archive := filepath.Join(t.TempDir(), "module.tar")
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
 
 	_, err := executeCommand(fmt.Sprintf(
 		"mod build testdata/module -v 1.0.0 -o %s",
@@ -282,7 +282,7 @@ func Test_PushMod_ArchiveMissingFile(t *testing.T) {
 	_, err := executeCommand(fmt.Sprintf(
 		"mod push %s oci://%s",
 		filepath.Join(t.TempDir(), "missing.tar"),
-		fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5)),
+		fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod")),
 	))
 	g.Expect(err).To(MatchError(ContainSubstring("module not found at path")))
 }

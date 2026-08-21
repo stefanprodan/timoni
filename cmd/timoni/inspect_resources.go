@@ -76,14 +76,14 @@ func runInspectResourcesCmd(cmd *cobra.Command, args []string) error {
 
 	iManager := runtime.InstanceManager{Instance: *inst}
 
-	//metas, err := iManager.ListMeta()
-	//if err != nil {
+	// metas, err := iManager.ListMeta()
+	// if err != nil {
 	//	return err
-	//}
+	// }
 	//
-	//for _, meta := range metas {
+	// for _, meta := range metas {
 	//	fmt.Fprintln(cmd.OutOrStdout(), logger.ColorizeSubject(ssa.FmtObjMetadata(meta)))
-	//}
+	// }
 
 	objects, err := iManager.ListObjects()
 	if err != nil {

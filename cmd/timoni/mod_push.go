@@ -264,13 +264,17 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("artifact info JSON conversion failed: %w", err)
 		}
 		marshalled = append(marshalled, "\n"...)
-		cmd.OutOrStdout().Write(marshalled)
+		if _, err := cmd.OutOrStdout().Write(marshalled); err != nil {
+			return err
+		}
 	case "yaml":
 		marshalled, err := yaml.Marshal(&info)
 		if err != nil {
 			return fmt.Errorf("artifact info YAML conversion failed: %w", err)
 		}
-		cmd.OutOrStdout().Write(marshalled)
+		if _, err := cmd.OutOrStdout().Write(marshalled); err != nil {
+			return err
+		}
 	default:
 		digest, err := oci.ParseDigest(digestURL)
 		if err != nil {

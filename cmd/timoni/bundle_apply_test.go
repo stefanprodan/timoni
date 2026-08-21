@@ -40,8 +40,8 @@ func Test_BundleApply(t *testing.T) {
 
 	bundleName := "my-bundle"
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -280,8 +280,8 @@ func Test_BundleApply_Digest(t *testing.T) {
 
 	bundleName := "my-bundle"
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer1 := "1.0.0"
 	modVer2 := "2.0.0"
@@ -437,10 +437,10 @@ func Test_BundleApply_Runtime(t *testing.T) {
 	g := NewWithT(t)
 
 	bundleName := "my-bundle"
-	secretName := rnd("my-data", 5)
+	secretName := rnd("my-data")
 	modPath := "testdata/module"
-	namespace := rnd("my-ns", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-ns")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -622,7 +622,7 @@ func Test_BundleApply_Runtime_LocalModule_WithRelativePath(t *testing.T) {
 
 	bundleName := "my-bundle"
 	modPath := "testdata/module"
-	namespace := rnd("my-ns", 5)
+	namespace := rnd("my-ns")
 	modVer := "1.0.0"
 
 	bundleCue := fmt.Sprintf(`
@@ -708,7 +708,7 @@ func Test_BundleApply_Runtime_LocalModule_WithAbsolutePath(t *testing.T) {
 
 	bundleName := "my-bundle"
 	modPath := filepath.Join(bundleTmpDir, "testdata/module")
-	namespace := rnd("my-ns", 5)
+	namespace := rnd("my-ns")
 	modVer := "1.0.0"
 
 	bundleCue := fmt.Sprintf(`
@@ -782,7 +782,7 @@ func Test_FetchBundleInstanceModule_Cache(t *testing.T) {
 	g := NewWithT(t)
 
 	modPath := "testdata/module"
-	modName := rnd("my-mod", 5)
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 
 	for _, v := range []string{"1.0.0", "1.1.0"} {
@@ -840,10 +840,10 @@ func Test_FetchBundleInstanceModule_Cache(t *testing.T) {
 func Test_BundleApply_Runtime_ModuleVersionPerCluster(t *testing.T) {
 	g := NewWithT(t)
 
-	bundleName := rnd("my-bundle", 5)
+	bundleName := rnd("my-bundle")
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 
 	for _, v := range []string{"1.0.0", "2.0.0"} {

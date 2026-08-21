@@ -28,11 +28,11 @@ func Test_TagArtifact(t *testing.T) {
 	aPath := "testdata/module-values"
 
 	g := NewWithT(t)
-	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact"))
 	aTag := "1.0.0"
 
 	// Push the artifact to registry
-	output, err := executeCommand(fmt.Sprintf(
+	_, err := executeCommand(fmt.Sprintf(
 		"artifact push oci://%s -f %s -t %s --content-type=generic",
 		aURL,
 		aPath,
@@ -41,11 +41,12 @@ func Test_TagArtifact(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 
 	// Tag the artifact
-	output, err = executeCommand(fmt.Sprintf(
+	output, err := executeCommand(fmt.Sprintf(
 		"artifact tag oci://%s:%s -t 2.0 -t 3 -t latest",
 		aURL,
 		aTag,
 	))
+	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(output).To(ContainSubstring("3"))
 	g.Expect(output).To(ContainSubstring("2.0"))
 	g.Expect(output).To(ContainSubstring("latest"))
@@ -62,7 +63,7 @@ func Test_TagArtifact(t *testing.T) {
 	g.Expect(output).To(ContainSubstring("latest"))
 
 	// Pull the latest artifact from registry
-	_, err = crane.Pull(fmt.Sprintf("%s", aURL))
+	_, err = crane.Pull(aURL)
 	g.Expect(err).ToNot(HaveOccurred())
 }
 

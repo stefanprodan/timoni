@@ -37,7 +37,7 @@ import (
 	"github.com/stefanprodan/timoni/internal/runtime"
 )
 
-var sentinelErr = errors.New("sentinel failure")
+var errSentinel = errors.New("sentinel failure")
 
 func ref(id string) apiv1.ResourceRef {
 	return apiv1.ResourceRef{ID: id, Version: "v1"}
@@ -105,9 +105,9 @@ func TestApplyInstallStoresIntendedInventoryUpFront(t *testing.T) {
 
 	// An apply failure still leaves the intended inventory stored, so a
 	// later delete can clean up whatever was created.
-	r.applySetsFn = func(context.Context, logr.Logger) error { return sentinelErr }
+	r.applySetsFn = func(context.Context, logr.Logger) error { return errSentinel }
 	err := r.ApplyInstance(ctx, logr.Discard(), nil, cue.Value{})
-	g.Expect(err).To(MatchError(sentinelErr))
+	g.Expect(err).To(MatchError(errSentinel))
 	g.Expect(pruneCalled).To(BeZero())
 
 	stored, err := storage.Get(ctx, r.Name(), r.Namespace())
@@ -198,12 +198,12 @@ func TestApplyUpgradeApplyFailurePrunesNothing(t *testing.T) {
 	g.Expect(r.instanceManager.AddObjects([]*unstructured.Unstructured{cm("web")})).ToNot(HaveOccurred())
 
 	pruneCalled, finalizeCalled := 0, 0
-	r.applySetsFn = func(context.Context, logr.Logger) error { return sentinelErr }
+	r.applySetsFn = func(context.Context, logr.Logger) error { return errSentinel }
 	r.pruneStaleFn = func(context.Context, logr.Logger) error { pruneCalled++; return nil }
 	r.updateInventoryFn = func(context.Context, *engine.ModuleBuilder, cue.Value) error { finalizeCalled++; return nil }
 
 	err := r.ApplyInstance(ctx, logr.Discard(), nil, cue.Value{})
-	g.Expect(err).To(MatchError(sentinelErr))
+	g.Expect(err).To(MatchError(errSentinel))
 	g.Expect(pruneCalled).To(BeZero())
 	g.Expect(finalizeCalled).To(BeZero())
 
@@ -254,11 +254,11 @@ func TestApplyUpgradePruneFailureKeepsPending(t *testing.T) {
 	g.Expect(r.instanceManager.AddObjects([]*unstructured.Unstructured{cm("web")})).ToNot(HaveOccurred())
 
 	finalizeCalled := 0
-	r.pruneStaleFn = func(context.Context, logr.Logger) error { return sentinelErr }
+	r.pruneStaleFn = func(context.Context, logr.Logger) error { return errSentinel }
 	r.updateInventoryFn = func(context.Context, *engine.ModuleBuilder, cue.Value) error { finalizeCalled++; return nil }
 
 	err := r.ApplyInstance(ctx, logr.Discard(), nil, cue.Value{})
-	g.Expect(err).To(MatchError(sentinelErr))
+	g.Expect(err).To(MatchError(errSentinel))
 	g.Expect(finalizeCalled).To(BeZero())
 
 	pending, err := storage.GetPending(ctx, r.Name(), r.Namespace())
@@ -312,12 +312,12 @@ func TestInteractiveApplyInstallStoresIntendedInventoryFirst(t *testing.T) {
 	g.Expect(r.instanceManager.AddObjects([]*unstructured.Unstructured{cm("web")})).ToNot(HaveOccurred())
 
 	pruneCalled, finalizeCalled := 0, 0
-	r.applySetsFn = func(context.Context, logr.Logger) error { return sentinelErr }
+	r.applySetsFn = func(context.Context, logr.Logger) error { return errSentinel }
 	r.pruneStaleFn = func(context.Context, logr.Logger) error { pruneCalled++; return nil }
 	r.updateInventoryFn = func(context.Context, *engine.ModuleBuilder, cue.Value) error { finalizeCalled++; return nil }
 
 	err := r.ApplyInstance(ctx, logr.Discard(), nil, cue.Value{})
-	g.Expect(err).To(MatchError(sentinelErr))
+	g.Expect(err).To(MatchError(errSentinel))
 	g.Expect(pruneCalled).To(BeZero())
 	g.Expect(finalizeCalled).To(BeZero())
 

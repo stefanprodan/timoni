@@ -10,6 +10,9 @@ BIN_DIR := $(REPOSITORY_ROOT)/bin
 # API gen tool
 CONTROLLER_GEN_VERSION ?= v0.21.0
 
+# Go linter
+GOLANGCI_LINT_VERSION ?= v2.13.1
+
 # Kubernetes env test
 ENVTEST_KUBERNETES_VERSION?=1.36
 
@@ -20,7 +23,7 @@ build: ## Build the CLI binary.
 	CGO_ENABLED=0 go build -ldflags="-s -w -X main.VERSION=$(DEV_VERSION)" -o ./bin/timoni ./cmd/timoni
 
 .PHONY: test
-test: tidy generate fmt vet install-envtest ## Run the Go tests.
+test: tidy generate fmt vet lint install-envtest ## Run the Go tests.
 	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test ./... -coverprofile cover.out
 
 tidy: ## Tidy Go modules.
@@ -31,6 +34,12 @@ fmt: ## Format Go code.
 
 vet: ## Vet Go code.
 	go vet ./...
+
+lint: golangci-lint ## Run golangci-lint.
+	$(GOLANGCI_LINT) run
+
+lint-fix: golangci-lint ## Run golangci-lint and apply fixes.
+	$(GOLANGCI_LINT) run --fix
 
 cue-vet: build ## Vet and fmt CUE files.
 	./bin/timoni fmt ./schemas
@@ -85,6 +94,11 @@ controller-gen:
 KUBEBUILDER_ASSETS?="$(shell $(ENVTEST) use -i $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(BIN_DIR) -p path)"
 install-envtest: setup-envtest ## Install controller-runtime envtest.
 	$(ENVTEST) use $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(BIN_DIR)
+
+GOLANGCI_LINT=$(BIN_DIR)/golangci-lint
+.PHONY: golangci-lint
+golangci-lint:
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))
 
 ENVTEST=$(BIN_DIR)/setup-envtest
 .PHONY: envtest

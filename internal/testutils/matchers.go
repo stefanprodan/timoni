@@ -660,8 +660,8 @@ func And(ms ...types.GomegaMatcher) types.GomegaMatcher {
 // SatisfyAll is an alias for And().
 //
 //	Expect("hi").Should(SatisfyAll(HaveLen(2), Equal("hi")))
-func SatisfyAll(matchers ...types.GomegaMatcher) types.GomegaMatcher {
-	return And(matchers...)
+func SatisfyAll(ms ...types.GomegaMatcher) types.GomegaMatcher {
+	return And(ms...)
 }
 
 // Or succeeds if any of the given matchers succeed.
@@ -677,8 +677,8 @@ func Or(ms ...types.GomegaMatcher) types.GomegaMatcher {
 // SatisfyAny is an alias for Or().
 //
 //	Expect("hi").SatisfyAny(Or(HaveLen(3), HaveLen(2))
-func SatisfyAny(matchers ...types.GomegaMatcher) types.GomegaMatcher {
-	return Or(matchers...)
+func SatisfyAny(ms ...types.GomegaMatcher) types.GomegaMatcher {
+	return Or(ms...)
 }
 
 // Not negates the given matcher; it succeeds if the given matcher fails.
@@ -707,7 +707,7 @@ func WithTransform(transform any, matcher types.GomegaMatcher) types.GomegaMatch
 }
 
 // Satisfy matches the actual value against the `predicate` function.
-// The given predicate must be a function of one paramter that returns bool.
+// The given predicate must be a function of one parameter that returns bool.
 //
 //	var isEven = func(i int) bool { return i%2 == 0 }
 //	Expect(2).To(Satisfy(isEven))
