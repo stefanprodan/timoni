@@ -105,7 +105,7 @@ func runBundleStatusCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log := loggerBundle(ctx, bundleStatusArgs.name, cluster.Name, true)
+		log := loggerBundle(ctx, bundleStatusArgs.name, cluster.Name)
 
 		if len(instances) == 0 {
 			log.Error(nil, "no instances found in bundle")

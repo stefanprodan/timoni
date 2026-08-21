@@ -1,3 +1,19 @@
+/*
+Copyright 2023 Stefan Prodan
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package engine
 
 import (
@@ -9,6 +25,7 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/ast/astutil"
+	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
 	"cuelang.org/go/cue/token"
 	"cuelang.org/go/encoding/openapi"
@@ -150,7 +167,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		return nil, errors.New("crd versions field is not a list")
 	}
 
-	ctx := crd.Context()
+	ctx := cuecontext.New()
 	shell := ctx.CompileString(fmt.Sprintf(`
 		openapi: "3.0.0",
 		info: {
@@ -227,48 +244,19 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 			return nil, fmt.Errorf("could not load openapi3 document for version %s: %w", ver, err)
 		}
 
-		preserve := make([]cue.Path, 0)
-		var rootosch *openapi3.Schema
-		if rref, has := odoc.Components.Schemas[kname]; !has {
+		rref, has := odoc.Components.Schemas[kname]
+		if !has {
 			return nil, fmt.Errorf("could not find root schema for version %s at expected path components.schemas.%s", ver, kname)
-		} else {
-			rootosch = rref.Value
-		}
-
-		var walkfn func(path []cue.Selector, sch *openapi3.Schema) error
-		walkfn = func(path []cue.Selector, sch *openapi3.Schema) error {
-			preserveUnknownFields, _ := sch.Extensions["x-kubernetes-preserve-unknown-fields"].(bool)
-			if preserveUnknownFields {
-				preserve = append(preserve, cue.MakePath(path...))
-			}
-			for name, prop := range sch.Properties {
-				// Limit capacity so sibling paths cannot overwrite each other during recursion.
-				nextPath := append(path[:len(path):len(path)], cue.Str(name))
-				if err := walkfn(nextPath, prop.Value); err != nil {
-					return err
-				}
-			}
-			if sch.Items != nil {
-				nextPath := append(path[:len(path):len(path)], cue.AnyIndex)
-				if err := walkfn(nextPath, sch.Items.Value); err != nil {
-					return err
-				}
-			}
-			if sch.AdditionalProperties.Schema != nil {
-				nextPath := append(path[:len(path):len(path)], cue.AnyString)
-				if err := walkfn(nextPath, sch.AdditionalProperties.Schema.Value); err != nil {
-					return err
-				}
-			}
-
-			return nil
 		}
 
 		// Have to prepend with the defpath where the CUE CRD representation
 		// lives because the astutil walker to remove ellipses operates over the
 		// whole file, and therefore will be looking for full paths, extending
 		// all the way to the file root
-		err = walkfn(defpath.Selectors(), rootosch)
+		preserve, err := preserveUnknownFieldsPaths(defpath.Selectors(), rref.Value)
+		if err != nil {
+			return nil, err
+		}
 
 		// First pass of astutil.Apply to remove ellipses for fields not marked with
 		// 'x-kubernetes-preserve-unknown-fields: true'.
@@ -324,9 +312,9 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 						cursor.Replace(specref)
 						return false
 					case "status":
-						//TODO: decide if status should be included
-						//statusf = new(ast.Field)
-						//*statusf = *x
+						// TODO: decide if status should be included
+						// statusf = new(ast.Field)
+						// *statusf = *x
 						cursor.Delete()
 						return false
 					case "metadata":
@@ -365,6 +353,43 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		})
 	}
 	return cc, nil
+}
+
+// preserveUnknownFieldsPaths walks the OpenAPI schema rooted at prefix and
+// returns the paths of all fields marked with 'x-kubernetes-preserve-unknown-fields: true'.
+func preserveUnknownFieldsPaths(prefix []cue.Selector, root *openapi3.Schema) ([]cue.Path, error) {
+	preserve := make([]cue.Path, 0)
+	var walkfn func(p []cue.Selector, sch *openapi3.Schema) error
+	walkfn = func(p []cue.Selector, sch *openapi3.Schema) error {
+		preserveUnknownFields, _ := sch.Extensions["x-kubernetes-preserve-unknown-fields"].(bool)
+		if preserveUnknownFields {
+			preserve = append(preserve, cue.MakePath(p...))
+		}
+		for name, prop := range sch.Properties {
+			// Limit capacity so sibling paths cannot overwrite each other during recursion.
+			nextPath := append(p[:len(p):len(p)], cue.Str(name))
+			if err := walkfn(nextPath, prop.Value); err != nil {
+				return err
+			}
+		}
+		if sch.Items != nil {
+			nextPath := append(p[:len(p):len(p)], cue.AnyIndex)
+			if err := walkfn(nextPath, sch.Items.Value); err != nil {
+				return err
+			}
+		}
+		if sch.AdditionalProperties.Schema != nil {
+			nextPath := append(p[:len(p):len(p)], cue.AnyString)
+			if err := walkfn(nextPath, sch.AdditionalProperties.Schema.Value); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	if err := walkfn(prefix, root); err != nil {
+		return nil, err
+	}
+	return preserve, nil
 }
 
 // parentPath walks up the AST via Cursor.Parent() to find the parent AST node

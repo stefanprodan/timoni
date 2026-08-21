@@ -33,8 +33,8 @@ import (
 
 func TestDelete(t *testing.T) {
 	modPath := "testdata/module"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 
 	t.Run("sets prune disabled annotation", func(t *testing.T) {
 		g := NewWithT(t)
@@ -82,8 +82,8 @@ func TestDelete(t *testing.T) {
 
 func TestDelete_RetainsInventoryOnTerminationTimeout(t *testing.T) {
 	modPath := "testdata/module"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 	g := NewWithT(t)
 
 	_, err := executeCommand(fmt.Sprintf(
@@ -163,8 +163,8 @@ func TestDelete_RetainsInventoryOnTerminationTimeout(t *testing.T) {
 
 func TestDelete_WaitFalseRemovesStateWithoutWaiting(t *testing.T) {
 	modPath := "testdata/module"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 	g := NewWithT(t)
 
 	_, err := executeCommand(fmt.Sprintf(
@@ -219,8 +219,8 @@ func TestDelete_WaitFalseRemovesStateWithoutWaiting(t *testing.T) {
 
 func TestDelete_RemovesStateWhenNothingDeleted(t *testing.T) {
 	modPath := "testdata/module"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 	g := NewWithT(t)
 
 	// Every object carries the prune-disabled annotation, so the delete skips
@@ -278,8 +278,8 @@ func TestDelete_RemovesStateWhenNothingDeleted(t *testing.T) {
 func TestDelete_DoesNotTouchForeignSameLabelObjects(t *testing.T) {
 	modPath := "testdata/module"
 	tGroup := fmt.Sprintf("%s.%s", strings.ToLower(apiv1.InstanceKind), apiv1.GroupVersion.Group)
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 	g := NewWithT(t)
 
 	_, err := executeCommand(fmt.Sprintf(

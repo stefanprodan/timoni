@@ -41,7 +41,7 @@ func TestPullModule_DigestMatchesRegistry(t *testing.T) {
 	ctx := context.Background()
 	opts := Options(ctx, "", false)
 
-	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module", 5))
+	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module"))
 	annotations := map[string]string{apiv1.VersionAnnotation: "1.0.0"}
 	_, err := PushModule(imgURL+":1.0.0", "testdata/module/", nil, annotations, opts)
 	g.Expect(err).ToNot(HaveOccurred())
@@ -66,7 +66,7 @@ func TestPullModule_DigestFromManifest(t *testing.T) {
 	opts := Options(ctx, "", false)
 
 	// Publish a module and record the digest it was published under.
-	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module", 5))
+	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module"))
 	annotations := map[string]string{apiv1.VersionAnnotation: "1.0.0"}
 	digestURL, err := PushModule(imgURL+":1.0.0", "testdata/module/", nil, annotations, opts)
 	g.Expect(err).ToNot(HaveOccurred())

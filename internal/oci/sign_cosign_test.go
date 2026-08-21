@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -147,8 +148,8 @@ func TestConfigureCosignCredentialsSkipsEmptyCredentials(t *testing.T) {
 }
 
 func commandEnv(cmd *exec.Cmd, key string) string {
-	for i := len(cmd.Env) - 1; i >= 0; i-- {
-		name, value, _ := strings.Cut(cmd.Env[i], "=")
+	for _, v := range slices.Backward(cmd.Env) {
+		name, value, _ := strings.Cut(v, "=")
 		if strings.EqualFold(name, key) {
 			return value
 		}

@@ -201,8 +201,7 @@ func (r *Reconciler) ApplyInstance(ctx context.Context, log logr.Logger, builder
 func (r *Reconciler) applyInstanceStages(ctx context.Context, log logr.Logger, builder *engine.ModuleBuilder, buildResult cue.Value) error {
 	err := r.applySetsFn(ctx, log)
 	if err != nil {
-		var readinessErr *ReadinessError
-		if !errors.As(err, &readinessErr) {
+		if _, ok := errors.AsType[*ReadinessError](err); !ok {
 			return err
 		}
 	}

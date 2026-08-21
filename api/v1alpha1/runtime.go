@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -209,9 +210,7 @@ func (rv *RuntimeValue) ToResourceRef() (*RuntimeResourceRef, error) {
 		ref.Name = parts[3]
 	}
 
-	for k, v := range rv.For {
-		ref.Expressions[k] = v
-	}
+	maps.Copy(ref.Expressions, rv.For)
 
 	return &ref, nil
 }

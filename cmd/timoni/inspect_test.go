@@ -32,11 +32,11 @@ import (
 func TestInspect(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/module"
-	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-mod"))
 	modVer := "1.0.0"
 	modLicense := "Apache-2.0"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 
 	// Package the module as an OCI artifact and push it to registry
 	_, err := executeCommand(fmt.Sprintf(
@@ -108,10 +108,10 @@ func TestInspect(t *testing.T) {
 func TestInspect_Latest(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/module"
-	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-mod"))
 	modVer := "1.0.0"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 
 	// Package the module as an OCI artifact and push it to registry
 	_, err := executeCommand(fmt.Sprintf(
@@ -148,10 +148,10 @@ func TestInspect_Latest(t *testing.T) {
 func TestInspect_StorageType(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/module"
-	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-mod"))
 	modVer := "1.0.0"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 
 	_, err := executeCommand(fmt.Sprintf(
 		"mod push %s %s -v %s --latest --resolve-symlinks",

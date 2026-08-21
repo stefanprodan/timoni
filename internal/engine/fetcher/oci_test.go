@@ -61,7 +61,7 @@ func TestOCIFetch(t *testing.T) {
 	imgVersionURL := fmt.Sprintf("%s:%s", imgURL, imgVersion)
 	imgIgnore := []string{"timoni.ignore"}
 	opts := oci.Options(context.Background(), "", false)
-	digestUrl, err := oci.PushModule(imgVersionURL, srcPath, imgIgnore, map[string]string{}, opts)
+	digestURL, err := oci.PushModule(imgVersionURL, srcPath, imgIgnore, map[string]string{}, opts)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	t.Run("without cache", func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestOCIFetch(t *testing.T) {
 	t.Run("with digest", func(t *testing.T) {
 		g := NewWithT(t)
 
-		digest := digestUrl[strings.LastIndex(digestUrl, "@"):]
+		digest := digestURL[strings.LastIndex(digestURL, "@"):]
 		of := NewOCI(
 			context.Background(),
 			imgURL,

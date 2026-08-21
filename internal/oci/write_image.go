@@ -94,7 +94,7 @@ func writeLayout(destination string, image gcrv1.Image, references []string) (er
 	}
 	defer func() {
 		if err != nil {
-			os.RemoveAll(destination)
+			_ = os.RemoveAll(destination)
 		}
 	}()
 
@@ -129,7 +129,7 @@ func writeArchive(layoutPath, destination string) (err error) {
 			err = closeErr
 		}
 		if err != nil {
-			os.Remove(destination)
+			_ = os.Remove(destination)
 		}
 	}()
 

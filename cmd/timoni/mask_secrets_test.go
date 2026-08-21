@@ -34,8 +34,8 @@ import (
 func TestApply_DiffMasksSecrets(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/module-secret"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 
 	oldPassword := "s3cr3t"
 	newPassword := "ch4ng3d"
@@ -110,7 +110,7 @@ func TestBuild_MaskSecrets(t *testing.T) {
 func TestBundleBuild_MaskSecrets(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/module-secret"
-	namespace := rnd("my-namespace", 5)
+	namespace := rnd("my-namespace")
 
 	bundleCue := fmt.Sprintf(`
 bundle: {

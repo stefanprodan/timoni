@@ -31,7 +31,7 @@ import (
 func Test_DigestArtifact(t *testing.T) {
 	g := NewWithT(t)
 	aPath := "testdata/module-values"
-	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact"))
 
 	_, err := executeCommand(fmt.Sprintf("artifact push oci://%s -f %s -t 1.0.0 -t latest", aURL, aPath))
 	g.Expect(err).ToNot(HaveOccurred())

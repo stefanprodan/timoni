@@ -30,10 +30,10 @@ import (
 func TestInstanceStatus(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/module"
-	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-status", 5))
+	modURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-status"))
 	modVer := "1.0.0"
-	name := rnd("my-instance", 5)
-	namespace := rnd("my-namespace", 5)
+	name := rnd("my-instance")
+	namespace := rnd("my-namespace")
 
 	// Package the module as an OCI artifact and push it to registry
 	_, err := executeCommand(fmt.Sprintf(

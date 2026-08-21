@@ -241,13 +241,17 @@ func pushArtifactCmdRun(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("artifact info JSON conversion failed: %w", err)
 		}
 		marshalled = append(marshalled, "\n"...)
-		cmd.OutOrStdout().Write(marshalled)
+		if _, err := cmd.OutOrStdout().Write(marshalled); err != nil {
+			return err
+		}
 	case "yaml":
 		marshalled, err := yaml.Marshal(&info)
 		if err != nil {
 			return fmt.Errorf("artifact info YAML conversion failed: %w", err)
 		}
-		cmd.OutOrStdout().Write(marshalled)
+		if _, err := cmd.OutOrStdout().Write(marshalled); err != nil {
+			return err
+		}
 	default:
 		log.Info(fmt.Sprintf("artifact: %s", logger.ColorizeSubject(ociURL)))
 		log.Info(fmt.Sprintf("digest: %s", logger.ColorizeSubject(digest.DigestStr())))

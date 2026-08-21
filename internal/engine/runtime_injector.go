@@ -80,9 +80,9 @@ func (in *RuntimeInjector) inject(node ast.Node, vars map[string]string) (ast.No
 	var err error
 	f := func(c astutil.Cursor) bool {
 		n := c.Node()
-		switch n.(type) {
+		switch n := n.(type) {
 		case *ast.Field:
-			field := n.(*ast.Field)
+			field := n
 			if len(field.Attrs) == 0 {
 				return true
 			}

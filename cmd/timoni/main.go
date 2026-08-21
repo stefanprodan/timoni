@@ -168,7 +168,9 @@ func addKubeConfigFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(kubeconfigArgs.CAFile, "kube-certificate-authority", "", "Path to a cert file for the certificate authority.")
 	cmd.PersistentFlags().BoolVar(kubeconfigArgs.Insecure, "kube-insecure-skip-tls-verify", false, "if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.")
 	cmd.PersistentFlags().StringVarP(kubeconfigArgs.Namespace, "namespace", "n", *kubeconfigArgs.Namespace, "The the namespace scope for the operation.")
-	cmd.RegisterFlagCompletionFunc("namespace", completeNamespaceList)
+	if err := cmd.RegisterFlagCompletionFunc("namespace", completeNamespaceList); err != nil {
+		panic(err)
+	}
 }
 
 func getCurrentKubeconfigPath() string {
@@ -185,8 +187,8 @@ func getCurrentKubeconfigPath() string {
 	}
 
 	var currentContext string
-	for _, path := range paths {
-		config, err := clientcmd.LoadFromFile(path)
+	for _, p := range paths {
+		config, err := clientcmd.LoadFromFile(p)
 		if err != nil {
 			continue
 		}
@@ -195,7 +197,7 @@ func getCurrentKubeconfigPath() string {
 		}
 		_, ok := config.Contexts[currentContext]
 		if ok {
-			return path
+			return p
 		}
 	}
 	return defaultPath

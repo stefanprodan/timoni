@@ -31,12 +31,18 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
+
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
 	"github.com/stefanprodan/timoni/internal/flags"
 )
+
+// markdownTableRowRegex matches a markdown table row.
+var markdownTableRowRegex = regexp.MustCompile(`^\|.*\|$`)
 
 var configShowModCmd = &cobra.Command{
 	Use:   "config [MODULE PATH]",
@@ -76,7 +82,7 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		configShowModArgs.path = args[0]
 	}
 
-	if fs, err := os.Stat(configShowModArgs.path); err != nil || !fs.IsDir() {
+	if fi, err := os.Stat(configShowModArgs.path); err != nil || !fi.IsDir() {
 		return fmt.Errorf("module not found at path %s", configShowModArgs.path)
 	}
 
@@ -161,7 +167,9 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 	var tableBuffer bytes.Buffer
 	tableWriter := bufio.NewWriter(&tableBuffer)
 	printMarkDownTable(tableWriter, header, rows)
-	tableWriter.Flush()
+	if err := tableWriter.Flush(); err != nil {
+		return "", describeErr(f.GetModuleRoot(), "Flushing the table buffer failed", err)
+	}
 	// get a temporary file name
 	tmpFileName := readFile + ".tmp"
 	// open the input file
@@ -207,22 +215,25 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 				configSection = true
 			}
 
-			matched, err := regexp.MatchString(`^\|.*\|$`, line)
-			if err != nil {
-				return "", describeErr(f.GetModuleRoot(), "Regex Match for table content failed", err)
-			}
+			matched := markdownTableRowRegex.MatchString(line)
 
 			if configSection && !foundTable && matched {
 				foundTable = true
-				outputWriter.WriteString(tableBuffer.String() + "\n")
+				if _, err := outputWriter.WriteString(tableBuffer.String() + "\n"); err != nil {
+					return "", describeErr(f.GetModuleRoot(), "Writing the output file failed", err)
+				}
 			} else if configSection && foundTable && matched {
 			} else if configSection && foundTable && !matched {
 				configSection = false
 			} else {
-				outputWriter.WriteString(line + "\n")
+				if _, err := outputWriter.WriteString(line + "\n"); err != nil {
+					return "", describeErr(f.GetModuleRoot(), "Writing the output file failed", err)
+				}
 			}
 		} else {
-			outputWriter.WriteString(line + "\n")
+			if _, err := outputWriter.WriteString(line + "\n"); err != nil {
+				return "", describeErr(f.GetModuleRoot(), "Writing the output file failed", err)
+			}
 		}
 	}
 	if err := inputScanner.Err(); err != nil {
@@ -231,7 +242,9 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 
 	// If no table was found, append it to the end of the file
 	if !foundTable {
-		outputWriter.WriteString("\n" + tableBuffer.String())
+		if _, err := outputWriter.WriteString("\n" + tableBuffer.String()); err != nil {
+			return "", describeErr(f.GetModuleRoot(), "Writing the output file failed", err)
+		}
 	}
 
 	err = outputWriter.Flush()
@@ -244,21 +257,30 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 }
 
 func printMarkDownTable(writer io.Writer, header []string, rows [][]string) {
-	table := tablewriter.NewWriter(writer)
-	table.SetHeader(header)
-	table.SetAutoWrapText(false)
-	table.SetAutoFormatHeaders(true)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("|")
-	table.SetColumnSeparator("|")
-	table.SetRowSeparator("-")
-	table.SetHeaderLine(true)
-	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-	table.SetTablePadding("\t")
-	table.SetNoWhiteSpace(false)
-	table.AppendBulk(rows)
-	table.Render()
+	table := tablewriter.NewTable(writer,
+		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
+			Borders: tw.Border{Left: tw.On, Right: tw.On, Top: tw.Off, Bottom: tw.Off},
+			Symbols: tw.NewSymbolCustom("markdown").
+				WithColumn("|").
+				WithRow("-").
+				WithCenter("|").
+				WithMidLeft("|").
+				WithMidRight("|"),
+			Settings: tw.Settings{
+				Separators: tw.Separators{BetweenColumns: tw.On, BetweenRows: tw.Off},
+				Lines:      tw.Lines{ShowHeaderLine: tw.On},
+			},
+		})),
+		tablewriter.WithHeaderAutoFormat(tw.On),
+		tablewriter.WithHeaderAutoWrap(tw.WrapNone),
+		tablewriter.WithRowAutoWrap(tw.WrapNone),
+		tablewriter.WithHeaderAlignment(tw.AlignLeft),
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+		tablewriter.WithTrimSpace(tw.Off),
+	)
+	table.Header(header)
+	_ = table.Bulk(rows)
+	_ = table.Render()
 }
 
 func isMarkdownFile(filename string) bool {

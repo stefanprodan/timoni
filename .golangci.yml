@@ -1,0 +1,98 @@
+version: "2"
+run:
+  allow-parallel-runners: true
+linters:
+  default: none
+  enable:
+    - copyloopvar
+    - dupl
+    - errcheck
+    - gocyclo
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - prealloc
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+  settings:
+    gocyclo:
+      min-complexity: 35
+    revive:
+      rules:
+        - name: comment-spacings
+        - name: import-shadowing
+        - name: use-any
+        - name: unreachable-code
+        - name: struct-tag
+          arguments:
+            - "json,inline"
+        - name: file-header
+          arguments:
+            - "Licensed under the Apache License, Version 2.0"
+    staticcheck:
+      checks:
+        - all
+        # Incorrect or missing package comment.
+        # https://staticcheck.dev/docs/checks/#ST1000
+        - -ST1000
+        # Dot imports are discouraged.
+        # https://staticcheck.dev/docs/checks/#ST1001
+        - -ST1001
+        # Use consistent method receiver names.
+        # https://staticcheck.dev/docs/checks/#ST1016
+        - -ST1016
+        # Omit embedded fields from selector expression.
+        # https://staticcheck.dev/docs/checks/#QF1008
+        - -QF1008
+        # Use fmt.Fprintf.
+        # https://staticcheck.dev/docs/checks/#QF1012
+        - -QF1012
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - errcheck
+        source: "^\\s*defer\\s+"
+      # TODO: Migrate to the new client.Client.Apply() with ApplyConfiguration types
+      # once the controller-runtime deprecation period ends.
+      - linters:
+          - staticcheck
+        text: "client.Apply is deprecated"
+      # The file-header rule only inspects the first comment group,
+      # which gofmt reserves for the build constraint.
+      - linters:
+          - revive
+        text: "file-header:"
+        path: "_(unix|windows|linux|darwin)(_test)?\\.go$"
+      - linters:
+          - lll
+        path: api/*
+      - linters:
+          - dupl
+          - lll
+        path: cmd/*
+      - linters:
+          - dupl
+          - lll
+        path: internal/*
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - node_modules
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - node_modules

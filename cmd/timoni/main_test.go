@@ -1,11 +1,29 @@
+/*
+Copyright 2023 Stefan Prodan
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -77,7 +95,7 @@ func TestMain(m *testing.M) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	tmpFilename := filepath.Join(tmpDir, rnd("kubeconfig", 5))
+	tmpFilename := filepath.Join(tmpDir, rnd("kubeconfig"))
 	if err := os.WriteFile(tmpFilename, kubeConfig, 0644); err != nil {
 		panic(err)
 	}
@@ -91,7 +109,9 @@ func TestMain(m *testing.M) {
 	rootArgs.cacheDir = tmpDir
 
 	code := m.Run()
-	testEnv.Stop()
+	if err := testEnv.Stop(); err != nil {
+		panic(err)
+	}
 	os.Exit(code)
 }
 
@@ -198,9 +218,9 @@ func resetCmdArgs() {
 	versionArgs = versionFlags{output: "yaml"}
 }
 
-func rnd(prefix string, n int) string {
+func rnd(prefix string) string {
 	runes := []rune("abcdefghijklmnopqrstuvwxyz1234567890")
-	b := make([]rune, n)
+	b := make([]rune, 5)
 	for i := range b {
 		b[i] = runes[rand.Intn(len(runes))]
 	}
@@ -220,14 +240,18 @@ func setupRegistryServer(ctx context.Context) error {
 	dockerRegistry = fmt.Sprintf("localhost:%d", port)
 	config.HTTP.Addr = fmt.Sprintf("127.0.0.1:%d", port)
 	config.HTTP.DrainTimeout = time.Duration(10) * time.Second
-	config.Storage = map[string]configuration.Parameters{"inmemory": map[string]interface{}{}}
+	config.Storage = map[string]configuration.Parameters{"inmemory": map[string]any{}}
 	dockerRegistry, err := registry.NewRegistry(ctx, config)
 	if err != nil {
 		return fmt.Errorf("failed to create docker registry: %w", err)
 	}
 
 	// Start Docker registry
-	go dockerRegistry.ListenAndServe()
+	go func() {
+		if err := dockerRegistry.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
+	}()
 
 	return nil
 }

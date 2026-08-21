@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/sourceignore"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -35,8 +36,8 @@ func IsOCIUrl(url string) bool {
 	return strings.HasPrefix(url, apiv1.ArtifactPrefix)
 }
 
-// IsFileUrl returns true if the given URL is a file URL.
-func IsFileUrl(url string) bool {
+// IsFileURL returns true if the given URL is a file URL.
+func IsFileURL(url string) bool {
 	return strings.HasPrefix(url, apiv1.LocalPrefix)
 }
 
@@ -44,8 +45,8 @@ func IsFileUrl(url string) bool {
 func GetEnv() map[string]string {
 	vars := make(map[string]string)
 	for _, e := range os.Environ() {
-		if i := strings.Index(e, "="); i >= 0 {
-			vars[e[:i]] = e[i+1:]
+		if before, after, ok := strings.Cut(e, "="); ok {
+			vars[before] = after
 		}
 	}
 	return vars
@@ -204,7 +205,7 @@ func mergeStruct(overlay, base cue.Value) (cue.Value, bool) {
 }
 
 func mergeList(overlay, base cue.Value) (cue.Value, bool) {
-	ctx := base.Context()
+	ctx := cuecontext.New()
 
 	ri, _ := overlay.List()
 	ti, _ := base.List()

@@ -30,7 +30,7 @@ import (
 func Test_PullMod(t *testing.T) {
 	g := NewWithT(t)
 	modPath := "testdata/module"
-	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod", 5))
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
 	modVer := "1.0.0"
 
 	// Package the module as an OCI artifact and push it to registry

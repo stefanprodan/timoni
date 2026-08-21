@@ -164,7 +164,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log = loggerBundle(logr.NewContext(cmd.Context(), log), bundle.Name, apiv1.RuntimeDefaultName, true)
+		log = loggerBundle(logr.NewContext(cmd.Context(), log), bundle.Name, apiv1.RuntimeDefaultName)
 
 		if len(bundle.Instances) == 0 {
 			return fmt.Errorf("no instances found in bundle")

@@ -134,12 +134,12 @@ func TestReadRemoteCRDManifestRejectsInsecureRedirect(t *testing.T) {
 func TestRemoveCRDStatusSchema(t *testing.T) {
 	tests := []struct {
 		name     string
-		versions interface{}
+		versions any
 		wantErr  string
 	}{
 		{
 			name:     "non-object version",
-			versions: []interface{}{"v1"},
+			versions: []any{"v1"},
 			wantErr:  "spec.versions[0] must be an object",
 		},
 		{
@@ -152,8 +152,8 @@ func TestRemoveCRDStatusSchema(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
-			crd := &unstructured.Unstructured{Object: map[string]interface{}{
-				"spec": map[string]interface{}{"versions": tt.versions},
+			crd := &unstructured.Unstructured{Object: map[string]any{
+				"spec": map[string]any{"versions": tt.versions},
 			}}
 
 			err := removeCRDStatusSchema(crd)
@@ -165,16 +165,16 @@ func TestRemoveCRDStatusSchema(t *testing.T) {
 
 func TestRemoveCRDStatusSchemaPreservesOtherFields(t *testing.T) {
 	g := NewWithT(t)
-	crd := &unstructured.Unstructured{Object: map[string]interface{}{
-		"spec": map[string]interface{}{
-			"versions": []interface{}{
-				map[string]interface{}{
+	crd := &unstructured.Unstructured{Object: map[string]any{
+		"spec": map[string]any{
+			"versions": []any{
+				map[string]any{
 					"name": "v1",
-					"schema": map[string]interface{}{
-						"openAPIV3Schema": map[string]interface{}{
-							"properties": map[string]interface{}{
-								"spec":   map[string]interface{}{"type": "object"},
-								"status": map[string]interface{}{"type": "object"},
+					"schema": map[string]any{
+						"openAPIV3Schema": map[string]any{
+							"properties": map[string]any{
+								"spec":   map[string]any{"type": "object"},
+								"status": map[string]any{"type": "object"},
 							},
 						},
 					},
@@ -189,7 +189,7 @@ func TestRemoveCRDStatusSchemaPreservesOtherFields(t *testing.T) {
 	versions, found, err := unstructured.NestedSlice(crd.Object, "spec", "versions")
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(found).To(BeTrue())
-	version := versions[0].(map[string]interface{})
+	version := versions[0].(map[string]any)
 	properties, found, err := unstructured.NestedMap(version, "schema", "openAPIV3Schema", "properties")
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(found).To(BeTrue())

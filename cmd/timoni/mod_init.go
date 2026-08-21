@@ -129,13 +129,13 @@ func runInitModCmd(cmd *cobra.Command, args []string) error {
 func copyModuleFile(mName, mTmpl, src, dst string) (err error) {
 	in, err := os.Open(src)
 	if err != nil {
-		return
+		return err
 	}
 	defer in.Close()
 
 	out, err := os.Create(dst)
 	if err != nil {
-		return
+		return err
 	}
 	defer func() {
 		if e := out.Close(); e != nil {
@@ -147,7 +147,7 @@ func copyModuleFile(mName, mTmpl, src, dst string) (err error) {
 	if err != nil {
 		return err
 	}
-	txt := strings.Replace(string(data), mTmpl, mName, -1)
+	txt := strings.ReplaceAll(string(data), mTmpl, mName)
 
 	_, err = io.WriteString(out, txt)
 	if err != nil {
@@ -156,20 +156,20 @@ func copyModuleFile(mName, mTmpl, src, dst string) (err error) {
 
 	err = out.Sync()
 	if err != nil {
-		return
+		return err
 	}
 
 	si, err := os.Stat(src)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = os.Chmod(dst, si.Mode())
 	if err != nil {
-		return
+		return err
 	}
 
-	return
+	return err
 }
 
 // initializeModule copies a template and writes the default ignore file.
@@ -200,14 +200,14 @@ func initModuleFromTemplate(mName, mTmpl, src string, dst string) (err error) {
 	}
 
 	if err = os.MkdirAll(filepath.Dir(dst), si.Mode()); err != nil {
-		return
+		return err
 	}
 	err = os.Mkdir(dst, si.Mode())
 	if errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("module %s already exists", dst)
 	}
 	if err != nil {
-		return
+		return err
 	}
 	defer func() {
 		if err != nil {
@@ -217,7 +217,7 @@ func initModuleFromTemplate(mName, mTmpl, src string, dst string) (err error) {
 
 	entries, err := os.ReadDir(src)
 	if err != nil {
-		return
+		return err
 	}
 
 	for _, entry := range entries {
@@ -227,7 +227,7 @@ func initModuleFromTemplate(mName, mTmpl, src string, dst string) (err error) {
 		if entry.IsDir() {
 			err = initModuleFromTemplate(mName, mTmpl, srcPath, dstPath)
 			if err != nil {
-				return
+				return err
 			}
 		} else {
 			fi, fiErr := entry.Info()
@@ -240,7 +240,7 @@ func initModuleFromTemplate(mName, mTmpl, src string, dst string) (err error) {
 
 			err = copyModuleFile(mName, mTmpl, srcPath, dstPath)
 			if err != nil {
-				return
+				return err
 			}
 		}
 	}

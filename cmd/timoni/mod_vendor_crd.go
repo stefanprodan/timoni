@@ -225,7 +225,7 @@ func removeCRDStatusSchema(crd *unstructured.Unstructured) error {
 	}
 
 	for i := range versions {
-		version, ok := versions[i].(map[string]interface{})
+		version, ok := versions[i].(map[string]any)
 		if !ok {
 			return fmt.Errorf("CRD spec.versions[%d] must be an object", i)
 		}

@@ -25,27 +25,27 @@ import (
 )
 
 // Implement checks if the object implements the interface
-func Implement(expected interface{}) types.GomegaMatcher {
+func Implement(expected any) types.GomegaMatcher {
 	return &implementsMatcher{
 		expected: expected,
 	}
 }
 
 type implementsMatcher struct {
-	expected interface{}
+	expected any
 }
 
-func (m *implementsMatcher) Match(actual interface{}) (success bool, err error) {
+func (m *implementsMatcher) Match(actual any) (success bool, err error) {
 	iface := reflect.TypeOf(m.expected).Elem()
 	t := reflect.TypeOf(actual)
 
 	return t.Implements(iface), nil
 }
 
-func (m *implementsMatcher) FailureMessage(actual interface{}) (message string) {
+func (m *implementsMatcher) FailureMessage(actual any) (message string) {
 	return format.Message(actual, fmt.Sprintf("to implement %T", m.expected))
 }
 
-func (m *implementsMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (m *implementsMatcher) NegatedFailureMessage(actual any) (message string) {
 	return format.Message(actual, fmt.Sprintf("not to implement %T", m.expected))
 }

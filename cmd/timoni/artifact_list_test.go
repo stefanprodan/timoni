@@ -30,7 +30,7 @@ import (
 func Test_ListArtifact(t *testing.T) {
 	g := NewWithT(t)
 	aPath := "testdata/module-values"
-	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact"))
 	aTags := []string{"1.0.0", "1.1.0", "2.0.0", "dev", "latest"}
 
 	pushCmd := fmt.Sprintf("artifact push oci://%s -f %s", aURL, aPath)
@@ -51,7 +51,7 @@ func Test_ListArtifact(t *testing.T) {
 		var list []apiv1.ArtifactReference
 		g.Expect(json.Unmarshal([]byte(output), &list)).To(Succeed())
 
-		var tags []string
+		tags := make([]string, 0, len(list))
 		for _, ref := range list {
 			tags = append(tags, ref.Tag)
 		}
@@ -160,7 +160,7 @@ func Test_ListArtifact(t *testing.T) {
 
 		var list []apiv1.ArtifactReference
 		g.Expect(json.Unmarshal([]byte(stdout), &list)).To(Succeed())
-		var tags []string
+		tags := make([]string, 0, len(list))
 		for _, ref := range list {
 			tags = append(tags, ref.Tag)
 		}

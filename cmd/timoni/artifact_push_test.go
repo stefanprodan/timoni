@@ -35,7 +35,7 @@ func Test_PushArtifact(t *testing.T) {
 	aPath := "testdata/module-values"
 
 	g := NewWithT(t)
-	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact"))
 	aTag := "1.0.0"
 	aLicense := "org.opencontainers.image.licenses=Apache-2.0"
 	aSource := "org.opencontainers.image.source=https://host/repo.git"
@@ -101,7 +101,7 @@ func Test_PushArtifact_Symlinks(t *testing.T) {
 	g.Expect(os.Symlink(filepath.Join("..", "shared", "extra.cue"),
 		filepath.Join(aPath, "extra.cue"))).To(Succeed())
 
-	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact"))
 
 	// By default the symlinked file is left out of the artifact.
 	_, err := executeCommand(fmt.Sprintf("artifact push oci://%s -f %s -t skip --content-type=generic", aURL, aPath))
@@ -158,7 +158,7 @@ func TestPushArtifactRejectsInvalidOutputBeforeInput(t *testing.T) {
 func Test_PushArtifact_OutputJSON(t *testing.T) {
 	g := NewWithT(t)
 	aPath := "testdata/module-values"
-	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact", 5))
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-artifact"))
 	aTag := "1.0.0"
 
 	output, err := executeCommand(fmt.Sprintf(

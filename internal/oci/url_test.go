@@ -45,7 +45,7 @@ func TestResolveDigestURL(t *testing.T) {
 	g := NewWithT(t)
 	opts := Options(context.Background(), "", false)
 
-	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module", 5))
+	imgURL := fmt.Sprintf("oci://%s/%s", dockerRegistry, rnd("my-module"))
 	annotations := map[string]string{apiv1.VersionAnnotation: "1.0.0"}
 	digestURL, err := PushModule(imgURL+":1.0.0", "testdata/module/", nil, annotations, opts)
 	g.Expect(err).ToNot(HaveOccurred())

@@ -223,11 +223,11 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 		return err
 	case "json":
 		list := struct {
-			ApiVersion string                       `json:"apiVersion,omitempty"`
+			APIVersion string                       `json:"apiVersion,omitempty"`
 			Kind       string                       `json:"kind,omitempty"`
 			Items      []*unstructured.Unstructured `json:"items,omitempty"`
 		}{
-			ApiVersion: "v1",
+			APIVersion: "v1",
 			Kind:       "List",
 			Items:      objects,
 		}
@@ -287,11 +287,11 @@ func convertToCue(cmd *cobra.Command, paths []string) ([][]byte, error) {
 			return nil, fmt.Errorf("unknown values file format for %s", path)
 		}
 
-		bytes, err := format.Node(node)
+		data, err := format.Node(node)
 		if err != nil {
 			return nil, fmt.Errorf("could not serialise value from file at %s to cue: %w", path, err)
 		}
-		valuesCue[i] = bytes
+		valuesCue[i] = data
 	}
 	return valuesCue, nil
 }

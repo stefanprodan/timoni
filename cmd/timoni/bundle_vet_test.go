@@ -231,7 +231,7 @@ bundle:
         monitoring:
           enabled: true
 `
-	bundleJson := `
+	bundleJSON := `
 {
   "bundle": {
     "instances": {
@@ -280,7 +280,7 @@ bundle:
 	g.Expect(os.WriteFile(yamlPath, []byte(bundleYaml), 0644)).ToNot(HaveOccurred())
 
 	jsonPath := filepath.Join(wd, "bundle.json")
-	g.Expect(os.WriteFile(jsonPath, []byte(bundleJson), 0644)).ToNot(HaveOccurred())
+	g.Expect(os.WriteFile(jsonPath, []byte(bundleJSON), 0644)).ToNot(HaveOccurred())
 
 	t.Setenv("TEST_BVET_HOST", "test.host")
 	t.Setenv("TEST_BVET_PASS", "password")

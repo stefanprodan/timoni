@@ -27,17 +27,11 @@ import (
 	"github.com/stefanprodan/timoni/internal/logger"
 )
 
-func loggerBundle(ctx context.Context, bundle, cluster string, prettify bool) logr.Logger {
+func loggerBundle(ctx context.Context, bundle, cluster string) logr.Logger {
 	switch cluster {
 	case apiv1.RuntimeDefaultName:
-		if !prettify {
-			return LoggerFrom(ctx, "bundle", bundle)
-		}
 		return LoggerFrom(ctx, "caller", logger.ColorizeBundle(bundle))
 	default:
-		if !prettify {
-			return LoggerFrom(ctx, "bundle", bundle, "cluster", cluster)
-		}
 		return LoggerFrom(ctx, "caller",
 			fmt.Sprintf("%s %s %s",
 				logger.ColorizeBundle(bundle),
@@ -97,7 +91,7 @@ func loggerRuntime(ctx context.Context, runtime, cluster string, prettify bool) 
 }
 
 // LoggerFrom returns a logr.Logger with predefined values from a context.Context.
-func LoggerFrom(ctx context.Context, keysAndValues ...interface{}) logr.Logger {
+func LoggerFrom(ctx context.Context, keysAndValues ...any) logr.Logger {
 	if cliLogger.IsZero() {
 		cliLogger = logger.NewConsoleLogger(false, false)
 	}

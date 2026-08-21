@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -78,7 +79,9 @@ func init() {
 		"The local path to bundle.cue file.")
 	bundleDelCmd.Flags().StringVar(&bundleDelArgs.name, "name", "",
 		"Name of the bundle to delete.")
-	bundleDelCmd.Flags().MarkDeprecated("name", "use 'timoni bundle delete <name>'")
+	if err := bundleDelCmd.Flags().MarkDeprecated("name", "use 'timoni bundle delete <name>'"); err != nil {
+		panic(err)
+	}
 	bundleCmd.AddCommand(bundleDelCmd)
 }
 
@@ -126,7 +129,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		log := loggerBundle(ctx, bundleDelArgs.name, cluster.Name, true)
+		log := loggerBundle(ctx, bundleDelArgs.name, cluster.Name)
 
 		if len(instances) == 0 {
 			log.Error(nil, "no instances found in bundle")
@@ -134,8 +137,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		// delete in reverse order (last installed, first to uninstall)
-		for index := len(instances) - 1; index >= 0; index-- {
-			instance := instances[index]
+		for _, instance := range slices.Backward(instances) {
 			log.Info(fmt.Sprintf("deleting instance %s in namespace %s",
 				logger.ColorizeSubject(instance.Name), logger.ColorizeSubject(instance.Namespace)))
 			if err := deleteBundleInstance(ctx, &apiv1.BundleInstance{
@@ -152,7 +154,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 }
 
 func deleteBundleInstance(ctx context.Context, instance *apiv1.BundleInstance, wait bool, dryrun bool) error {
-	log := loggerBundle(ctx, instance.Bundle, instance.Cluster, true)
+	log := loggerBundle(ctx, instance.Bundle, instance.Cluster)
 
 	sm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {

@@ -44,8 +44,8 @@ func Test_BundleDelete(t *testing.T) {
 
 	bundleName := "my-bundle"
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -113,9 +113,9 @@ func Test_BundleDelete_MultiNamespace(t *testing.T) {
 
 	bundleName := "my-bundle"
 	modPath := "testdata/module"
-	namespaceFrontend := rnd("my-namespace", 5)
-	namespaceBackend := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespaceFrontend := rnd("my-namespace")
+	namespaceBackend := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -194,10 +194,10 @@ bundle: {
 func Test_BundleDelete_Runtime(t *testing.T) {
 	g := NewWithT(t)
 
-	bundleName := rnd("my-bundle", 5)
+	bundleName := rnd("my-bundle")
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -291,10 +291,10 @@ runtime: {
 func Test_BundleDelete_RetainsInventoryOnTerminationTimeout(t *testing.T) {
 	g := NewWithT(t)
 
-	bundleName := rnd("my-bundle", 5)
+	bundleName := rnd("my-bundle")
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 
@@ -369,10 +369,10 @@ bundle: {
 func Test_BundleDelete_WaitFalseRemovesStateWithoutWaiting(t *testing.T) {
 	g := NewWithT(t)
 
-	bundleName := rnd("my-bundle", 5)
+	bundleName := rnd("my-bundle")
 	modPath := "testdata/module"
-	namespace := rnd("my-namespace", 5)
-	modName := rnd("my-mod", 5)
+	namespace := rnd("my-namespace")
+	modName := rnd("my-mod")
 	modURL := fmt.Sprintf("%s/%s", dockerRegistry, modName)
 	modVer := "1.0.0"
 

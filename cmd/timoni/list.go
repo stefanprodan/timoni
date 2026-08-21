@@ -24,6 +24,8 @@ import (
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
 
 	"github.com/stefanprodan/timoni/internal/runtime"
@@ -75,7 +77,7 @@ func runListCmd(cmd *cobra.Command, args []string) error {
 
 	var rows [][]string
 	for _, inv := range instances {
-		row := []string{}
+		var row []string
 		if listArgs.allNamespaces {
 			row = []string{
 				inv.Name,
@@ -126,21 +128,26 @@ func listInstancesFromFlags(parent context.Context) ([]*apiv1.Instance, error) {
 }
 
 func printTable(writer io.Writer, header []string, rows [][]string) {
-	table := tablewriter.NewWriter(writer)
-	table.SetHeader(header)
-	table.SetAutoWrapText(false)
-	table.SetAutoFormatHeaders(true)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	table.SetRowSeparator("")
-	table.SetHeaderLine(false)
-	table.SetBorder(false)
-	table.SetTablePadding("\t")
-	table.SetNoWhiteSpace(true)
-	table.AppendBulk(rows)
-	table.Render()
+	table := tablewriter.NewTable(writer,
+		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
+			Borders: tw.BorderNone,
+			Symbols: tw.NewSymbolCustom("tab").WithColumn("\t"),
+			Settings: tw.Settings{
+				Separators: tw.Separators{BetweenColumns: tw.On, BetweenRows: tw.Off},
+				Lines:      tw.Lines{ShowHeaderLine: tw.Off},
+			},
+		})),
+		tablewriter.WithHeaderAutoFormat(tw.On),
+		tablewriter.WithHeaderAutoWrap(tw.WrapNone),
+		tablewriter.WithRowAutoWrap(tw.WrapNone),
+		tablewriter.WithHeaderAlignment(tw.AlignLeft),
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+		tablewriter.WithPadding(tw.PaddingNone),
+		tablewriter.WithTrimSpace(tw.Off),
+	)
+	table.Header(header)
+	_ = table.Bulk(rows)
+	_ = table.Render()
 }
 
 func printOrPass(value string) string {

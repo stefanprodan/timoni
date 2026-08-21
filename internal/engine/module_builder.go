@@ -306,8 +306,8 @@ func (b *ModuleBuilder) GetContainerImages(value cue.Value) ([]string, error) {
 		case cue.StructKind:
 			var img apiv1.ImageReference
 			imgVal := reflect.ValueOf(img)
-			for i := 0; i < imgVal.Type().NumField(); i++ {
-				if tag, ok := imgVal.Type().Field(i).Tag.Lookup("json"); ok {
+			for field := range imgVal.Type().Fields() {
+				if tag, ok := field.Tag.Lookup("json"); ok {
 					if !v.LookupPath(cue.ParsePath(tag)).Exists() {
 						return true
 					}
@@ -348,7 +348,6 @@ func (b *ModuleBuilder) GetConfigDoc(value cue.Value) ([][]string, error) {
 				switch d.List[line].Text {
 				case "// +nodoc":
 					noDoc = true
-					break
 				}
 			}
 
@@ -374,7 +373,7 @@ func (b *ModuleBuilder) GetConfigDoc(value cue.Value) ([][]string, error) {
 			row = append(row, fmt.Sprintf("`%s:`", strings.ReplaceAll(match[1], ".", ": ")+match[2]))
 			row = append(row, fmt.Sprintf("`%s`", valueType))
 			row = append(row, fmt.Sprintf("`%s`", value))
-			row = append(row, fmt.Sprintf("%s", doc))
+			row = append(row, doc)
 			rows = append(rows, row)
 		}
 
