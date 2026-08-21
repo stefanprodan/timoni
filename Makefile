@@ -11,8 +11,7 @@ BIN_DIR := $(REPOSITORY_ROOT)/bin
 CONTROLLER_GEN_VERSION ?= v0.21.0
 
 # Kubernetes env test
-ENVTEST_ARCH?=amd64
-ENVTEST_KUBERNETES_VERSION?=1.35
+ENVTEST_KUBERNETES_VERSION?=1.36
 
 all: test build
 
@@ -83,9 +82,9 @@ CONTROLLER_GEN=$(BIN_DIR)/controller-gen
 controller-gen:
 	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION))
 
-KUBEBUILDER_ASSETS?="$(shell $(ENVTEST) --arch=$(ENVTEST_ARCH) use -i $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(BIN_DIR) -p path)"
+KUBEBUILDER_ASSETS?="$(shell $(ENVTEST) use -i $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(BIN_DIR) -p path)"
 install-envtest: setup-envtest ## Install controller-runtime envtest.
-	$(ENVTEST) use $(ENVTEST_KUBERNETES_VERSION) --arch=$(ENVTEST_ARCH) --bin-dir=$(BIN_DIR)
+	$(ENVTEST) use $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(BIN_DIR)
 
 ENVTEST=$(BIN_DIR)/setup-envtest
 .PHONY: envtest
