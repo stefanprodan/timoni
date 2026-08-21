@@ -31,7 +31,10 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
+
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/engine/fetcher"
@@ -244,21 +247,30 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 }
 
 func printMarkDownTable(writer io.Writer, header []string, rows [][]string) {
-	table := tablewriter.NewWriter(writer)
-	table.SetHeader(header)
-	table.SetAutoWrapText(false)
-	table.SetAutoFormatHeaders(true)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("|")
-	table.SetColumnSeparator("|")
-	table.SetRowSeparator("-")
-	table.SetHeaderLine(true)
-	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-	table.SetTablePadding("\t")
-	table.SetNoWhiteSpace(false)
-	table.AppendBulk(rows)
-	table.Render()
+	table := tablewriter.NewTable(writer,
+		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
+			Borders: tw.Border{Left: tw.On, Right: tw.On, Top: tw.Off, Bottom: tw.Off},
+			Symbols: tw.NewSymbolCustom("markdown").
+				WithColumn("|").
+				WithRow("-").
+				WithCenter("|").
+				WithMidLeft("|").
+				WithMidRight("|"),
+			Settings: tw.Settings{
+				Separators: tw.Separators{BetweenColumns: tw.On, BetweenRows: tw.Off},
+				Lines:      tw.Lines{ShowHeaderLine: tw.On},
+			},
+		})),
+		tablewriter.WithHeaderAutoFormat(tw.On),
+		tablewriter.WithHeaderAutoWrap(tw.WrapNone),
+		tablewriter.WithRowAutoWrap(tw.WrapNone),
+		tablewriter.WithHeaderAlignment(tw.AlignLeft),
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+		tablewriter.WithTrimSpace(tw.Off),
+	)
+	table.Header(header)
+	_ = table.Bulk(rows)
+	_ = table.Render()
 }
 
 func isMarkdownFile(filename string) bool {
