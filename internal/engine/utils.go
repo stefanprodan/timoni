@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/fluxcd/pkg/sourceignore"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -204,7 +205,7 @@ func mergeStruct(overlay, base cue.Value) (cue.Value, bool) {
 }
 
 func mergeList(overlay, base cue.Value) (cue.Value, bool) {
-	ctx := base.Context()
+	ctx := cuecontext.New()
 
 	ri, _ := overlay.List()
 	ti, _ := base.List()

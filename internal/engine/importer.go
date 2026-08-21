@@ -25,6 +25,7 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/ast/astutil"
+	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
 	"cuelang.org/go/cue/token"
 	"cuelang.org/go/encoding/openapi"
@@ -166,7 +167,7 @@ func convertCRD(crd cue.Value) (*IntermediateCRD, error) {
 		return nil, errors.New("crd versions field is not a list")
 	}
 
-	ctx := crd.Context()
+	ctx := cuecontext.New()
 	shell := ctx.CompileString(fmt.Sprintf(`
 		openapi: "3.0.0",
 		info: {

@@ -63,9 +63,6 @@ linters:
       - linters:
           - staticcheck
         text: "client.Apply is deprecated"
-      - linters:
-          - staticcheck
-        text: "cue.Value\\).Context is deprecated"
       # The file-header rule only inspects the first comment group,
       # which gofmt reserves for the build constraint.
       - linters:
