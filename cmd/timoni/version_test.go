@@ -33,7 +33,7 @@ func TestVersion(t *testing.T) {
 	output, err := executeCommand("version -o yaml")
 	g.Expect(err).ToNot(HaveOccurred())
 
-	var data map[string]interface{}
+	var data map[string]any
 	err = yaml.Unmarshal([]byte(output), &data)
 	g.Expect(err).ToNot(HaveOccurred())
 

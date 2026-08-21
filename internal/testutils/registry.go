@@ -46,7 +46,7 @@ func (t *WithT) SetupTestRegistry() string {
 	address := fmt.Sprintf("localhost:%d", port)
 	config.HTTP.Addr = fmt.Sprintf("127.0.0.1:%d", port)
 	config.HTTP.DrainTimeout = time.Duration(10) * time.Second
-	config.Storage = map[string]configuration.Parameters{"inmemory": map[string]interface{}{}}
+	config.Storage = map[string]configuration.Parameters{"inmemory": map[string]any{}}
 	dockerRegistry, err := registry.NewRegistry(ctx, config)
 	if err != nil {
 		t.Fatalf("failed to create docker registry: %s", err)

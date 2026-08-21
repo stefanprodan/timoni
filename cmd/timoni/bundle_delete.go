@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -134,8 +135,7 @@ func runBundleDelCmd(cmd *cobra.Command, args []string) error {
 		}
 
 		// delete in reverse order (last installed, first to uninstall)
-		for index := len(instances) - 1; index >= 0; index-- {
-			instance := instances[index]
+		for _, instance := range slices.Backward(instances) {
 			log.Info(fmt.Sprintf("deleting instance %s in namespace %s",
 				logger.ColorizeSubject(instance.Name), logger.ColorizeSubject(instance.Namespace)))
 			if err := deleteBundleInstance(ctx, &apiv1.BundleInstance{

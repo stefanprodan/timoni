@@ -97,7 +97,7 @@ func loggerRuntime(ctx context.Context, runtime, cluster string, prettify bool) 
 }
 
 // LoggerFrom returns a logr.Logger with predefined values from a context.Context.
-func LoggerFrom(ctx context.Context, keysAndValues ...interface{}) logr.Logger {
+func LoggerFrom(ctx context.Context, keysAndValues ...any) logr.Logger {
 	if cliLogger.IsZero() {
 		cliLogger = logger.NewConsoleLogger(false, false)
 	}

@@ -44,8 +44,8 @@ func IsFileUrl(url string) bool {
 func GetEnv() map[string]string {
 	vars := make(map[string]string)
 	for _, e := range os.Environ() {
-		if i := strings.Index(e, "="); i >= 0 {
-			vars[e[:i]] = e[i+1:]
+		if before, after, ok := strings.Cut(e, "="); ok {
+			vars[before] = after
 		}
 	}
 	return vars

@@ -306,8 +306,8 @@ func (b *ModuleBuilder) GetContainerImages(value cue.Value) ([]string, error) {
 		case cue.StructKind:
 			var img apiv1.ImageReference
 			imgVal := reflect.ValueOf(img)
-			for i := 0; i < imgVal.Type().NumField(); i++ {
-				if tag, ok := imgVal.Type().Field(i).Tag.Lookup("json"); ok {
+			for field := range imgVal.Type().Fields() {
+				if tag, ok := field.Tag.Lookup("json"); ok {
 					if !v.LookupPath(cue.ParsePath(tag)).Exists() {
 						return true
 					}

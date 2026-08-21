@@ -19,6 +19,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"time"
@@ -75,9 +76,7 @@ func (s *StorageManager) Apply(ctx context.Context, instance *apiv1.Instance, cr
 		storageDataKey: instanceData,
 	}
 
-	for labelKey, labelValue := range instance.Labels {
-		secret.Labels[labelKey] = labelValue
-	}
+	maps.Copy(secret.Labels, instance.Labels)
 
 	opts := []client.PatchOption{
 		client.ForceOwnership,
@@ -221,9 +220,7 @@ func (s *StorageManager) SavePending(ctx context.Context, instance *apiv1.Instan
 
 	// Keep the stored bytes and the secret labels untouched, so the bundle
 	// ownership label and the predecessor record survive the pending write.
-	for labelKey, labelValue := range existing.Labels {
-		secret.Labels[labelKey] = labelValue
-	}
+	maps.Copy(secret.Labels, existing.Labels)
 
 	secret.Data = map[string][]byte{
 		storageDataKey: storedData,
