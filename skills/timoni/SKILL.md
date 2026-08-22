@@ -130,7 +130,7 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "8.10.0"
+				version: "8.10.1"
 			}
 			namespace: "podinfo"
 			values: maxmemory: 256

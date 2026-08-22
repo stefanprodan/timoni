@@ -23,7 +23,7 @@ bundle: {
 		redis: {
 			module: {
 				url:     "oci://ghcr.io/stefanprodan/modules/redis"
-				version: "8.10.0"
+				version: "8.10.1"
 			}
 			namespace: "podinfo"
 			values: maxmemory: 256
@@ -69,8 +69,8 @@ Apply the Bundle on the cluster:
   <Tab title="output">
       ```text
       applying instance redis
-      pulling oci://ghcr.io/stefanprodan/modules/redis:8.10.0
-      using module timoni.sh/redis version 8.10.0
+      pulling oci://ghcr.io/stefanprodan/modules/redis:8.10.1
+      using module timoni.sh/redis version 8.10.1
       installing redis in namespace podinfo
       Namespace/podinfo created
       applying master
@@ -116,7 +116,7 @@ Build the Bundle and print the resulting Kubernetes resources for all the Bundle
       metadata:
         labels:
           app.kubernetes.io/part-of: redis
-          app.kubernetes.io/version: 8.10.0
+          app.kubernetes.io/version: 8.10.1
         name: redis
         namespace: podinfo
       ---
@@ -149,7 +149,7 @@ List the managed resources from a bundle and their rollout status:
   <Tab title="output">
      ```text
      last applied 2024-03-03T20:21:19Z
-     module oci://ghcr.io/stefanprodan/modules/redis:8.10.0
+     module oci://ghcr.io/stefanprodan/modules/redis:8.10.1
      digest: sha256:4f377b66fd6d608f6a347bbef5b4fcd1aaff3dfa253b1c8437ae8e11fa08b70a
      ServiceAccount/podinfo/redis Current Resource is current
      ConfigMap/podinfo/redis Current Resource is always ready
@@ -181,7 +181,7 @@ List the instances in Bundle `podinfo` across all namespaces:
      ```text
      NAME    NAMESPACE         MODULE                                          VERSION LAST APPLIED          BUNDLE
      podinfo podinfo           oci://ghcr.io/stefanprodan/modules/podinfo      6.14.0   2024-03-03T16:20:07Z  podinfo
-     redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        8.10.0   2024-03-03T16:20:00Z  podinfo
+     redis   podinfo           oci://ghcr.io/stefanprodan/modules/redis        8.10.1   2024-03-03T16:20:00Z  podinfo
      ```
   </Tab>
 </Tabs>
