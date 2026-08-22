@@ -37,6 +37,7 @@ myapp
 │   ├── config.cue # Config schema and default values
 │   ├── deployment.cue # Kubernetes Deployment template
 │   └── service.cue # Kubernetes Service template
+├── images.cue # Container images defaults
 ├── timoni.cue # Timoni entry point
 ├── timoni.ignore # Timoni ignore rules
 ├── values.cue # Timoni values placeholder 
@@ -419,6 +420,38 @@ if #config.service.annotations != _|_ {
 
 Besides mapping the config fields to the Kubernetes object fields, we can also
 set fixed values, like the port `protocol` and `name` fields.
+
+### Container images
+
+The `images.cue` file from the module root holds the default
+repository, tag and digest of the container images used by the module:
+
+```cue
+package main
+
+// The container images tracked from the upstream releases.
+values: {
+	image: {
+		repository: *"docker.io/nginxinc/nginx-unprivileged" | string
+		tag:        *"1-alpine" | string
+		digest:     *"" | string
+	}
+}
+
+```
+
+The `image` field is declared as required in the `#Config` definition,
+and its default values come from `images.cue`:
+
+```cue
+#Config: {
+	image!: timoniv1.#Image
+}
+
+```
+
+Users can override the image repository, tag or digest with their own values.
+To update the images to a new version, edit the defaults in `images.cue`.
 
 ## Extend the module config
 

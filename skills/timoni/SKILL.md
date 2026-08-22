@@ -279,6 +279,7 @@ myapp/
 │   ├── config.cue     # #Config schema with defaults, #Instance
 │   ├── deployment.cue # #Deployment: {#config: #Config, ...}
 │   └── service.cue
+├── images.cue         # container images defaults (repository, tag, digest)
 ├── timoni.cue         # entry point: values, timoni.instance, timoni.apply
 ├── timoni.ignore      # files excluded from mod push
 ├── values.cue         # placeholder for user values
