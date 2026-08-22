@@ -70,6 +70,15 @@ const (
 	// CreatedAnnotation is the OpenContainers annotation for specifying
 	// the build date and time on an artifact (RFC 3339).
 	CreatedAnnotation = "org.opencontainers.image.created"
+
+	// ImagesFile is the name of the module file holding the
+	// default container images.
+	ImagesFile = "images.cue"
+
+	// ImagesAnnotation is the annotation key used on module artifacts
+	// for listing the default container images referenced by the module,
+	// as a comma-separated sorted list of image references.
+	ImagesAnnotation = "sh.timoni.images"
 )
 
 // ArtifactReference contains the information necessary to locate

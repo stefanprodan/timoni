@@ -33,8 +33,35 @@ import (
 var buildModCmd = &cobra.Command{
 	Use:   "build MODULE",
 	Short: "Build a module OCI artifact on the local filesystem",
-	Args:  cobra.ExactArgs(1),
-	RunE:  buildModCmdRun,
+	Long: `The build command packages the module as an OCI artifact and writes it to
+the local filesystem as an OCI archive or an OCI image layout, without
+pushing it to a container registry.
+
+The container images declared in the module's 'images.cue' file are recorded
+in the 'sh.timoni.images' annotation as a comma-separated sorted list of
+image references.
+
+The resulting archive can be pushed to a container registry as-is
+with 'timoni mod push', which extracts the version from the archive manifest.`,
+	Example: `  # Build a module to an OCI archive
+  timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar
+
+  # Build a module to an OCI image layout directory
+  timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0 --format oci-layout
+
+  # Build a module with custom OCI annotations
+  timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar \
+	--annotation='org.opencontainers.image.licenses=Apache-2.0' \
+	--annotation='org.opencontainers.image.description=A timoni.sh module for my app.'
+
+  # Build a module with a fixed creation date for reproducible artifacts
+  SOURCE_DATE_EPOCH=1704067200 timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar
+
+  # Push a pre-built archive to a container registry
+  timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar
+  timoni mod push ./app-module-1.0.0.oci.tar oci://docker.io/org/app-module`,
+	Args: cobra.ExactArgs(1),
+	RunE: buildModCmdRun,
 }
 
 // buildModFlags contains local module build inputs.
@@ -83,6 +110,9 @@ func buildModCmdRun(cmd *cobra.Command, args []string) (err error) {
 	// The required flag owns the manifest version annotation.
 	annotations[apiv1.VersionAnnotation] = buildModArgs.version
 	oci.AppendGitMetadata(cmd.Context(), module, annotations)
+	if err := appendImagesAnnotation(module, annotations); err != nil {
+		return err
+	}
 	ignorePaths, err := engine.ReadIgnoreFile(module)
 	if err != nil {
 		return fmt.Errorf("reading %s failed: %w", apiv1.IgnoreFile, err)

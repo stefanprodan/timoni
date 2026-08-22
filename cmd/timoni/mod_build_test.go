@@ -64,6 +64,8 @@ func Test_BuildModVersionOverridesAnnotation(t *testing.T) {
 	manifest, err := image.Manifest()
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(manifest.Annotations).To(HaveKeyWithValue(apiv1.VersionAnnotation, "1.0.0"))
+	g.Expect(manifest.Annotations).To(HaveKeyWithValue(apiv1.ImagesAnnotation,
+		"cgr.dev/chainguard/timoni:latest-dev@sha256:b49fbaac0eedc22c1cfcd26684707179cccbed0df205171bae3e1bae61326a10"))
 }
 
 func Test_BuildModRequiresVersion(t *testing.T) {

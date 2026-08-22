@@ -72,6 +72,7 @@ func Test_PushMod(t *testing.T) {
 	g.Expect(manifest.Annotations[apiv1.VersionAnnotation]).To(BeEquivalentTo(modVer))
 	g.Expect(manifest.Annotations["org.opencontainers.image.licenses"]).To(BeEquivalentTo("Apache-2.0"))
 	g.Expect(manifest.Annotations["org.opencontainers.image.description"]).To(BeEquivalentTo("My, test."))
+	g.Expect(manifest.Annotations[apiv1.ImagesAnnotation]).To(BeEquivalentTo("cgr.dev/chainguard/timoni:latest-dev@sha256:b49fbaac0eedc22c1cfcd26684707179cccbed0df205171bae3e1bae61326a10"))
 
 	// Verify media types
 	g.Expect(manifest.MediaType).To(Equal(types.OCIManifestSchema1))
@@ -285,4 +286,33 @@ func Test_PushMod_ArchiveMissingFile(t *testing.T) {
 		fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod")),
 	))
 	g.Expect(err).To(MatchError(ContainSubstring("module not found at path")))
+}
+
+func Test_PushMod_ImagesAnnotation(t *testing.T) {
+	g := NewWithT(t)
+	modVer := "1.0.0"
+
+	// A module without an images.cue file carries no images annotation.
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
+	_, err := executeCommand(fmt.Sprintf("mod push testdata/module-crd oci://%s -v %s", modURL, modVer))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	image, err := crane.Pull(fmt.Sprintf("%s:%s", modURL, modVer))
+	g.Expect(err).ToNot(HaveOccurred())
+	manifest, err := image.Manifest()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(manifest.Annotations).ToNot(HaveKey(apiv1.ImagesAnnotation))
+
+	// An images annotation set by the user takes precedence over the one
+	// extracted from the module.
+	modURL = fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
+	_, err = executeCommand(fmt.Sprintf("mod push testdata/module oci://%s -v %s -a %s=docker.io/org/app:1.0.0",
+		modURL, modVer, apiv1.ImagesAnnotation))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	image, err = crane.Pull(fmt.Sprintf("%s:%s", modURL, modVer))
+	g.Expect(err).ToNot(HaveOccurred())
+	manifest, err = image.Manifest()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(manifest.Annotations[apiv1.ImagesAnnotation]).To(BeEquivalentTo("docker.io/org/app:1.0.0"))
 }
