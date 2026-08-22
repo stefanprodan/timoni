@@ -137,6 +137,7 @@
               "cmd/timoni_mod_vet",
               "cmd/timoni_mod_show",
               "cmd/timoni_mod_show_config",
+              "cmd/timoni_mod_show_readme",
               "cmd/timoni_mod_push",
               "cmd/timoni_mod_pull",
               "cmd/timoni_mod_list",
