@@ -24,6 +24,14 @@ The artifacts are annotated with OCI
 - `org.opencontainers.image.source: <MODULE GIT URL>`
 - `org.opencontainers.image.revision: <MODULE GIT SHA>`
 
+The container images declared in the module's `images.cue` file are recorded
+in the `sh.timoni.images` annotation as a comma-separated list of image
+references, sorted alphabetically. Each reference is composed from the image
+default values in the `repository[:tag][@digest]` format, where the tag and
+digest are included only when set to non-empty values.
+Modules without an `images.cue` file carry no `sh.timoni.images` annotation,
+and the annotation can be overridden with `--annotation sh.timoni.images=<LIST>`.
+
 For reproducible builds, Timoni preserves explicit creation, source and
 revision annotations, then uses `SOURCE_DATE_EPOCH` or the Git commit time for
 the creation date. Git source and revision metadata are added when available.
