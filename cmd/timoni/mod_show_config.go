@@ -45,25 +45,36 @@ import (
 var markdownTableRowRegex = regexp.MustCompile(`^\|.*\|$`)
 
 var configShowModCmd = &cobra.Command{
-	Use:   "config [MODULE PATH]",
+	Use:   "config [MODULE PATH | MODULE URL]",
 	Args:  cobra.MaximumNArgs(1),
-	Short: "Output the #Config structure of a local module",
-	Long:  `The config command parses the local module configuration structure and outputs the information to stdout.`,
-	Example: `  # print the config of a module in the current directory
+	Short: "Output the #Config schema of a module",
+	Long: `The config command prints the module's #Config schema as CUE, with the
+field documentation, default values and constraints, marking optional fields
+with ? and required fields with !. The module can be a local directory or
+an OCI artifact.
+
+With --output, the schema is written as a Markdown table to the given file.
+If the file is Markdown, the table replaces the first table found under
+the Configuration section, or is appended to the end of the file.`,
+	Example: `  # print the config schema of a module in the current directory
   timoni mod show config
 
-  # output the config to a file, if the file is markdown, the table will overwrite a table in a Configuration section or
-  # be appended to the end of the file
+  # print the config schema of a module published to a container registry
+  timoni mod show config oci://docker.io/org/app -v 1.0.0
+
+  # write the config table to the module README
   timoni mod show config --output ./README.md
 `,
 	RunE: runConfigShowModCmd,
 }
 
 type configModFlags struct {
-	path   string
-	pkg    flags.Package
-	name   string
-	output string
+	path    string
+	version flags.Version
+	creds   flags.Credentials
+	pkg     flags.Package
+	name    string
+	output  string
 }
 
 var configShowModArgs = configModFlags{
@@ -71,6 +82,8 @@ var configShowModArgs = configModFlags{
 }
 
 func init() {
+	configShowModCmd.Flags().VarP(&configShowModArgs.version, configShowModArgs.version.Type(), configShowModArgs.version.Shorthand(), configShowModArgs.version.Description())
+	configShowModCmd.Flags().Var(&configShowModArgs.creds, configShowModArgs.creds.Type(), configShowModArgs.creds.Description())
 	configShowModCmd.Flags().StringVarP(&configShowModArgs.output, "output", "o", "", "The file to output the config Markdown to, defaults to stdout")
 	showModCmd.AddCommand(configShowModCmd)
 }
@@ -82,8 +95,13 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		configShowModArgs.path = args[0]
 	}
 
-	if fi, err := os.Stat(configShowModArgs.path); err != nil || !fi.IsDir() {
-		return fmt.Errorf("module not found at path %s", configShowModArgs.path)
+	version := configShowModArgs.version.String()
+	if version == "" {
+		version = apiv1.LatestVersion
+	}
+
+	if configShowModArgs.output != "" && strings.HasPrefix(configShowModArgs.path, apiv1.ArtifactPrefix) {
+		return fmt.Errorf("--output is not supported for OCI modules, the README is published with the artifact")
 	}
 
 	cuectx := cuecontext.New()
@@ -99,9 +117,10 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 
 	f, err := fetcher.New(ctxPull, fetcher.Options{
 		Source:       configShowModArgs.path,
-		Version:      apiv1.LatestVersion,
+		Version:      version,
 		Destination:  tmpDir,
 		CacheDir:     rootArgs.cacheDir,
+		Creds:        configShowModArgs.creds.String(),
 		Insecure:     rootArgs.registryInsecure,
 		DefaultLocal: true,
 	})
@@ -136,16 +155,24 @@ func runConfigShowModCmd(cmd *cobra.Command, args []string) error {
 		return describeErr(f.GetModuleRoot(), "validation failed", err)
 	}
 
-	rows, err := builder.GetConfigDoc(buildResult)
+	fields, err := builder.GetConfigDoc(buildResult)
 	if err != nil {
 		return describeErr(f.GetModuleRoot(), "failed to get config structure", err)
 	}
 
+	if configShowModArgs.output == "" {
+		out, err := engine.FormatConfigCUE(fields)
+		if err != nil {
+			return describeErr(f.GetModuleRoot(), "failed to format config", err)
+		}
+		_, err = fmt.Fprint(rootCmd.OutOrStdout(), out)
+		return err
+	}
+
+	rows := configTableRows(fields)
 	header := []string{"Key", "Type", "Default", "Description"}
 
-	if configShowModArgs.output == "" {
-		printMarkDownTable(rootCmd.OutOrStdout(), header, rows)
-	} else {
+	{
 		tmpFile, err := writeFile(configShowModArgs.output, header, rows, f)
 		if err != nil {
 			return err
@@ -254,6 +281,41 @@ func writeFile(readFile string, header []string, rows [][]string, f fetcher.Fetc
 
 	keepOutputFile = true
 	return tmpFileName, nil
+}
+
+// configTableRows formats the config fields as Markdown table rows,
+// marking optional keys with ? and required keys with ! and skipping
+// the fields commented with +nodoc.
+func configTableRows(fields []engine.ConfigField) [][]string {
+	rows := make([][]string, 0, len(fields))
+	for _, f := range fields {
+		if f.NoDoc {
+			continue
+		}
+		key := f.Key()
+		switch {
+		case f.Optional:
+			key = strings.TrimSuffix(key, ":") + "?:"
+		case f.Required:
+			key = strings.TrimSuffix(key, ":") + "!:"
+		}
+		def := ""
+		if f.Default != "" {
+			def = fmt.Sprintf("`%s`", mdEscape(f.Default))
+		}
+		rows = append(rows, []string{
+			fmt.Sprintf("`%s`", key),
+			fmt.Sprintf("`%s`", mdEscape(f.Type)),
+			def,
+			strings.Join(strings.Fields(f.Doc), " "),
+		})
+	}
+	return rows
+}
+
+// mdEscape escapes the pipe character so that code spans do not break the table.
+func mdEscape(s string) string {
+	return strings.ReplaceAll(s, "|", "\\|")
 }
 
 func printMarkDownTable(writer io.Writer, header []string, rows [][]string) {

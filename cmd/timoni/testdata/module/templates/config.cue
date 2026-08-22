@@ -37,6 +37,13 @@ import (
 	}
 	domain: *"example.internal" | string
 
+	// Annotations applied to pods
+	podAnnotations?: {[string]: string}
+
+	// Log level, info by default
+	logLevel?: *"info" | "debug" | "info"
+	priority: (*1 | int) & >=0
+
 	// +nodoc
 	globals: {
 		enabled: *false | bool

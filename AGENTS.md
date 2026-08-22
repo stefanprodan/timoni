@@ -73,20 +73,21 @@ Go structs for Bundle, Instance, Runtime, Module, Artifact, Inventory, plus the 
 `schemas/timoni.sh/core/v1alpha1/*.cue` are the canonical CUE definitions (Bundle, Instance, Runtime, etc.), embedded into the binary via `schemas/embed.go` (`//go:embed`) **and** published as the importable `timoni.sh/core/v1alpha1` CUE package that module authors import. Changing a schema here changes both the Go-side validation and what users import.
 
 ### `docs/` — user-facing documentation (published to timoni.sh)
-The MDX site built with Mintlify (`docs/docs.json` holds the theme, navigation and redirects; preview with `cd docs && npx mint dev`). Pages use Mintlify components (`<Tip>`, `<Tabs>`, `<Card>`), root-relative links without extensions (`/bundle`, `/cue/module/signing`) and `title`/`description` frontmatter. Three tiers, all hand-written except `cmd/`:
-- **`docs/` root — the feature/concept guides** (one `.mdx` per feature, e.g. `bundle*.mdx`, `concepts.mdx`, `module.mdx`, plus Flux/GitOps integration pages). Most-missed when behavior changes. The Bundle/Runtime feature set lives here; note `bundle-runtime.mdx` documents the non-obvious `@timoni(runtime:…)` attributes and env-var values. `ls docs/*.mdx` for the full set.
+The MDX site is built with Mintlify (`docs/docs.json` holds the theme, navigation and redirects; preview with `cd docs && npx mint dev`). Pages use Mintlify components (`<Tip>`, `<Tabs>`, `<Card>`), root-relative links without extensions (`/bundle`, `/cue/module/signing`) and `title`/`description` frontmatter. Three tiers, all hand-written except `cmd/`:
+- **`docs/` root — the feature/concept guides** (one `.mdx` per feature, e.g. `bundle*.mdx`, `concepts.mdx`, `module.mdx`, plus Flux/GitOps integration pages). The Bundle/Runtime feature set lives here; note `bundle-runtime.mdx` documents the non-obvious `@timoni(runtime:…)` attributes and env-var values. `ls docs/*.mdx` for the full set.
 - **`docs/cue/module/`** — the module-authoring behavior contracts that mirror code (apply/prune/wait semantics, immutability, signing, CRD vendoring, test jobs, semver). `ls docs/cue/module/` for the full set.
 - **`docs/cmd/`** — the generated CLI reference (do not hand-edit — produced by `make docgen`, gitignored, published from the `website` branch by the docs workflow). New commands must also be added to the CLI Reference tab in `docs/docs.json`.
 - **`skills/timoni/SKILL.md`** — the agent skill; see the `skills/` section below.
 - **`.mcp.json`** — points AI agents at the docs MCP server Mintlify hosts at `https://timoni.sh/mcp` (search over the published docs).
 
-New pages must be added to the navigation in `docs/docs.json` or they will not appear in the sidebar. The site is published from the `website` branch, which `.github/workflows/docs.yaml` rebuilds from `docs/` plus the generated `cmd/` pages on release tags; never edit that branch by hand.
+New pages must be added to the navigation in `docs/docs.json`. The site is published from the `website` branch, which `.github/workflows/docs.yaml` rebuilds from `docs/` plus the generated `cmd/` pages on release tags; never edit that branch by hand.
 
 When you change behavior — flags, apply/prune/wait semantics, the `action.timoni.sh/*` annotations, the Runtime/Bundle schema, vendoring, signing — update the matching page(s) under `docs/` in the same change, not as a follow-up. A Runtime or Bundle change almost always touches a `docs/` root guide *and* a schema; a module-rendering change touches `docs/cue/module/`.
 
 ### `skills/` — the agent skill
 
-`skills/timoni/SKILL.md` is a self-contained Timoni skill for AI agents, published at `timoni.sh/skill.md` and `/.well-known/agent-skills/` (`make docs-skills` copies `skills/` to the gitignored `docs/.mintlify/skills/`, which the docs workflow publishes). It must let an agent operate Timoni with no other documentation. Update it when commands, flags or Bundle/Runtime semantics change.
+`skills/timoni/SKILL.md` is a self-contained Timoni skill for AI agents, published at `timoni.sh/skill.md` and `/.well-known/agent-skills/` (`make docs-skills` copies `skills/` to the gitignored `docs/.mintlify/skills/`, which the docs workflow publishes). It must let an agent operate Timoni with no other documentation.
+Update it when commands, flags or Bundle/Runtime semantics change, and bump `metadata.version` (semver, independent of Timoni releases): patch for wording fixes, minor for significant changes.
 
 Evaluate skill changes by running a sub-agent against it:
 
@@ -100,7 +101,7 @@ Evaluate skill changes by running a sub-agent against it:
 ### Other dirs
 - `examples/` — runnable modules (redis, etc.) used as docs and as `make cue-vet` / `make push-redis` targets.
 - `blueprints/` — module scaffolding templates.
-- `actions/` — GitHub Actions wrappers.
+- `actions/` — GitHub Action for using Timoni in CI.
 - `internal/dyff/` — structured YAML diffing for the interactive flow.
 - `internal/testutils/` — gomega matchers and an in-process OCI registry for tests.
 

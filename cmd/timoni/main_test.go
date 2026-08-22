@@ -194,6 +194,8 @@ func resetCmdArgs() {
 	listModArgs = listModFlags{withDigest: true, limit: 100}
 	listArtifactArgs = listArtifactFlags{withDigest: true, limit: 100}
 	pullModArgs = pullModFlags{}
+	configShowModArgs = configModFlags{name: "module-name"}
+	readmeShowModArgs = readmeModFlags{}
 	pushModArgs = pushModFlags{}
 	buildModArgs = buildModFlags{format: "oci-archive"}
 	bundleArgs = bundleFlags{}

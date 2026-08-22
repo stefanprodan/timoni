@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -38,9 +39,10 @@ func Test_ShowConfig(t *testing.T) {
 	))
 	g.Expect(err).ToNot(HaveOccurred())
 
-	g.Expect(output).To(ContainSubstring("`client: enabled:`"))
-	g.Expect(output).To(ContainSubstring("`client: image: repository:`"))
-	g.Expect(output).To(ContainSubstring("`server: enabled:`"))
+	g.Expect(output).To(HavePrefix("#Config: {"))
+	g.Expect(output).To(ContainSubstring("enabled: *true | bool"))
+	g.Expect(output).To(ContainSubstring("repository: *\"cgr.dev/chainguard/timoni\" | string"))
+	g.Expect(output).To(ContainSubstring("server: enabled: *true | bool"))
 }
 
 func Test_ShowConfigOutput(t *testing.T) {
@@ -113,4 +115,60 @@ func Test_ShowConfigOutputScannerError(t *testing.T) {
 	g.Expect(contents).To(Equal(original))
 	_, statErr := os.Stat(filePath + ".tmp")
 	g.Expect(os.IsNotExist(statErr)).To(BeTrue())
+}
+
+func Test_ShowConfigMarkers(t *testing.T) {
+	g := NewWithT(t)
+
+	output, err := executeCommand("mod show config testdata/module")
+	g.Expect(err).ToNot(HaveOccurred())
+
+	g.Expect(output).To(ContainSubstring("// Annotations applied to pods\n\tpodAnnotations?: {[string]: string}"))
+	g.Expect(output).To(ContainSubstring("team: \"test\"\n"))
+	g.Expect(output).To(ContainSubstring("domain: *\"example.internal\" | string"))
+	g.Expect(output).ToNot(ContainSubstring("kubeVersion!"))
+	g.Expect(output).ToNot(ContainSubstring("moduleVersion!"))
+
+	// The Markdown table is written only with --output.
+	filePath := filepath.Join(t.TempDir(), "config.md")
+	_, err = executeCommand(fmt.Sprintf("mod show config testdata/module --output %s", filePath))
+	g.Expect(err).ToNot(HaveOccurred())
+	content, err := os.ReadFile(filePath)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(string(content)).To(ContainSubstring("| `podAnnotations?:`"))
+	g.Expect(string(content)).To(ContainSubstring("| `team:`"))
+	g.Expect(string(content)).ToNot(ContainSubstring("| `client:`"))
+}
+
+func Test_ShowConfigOCI(t *testing.T) {
+	g := NewWithT(t)
+	modPath := "testdata/module"
+	modURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("my-mod"))
+	modVer := "1.0.0"
+
+	_, err := executeCommand(fmt.Sprintf(
+		"mod push %s oci://%s -v %s --resolve-symlinks",
+		modPath,
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	output, err := executeCommand(fmt.Sprintf(
+		"mod show config oci://%s -v %s",
+		modURL,
+		modVer,
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(output).To(HavePrefix("#Config: {"))
+	g.Expect(output).To(ContainSubstring("podAnnotations?: {[string]: string}"))
+
+	_, err = executeCommand(fmt.Sprintf(
+		"mod show config oci://%s -v %s --output %s",
+		modURL,
+		modVer,
+		filepath.Join(t.TempDir(), "README.md"),
+	))
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring("not supported for OCI modules"))
 }
