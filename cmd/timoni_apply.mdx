@@ -1,0 +1,106 @@
+---
+title: "timoni apply"
+description: "Install or upgrade a module instance"
+mode: "wide"
+---
+
+## Synopsis
+
+The apply command installs or upgrades a module instance on the Kubernetes cluster.
+
+The apply command performs the following steps:
+
+- Pulls the module version from the specified container registry.
+- If the registry is private, uses the credentials found in `~/.docker/config.json`.
+- If the registry credentials are specified with `--creds`, these take priority over the docker ones.
+- Creates the specified `--namespace` if it doesn't exist.
+- Merges all the values supplied with `--values` on top of the default values found in the module.
+- Builds the module by passing the instance name, namespace and values.
+- Labels the resulting Kubernetes resources with the instance name and namespace.
+- Applies the Kubernetes resources on the cluster.
+- Creates or updates the instance inventory with the last applied resources IDs (stored in a secret named timoni.&lt;instance_name&gt;).
+- Recreates the resources annotated with 'action.timoni.sh/force: "enabled"' if they contain changes to immutable fields.
+- Waits for the applied resources to become ready.
+- Deletes the resources which were previously applied but are missing from the current instance.
+- Skips the resources annotated with 'action.timoni.sh/prune: "disabled"' from deletion.
+- Waits for the deleted resources to be finalised.
+
+
+```
+timoni apply INSTANCE_NAME MODULE_URL [flags]
+```
+
+## Examples
+
+```sh
+  # Install a module instance and create the namespace if it doesn't exists
+  timoni apply -n apps app oci://docker.io/org/module -v 1.0.0
+
+  # Do a dry-run upgrade and print the diff
+  timoni apply -n apps app oci://docker.io/org/module -v 1.0.0 \
+  --values ./values-1.cue \
+  --dry-run --diff
+
+  # Install or upgrade an instance with custom values by merging them in the specified order
+  timoni apply -n apps app oci://docker.io/org/module -v 1.0.0 \
+  --values ./values-1.cue \
+  --values ./values-2.cue
+
+  # Upgrade an instance and recreate immutable Kubernetes resources such as Jobs
+  timoni apply -n apps app oci://docker.io/org/module -v 2.0.0 \
+  --values ./values-1.cue \
+  --force
+
+  # Install or upgrade an instance with custom values from stdin
+  echo "values: replicas: 2" | timoni apply -n apps app oci://docker.io/org/module --values -
+
+  # Install or upgrade an instance with values in YAML and JSON format
+  timoni apply -n apps app oci://docker.io/org/module \
+  --values ./values-1.yaml \
+  --values ./values-2.json
+
+```
+
+## Options
+
+```
+      --creds creds           The credentials for the container registry in the format '<username>[:<password>]'.
+      --diff                  Perform a server-side apply dry run and prints the diff.
+  -d, --digest digest         The digest of the module e.g. sha256:3f29e1b2b05f8371595dc761fed8e8b37544b38d56dfce81a551b46c82f2f56b.
+      --dry-run               Perform a server-side apply dry run.
+      --force                 Recreate immutable Kubernetes resources.
+  -h, --help                  help for apply
+      --overwrite-ownership   Overwrite instance ownership, if the instance is owned by a Bundle.
+  -p, --package package       The name of the module's package used for building the templates. (default main)
+  -f, --values strings        The local path to values files (cue, yaml or json format).
+  -v, --version version       The version of the module e.g. '1.0.0' or '1.0.0-rc.1'.
+      --wait                  Wait for the applied Kubernetes objects to become ready. (default true)
+```
+
+## Options inherited from parent commands
+
+```
+      --cache-dir string                    Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to "$HOME/.timoni/cache")
+      --kube-as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --kube-as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --kube-as-uid string                  UID to impersonate for the operation.
+      --kube-certificate-authority string   Path to a cert file for the certificate authority.
+      --kube-client-certificate string      Path to a client certificate file for TLS.
+      --kube-client-key string              Path to a client key file for TLS.
+      --kube-context string                 The name of the kubeconfig context to use.
+      --kube-insecure-skip-tls-verify       if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.
+      --kube-server string                  The address and port of the Kubernetes API server.
+      --kube-tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used.
+      --kube-token string                   Bearer token for authentication to the API server.
+      --kubeconfig string                   Path to the kubeconfig file.
+      --log-color                           Adds colorized output to the logs. (defaults to false when no tty)
+      --log-pretty                          Adds timestamps to the logs. (default true)
+  -n, --namespace string                    The the namespace scope for the operation. (default "default")
+      --registry-insecure                   If true, allows connecting to a container registry without TLS or with a self-signed certificate.
+      --timeout duration                    The length of time to wait before giving up on the current operation. (default 5m0s)
+```
+
+## See also
+
+* [timoni](/cmd/timoni)	 - A package manager for Kubernetes powered by CUE.
+

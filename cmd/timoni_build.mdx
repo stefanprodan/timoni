@@ -1,0 +1,63 @@
+---
+title: "timoni build"
+description: "Build an instance from a module and print the resulting Kubernetes resources"
+mode: "wide"
+---
+
+```
+timoni build INSTANCE_NAME MODULE_URL [flags]
+```
+
+## Examples
+
+```sh
+  # Build an instance from a local module
+  timoni build app ./path/to/module --output yaml
+
+  # Build an instance with custom values by merging them in the specified order
+  timoni build app ./path/to/module \
+  --values ./values-1.cue \
+  --values ./values-2.cue
+
+```
+
+## Options
+
+```
+      --creds creds       The credentials for the container registry in the format '<username>[:<password>]'.
+  -d, --digest digest     The digest of the module e.g. sha256:3f29e1b2b05f8371595dc761fed8e8b37544b38d56dfce81a551b46c82f2f56b.
+  -h, --help              help for build
+      --mask-secrets      Hide the values of Kubernetes Secrets in the printed objects.
+  -o, --output string     The format in which the Kubernetes objects should be printed, can be 'yaml' or 'json'. (default "yaml")
+  -p, --package package   The name of the module's package used for building the templates. (default main)
+  -f, --values strings    The local path to values files (cue, yaml or json format).
+  -v, --version version   The version of the module e.g. '1.0.0' or '1.0.0-rc.1'.
+```
+
+## Options inherited from parent commands
+
+```
+      --cache-dir string                    Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to "$HOME/.timoni/cache")
+      --kube-as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --kube-as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --kube-as-uid string                  UID to impersonate for the operation.
+      --kube-certificate-authority string   Path to a cert file for the certificate authority.
+      --kube-client-certificate string      Path to a client certificate file for TLS.
+      --kube-client-key string              Path to a client key file for TLS.
+      --kube-context string                 The name of the kubeconfig context to use.
+      --kube-insecure-skip-tls-verify       if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.
+      --kube-server string                  The address and port of the Kubernetes API server.
+      --kube-tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used.
+      --kube-token string                   Bearer token for authentication to the API server.
+      --kubeconfig string                   Path to the kubeconfig file.
+      --log-color                           Adds colorized output to the logs. (defaults to false when no tty)
+      --log-pretty                          Adds timestamps to the logs. (default true)
+  -n, --namespace string                    The the namespace scope for the operation. (default "default")
+      --registry-insecure                   If true, allows connecting to a container registry without TLS or with a self-signed certificate.
+      --timeout duration                    The length of time to wait before giving up on the current operation. (default 5m0s)
+```
+
+## See also
+
+* [timoni](/cmd/timoni)	 - A package manager for Kubernetes powered by CUE.
+

@@ -1,0 +1,66 @@
+---
+title: "timoni delete"
+description: "Uninstall a module instance from the cluster"
+mode: "wide"
+---
+
+## Synopsis
+
+The delete command uninstalls the instance and deletes all its
+Kubernetes resources from the cluster.
+
+By default it waits until the resources are gone. With `--wait=false` it
+only sends the delete requests and returns right away, like kubectl.
+
+If a delete times out, the instance record is kept so you can retry it.
+
+```
+timoni delete INSTANCE_NAME [flags]
+```
+
+## Examples
+
+```sh
+  # Uninstall the app module from the default namespace
+  timoni -n default delete app
+
+  # Do a dry-run uninstall and print the changes
+  timoni delete --dry-run app
+
+```
+
+## Options
+
+```
+      --dry-run   Perform a server-side delete dry run.
+  -h, --help      help for delete
+      --wait      Wait for the deleted Kubernetes objects to be finalized. (default true)
+```
+
+## Options inherited from parent commands
+
+```
+      --cache-dir string                    Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to "$HOME/.timoni/cache")
+      --kube-as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --kube-as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --kube-as-uid string                  UID to impersonate for the operation.
+      --kube-certificate-authority string   Path to a cert file for the certificate authority.
+      --kube-client-certificate string      Path to a client certificate file for TLS.
+      --kube-client-key string              Path to a client key file for TLS.
+      --kube-context string                 The name of the kubeconfig context to use.
+      --kube-insecure-skip-tls-verify       if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.
+      --kube-server string                  The address and port of the Kubernetes API server.
+      --kube-tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used.
+      --kube-token string                   Bearer token for authentication to the API server.
+      --kubeconfig string                   Path to the kubeconfig file.
+      --log-color                           Adds colorized output to the logs. (defaults to false when no tty)
+      --log-pretty                          Adds timestamps to the logs. (default true)
+  -n, --namespace string                    The the namespace scope for the operation. (default "default")
+      --registry-insecure                   If true, allows connecting to a container registry without TLS or with a self-signed certificate.
+      --timeout duration                    The length of time to wait before giving up on the current operation. (default 5m0s)
+```
+
+## See also
+
+* [timoni](/cmd/timoni)	 - A package manager for Kubernetes powered by CUE.
+

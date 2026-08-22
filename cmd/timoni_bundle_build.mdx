@@ -1,0 +1,74 @@
+---
+title: "timoni bundle build"
+description: "Build and print the resulting Kubernetes resources for all instances from a Bundle"
+mode: "wide"
+---
+
+## Synopsis
+
+The bundle build command builds and prints the resulting Kubernetes resources for all instances defined in a Bundle.
+
+
+```
+timoni bundle build [flags]
+```
+
+## Examples
+
+```sh
+  # Build all instances from a bundle and print the manifests to stdout
+  timoni bundle build -f bundle.cue
+
+  # Pass secret values from stdin
+  cat ./bundle_secrets.cue | timoni bundle build -f ./bundle.cue -f -
+
+  # Write the manifests as a directory tree, one directory per instance
+  # and one file per resource, named like 'kustomize build -o <dir>'
+  timoni bundle build -f bundle.cue --output-dir ./manifests
+
+```
+
+## Options
+
+```
+      --concurrency int     The number of instances to build concurrently, defaults to the number of CPU cores capped at 8.
+      --creds creds         The credentials for the container registry in the format '<username>[:<password>]'.
+  -f, --file strings        The local path to bundle.cue files.
+  -h, --help                help for build
+      --mask-secrets        Hide the values of Kubernetes Secrets in the printed objects, ignored with --output-dir.
+      --output-dir string   The path to a directory where the manifests are written as a tree, one directory per instance and one file per resource.
+  -p, --package package     The name of the module's package used for building the templates. (default main)
+```
+
+## Options inherited from parent commands
+
+```
+      --cache-dir string                    Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to "$HOME/.timoni/cache")
+      --kube-as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --kube-as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --kube-as-uid string                  UID to impersonate for the operation.
+      --kube-certificate-authority string   Path to a cert file for the certificate authority.
+      --kube-client-certificate string      Path to a client certificate file for TLS.
+      --kube-client-key string              Path to a client key file for TLS.
+      --kube-context string                 The name of the kubeconfig context to use.
+      --kube-insecure-skip-tls-verify       if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.
+      --kube-server string                  The address and port of the Kubernetes API server.
+      --kube-tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used.
+      --kube-token string                   Bearer token for authentication to the API server.
+      --kubeconfig string                   Path to the kubeconfig file.
+      --log-color                           Adds colorized output to the logs. (defaults to false when no tty)
+      --log-pretty                          Adds timestamps to the logs. (default true)
+  -n, --namespace string                    The the namespace scope for the operation. (default "default")
+      --registry-insecure                   If true, allows connecting to a container registry without TLS or with a self-signed certificate.
+  -r, --runtime strings                     The local path to runtime.cue files.
+      --runtime-cluster string              Filter runtime cluster by name. (default "*")
+      --runtime-from-env                    Inject runtime values from the environment.
+      --runtime-group string                Filter runtime clusters by group. (default "*")
+      --timeout duration                    The length of time to wait before giving up on the current operation. (default 5m0s)
+      --workdir string                      The local path to the CUE module root (the directory containing cue.mod), used to resolve imports in the bundle and runtime definitions. Defaults to the current directory.
+```
+
+## See also
+
+* [timoni bundle](/cmd/timoni_bundle)	 - Commands for managing bundles
+
