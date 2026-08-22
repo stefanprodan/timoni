@@ -195,6 +195,9 @@ func pushModCmdRun(cmd *cobra.Command, args []string) error {
 
 		annotations[apiv1.VersionAnnotation] = version
 		oci.AppendGitMetadata(cmd.Context(), pushModArgs.module, annotations)
+		if err := appendImagesAnnotation(pushModArgs.module, annotations); err != nil {
+			return err
+		}
 
 		ps, err := engine.ReadIgnoreFile(pushModArgs.module)
 		if err != nil {
