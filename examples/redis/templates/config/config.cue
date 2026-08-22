@@ -41,8 +41,10 @@ import (
 	}
 	password?: string & =~"^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$"
 
-	// Container image
-	image: timoniv1.#Image
+	// The image allows setting the container image repository,
+	// tag, digest and pull policy.
+	// The default image repository, tag and digest are set in `images.cue`.
+	image!: timoniv1.#Image
 	imagePullSecrets?: [...corev1.LocalObjectReference]
 
 	// Resource requirements

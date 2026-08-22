@@ -38,11 +38,8 @@ import (
 
 	// The image allows setting the container image repository,
 	// tag, digest and pull policy.
-	image: timoniv1.#Image & {
-		repository: *"docker.io/nginxinc/nginx-unprivileged" | string
-		tag:        *"1-alpine" | string
-		digest:     *"" | string
-	}
+	// The default image repository, tag and digest are set in `images.cue`.
+	image!: timoniv1.#Image
 
 	// The securityContextPreset selects how the workload identity defaults
 	// are applied. The `hardened` preset pins the UID/GID the container

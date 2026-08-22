@@ -8,14 +8,4 @@ package main
 // Defaults
 values: {
 	message: "Hello World"
-	image: {
-		repository: "docker.io/nginx"
-		digest:     "sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752"
-		tag:        "1.31.3-alpine"
-	}
-	test: image: {
-		repository: "docker.io/curlimages/curl"
-		digest:     "sha256:7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13"
-		tag:        "8.21.0"
-	}
 }
