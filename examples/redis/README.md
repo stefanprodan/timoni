@@ -33,7 +33,7 @@ The Redis cluster can be accessed using the following Kubernetes Services:
 To install a specific module version:
 
 ```shell
-timoni -n default apply redis oci://ghcr.io/stefanprodan/modules/redis -v 8.10.0
+timoni -n default apply redis oci://ghcr.io/stefanprodan/modules/redis -v 8.10.1
 ```
 
 To change the [default configuration](#configuration),

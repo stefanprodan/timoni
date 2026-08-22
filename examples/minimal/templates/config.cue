@@ -38,7 +38,7 @@ import (
 
 	// The image allows setting the container image repository,
 	// tag, digest and pull policy.
-	// The default image repository and tag is set in `values.cue`.
+	// The default image repository, tag and digest are set in `images.cue`.
 	image!: timoniv1.#Image
 
 	// The resources allows setting the container resource requirements.
@@ -94,6 +94,7 @@ import (
 	}
 
 	// Test Job disabled by default.
+	// The test image defaults are set in `images.cue`.
 	test: {
 		enabled: *false | bool
 		image!:  timoniv1.#Image
