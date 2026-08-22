@@ -6,6 +6,7 @@ metadata:
   author: Stefan Prodan
   homepage: https://timoni.sh
   source: https://github.com/stefanprodan/timoni
+  version: "0.1.0"
 ---
 
 # Timoni
@@ -83,6 +84,8 @@ below.
 | Log in to a registry | `echo $TOKEN \| timoni registry login ghcr.io -u <user> --password-stdin` |
 | List published versions | `timoni mod list oci://<repo>` (newest 100; `--limit 0` for all, `--with-digest=false` to skip digests) |
 | Pull a module to disk | `timoni mod pull oci://<repo> -v <version> -o ./module` |
+| Show the README | `timoni mod show readme oci://<repo> -v <version>` (or a local `./module` path) |
+| Show the config schema | `timoni mod show config oci://<repo> -v <version>` (or a local `./module` path) |
 | Verify signature on pull | `... mod pull ... --verify=cosign --cosign-key=cosign.pub`, or keyless: `--verify=cosign --certificate-identity-regexp=<re> --certificate-oidc-issuer=<url>` |
 | Create a module | `timoni mod init <name> --blueprint oci://ghcr.io/stefanprodan/timoni/blueprints/starter` |
 | Validate a module | `timoni mod vet [path] [--debug]` |
@@ -113,12 +116,8 @@ values: {
 
 Values are validated against the module's `#Config`; a type or constraint
 mismatch fails the build before anything reaches the cluster. To discover the
-available values, pull the module with `timoni mod pull` (or use it directly
-when it is already on disk) and read its
-`README.md`, which documents them, and the `#Config` schema in the
-`config.cue` file under `templates/` (some modules keep it in a
-subdirectory, e.g. `templates/config/config.cue`). YAML and JSON values
-cannot express CUE constraints or references.
+available values, run `timoni mod show config oci://<repo> -v <version>` (or
+`timoni mod show config ./module` for a local module).
 
 ## Bundles
 
@@ -148,6 +147,10 @@ bundle: {
 }
 ```
 
+- Before adding an instance, read the module docs first:
+  `timoni mod show readme oci://<repo> -v <version>`, then
+  `timoni mod show config oci://<repo> -v <version>` for the full `#Config`
+  schema the `values:` are validated against.
 - Editing loop: `timoni fmt bundle.cue` formats the file,
   `timoni bundle vet -f bundle.cue` validates the definition without a
   cluster (add `--print-value` to inspect the computed bundle),
@@ -349,8 +352,8 @@ regardless. Everything else prints plaintext: `bundle vet --print-value`,
 ## Safe apply workflow
 
 1. Pin the version: `timoni mod list oci://<repo>`; use a digest where tags are mutable.
-2. Read the schema: `timoni mod pull ... -o ./module`, then read the module's
-   `README.md` and the `#Config` in `templates/**/config.cue`.
+2. Read the docs: `timoni mod show readme oci://<repo> -v <version>`, then
+   the schema: `timoni mod show config oci://<repo> -v <version>`.
 3. Validate offline: `timoni build ...` or `timoni bundle vet -f bundle.cue`.
 4. Preview: `--diff`, review pruned and recreated objects.
 5. Apply, then `timoni status` / `timoni bundle status`.
