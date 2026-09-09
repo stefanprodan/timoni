@@ -40,6 +40,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/stefanprodan/timoni/internal/engine"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -205,7 +206,7 @@ func resetCmdArgs() {
 	bundleVetArgs = bundleVetFlags{}
 	bundleUpdateArgs = bundleUpdateFlags{level: engine.UpdateLevelNone}
 	bundleDelArgs = bundleDelFlags{}
-	bundleBuildArgs = bundleBuildFlags{validate: true}
+	bundleBuildArgs = bundleBuildFlags{level: engine.UpdateLevelNone, validate: true}
 	vendorCrdArgs = vendorCrdFlags{}
 	vendorK8sArgs = vendorK8sFlags{}
 	pushArtifactArgs = pushArtifactFlags{
@@ -221,6 +222,16 @@ func resetCmdArgs() {
 	digestArtifactArgs = digestArtifactFlags{}
 	runtimeBuildArgs = runtimeBuildFlags{}
 	versionArgs = versionFlags{output: "yaml"}
+	resetFlagChanges(rootCmd)
+}
+
+func resetFlagChanges(cmd *cobra.Command) {
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		flag.Changed = false
+	})
+	for _, child := range cmd.Commands() {
+		resetFlagChanges(child)
+	}
 }
 
 func rnd(prefix string) string {

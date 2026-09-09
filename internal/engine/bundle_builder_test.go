@@ -17,6 +17,7 @@ limitations under the License.
 package engine
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -110,6 +111,24 @@ bundle: {
 			s, _ := v.String()
 			return s
 		}, Equal("from-runtime")))
+	})
+
+	t.Run("builds from file overrides without writing them", func(t *testing.T) {
+		g := NewWithT(t)
+		overridden := bytes.Replace([]byte(bundleData), []byte(`version: "1.0.0"`), []byte(`version: "2.0.0"`), 1)
+		overriddenBuilder := NewBundleBuilder(ctx, []string{bundleFile})
+		overriddenBuilder.SetFileOverrides(map[string][]byte{bundleFile: overridden})
+		g.Expect(overriddenBuilder.InitWorkspace("overridden", map[string]string{"TEST_WORKSPACE_MSG": "from-runtime"})).To(Succeed())
+
+		v, err := overriddenBuilder.Build("overridden")
+		g.Expect(err).ToNot(HaveOccurred())
+		bundle, err := overriddenBuilder.GetBundle(v)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(bundle.Instances[0].Module.Version).To(Equal("2.0.0"))
+
+		disk, err := os.ReadFile(bundleFile)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(disk).To(Equal([]byte(bundleData)))
 	})
 
 	t.Run("resolves relative file URLs against the origin", func(t *testing.T) {

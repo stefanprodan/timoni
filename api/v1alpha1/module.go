@@ -20,8 +20,8 @@ package v1alpha1
 // denotes the latest stable version of a module.
 const LatestVersion = "latest"
 
-// ModuleReference contains the information necessary to locate
-// a module's OCI artifact in the registry.
+// ModuleReference contains the information needed to locate a module artifact
+// or local source.
 type ModuleReference struct {
 	// Name of the module.
 	Name string `json:"name"`
@@ -30,10 +30,11 @@ type ModuleReference struct {
 	// 'oci://<reg.host>/<org>/<repo>' or 'file://<path>'.
 	Repository string `json:"repository"`
 
-	// Version is the OCI artifact tag in strict semver format.
+	// Version is the strict semantic version of the module release, when known.
 	Version string `json:"version"`
 
-	// Digest of the OCI artifact in the format '<sha-type>:<hex>'.
+	// Digest is an OCI artifact digest or the source-tree digest of an indexed
+	// local module, in the format '<sha-type>:<hex>'.
 	Digest string `json:"digest"`
 
 	// Annotations of the OCI artifact.

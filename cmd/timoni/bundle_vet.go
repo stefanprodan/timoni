@@ -98,8 +98,11 @@ func init() {
 
 // runBundleVetCmd validates a bundle definition with runtime values from the environment or clusters.
 func runBundleVetCmd(cmd *cobra.Command, args []string) error {
+	return runBundleVet(cmd, bundleVetArgs.files, bundleVetArgs.offline, nil)
+}
+
+func runBundleVet(cmd *cobra.Command, files []string, offline bool, overrides map[string][]byte) error {
 	log := LoggerFrom(cmd.Context())
-	files := bundleVetArgs.files
 	if len(files) == 0 {
 		return fmt.Errorf("no bundle provided with -f")
 	}
@@ -126,10 +129,11 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 	cuectx := cuecontext.New()
 	bm := engine.NewBundleBuilder(cuectx, files)
 	bm.SetWorkdir(workdir)
+	bm.SetFileOverrides(overrides)
 
 	runtimeValues := make(map[string]string)
 
-	if bundleArgs.runtimeFromEnv || bundleVetArgs.offline {
+	if bundleArgs.runtimeFromEnv || offline {
 		maps.Copy(runtimeValues, engine.GetEnv())
 	}
 
@@ -138,7 +142,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if bundleVetArgs.offline {
+	if offline {
 		for _, ref := range rt.Refs {
 			for key := range ref.Expressions {
 				if _, found := runtimeValues[key]; !found {
@@ -165,7 +169,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 		maps.Copy(clusterValues, runtimeValues)
 
 		// add values from cluster
-		if len(rt.Refs) > 0 && !bundleVetArgs.offline {
+		if len(rt.Refs) > 0 && !offline {
 			rm, err := runtime.NewResourceManager(kubeconfigArgs)
 			if err != nil {
 				return err

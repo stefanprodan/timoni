@@ -28,3 +28,11 @@ func extractLayer(r io.Reader, dstPath string) error {
 		tar.WithMaxUntarSize(tar.DefaultMaxUntarSize),
 		tar.WithSkipSymlinks())
 }
+
+// extractUncompressedLayer extracts an uncompressed OCI layer.
+func extractUncompressedLayer(r io.Reader, dstPath string) error {
+	return tar.Untar(r, dstPath,
+		tar.WithMaxUntarSize(tar.DefaultMaxUntarSize),
+		tar.WithSkipGzip(),
+		tar.WithSkipSymlinks())
+}

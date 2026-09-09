@@ -111,6 +111,8 @@ type UpdatePolicy struct {
 type UpdateChange struct {
 	Instances   []string
 	Repository  string
+	FromSource  string
+	ToSource    string
 	FromVersion string
 	ToVersion   string
 	FromDigest  string
@@ -120,6 +122,7 @@ type UpdateChange struct {
 	Files []string
 
 	versionLit *bundleLiteral
+	sourceLits []*bundleLiteral
 	digestLits []*bundleLiteral
 }
 
@@ -167,8 +170,11 @@ type bundleFile struct {
 type updateTarget struct {
 	instance   string
 	repository string
+	source     string
 	version    string
 	digest     string
+	sourceLit  *bundleLiteral
+	indexed    bool
 	policies   []UpdatePolicy
 	versionLit *bundleLiteral
 	digestLit  *bundleLiteral
@@ -185,6 +191,7 @@ type updateTarget struct {
 type updateGroup struct {
 	targets    []*updateTarget
 	policies   []UpdatePolicy
+	sourceLits []*bundleLiteral
 	digestLits []*bundleLiteral
 }
 
@@ -208,6 +215,8 @@ type BundleUpdater struct {
 	workspaceFiles []string
 	packageFiles   []string
 	value          cue.Value
+	localIndex     *LocalModuleIndexLister
+	localArtifacts *LocalModuleArtifactLister
 }
 
 // NewBundleUpdater creates a BundleUpdater for the given bundle files.
@@ -225,6 +234,18 @@ func NewBundleUpdater(ctx *cue.Context, files []string) *BundleUpdater {
 // cue.mod module root, enabling imports in the bundle definitions.
 func (u *BundleUpdater) SetWorkdir(dir string) {
 	u.workdir = dir
+}
+
+// SetLocalIndex enables bundle updates for local modules through an explicit
+// index. Without an index, file:// module references remain excluded.
+func (u *BundleUpdater) SetLocalIndex(index *LocalModuleIndexLister) {
+	u.localIndex = index
+}
+
+// SetLocalArtifacts enables bundle updates from explicitly mapped local OCI
+// archives and image layouts.
+func (u *BundleUpdater) SetLocalArtifacts(artifacts *LocalModuleArtifactLister) {
+	u.localArtifacts = artifacts
 }
 
 // SetLevel sets the update level applied to the module references
@@ -528,6 +549,73 @@ func policiesOf(v cue.Value, lit *bundleLiteral) ([]UpdatePolicy, error) {
 	return policies, nil
 }
 
+// resolveTargetSource resolves the module source of a bundle instance and
+// reports whether the target can be considered for updating.
+func (u *BundleUpdater) resolveTargetSource(t *updateTarget, vURL cue.Value) (bool, error) {
+	if strings.HasPrefix(t.repository, apiv1.LocalPrefix) {
+		if u.localIndex == nil && u.localArtifacts == nil {
+			t.skip = "module is not an OCI artifact"
+			return false, nil
+		}
+		baseDir := filepath.Dir(vURL.Pos().Filename())
+		if t.sourceLit != nil {
+			baseDir = filepath.Dir(t.sourceLit.file.origin)
+		}
+		var identity string
+		var ok bool
+		var resolveErr error
+		if u.localIndex != nil {
+			identity, ok, resolveErr = u.localIndex.ResolveIdentity(t.repository, baseDir)
+		}
+		if u.localArtifacts != nil {
+			artifactIdentity, artifactOK, artifactErr := u.localArtifacts.ResolveIdentity(t.repository, baseDir)
+			if artifactErr != nil {
+				return false, fmt.Errorf("instance %s: %w", t.instance, artifactErr)
+			}
+			if ok && artifactOK && identity != artifactIdentity {
+				return false, fmt.Errorf("instance %s: local source maps to conflicting module identities %s and %s", t.instance, identity, artifactIdentity)
+			}
+			if artifactOK {
+				identity, ok = artifactIdentity, true
+			}
+		}
+		if resolveErr != nil {
+			return false, fmt.Errorf("instance %s: %w", t.instance, resolveErr)
+		}
+		if !ok {
+			t.skip = "module source is not in the local index"
+			return false, nil
+		}
+		t.repository = identity
+		t.indexed = true
+		if t.sourceLit == nil {
+			t.skip = "module url is not a rewritable CUE literal"
+			return false, nil
+		}
+		return true, nil
+	}
+	if !strings.HasPrefix(t.repository, apiv1.ArtifactPrefix) {
+		t.skip = "module is not an OCI artifact"
+		return false, nil
+	}
+	if u.localIndex == nil && u.localArtifacts == nil {
+		return true, nil
+	}
+	indexOK := false
+	if u.localIndex != nil {
+		_, indexOK = u.localIndex.entries[t.repository]
+	}
+	artifactOK := u.localArtifacts != nil && u.localArtifacts.HasRepository(t.repository)
+	if indexOK || artifactOK {
+		t.indexed = true
+		if t.sourceLit == nil {
+			t.skip = "module url is not a rewritable CUE literal"
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 // targets resolves the module reference of each bundle instance
 // to the literals defining its version and digest.
 func (u *BundleUpdater) targets() ([]*updateTarget, error) {
@@ -557,8 +645,13 @@ func (u *BundleUpdater) targets() ([]*updateTarget, error) {
 			t.skip = "module url is not concrete"
 			continue
 		}
-		if !strings.HasPrefix(t.repository, apiv1.ArtifactPrefix) {
-			t.skip = "module is not an OCI artifact"
+		t.source = t.repository
+		t.sourceLit = u.lookupLiteral(vURL)
+		canUpdateSource, err := u.resolveTargetSource(t, vURL)
+		if err != nil {
+			return nil, err
+		}
+		if !canUpdateSource {
 			continue
 		}
 
@@ -608,6 +701,10 @@ func (u *BundleUpdater) targets() ([]*updateTarget, error) {
 				}
 			}
 		}
+		if t.indexed && t.digestLit == nil {
+			t.skip = "indexed module requires a digest literal"
+			continue
+		}
 
 		if t.versionLit == nil {
 			if _, isField := vVersion.Source().(*ast.Field); isField {
@@ -655,6 +752,9 @@ func groupTargets(targets []*updateTarget) ([]*updateGroup, error) {
 				g.targets[0].instance, t.instance, g.targets[0].repository, t.repository)
 		}
 		g.targets = append(g.targets, t)
+		if t.sourceLit != nil && !slices.Contains(g.sourceLits, t.sourceLit) {
+			g.sourceLits = append(g.sourceLits, t.sourceLit)
+		}
 		for _, p := range t.policies {
 			if !slices.Contains(g.policies, p) {
 				g.policies = append(g.policies, p)
@@ -736,6 +836,45 @@ func (g *updateGroup) policy(level string) (UpdatePolicy, string, error) {
 	}
 }
 
+func verifyIndexedSource(ctx context.Context, resolver ModuleSourceLister, first *updateTarget, names []string, version string) error {
+	if !first.indexed || resolver == nil {
+		return nil
+	}
+	expectedSource, err := resolver.ResolveSource(ctx, first.repository, version)
+	if err != nil {
+		return fmt.Errorf("instances %s: verifying local source for %s version %s failed: %w", strings.Join(names, ", "), first.repository, version, err)
+	}
+	if !strings.HasPrefix(first.source, apiv1.LocalPrefix) {
+		return nil
+	}
+	currentSource, resolveErr := canonicalLocalSource(first.source, filepath.Dir(first.sourceLit.file.origin))
+	if resolveErr != nil || currentSource != expectedSource {
+		return fmt.Errorf("instances %s: local source does not match the indexed %s version %s", strings.Join(names, ", "), first.repository, version)
+	}
+	return nil
+}
+
+func resolveIndexedSource(ctx context.Context, resolver ModuleSourceLister, first *updateTarget, version string) (string, error) {
+	if !first.indexed || resolver == nil {
+		return "", nil
+	}
+	source, err := resolver.ResolveSource(ctx, first.repository, version)
+	if err != nil {
+		return "", fmt.Errorf("resolving local source for %s version %s failed: %w", first.repository, version, err)
+	}
+	if strings.HasPrefix(first.source, apiv1.LocalPrefix) {
+		baseDir := filepath.Dir(first.sourceLit.file.origin)
+		currentSource, resolveErr := canonicalLocalSource(first.source, baseDir)
+		if resolveErr == nil && currentSource == source {
+			return "", nil
+		}
+		if source == "" {
+			return first.repository, nil
+		}
+	}
+	return source, nil
+}
+
 // Plan computes the module reference changes for the bundle instances
 // by listing the module versions with the given lister and selecting
 // the version according to the update policy of each instance. The digest
@@ -804,6 +943,11 @@ func (u *BundleUpdater) Plan(ctx context.Context, lister ModuleVersionLister) (*
 		}
 
 		current, digestDrift := g.current()
+		resolver, _ := lister.(ModuleSourceLister)
+		if err := verifyIndexedSource(ctx, resolver, first, names, current.Version); err != nil {
+			errs = append(errs, err)
+			continue
+		}
 		next, err := selectVersion(policy, current, list)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("instances %s: %w", strings.Join(names, ", "), err))
@@ -821,7 +965,12 @@ func (u *BundleUpdater) Plan(ctx context.Context, lister ModuleVersionLister) (*
 				digestDrift = true
 			}
 		}
-		if next.Version == current.Version && !digestDrift {
+		toSource, err := resolveIndexedSource(ctx, resolver, first, next.Version)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("instances %s: %w", strings.Join(names, ", "), err))
+			continue
+		}
+		if next.Version == current.Version && !digestDrift && toSource == "" {
 			skip("up to date")
 			continue
 		}
@@ -829,13 +978,19 @@ func (u *BundleUpdater) Plan(ctx context.Context, lister ModuleVersionLister) (*
 		change := &UpdateChange{
 			Instances:   names,
 			Repository:  first.repository,
+			FromSource:  first.source,
+			ToSource:    toSource,
 			FromVersion: current.Version,
 			ToVersion:   next.Version,
 			versionLit:  first.versionLit,
+			sourceLits:  g.sourceLits,
 			digestLits:  g.digestLits,
 		}
 		if first.versionLit != nil {
 			change.Files = append(change.Files, first.versionLit.file.origin)
+		}
+		if first.sourceLit != nil && toSource != "" && !slices.Contains(change.Files, first.sourceLit.file.origin) {
+			change.Files = append(change.Files, first.sourceLit.file.origin)
 		}
 		for _, lit := range g.digestLits {
 			if !slices.Contains(change.Files, lit.file.origin) {
@@ -856,6 +1011,11 @@ func (u *BundleUpdater) Plan(ctx context.Context, lister ModuleVersionLister) (*
 // and rebuilds the bundle to verify that the result is a valid bundle.
 func (u *BundleUpdater) Apply(plan *UpdatePlan) error {
 	for _, change := range plan.Changes {
+		if change.ToSource != "" {
+			for _, lit := range change.sourceLits {
+				lit.lit.Value = literal.String.Quote(change.ToSource)
+			}
+		}
 		if change.versionLit != nil {
 			change.versionLit.lit.Value = literal.String.Quote(change.ToVersion)
 		}

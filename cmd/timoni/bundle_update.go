@@ -18,20 +18,16 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"os"
-	"slices"
 	"strings"
 
-	"cuelang.org/go/cue/cuecontext"
 	"github.com/spf13/cobra"
 
 	"github.com/stefanprodan/timoni/internal/engine"
 	"github.com/stefanprodan/timoni/internal/flags"
 	"github.com/stefanprodan/timoni/internal/logger"
-	"github.com/stefanprodan/timoni/internal/oci"
 )
 
 var bundleUpdateCmd = &cobra.Command{
@@ -49,6 +45,19 @@ that they import:
   @timoni(update:none)                 exclude the module reference from updates
 
 References without an attribute follow the '--level' flag.
+
+With '--local-index', an explicit CUE index maps module identities and semantic
+versions to verified local sources. A matching OCI reference can switch to one
+of those sources; unindexed OCI references continue to use the registry.
+
+With '--oci', an explicit 'oci://repository=path' mapping adds a local OCI
+archive or image layout for the specified repository. Timoni verifies the
+manifest version and artifact digest; it never infers the repository from the
+path.
+
+With '--vet', Timoni validates the staged bundle before writing updates.
+With '--dry-run --vet', it validates the staged update without writing files.
+Use 'bundle build --update' when the updated modules must also be rendered.
 `,
 	Example: `  # Update the module references according to the policies declared in the bundle
   timoni bundle update -f bundle.cue
@@ -58,16 +67,28 @@ References without an attribute follow the '--level' flag.
 
   # Print the available updates without modifying the files
   timoni bundle update -f bundle.cue --dry-run
+
+  # Update an indexed local module
+  timoni bundle update --local-index module-index.cue -f bundle.cue
+
+  # Update from a local OCI archive, explicitly mapped to its repository
+  timoni bundle update --oci oci://registry.example/team/app=.local/artifacts/app.oci.tar -f bundle.cue
+
+  # Validate the staged update before writing it
+  timoni bundle update --vet -f bundle.cue
 `,
 	Args: cobra.NoArgs,
 	RunE: runBundleUpdateCmd,
 }
 
 type bundleUpdateFlags struct {
-	files  []string
-	creds  flags.Credentials
-	level  string
-	dryrun bool
+	files      []string
+	creds      flags.Credentials
+	level      string
+	dryrun     bool
+	vet        bool
+	localIndex string
+	localOCI   []string
 }
 
 var bundleUpdateArgs bundleUpdateFlags
@@ -80,6 +101,12 @@ func init() {
 		"The update level for the module references without an update attribute, one of: none, patch, minor, major.")
 	bundleUpdateCmd.Flags().BoolVar(&bundleUpdateArgs.dryrun, "dry-run", false,
 		"Print the available updates without modifying the files.")
+	bundleUpdateCmd.Flags().BoolVar(&bundleUpdateArgs.vet, "vet", false,
+		"Validate the staged bundle before writing updates.")
+	bundleUpdateCmd.Flags().StringVar(&bundleUpdateArgs.localIndex, "local-index", "",
+		"CUE file that maps module identities and semantic versions to verified local sources.")
+	bundleUpdateCmd.Flags().StringArrayVar(&bundleUpdateArgs.localOCI, "oci", nil,
+		"Map a local OCI archive or image layout to a repository as 'oci://repository=path'; repeatable.")
 	bundleCmd.AddCommand(bundleUpdateCmd)
 }
 
@@ -95,90 +122,48 @@ func runBundleUpdateCmd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(cmd.Context(), rootArgs.timeout)
-	defer cancel()
-
-	updater := engine.NewBundleUpdater(cuecontext.New(), files)
-	updater.SetWorkdir(workdir)
-	if err := updater.SetLevel(bundleUpdateArgs.level); err != nil {
-		return err
-	}
-
-	if err := updater.Load(); err != nil {
-		return describeErr(workdir, "failed to build bundle", err)
-	}
-
-	lister := &engine.OCIModuleVersionLister{
-		Opts: oci.Options(ctx, bundleUpdateArgs.creds.String(), rootArgs.registryInsecure),
-	}
-	plan, err := updater.Plan(ctx, lister)
-	if plan != nil {
-		for _, skip := range plan.Skipped {
-			log.Info(fmt.Sprintf("instance %s skipped: %s", skip.Instance, skip.Reason))
-		}
-	}
+	tx, err := prepareBundleUpdate(cmd, files, workdir, bundleUpdateArgs.level, bundleUpdateArgs.localIndex, bundleUpdateArgs.localOCI, bundleUpdateArgs.creds.String())
 	if err != nil {
 		return err
 	}
 
-	if len(plan.Changes) == 0 {
+	if bundleUpdateArgs.vet {
+		if err := runBundleUpdateVet(cmd, files, tx.overrides); err != nil {
+			return err
+		}
+	}
+
+	if len(tx.plan.Changes) == 0 {
 		log.Info("all module references are up to date")
 		return nil
 	}
 
-	var changedFiles []string
-	for _, change := range plan.Changes {
-		for _, file := range change.Files {
-			if !slices.Contains(changedFiles, file) {
-				changedFiles = append(changedFiles, file)
-			}
-		}
-	}
-	slices.Sort(changedFiles)
-
-	originals := make(map[string][]byte, len(changedFiles))
-	for _, file := range changedFiles {
-		originals[file], err = updater.Source(file)
-		if err != nil {
-			return err
-		}
-	}
-
-	if err := updater.Apply(plan); err != nil {
-		return describeErr(workdir, "update failed", err)
-	}
-
-	updated := make(map[string][]byte, len(changedFiles))
-	for _, file := range changedFiles {
-		updated[file], err = updater.Format(file)
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, change := range plan.Changes {
+	for _, change := range tx.plan.Changes {
 		if _, err := fmt.Fprintln(cmd.OutOrStdout(), describeChange(change)); err != nil {
 			return err
 		}
 	}
 
-	changedFiles = slices.DeleteFunc(changedFiles, func(file string) bool {
-		return bytes.Equal(originals[file], updated[file])
-	})
-
 	if bundleUpdateArgs.dryrun {
 		log.Info(fmt.Sprintf("%d module reference(s) can be updated in %s %s",
-			len(plan.Changes), strings.Join(relPaths(changedFiles), ", "), logger.ColorizeDryRun("(dry run)")))
+			len(tx.plan.Changes), strings.Join(relPaths(tx.changedFiles), ", "), logger.ColorizeDryRun("(dry run)")))
 		return nil
 	}
 
-	if err := writeBundleFiles(changedFiles, originals, updated); err != nil {
+	if err := writeBundleFiles(tx.changedFiles, tx.originals, tx.updated); err != nil {
 		return err
 	}
-	for _, file := range changedFiles {
+	for _, file := range tx.changedFiles {
 		log.Info(fmt.Sprintf("updated %s", fmtRelPath(file)))
 	}
 	return nil
+}
+
+// runBundleUpdateVet validates a bundle with the in-memory overrides used by
+// the atomic 'bundle build --update' path.
+func runBundleUpdateVet(cmd *cobra.Command, files []string, overrides map[string][]byte) error {
+	offline := bundleArgs.runtimeFromEnv || len(bundleArgs.runtimeFiles) == 0
+	return runBundleVet(cmd, files, offline, overrides)
 }
 
 // writeBundleFiles writes the updated content of the given files after
@@ -229,5 +214,9 @@ func describeChange(change *engine.UpdateChange) string {
 		}
 		to += "@" + change.ToDigest
 	}
-	return fmt.Sprintf("%s: %s %s -> %s", strings.Join(change.Instances, ", "), change.Repository, from, to)
+	source := ""
+	if change.ToSource != "" {
+		source = fmt.Sprintf(" source %s -> %s", change.FromSource, change.ToSource)
+	}
+	return fmt.Sprintf("%s: %s%s %s -> %s", strings.Join(change.Instances, ", "), change.Repository, source, from, to)
 }

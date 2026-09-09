@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	goruntime "runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -50,6 +51,8 @@ var bundleBuildCmd = &cobra.Command{
 	Long: `The bundle build command builds and prints the resulting Kubernetes resources for all instances defined in a Bundle.
 
 Custom resources are validated against the CRD schemas vendored in the modules and the CRDs rendered by any instance of the bundle. A violation fails the command and nothing is written. Use --validate=false to disable the validation.
+
+With --update, module references are updated, vetted, and built from the same in-memory inputs. Bundle files are written only after vet and build succeed. Use --local-index for extracted local modules and repeatable --oci mappings for local OCI artifacts.
 `,
 	Example: `  # Build all instances from a bundle and print the manifests to stdout
   timoni bundle build -f bundle.cue
@@ -60,6 +63,9 @@ Custom resources are validated against the CRD schemas vendored in the modules a
   # Write the manifests as a directory tree, one directory per instance
   # and one file per resource, named like 'kustomize build -o <dir>'
   timoni bundle build -f bundle.cue --output-dir ./manifests
+
+  # Update an indexed local module and render the updated bundle
+  timoni bundle build --update --local-index module-index.cue -f bundle.cue --runtime-from-env
 `,
 	Args: cobra.NoArgs,
 	RunE: runBundleBuildCmd,
@@ -69,6 +75,10 @@ type bundleBuildFlags struct {
 	pkg         flags.Package
 	files       []string
 	creds       flags.Credentials
+	update      bool
+	level       string
+	localIndex  string
+	localOCI    []string
 	outputDir   string
 	concurrency int
 	maskSecrets bool
@@ -82,6 +92,14 @@ func init() {
 	bundleBuildCmd.Flags().StringSliceVarP(&bundleBuildArgs.files, "file", "f", nil,
 		"The local path to bundle.cue files.")
 	bundleBuildCmd.Flags().Var(&bundleBuildArgs.creds, bundleBuildArgs.creds.Type(), bundleBuildArgs.creds.Description())
+	bundleBuildCmd.Flags().BoolVar(&bundleBuildArgs.update, "update", false,
+		"Update module references before vetting and building the bundle.")
+	bundleBuildCmd.Flags().StringVar(&bundleBuildArgs.level, "level", engine.UpdateLevelNone,
+		"Set the update level for module references without an update attribute: none, patch, minor, or major; requires --update.")
+	bundleBuildCmd.Flags().StringVar(&bundleBuildArgs.localIndex, "local-index", "",
+		"CUE file that maps module identities and semantic versions to verified local sources; requires --update.")
+	bundleBuildCmd.Flags().StringArrayVar(&bundleBuildArgs.localOCI, "oci", nil,
+		"Map a local OCI archive or image layout to a repository as 'oci://repository=path'; repeatable; requires --update.")
 	bundleBuildCmd.Flags().StringVar(&bundleBuildArgs.outputDir, "output-dir", "",
 		"The path to a directory where the manifests are written as a tree, one directory per instance and one file per resource.")
 	bundleBuildCmd.Flags().IntVar(&bundleBuildArgs.concurrency, "concurrency", 0,
@@ -94,9 +112,18 @@ func init() {
 }
 
 func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
-	files := bundleBuildArgs.files
+	files := slices.Clone(bundleBuildArgs.files)
 	if len(files) == 0 {
 		return errors.New("no bundle provided with -f")
+	}
+	if bundleBuildArgs.update && slices.Contains(files, "-") {
+		return errors.New("--update cannot be used with -f -")
+	}
+	if !bundleBuildArgs.update && (cmd.Flags().Changed("level") || cmd.Flags().Changed("local-index") || cmd.Flags().Changed("oci")) {
+		return errors.New("--update is required with --level, --local-index, and --oci")
+	}
+	if bundleBuildArgs.update && bundleBuildArgs.outputDir != "" {
+		return errors.New("--update cannot be used with --output-dir")
 	}
 	var stdinFile string
 	for i, file := range files {
@@ -113,20 +140,27 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 		defer os.Remove(stdinFile)
 	}
 
+	workdir, err := resolveWorkdir(bundleArgs.workdir)
+	if err != nil {
+		return err
+	}
+	if bundleBuildArgs.update {
+		return runBundleBuildWithUpdate(cmd, files, workdir)
+	}
+	return runBundleBuild(cmd, files, workdir, nil)
+}
+
+func runBundleBuild(cmd *cobra.Command, files []string, workdir string, overrides map[string][]byte) error {
 	tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(tmpDir)
 
-	workdir, err := resolveWorkdir(bundleArgs.workdir)
-	if err != nil {
-		return err
-	}
-
 	ctx := cuecontext.New()
 	bm := engine.NewBundleBuilder(ctx, files)
 	bm.SetWorkdir(workdir)
+	bm.SetFileOverrides(overrides)
 
 	workspace, runtimeValues, err := resolveBundleBuildRuntime(cmd)
 	if err != nil {

@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stefanprodan/timoni/internal/engine"
 	. "github.com/stefanprodan/timoni/internal/testutils"
 )
 
@@ -107,4 +108,29 @@ func TestLocalFetch(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("module not found at path"))
 	})
+}
+
+func TestLocalFetchIndexedReference(t *testing.T) {
+	g := NewWithT(t)
+	src := t.TempDir()
+	g.Expect(os.MkdirAll(filepath.Join(src, "cue.mod"), 0o755)).To(Succeed())
+	for name, content := range map[string]string{
+		"cue.mod/module.cue": "module: \"example.com/test/module\"\n",
+		"timoni.cue":         "timoni: {}\n",
+		"values.cue":         "values: {}\n",
+	} {
+		g.Expect(os.WriteFile(filepath.Join(src, name), []byte(content), 0o644)).To(Succeed())
+	}
+	digest, err := engine.ModuleSourceDigest(src)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	lf := NewLocalReference("file://"+src, "1.2.3", digest)
+	ref, err := lf.Fetch()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(ref.Version).To(Equal("1.2.3"))
+	g.Expect(ref.Digest).To(Equal(digest))
+
+	g.Expect(os.WriteFile(filepath.Join(src, "values.cue"), []byte("values: {changed: true}\n"), 0o644)).To(Succeed())
+	_, err = lf.Fetch()
+	g.Expect(err).To(MatchError(ContainSubstring("digest mismatch")))
 }

@@ -19,6 +19,8 @@ package fetcher
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -34,6 +36,9 @@ type Options struct {
 	Source string
 	// Version is the version of the module to fetch.
 	Version string
+	// Digest is the expected content digest for a pinned local module source.
+	// An empty digest preserves the ordinary mutable local-module behavior.
+	Digest string
 	// Destination is the location to store the fetched module.
 	Destination string
 	// CacheDir is the location to store the fetched module.
@@ -54,11 +59,32 @@ func New(ctx context.Context, opts Options) (Fetcher, error) {
 	case strings.HasPrefix(opts.Source, apiv1.ArtifactPrefix):
 		return NewOCI(ctx, opts.Source, opts.Version, opts.Destination, opts.CacheDir, opts.Creds, opts.Insecure), nil
 	case strings.HasPrefix(opts.Source, apiv1.LocalPrefix):
+		if isLocalArtifact(strings.TrimPrefix(opts.Source, apiv1.LocalPrefix)) {
+			return NewLocalArtifact(opts.Source, opts.Version, opts.Digest, opts.Destination), nil
+		}
+		if opts.Digest != "" {
+			return NewLocalReference(opts.Source, opts.Version, opts.Digest), nil
+		}
 		return NewLocal(opts.Source), nil
 	default:
 		if opts.DefaultLocal {
+			if opts.Digest != "" {
+				return NewLocalReference(opts.Source, opts.Version, opts.Digest), nil
+			}
 			return NewLocal(opts.Source), nil
 		}
 		return nil, fmt.Errorf("unsupported module source %s", opts.Source)
 	}
+}
+
+func isLocalArtifact(source string) bool {
+	info, err := os.Stat(source)
+	if err != nil {
+		return false
+	}
+	if !info.IsDir() {
+		return true
+	}
+	_, err = os.Stat(filepath.Join(source, "oci-layout"))
+	return err == nil
 }

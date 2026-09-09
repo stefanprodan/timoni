@@ -60,6 +60,72 @@ files untouched.
 To print the available updates without modifying the files,
 use the `--dry-run` flag.
 
+## Updating indexed local modules
+
+Local `file://` modules are skipped unless an explicit local index is supplied.
+The index is a CUE file that maps each module identity and semantic version to
+a local module directory and its source-tree digest:
+
+```cue
+modules: {
+	"oci://registry.example/team/app": versions: {
+		"1.0.0": {
+			source: "file://modules/app-1.0.0"
+			digest: "sha256:<64-hex-digest>"
+		}
+		"1.1.0": {
+			source: "file://modules/app-1.1.0"
+			digest: "sha256:<64-hex-digest>"
+		}
+	}
+}
+```
+
+Sources are explicit: relative paths resolve from the index file, and no
+registry identity is inferred from a filesystem path. Each source must be a
+directory. Regular files and symlink target strings are hashed; other special
+files are rejected. The client verifies each digest using this deterministic
+tree hash before planning and fetching:
+
+```shell
+timoni bundle update --local-index module-index.cue -f bundle.cue --dry-run
+timoni bundle update --local-index module-index.cue -f bundle.cue
+```
+
+With `--local-index`, a matching OCI reference may also switch to its indexed
+`file://` source. OCI references absent from the index keep the registry
+fallback. The update rewrites the module URL, version, and pinned digest
+together. The digest in this local-source path is a source-tree digest; an OCI
+reference continues to use its artifact digest. Timoni verifies the indexed
+source before planning and the shared bundle fetcher verifies it again before
+rendering, so stale, missing, or mismatched sources fail before any bundle file
+is written. `--dry-run` leaves bundle files byte-for-byte unchanged. Validate
+and render the updated bundle after writing:
+
+```shell
+timoni bundle vet -f bundle.cue
+timoni bundle build -f bundle.cue --mask-secrets
+```
+
+## Updating local OCI artifacts
+
+Use the repeatable `--oci oci://repository=path` flag for a local OCI archive
+or image layout directory. The repository mapping is required because a local
+artifact contains its module version and manifest digest, but not the registry
+repository name:
+
+```shell
+timoni bundle update --oci oci://registry.example/team/app=.local/artifacts/app.oci.tar -f bundle.cue --dry-run
+timoni bundle update --oci oci://registry.example/team/app=.local/artifacts/app.oci.tar -f bundle.cue
+```
+
+Path-only inputs are rejected; Timoni never infers an OCI identity from a
+filename or argument order. The client verifies the artifact manifest version
+and digest before planning and again while fetching it for `bundle build`, then
+rewrites the module URL to a canonical `file://` path. Local OCI mappings are
+independent of `--local-index`, and a bundle may mix remote OCI references,
+local OCI artifacts, and ordinary mutable `file://` modules.
+
 ## Update policies
 
 The `@timoni(update:...)` attribute accepts one of the following policies:
@@ -164,7 +230,7 @@ declare the same update policy, otherwise the command fails.
 The command updates only the module references defined by string literals
 in CUE files, and reports the instances it skips along with the reason:
 
-- the module URL is not an OCI URL, e.g. a `file://` local module
+- the module URL is a local `file://` reference and no `--local-index` was supplied
 - the module URL, version, or digest is set from a runtime value
 - the version is not a string literal, e.g. an interpolation or an expression
 - the version is defined in a YAML or JSON file, or in a file outside the CUE module
@@ -182,6 +248,18 @@ timoni bundle update -f bundle.cue
 timoni bundle vet -f bundle.cue
 timoni bundle build -f bundle.cue
 ```
+
+To validate the staged update before writing it, combine `--vet` with the
+update command:
+
+```shell
+timoni bundle update --vet -f bundle.cue
+```
+
+This validates the bundle definition, then writes updates only if vet succeeds.
+Add `--dry-run` to validate without writing. It does not render
+module instances; use `timoni bundle build --update` for the stronger atomic
+update, vet, and render workflow.
 
 ## Continuous updates with GitHub Actions
 

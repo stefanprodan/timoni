@@ -484,6 +484,20 @@ timoni bundle build -f bundle.cue --mask-secrets
 To write the generated manifests to disk as a directory tree instead of printing them
 to stdout, see [Export manifests to directory](#export-manifests-to-directory).
 
+To update module references and render the updated bundle in one transaction, use
+`--update` with an explicit local source authority:
+
+```shell
+timoni bundle build --update --local-index module-index.cue -f bundle.cue --runtime-from-env --mask-secrets
+timoni bundle build --update --oci oci://registry.example/team/app=.local/artifacts/app.oci.tar -f bundle.cue --runtime-from-env --mask-secrets
+```
+
+The command plans and verifies the selected sources, then runs vet and build
+against the same in-memory inputs. It writes the bundle files and exposes
+rendered stdout only after both succeed. `--local-index` and repeatable `--oci`
+mappings may be combined; ordinary `bundle build` and `bundle update` remain
+separate workflows. `--update` cannot be used with `-f -` or `--output-dir`.
+
 ### Use values from JSON and YAML files
 
 A bundle can be defined in multiple files of different formats:
@@ -671,10 +685,33 @@ bundle: {
 When using local paths, the `url` field must be in the format `file://path/to/module`
 and the module path is computed relatively to the path of the bundle file location.
 
-Note that when using local modules, the module's version and digest are ignored, as these
-are only relevant when pulling modules from a container registry.
-All instances created from modules referenced with local paths have
-the module version set to `0.0.0-devel`.
+For an ordinary local module, the version and digest are ignored because the
+source is read directly from disk, and the instance version is
+`0.0.0-devel`. An indexed local update is the reproducible exception: it
+rewrites and verifies the source-tree digest and carries the indexed semantic
+version through bundle rendering.
+
+For reproducible local updates, pass `--local-index <index.cue>` to
+`timoni bundle update`. The CUE index maps exact OCI module identities and
+semantic versions to `file://` source trees with pinned `sha256:<64 hex>`
+source-tree digests; regular files and symlink target strings are hashed while
+other special files are rejected. A matching OCI reference may switch to the
+indexed local source, while an OCI identity absent from the index keeps the
+registry fallback. The updater verifies both the current and selected trees
+before rewriting the module URL, version, and digest. Without this explicit
+flag, local module references are skipped.
+
+The same source mappings can be used directly by the build transaction:
+
+```shell
+timoni bundle build --update --local-index module-index.cue -f bundle.cue
+timoni bundle build --update --oci oci://registry.example/team/app=.local/artifacts/app.oci.tar -f bundle.cue
+```
+
+The repeatable `--oci` mapping names the repository explicitly because a local
+archive or image layout does not carry its destination repository. A path-only
+mapping is rejected. The selected local artifact is verified before the staged
+bundle is rendered.
 
 ### Export manifests to directory
 

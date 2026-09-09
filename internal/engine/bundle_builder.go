@@ -37,6 +37,7 @@ import (
 type BundleBuilder struct {
 	ctx               *cue.Context
 	files             []string
+	fileOverrides     map[string][]byte
 	root              string
 	workdir           string
 	workspacesFiles   map[string][]string
@@ -76,6 +77,31 @@ func (b *BundleBuilder) SetWorkdir(dir string) {
 	b.workdir = dir
 }
 
+// SetFileOverrides supplies in-memory contents for bundle and imported package
+// files. The overrides are used for the build only and are never written to
+// disk.
+func (b *BundleBuilder) SetFileOverrides(overrides map[string][]byte) {
+	b.fileOverrides = make(map[string][]byte, len(overrides)*2)
+	for path, data := range overrides {
+		b.fileOverrides[path] = data
+		if abs, err := filepath.Abs(path); err == nil {
+			b.fileOverrides[abs] = data
+		}
+	}
+}
+
+func (b *BundleBuilder) fileContent(file string) ([]byte, error) {
+	if data, ok := b.fileOverrides[file]; ok {
+		return data, nil
+	}
+	if abs, err := filepath.Abs(file); err == nil {
+		if data, ok := b.fileOverrides[abs]; ok {
+			return data, nil
+		}
+	}
+	return os.ReadFile(file)
+}
+
 // InitWorkspace loads the bundle definitions into the in-memory workspace
 // identified by the given name, sets the bundle schema, and then it injects
 // the runtime values based on @timoni() attributes. Nothing is written to
@@ -87,7 +113,7 @@ func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string
 	workspaceDir := b.WorkspaceDir(workspace)
 	for i, file := range b.files {
 		_, fn := filepath.Split(file)
-		content, err := os.ReadFile(file)
+		content, err := b.fileContent(file)
 		if err != nil {
 			return fmt.Errorf("failed to read %s: %w", fn, err)
 		}
@@ -141,7 +167,10 @@ func (b *BundleBuilder) InitWorkspace(workspace string, runtimeValues map[string
 // A workspace must be initialised with InitWorkspace before calling this function.
 func (b *BundleBuilder) Build(workspace string) (cue.Value, error) {
 	var value cue.Value
-	overlay := make(map[string]load.Source, len(b.workspacesSources[workspace]))
+	overlay := make(map[string]load.Source, len(b.workspacesSources[workspace])+len(b.fileOverrides))
+	for file, data := range b.fileOverrides {
+		overlay[file] = load.FromBytes(data)
+	}
 	for f, data := range b.workspacesSources[workspace] {
 		overlay[f] = load.FromBytes(data)
 	}

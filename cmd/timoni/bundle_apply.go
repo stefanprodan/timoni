@@ -313,6 +313,7 @@ func fetchBundleInstanceModule(ctx context.Context, instance *apiv1.BundleInstan
 		f, err := fetcher.New(ctx, fetcher.Options{
 			Source:      instance.Module.Repository,
 			Version:     moduleVersion,
+			Digest:      instance.Module.Digest,
 			Destination: dstDir,
 			CacheDir:    rootArgs.cacheDir,
 			Creds:       creds,
