@@ -127,3 +127,25 @@ jobs:
       provenance-name: "timoni_${{ needs.goreleaser.outputs.version }}_provenance.intoto.jsonl"
       base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
       upload-assets: true # upload to a new release
+
+  packslip:
+    needs: [goreleaser]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # To add the packslip to the release.
+      id-token: write # To sign the packslip.
+    steps:
+      # The packslip is a signed inventory of the release archives, the
+      # executable inside each, and the shell completions and agent skill
+      # that match this version, signed with this workflow's identity.
+      # The goreleaser job already attested the archives, so it only links
+      # that provenance. See https://packslip.dev.
+      - name: Publish packslip
+        uses: jdx/packslip@87479dfc6443253dff69601cace5fc6ea07e6df5 # v1.4.0
+        with:
+          download: timoni_*_darwin_*.tar.gz timoni_*_linux_*.tar.gz timoni_*_windows_*.zip
+          bin: timoni
+          attest: link
+          resources: |
+            completion/bash,zsh,fish,powershell=exec:timoni completion {shell}
+            skill/timoni=repo:skills/timoni
