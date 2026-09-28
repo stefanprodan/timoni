@@ -8,13 +8,13 @@ REPOSITORY_ROOT := $(shell git rev-parse --show-toplevel)
 BIN_DIR := $(REPOSITORY_ROOT)/bin
 
 # API gen tool
-CONTROLLER_GEN_VERSION ?= v0.21.0
+CONTROLLER_GEN_VERSION ?= v0.22.0
 
 # Go linter
 GOLANGCI_LINT_VERSION ?= v2.13.1
 
 # Kubernetes env test
-ENVTEST_KUBERNETES_VERSION?=1.36
+ENVTEST_KUBERNETES_VERSION?=1.37
 
 all: test build
 
