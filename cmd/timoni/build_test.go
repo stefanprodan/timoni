@@ -54,6 +54,38 @@ func TestBuild(t *testing.T) {
 		}
 	})
 
+	t.Run("builds module without preceding YAML c-directives-end marker", func(t *testing.T) {
+		// The "---" marker separates a YAML document's directives from its content. Don't begin with the
+		// separator since there are no preceding directives.
+		g := NewWithT(t)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
+		output, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s %s -p main -o yaml",
+			namespace,
+			name,
+			modPath,
+		))
+
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(output).ToNot(HavePrefix("---"))
+	})
+
+	t.Run("builds module without trailing YAML c-directives-end marker", func(t *testing.T) {
+		g := NewWithT(t)
+		name := rnd("my-instance")
+		namespace := rnd("my-namespace")
+		output, err := executeCommand(fmt.Sprintf(
+			"build -n %s %s %s -p main -o yaml",
+			namespace,
+			name,
+			modPath,
+		))
+
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(strings.TrimRight(output, " \t\n")).ToNot(HaveSuffix("---"))
+	})
+
 	t.Run("builds module and outputs JSON", func(t *testing.T) {
 		g := NewWithT(t)
 		name := rnd("my-instance")

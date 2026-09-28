@@ -237,13 +237,15 @@ func runBuildCmd(cmd *cobra.Command, args []string) error {
 	switch buildArgs.output {
 	case "yaml":
 		var sb strings.Builder
-		for _, obj := range objects {
+		for i, obj := range objects {
 			data, err := yaml.Marshal(obj)
 			if err != nil {
 				return fmt.Errorf("converting objects failed: %w", err)
 			}
+			if i > 0 {
+				sb.WriteString("---\n")
+			}
 			sb.Write(data)
-			sb.WriteString("---\n")
 		}
 		_, err = cmd.OutOrStdout().Write([]byte(sb.String()))
 		return err
