@@ -18,29 +18,29 @@ import (
 #StorageClass: {
 	metav1.#TypeMeta
 
-	// Standard object's metadata.
+	// metadata is the standard object metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// provisioner indicates the type of the provisioner.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
-	// +k8s:alpha(since: "1.36")=+k8s:immutable
+	// +k8s:beta(since: "1.37")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:immutable
 	provisioner: string @go(Provisioner) @protobuf(2,bytes,opt)
 
 	// parameters holds the parameters for the provisioner that should
 	// create volumes of this storage class.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:immutable
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:immutable
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	parameters?: {[string]: string} @go(Parameters,map[string]string) @protobuf(3,bytes,rep)
 
 	// reclaimPolicy controls the reclaimPolicy for dynamically provisioned PersistentVolumes of this storage class.
 	// Defaults to Delete.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:immutable
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:immutable
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	reclaimPolicy?: v1.#PersistentVolumeReclaimPolicy @go(ReclaimPolicy,*v1.PersistentVolumeReclaimPolicy) @protobuf(4,bytes,opt,casttype=k8s.io/api/core/v1.PersistentVolumeReclaimPolicy)
 
 	// mountOptions controls the mountOptions for dynamically provisioned PersistentVolumes of this storage class.
@@ -58,8 +58,8 @@ import (
 	// provisioned and bound.  When unset, VolumeBindingImmediate is used.
 	// This field is only honored by servers that enable the VolumeScheduling feature.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:immutable
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:immutable
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	volumeBindingMode?: #VolumeBindingMode @go(VolumeBindingMode,*VolumeBindingMode) @protobuf(7,bytes,opt)
 
 	// allowedTopologies restrict the node topologies where volumes can be dynamically provisioned.
@@ -109,14 +109,14 @@ import (
 #VolumeAttachment: {
 	metav1.#TypeMeta
 
-	// Standard object metadata.
+	// metadata is the standard object metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// spec represents specification of the desired attach/detach volume behavior.
 	// Populated by the Kubernetes system.
-	// +k8s:alpha(since: "1.36")=+k8s:immutable
+	// +k8s:beta(since: "1.37")=+k8s:immutable
 	// +required
 	spec: #VolumeAttachmentSpec @go(Spec) @protobuf(2,bytes,opt)
 
@@ -145,9 +145,9 @@ import (
 	// attacher indicates the name of the volume driver that MUST handle this
 	// request. This is the name returned by GetPluginName().
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
-	// +k8s:alpha(since: "1.36")=+k8s:format="k8s-long-name-caseless"
-	// +k8s:alpha(since: "1.36")=+k8s:maxLength=63
+	// +k8s:beta(since: "1.37")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:format="k8s-long-name-caseless"
+	// +k8s:beta(since: "1.37")=+k8s:maxLength=63
 	attacher: string @go(Attacher) @protobuf(1,bytes,opt)
 
 	// source represents the volume that should be attached.
@@ -233,7 +233,7 @@ import (
 #CSIDriver: {
 	metav1.#TypeMeta
 
-	// Standard object metadata.
+	// metadata is the standard object metadata.
 	// metadata.Name indicates the name of the CSI driver that this object
 	// refers to; it MUST be the same name returned by the CSI GetPluginName()
 	// call for that driver.
@@ -323,6 +323,8 @@ import (
 	//
 	// +optional
 	// +listType=set
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:immutable
 	volumeLifecycleModes?: [...#VolumeLifecycleMode] @go(VolumeLifecycleModes,[]VolumeLifecycleMode) @protobuf(3,bytes,opt)
 
 	// storageCapacity indicates that the CSI volume driver wants pod scheduling to consider the storage
@@ -449,7 +451,7 @@ import (
 	// +optional
 	serviceAccountTokenInSecrets?: bool @go(ServiceAccountTokenInSecrets,*bool) @protobuf(10,varint,opt)
 
-	// PreventPodSchedulingIfMissing indicates that the CSI driver wants to prevent pod
+	// preventPodSchedulingIfMissing indicates that the CSI driver wants to prevent pod
 	// scheduling if the CSI driver on the node is missing.
 	//
 	// Enabling this option will prevent the scheduler (or any other
@@ -464,7 +466,7 @@ import (
 	// newly created node may be rejected by the scheduler because of missing CSI driver
 	// information from the node.
 	//
-	// This is an alpha feature and requires the VolumeLimitScaling feature gate to be enabled.
+	// This is a beta feature and requires the VolumeLimitScaling feature gate to be enabled.
 	// Default is "false".
 	// +featureGate=VolumeLimitScaling
 	// +optional
@@ -558,12 +560,16 @@ import (
 #CSINode: {
 	metav1.#TypeMeta
 
-	// Standard object's metadata.
+	// metadata is the standard object metadata.
 	// metadata.name must be the Kubernetes node name.
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// spec is the specification of CSINode
 	spec: #CSINodeSpec @go(Spec) @protobuf(2,bytes,opt)
+
+	// status contains health and status information for the node's storage.
+	// +optional
+	status?: #CSINodeStatus @go(Status) @protobuf(3,bytes,opt)
 }
 
 // CSINodeSpec holds information about the specification of all CSI drivers installed on a node
@@ -625,6 +631,76 @@ import (
 	count?: int32 @go(Count,*int32) @protobuf(1,varint,opt)
 }
 
+// StorageHealthStatusType describes the health status category of a storage backend.
+// +enum
+#StorageHealthStatusType: string // #enumStorageHealthStatusType
+
+#enumStorageHealthStatusType:
+	#StorageUnreachable |
+	#StorageDegraded
+
+// StorageUnreachable indicates the storage backend is unreachable.
+#StorageUnreachable: #StorageHealthStatusType & "StorageUnreachable"
+
+// StorageDegraded indicates the storage backend is functioning with reduced capability.
+#StorageDegraded: #StorageHealthStatusType & "StorageDegraded"
+
+// StorageHealthCondition represents an adverse health condition reported
+// by a CSI driver for its storage backend on a node.
+#StorageHealthCondition: {
+	// status is the health status category.
+	// One of "StorageUnreachable", "StorageDegraded".
+	// +required
+	status: #StorageHealthStatusType @go(Status) @protobuf(1,bytes,opt,casttype=StorageHealthStatusType)
+
+	// reason is a brief CamelCase machine-parseable reason.
+	// Maximum permitted length of a reason is 256 characters.
+	// +required
+	reason: string @go(Reason) @protobuf(2,bytes,opt)
+
+	// message is a human-readable description.
+	// +optional
+	// Maximum permitted length of a message is 1024 characters.
+	message?: string @go(Message) @protobuf(3,bytes,opt)
+
+	// accessMode is the access mode affected. Nil means all access modes are affected.
+	// +optional
+	accessMode?: v1.#PersistentVolumeAccessMode @go(AccessMode,*v1.PersistentVolumeAccessMode) @protobuf(4,bytes,opt,casttype=k8s.io/api/core/v1.PersistentVolumeAccessMode)
+
+	// volumeMode is the volume mode affected. Nil means both are affected.
+	// +optional
+	volumeMode?: v1.#PersistentVolumeMode @go(VolumeMode,*v1.PersistentVolumeMode) @protobuf(5,bytes,opt,casttype=k8s.io/api/core/v1.PersistentVolumeMode)
+
+	// lastTransitionTime is when this condition first appeared at its current state.
+	// +optional
+	lastTransitionTime?: metav1.#Time @go(LastTransitionTime) @protobuf(6,bytes,opt)
+}
+
+// StorageHealth contains storage backend health reported by a CSI driver on a node.
+#StorageHealth: {
+	// name is the CSI driver name, matching CSINodeDriver.name.
+	// +required
+	name: string @go(Name) @protobuf(1,bytes,opt)
+
+	// healthConditions are the adverse storage backend conditions reported by the CSI driver.
+	// At most 16 conditions may be reported.
+	// +optional
+	// +listType=atomic
+	healthConditions?: [...#StorageHealthCondition] @go(HealthConditions,[]StorageHealthCondition) @protobuf(2,bytes,rep)
+}
+
+// CSINodeStatus contains health and status information for storage on a node.
+#CSINodeStatus: {
+	// storageHealth contains backend health reports for CSI drivers registered on the node.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +featureGate=CSIVolumeHealth
+	storageHealth?: [...#StorageHealth] @go(StorageHealth,[]StorageHealth) @protobuf(1,bytes,rep)
+}
+
 // CSINodeList is a collection of CSINode objects.
 #CSINodeList: {
 	metav1.#TypeMeta
@@ -665,7 +741,7 @@ import (
 #CSIStorageCapacity: {
 	metav1.#TypeMeta
 
-	// Standard object's metadata.
+	// metadata is the standard object metadata.
 	// The name has no particular meaning. It must be a DNS subdomain (dots allowed, 253 characters).
 	// To ensure that there are no conflicts with other CSI drivers on the cluster,
 	// the recommendation is to use csisc-<uuid>, a generated name, or a reverse-domain name
@@ -740,12 +816,12 @@ import (
 #VolumeAttributesClass: {
 	metav1.#TypeMeta
 
-	// Standard object's metadata.
+	// metadata is the standard object metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
-	// Name of the CSI driver
+	// driverName is the name of the CSI driver
 	// This field is immutable.
 	driverName: string @go(DriverName) @protobuf(2,bytes,opt)
 

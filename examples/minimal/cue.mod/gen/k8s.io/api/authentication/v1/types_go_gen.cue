@@ -25,15 +25,44 @@ import (
 // times to have multiple elements in the slice under a single key
 #ImpersonateUserExtraHeaderPrefix: "Impersonate-Extra-"
 
+// AttestationAdmissionReviewAPIGroups is the map key for the
+// admissionReviewAPIGroups claim. It represents the APIGroup that a token
+// authorizes its bearer to query admission webhooks about. The value
+// corresponding to this key must be a slice of length 1, and the first and
+// only element of this slice must match the APIGroup of the AdmissionReview
+// request being made of the webhook. The empty string is invalid as the
+// first and only element of the value slice. The special value "*" means
+// "all api groups", and requires matching permissions (described below).
+//
+// For this claim to be considered valid, the TokenRequest must meet two
+// conditions. First, the BoundObjectRef must be one of
+// ValidatingWebhookConfiguration or MutatingWebhookConfiguration; the
+// Webhook Configuration in question must have a Rule governing a resource
+// under the APIGroup named in the value to this key. Second, the requested
+// audience must match one of the following patterns:
+//   1. When the webhook is configured with a URL, the audience must match
+//      the URL field exactly.
+//   2. When the webhook is configured with a service, the audience must
+//      match the pattern `https://$name.$namespace.svc:$port[/$path]`, where
+//      `/$path` is optional.
+//
+// The service account for which the TokenRequest is being made must have
+// "attest" permissions on group "authentication.k8s.io", resource
+// "admissionReviewAPIGroups", and a resource name matching exactly either
+// "*", or the API group named in the value to this key.
+#AttestationAdmissionReviewAPIGroups: "admissionReviewAPIGroups"
+
 // TokenReview attempts to authenticate a token to a known user.
 // Note: TokenReview requests may be cached by the webhook token authenticator
 // plugin in the kube-apiserver.
+// +k8s:supportsSubresource="/status"
 #TokenReview: {
 	metav1.#TypeMeta
 
 	// metadata is the standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// spec holds information about the request being evaluated
@@ -117,6 +146,11 @@ import (
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 #ExtraValue: [...string]
 
+// AttestationValue masks the value so protobuf can generate
+// +protobuf.nullable=true
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+#AttestationValue: [...string]
+
 // TokenRequest requests a token for a given service account.
 #TokenRequest: {
 	metav1.#TypeMeta
@@ -124,6 +158,7 @@ import (
 	// metadata is the standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// spec holds information about the request being evaluated
@@ -160,6 +195,14 @@ import (
 	// small if you want prompt revocation.
 	// +optional
 	boundObjectRef?: #BoundObjectReference @go(BoundObjectRef,*BoundObjectReference) @protobuf(3,bytes,opt)
+
+	// attestations is a map of well-known keys to string-slice values.
+	// The values for each key have a specific semantic meaning, which is
+	// documented on the key definition. Requesters of tokens may ask
+	// the Kubernetes API Server to attest to certain claims. The API Server
+	// may perform authorization checks depending on the key of this map.
+	// +optional
+	attestations?: {[string]: #AttestationValue} @go(Attestations,map[string]AttestationValue) @protobuf(5,bytes,rep)
 }
 
 // TokenRequestStatus is the result of a token request.
@@ -175,7 +218,8 @@ import (
 
 // BoundObjectReference is a reference to an object that a token is bound to.
 #BoundObjectReference: {
-	// kind of the referent. Valid kinds are 'Pod' and 'Secret'.
+	// kind of the referent. Valid kinds are 'Pod', 'Secret', 'Node',
+	// 'ValidatingWebhookConfiguration', and 'MutatingWebhookConfiguration'.
 	// +optional
 	kind?: string @go(Kind) @protobuf(1,bytes,opt)
 
@@ -195,12 +239,14 @@ import (
 // SelfSubjectReview contains the user information that the kube-apiserver has about the user making this request.
 // When using impersonation, users will receive the user info of the user being impersonated.  If impersonation or
 // request header authentication is used, any extra keys will have their case ignored and returned as lowercase.
+// +k8s:supportsSubresource="/status"
 #SelfSubjectReview: {
 	metav1.#TypeMeta
 
 	// metadata is standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// status is filled in by the server with the user attributes.

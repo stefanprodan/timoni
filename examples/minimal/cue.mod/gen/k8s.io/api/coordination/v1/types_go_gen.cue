@@ -22,6 +22,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 #Lease: {
 	metav1.#TypeMeta
 
+	// metadata is the standard object metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
@@ -60,14 +61,14 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// +optional
 	leaseTransitions?: int32 @go(LeaseTransitions,*int32) @protobuf(5,varint,opt)
 
-	// Strategy indicates the strategy for picking the leader for coordinated leader election.
+	// strategy indicates the strategy for picking the leader for coordinated leader election.
 	// If the field is not specified, there is no active coordination for this lease.
 	// (Alpha) Using this field requires the CoordinatedLeaderElection feature gate to be enabled.
 	// +featureGate=CoordinatedLeaderElection
 	// +optional
 	strategy?: #CoordinatedLeaseStrategy @go(Strategy,*CoordinatedLeaseStrategy) @protobuf(6,bytes,opt)
 
-	// PreferredHolder signals to a lease holder that the lease has a
+	// preferredHolder signals to a lease holder that the lease has a
 	// more optimal holder and should be given up.
 	// This field can only be set if Strategy is also set.
 	// +featureGate=CoordinatedLeaderElection

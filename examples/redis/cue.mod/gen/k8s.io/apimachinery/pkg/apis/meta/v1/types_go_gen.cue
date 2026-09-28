@@ -154,6 +154,8 @@ import (
 	// Read-only.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:immutable
 	uid?: types.#UID @go(UID) @protobuf(5,bytes,opt,casttype=k8s.io/kubernetes/pkg/types.UID)
 
 	// An opaque value that represents the internal version of this object that can
@@ -172,6 +174,8 @@ import (
 	// A sequence number representing a specific generation of the desired state.
 	// Populated by the system. Read-only.
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:minimum=0
 	generation?: int64 @go(Generation) @protobuf(7,varint,opt)
 
 	// CreationTimestamp is a timestamp representing the server time when this object was
@@ -183,6 +187,7 @@ import (
 	// Null for lists.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:immutable
 	creationTimestamp?: #Time @go(CreationTimestamp) @protobuf(8,bytes,opt)
 
 	// DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This
@@ -204,6 +209,8 @@ import (
 	// Read-only.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:immutable
 	deletionTimestamp?: #Time @go(DeletionTimestamp,*Time) @protobuf(9,bytes,opt)
 
 	// Number of seconds allowed for this object to gracefully terminate before
@@ -211,6 +218,8 @@ import (
 	// May only be shortened.
 	// Read-only.
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:immutable
 	deletionGracePeriodSeconds?: int64 @go(DeletionGracePeriodSeconds,*int64) @protobuf(10,varint,opt)
 
 	// Map of string keys and values that can be used to organize and categorize
@@ -236,6 +245,7 @@ import (
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=uid
+	// +k8s:alpha(since:"1.37")=+k8s:optional
 	ownerReferences?: [...#OwnerReference] @go(OwnerReferences,[]OwnerReference) @protobuf(13,bytes,rep)
 
 	// Must be empty before the object is deleted from the registry. Each entry
@@ -266,6 +276,7 @@ import (
 	//
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.37")=+k8s:optional
 	managedFields?: [...#ManagedFieldsEntry] @go(ManagedFields,[]ManagedFieldsEntry) @protobuf(17,bytes,rep)
 }
 
@@ -290,18 +301,22 @@ import (
 // +structType=atomic
 #OwnerReference: {
 	// API version of the referent.
+	// +k8s:alpha(since:"1.37")=+k8s:required
 	apiVersion: string @go(APIVersion) @protobuf(5,bytes,opt)
 
 	// Kind of the referent.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// +k8s:alpha(since:"1.37")=+k8s:required
 	kind: string @go(Kind) @protobuf(1,bytes,opt)
 
 	// Name of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
+	// +k8s:alpha(since:"1.37")=+k8s:required
 	name: string @go(Name) @protobuf(3,bytes,opt)
 
 	// UID of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids
+	// +k8s:alpha(since:"1.37")=+k8s:required
 	uid: types.#UID @go(UID) @protobuf(4,bytes,opt,casttype=k8s.io/apimachinery/pkg/types.UID)
 
 	// If true, this reference points to the managing controller.
@@ -1409,6 +1424,7 @@ import (
 
 	// Operation is the type of operation which lead to this ManagedFieldsEntry being created.
 	// The only valid values for this field are 'Apply' and 'Update'.
+	// +k8s:alpha(since: "1.37")=+k8s:required
 	operation?: #ManagedFieldsOperationType @go(Operation) @protobuf(2,bytes,opt,casttype=ManagedFieldsOperationType)
 
 	// APIVersion defines the version of this resource that this field set
@@ -1444,6 +1460,7 @@ import (
 }
 
 // ManagedFieldsOperationType is the type of operation which lead to a ManagedFieldsEntry being created.
+// +k8s:alpha(since: "1.37")=+k8s:enum
 #ManagedFieldsOperationType: string // #enumManagedFieldsOperationType
 
 #enumManagedFieldsOperationType:
@@ -1559,6 +1576,7 @@ import (
 // visual priority than other resources.
 #RowCompleted: #RowConditionType & "Completed"
 
+// +k8s:alpha(since: "1.37")=+k8s:enum
 #ConditionStatus: string // #enumConditionStatus
 
 #enumConditionStatus:
@@ -1609,6 +1627,7 @@ import (
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: #ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 }
 
@@ -1637,6 +1656,9 @@ import (
 //	    // +patchStrategy=merge
 //	    // +listType=map
 //	    // +listMapKey=type
+//	    // +k8s:alpha(since: "1.37")=+k8s:optional
+//	    // +k8s:alpha(since: "1.37")=+k8s:listType=map
+//	    // +k8s:alpha(since: "1.37")=+k8s:listMapKey=type
 //	    Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 //
 //	    // other fields
@@ -1651,12 +1673,14 @@ import (
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$`
 	// +kubebuilder:validation:MaxLength=316
+	// +k8s:alpha(since: "1.37")=+k8s:required
 	type: string @go(Type) @protobuf(1,bytes,opt)
 
 	// status of the condition, one of True, False, Unknown.
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=True;False;Unknown
+	// +k8s:alpha(since: "1.37")=+k8s:required
 	status: #ConditionStatus @go(Status) @protobuf(2,bytes,opt)
 
 	// observedGeneration represents the .metadata.generation that the condition was set based upon.
@@ -1664,6 +1688,8 @@ import (
 	// with respect to the current state of the instance.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:minimum=0
 	observedGeneration?: int64 @go(ObservedGeneration) @protobuf(3,varint,opt)
 
 	// lastTransitionTime is the last time the condition transitioned from one status to another.
@@ -1672,6 +1698,7 @@ import (
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Format=date-time
+	// +k8s:alpha(since: "1.37")=+k8s:customValidation
 	lastTransitionTime: #Time @go(LastTransitionTime) @protobuf(4,bytes,opt)
 
 	// reason contains a programmatic identifier indicating the reason for the condition's last transition.
@@ -1684,6 +1711,8 @@ import (
 	// +kubebuilder:validation:MaxLength=1024
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Pattern=`^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$`
+	// +k8s:alpha(since: "1.37")=+k8s:required
+	// +k8s:alpha(since: "1.37")=+k8s:maxBytes=1024
 	reason: string @go(Reason) @protobuf(5,bytes,opt)
 
 	// message is a human readable message indicating details about the transition.

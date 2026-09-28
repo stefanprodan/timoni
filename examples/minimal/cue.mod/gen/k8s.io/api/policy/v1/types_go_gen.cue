@@ -13,14 +13,14 @@ import (
 
 // PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 #PodDisruptionBudgetSpec: {
-	// An eviction is allowed if at least "minAvailable" pods selected by
+	// minAvailable indicates that an eviction is allowed if at least "minAvailable" pods selected by
 	// "selector" will still be available after the eviction, i.e. even in the
 	// absence of the evicted pod.  So for example you can prevent all voluntary
 	// evictions by specifying "100%".
 	// +optional
 	minAvailable?: intstr.#IntOrString @go(MinAvailable,*intstr.IntOrString) @protobuf(1,bytes,opt)
 
-	// Label query over pods whose evictions are managed by the disruption
+	// selector is a label query over pods whose evictions are managed by the disruption
 	// budget.
 	// A null selector will match no pods, while an empty ({}) selector will select
 	// all pods within the namespace.
@@ -28,14 +28,14 @@ import (
 	// +optional
 	selector?: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes,opt)
 
-	// An eviction is allowed if at most "maxUnavailable" pods selected by
+	// maxUnavailable indicates that an eviction is allowed if at most "maxUnavailable" pods selected by
 	// "selector" are unavailable after the eviction, i.e. even in absence of
 	// the evicted pod. For example, one can prevent all voluntary evictions
 	// by specifying 0. This is a mutually exclusive setting with "minAvailable".
 	// +optional
 	maxUnavailable?: intstr.#IntOrString @go(MaxUnavailable,*intstr.IntOrString) @protobuf(3,bytes,opt)
 
-	// UnhealthyPodEvictionPolicy defines the criteria for when unhealthy pods
+	// unhealthyPodEvictionPolicy defines the criteria for when unhealthy pods
 	// should be considered for eviction. Current implementation considers healthy pods,
 	// as pods that have status.conditions item with type="Ready",status="True".
 	//
@@ -139,6 +139,9 @@ import (
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=type
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:listType=map
+	// +k8s:alpha(since: "1.37")=+k8s:listMapKey=type
 	conditions?: [...metav1.#Condition] @go(Conditions,[]metav1.Condition) @protobuf(7,bytes,rep)
 }
 
@@ -159,19 +162,20 @@ import (
 #InsufficientPodsReason: "InsufficientPods"
 
 // PodDisruptionBudget is an object to define the max disruption that can be caused to a collection of pods
+// +k8s:supportsSubresource="/status"
 #PodDisruptionBudget: {
 	metav1.#TypeMeta
 
-	// Standard object's metadata.
+	// metadata is the standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
-	// Specification of the desired behavior of the PodDisruptionBudget.
+	// spec is the specification of the desired behavior of the PodDisruptionBudget.
 	// +optional
 	spec?: #PodDisruptionBudgetSpec @go(Spec) @protobuf(2,bytes,opt)
 
-	// Most recently observed status of the PodDisruptionBudget.
+	// status is the most recently observed status of the PodDisruptionBudget.
 	// +optional
 	status?: #PodDisruptionBudgetStatus @go(Status) @protobuf(3,bytes,opt)
 }
@@ -195,11 +199,12 @@ import (
 #Eviction: {
 	metav1.#TypeMeta
 
-	// ObjectMeta describes the pod that is being evicted.
+	// metadata describes the pod that is being evicted.
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
-	// DeleteOptions may be provided
+	// deleteOptions may be provided
 	// +optional
 	deleteOptions?: metav1.#DeleteOptions @go(DeleteOptions,*metav1.DeleteOptions) @protobuf(2,bytes,opt)
 }

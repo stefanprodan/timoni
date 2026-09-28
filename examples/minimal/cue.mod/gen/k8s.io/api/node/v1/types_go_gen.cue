@@ -19,6 +19,7 @@ import (
 #RuntimeClass: {
 	metav1.#TypeMeta
 
+	// metadata is the standard object metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
@@ -34,9 +35,9 @@ import (
 	// The Handler must be lowercase, conform to the DNS Label (RFC 1123) requirements,
 	// and is immutable.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:format="k8s-short-name"
-	// +k8s:alpha(since: "1.36")=+k8s:immutable
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:format="k8s-short-name"
+	// +k8s:beta(since: "1.37")=+k8s:immutable
+	// +k8s:beta(since: "1.37")=+k8s:required
 	handler: string @go(Handler) @protobuf(2,bytes,opt)
 
 	// overhead represents the resource overhead associated with running a pod for a
@@ -50,6 +51,7 @@ import (
 	// If scheduling is nil, this RuntimeClass is assumed to be supported by all
 	// nodes.
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
 	scheduling?: #Scheduling @go(Scheduling,*Scheduling) @protobuf(4,bytes,opt)
 }
 
@@ -77,6 +79,7 @@ import (
 	// tolerated by the pod and the RuntimeClass.
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.37")=+k8s:optional
 	tolerations?: [...corev1.#Toleration] @go(Tolerations,[]corev1.Toleration) @protobuf(2,bytes,rep)
 }
 

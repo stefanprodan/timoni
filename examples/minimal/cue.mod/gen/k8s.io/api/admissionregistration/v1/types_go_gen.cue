@@ -140,6 +140,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 #SideEffectClassNoneOnDryRun: #SideEffectClass & "NoneOnDryRun"
 
 // ValidatingAdmissionPolicy describes the definition of an admission validation policy that accepts or rejects an object without changing it.
+// +k8s:supportsSubresource="/status"
 #ValidatingAdmissionPolicy: {
 	metav1.#TypeMeta
 
@@ -173,6 +174,9 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// +optional
 	// +listType=map
 	// +listMapKey=type
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:listType=map
+	// +k8s:alpha(since: "1.37")=+k8s:listMapKey=type
 	conditions?: [...metav1.#Condition] @go(Conditions,[]metav1.Condition) @protobuf(3,bytes,rep)
 }
 
@@ -481,7 +485,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// If the referenced resource does not exist, this binding is considered invalid and will be ignored
 	// Required.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:required
 	policyName: string @go(PolicyName) @protobuf(1,bytes,rep)
 
 	// paramRef specifies the parameter resource used to configure the admission control policy.
@@ -540,7 +544,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// Required.
 	// +listType=set
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:required
 	validationActions: [...#ValidationAction] @go(ValidationActions,[]ValidationAction) @protobuf(4,bytes,rep)
 }
 

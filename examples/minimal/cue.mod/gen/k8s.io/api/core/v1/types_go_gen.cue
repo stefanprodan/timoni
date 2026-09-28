@@ -391,6 +391,7 @@ import (
 // PersistentVolume (PV) is a storage resource provisioned by an administrator.
 // It is analogous to a node.
 // More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
+// +k8s:supportsSubresource="/status"
 #PersistentVolume: {
 	metav1.#TypeMeta
 
@@ -556,6 +557,7 @@ import (
 }
 
 // PersistentVolumeClaim is a user's request for and claim to a persistent volume
+// +k8s:supportsSubresource="/status"
 #PersistentVolumeClaim: {
 	metav1.#TypeMeta
 
@@ -630,8 +632,8 @@ import (
 	// * An existing PVC (PersistentVolumeClaim)
 	// If the provisioner or an external controller can support the specified data source,
 	// it will create a new volume based on the contents of the specified data source.
-	// When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,
-	// and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.
+	// dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be
+	// copied to dataSource when dataSourceRef.namespace is not specified.
 	// If the namespace is specified, then dataSourceRef will not be copied to dataSource.
 	// +optional
 	dataSource?: #TypedLocalObjectReference @go(DataSource,*TypedLocalObjectReference) @protobuf(7,bytes,opt)
@@ -657,7 +659,6 @@ import (
 	//   specified.
 	// * While dataSource only allows local objects, dataSourceRef allows objects
 	//   in any namespaces.
-	// (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 	// (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
 	// +optional
 	dataSourceRef?: #TypedObjectReference @go(DataSourceRef,*TypedObjectReference) @protobuf(8,bytes,opt)
@@ -745,7 +746,7 @@ import (
 // slightly longer than actual in-use time or unused time because of processing delays or
 // when this feature was enabled in the cluster.
 //
-// Requires PersistentVolumeClaimUnusedSinceTime alpha featuregate
+// Requires PersistentVolumeClaimUnusedSinceTime beta featuregate
 #PersistentVolumeClaimUnused: #PersistentVolumeClaimConditionType & "Unused"
 
 // +enum
@@ -848,6 +849,105 @@ import (
 	message?: string @go(Message) @protobuf(6,bytes,opt)
 }
 
+// VolumeHealthStatusType describes the health status category of a volume.
+// +enum
+// +k8s:enum
+#VolumeHealthStatusType: string // #enumVolumeHealthStatusType
+
+#enumVolumeHealthStatusType:
+	#VolumeHealthInaccessible |
+	#VolumeHealthDataLoss |
+	#VolumeHealthDegraded
+
+// VolumeHealthInaccessible indicates the volume cannot be accessed.
+#VolumeHealthInaccessible: #VolumeHealthStatusType & "Inaccessible"
+
+// VolumeHealthDataLoss indicates data loss has been detected on the volume.
+#VolumeHealthDataLoss: #VolumeHealthStatusType & "DataLoss"
+
+// VolumeHealthDegraded indicates the volume is functioning but with reduced capability.
+#VolumeHealthDegraded: #VolumeHealthStatusType & "Degraded"
+
+// VolumeHealthCondition represents an adverse health condition reported for a volume.
+#VolumeHealthCondition: {
+	// status is the machine-parseable health category.
+	// Possible values:
+	// - "Inaccessible": the volume cannot be accessed.
+	// - "DataLoss": data loss has been detected on the volume.
+	// - "Degraded": the volume is functioning with reduced capability.
+	// +required
+	// +k8s:required
+	status: #VolumeHealthStatusType @go(Status) @protobuf(1,bytes,opt,casttype=VolumeHealthStatusType)
+
+	// reason is a brief CamelCase machine-parseable reason.
+	// Together with status it forms the unique identity of a condition entry.
+	// Maximum permitted length of a reason is 256 bytes.
+	// +required
+	// +k8s:required
+	// +k8s:maxBytes=256
+	reason: string @go(Reason) @protobuf(2,bytes,opt)
+
+	// message is a human-readable description.
+	// Maximum permitted length of a message is 1024 bytes.
+	// +optional
+	// +k8s:optional
+	// +k8s:maxBytes=1024
+	message?: string @go(Message) @protobuf(3,bytes,opt)
+}
+
+// VolumeHealthStatus contains health information for a volume reported
+// by the CSI controller plugin.
+#VolumeHealthStatus: {
+	// conditions is the set of adverse conditions reported by
+	// the CSI controller plugin. An empty list means no adverse condition.
+	// At most 16 conditions may be reported.
+	// +optional
+	// +listType=map
+	// +listMapKey=status
+	// +patchMergeKey=status
+	// +patchStrategy=merge
+	// +listMapKey=reason
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=status
+	// +k8s:listMapKey=reason
+	// +k8s:maxItems=16
+	healthConditions?: [...#VolumeHealthCondition] @go(HealthConditions,[]VolumeHealthCondition) @protobuf(1,bytes,rep)
+
+	// lastTransitionTime is when the current set of conditions first appeared.
+	// +optional
+	lastTransitionTime?: metav1.#Time @go(LastTransitionTime) @protobuf(2,bytes,opt)
+}
+
+// PodVolumeHealth contains health information for a volume used by a pod,
+// reported by the CSI node plugin via the kubelet.
+#PodVolumeHealth: {
+	// name matches an entry in pod.spec.volumes.
+	// +required
+	// +k8s:required
+	name: string @go(Name) @protobuf(1,bytes,opt)
+
+	// conditions is the set of adverse conditions reported by
+	// the CSI node plugin for this volume on this node.
+	// At most 16 conditions may be reported.
+	// +optional
+	// +listType=map
+	// +listMapKey=status
+	// +patchMergeKey=status
+	// +patchStrategy=merge
+	// +listMapKey=reason
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=status
+	// +k8s:listMapKey=reason
+	// +k8s:maxItems=16
+	healthConditions?: [...#VolumeHealthCondition] @go(HealthConditions,[]VolumeHealthCondition) @protobuf(2,bytes,rep)
+
+	// lastTransitionTime is when the current set of conditions first appeared.
+	// +optional
+	lastTransitionTime?: metav1.#Time @go(LastTransitionTime) @protobuf(3,bytes,opt)
+}
+
 // PersistentVolumeClaimStatus is the current status of a persistent volume claim.
 #PersistentVolumeClaimStatus: {
 	// phase represents the current phase of PersistentVolumeClaim.
@@ -944,6 +1044,13 @@ import (
 	// +featureGate=VolumeAttributesClass
 	// +optional
 	modifyVolumeStatus?: #ModifyVolumeStatus @go(ModifyVolumeStatus,*ModifyVolumeStatus) @protobuf(9,bytes,opt)
+
+	// healthStatus contains the latest controller-reported health information
+	// for the volume bound to this claim.
+	// +featureGate=CSIVolumeHealth
+	// +optional
+	// +k8s:optional
+	healthStatus?: #VolumeHealthStatus @go(HealthStatus,*VolumeHealthStatus) @protobuf(10,bytes,opt)
 }
 
 // +enum
@@ -1087,6 +1194,18 @@ import (
 	// More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
 	// +optional
 	sizeLimit?: resource.#Quantity @go(SizeLimit,*resource.Quantity) @protobuf(2,bytes,opt)
+
+	// mode specifies the permission bits for the emptyDir directory, in numeric
+	// notation (e.g., 0755, 01777). Must be a value between 0000 and 01777.
+	// If not specified, defaults to 0777.
+	// This might be in conflict with other options that affect the file
+	// mode, like fsGroup. If fsGroup is specified, the fsGroup permissions
+	// will override the mode specified here.
+	// This field has no effect on Windows.
+	// This field is alpha and requires EmptyDirVolumeMode featuregate to be enabled.
+	// +featureGate=EmptyDirVolumeMode
+	// +optional
+	mode?: int32 @go(Mode,*int32) @protobuf(3,varint,opt)
 }
 
 // Represents a Glusterfs mount that lasts the lifetime of a pod.
@@ -1639,6 +1758,13 @@ import (
 	// optional field specify whether the Secret or its keys must be defined
 	// +optional
 	optional?: bool @go(Optional,*bool) @protobuf(4,varint,opt)
+
+	// defaultUser is Optional: The owner UID of the created files by default.
+	// The defaultUser field is only used as a fallback when the item-level user field is unset.
+	// (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+	// +featureGate=AtomicWriteVolumeUserFields
+	// +optional
+	defaultUser?: int64 @go(DefaultUser,*int64) @protobuf(5,varint,opt)
 }
 
 #SecretVolumeSourceDefaultMode: int32 & 0o644
@@ -2161,6 +2287,13 @@ import (
 	// optional specify whether the ConfigMap or its keys must be defined
 	// +optional
 	optional?: bool @go(Optional,*bool) @protobuf(4,varint,opt)
+
+	// defaultUser is Optional: The owner UID of the created files by default.
+	// The defaultUser field is only used as a fallback when the item-level user field is unset.
+	// (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+	// +featureGate=AtomicWriteVolumeUserFields
+	// +optional
+	defaultUser?: int64 @go(DefaultUser,*int64) @protobuf(5,varint,opt)
 }
 
 #ConfigMapVolumeSourceDefaultMode: int32 & 0o644
@@ -2215,6 +2348,13 @@ import (
 	// path is the path relative to the mount point of the file to project the
 	// token into.
 	path: string @go(Path) @protobuf(3,bytes,opt)
+
+	// user is Optional: The owner UID of the created file.
+	// If specified, the item-level user field takes precedence over defaultUser.
+	// (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+	// +featureGate=AtomicWriteVolumeUserFields
+	// +optional
+	user?: int64 @go(User,*int64) @protobuf(4,varint,opt)
 }
 
 // ClusterTrustBundleProjection describes how to select a set of
@@ -2249,6 +2389,13 @@ import (
 
 	// Relative path from the volume root to write the bundle.
 	path: string @go(Path) @protobuf(4,bytes,rep)
+
+	// user is Optional: The owner UID of the created file.
+	// If specified, the item-level user field takes precedence over defaultUser.
+	// (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+	// +featureGate=AtomicWriteVolumeUserFields
+	// +optional
+	user?: int64 @go(User,*int64) @protobuf(6,varint,opt)
 }
 
 // PodCertificateProjection provides a private key and X.509 certificate in the
@@ -2337,6 +2484,13 @@ import (
 	// Signers should document the keys and values they support. Signers should
 	// deny requests that contain keys they do not recognize.
 	userAnnotations?: {[string]: string} @go(UserAnnotations,map[string]string) @protobuf(7,bytes,rep)
+
+	// user is Optional: The owner UID of the created file.
+	// If specified, the item-level user field takes precedence over defaultUser.
+	// (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+	// +featureGate=AtomicWriteVolumeUserFields
+	// +optional
+	user?: int64 @go(User,*int64) @protobuf(8,varint,opt)
 }
 
 // Represents a projected volume source
@@ -2355,6 +2509,13 @@ import (
 	// mode, like fsGroup, and the result can be other mode bits set.
 	// +optional
 	defaultMode?: int32 @go(DefaultMode,*int32) @protobuf(2,varint,opt)
+
+	// defaultUser is Optional: The owner UID of the created files by default.
+	// The defaultUser field is only used as a fallback when the item-level user field is unset.
+	// (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+	// +featureGate=AtomicWriteVolumeUserFields
+	// +optional
+	defaultUser?: int64 @go(DefaultUser,*int64) @protobuf(3,varint,opt)
 }
 
 // Projection that may be projected along with other supported volume types.
@@ -2455,6 +2616,13 @@ import (
 	// mode, like fsGroup, and the result can be other mode bits set.
 	// +optional
 	mode?: int32 @go(Mode,*int32) @protobuf(3,varint,opt)
+
+	// user is Optional: The owner UID of the created file.
+	// If specified, the item-level user field takes precedence over defaultUser.
+	// (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+	// +featureGate=AtomicWriteVolumeUserFields
+	// +optional
+	user?: int64 @go(User,*int64) @protobuf(4,varint,opt)
 }
 
 // Local represents directly-attached storage with node affinity
@@ -2602,6 +2770,7 @@ import (
 	// validation.
 	//
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// The specification for the PersistentVolumeClaim. The entire content is
@@ -2670,8 +2839,7 @@ import (
 	// +optional
 	recursiveReadOnly?: #RecursiveReadOnlyMode @go(RecursiveReadOnly,*RecursiveReadOnlyMode) @protobuf(7,bytes,opt,casttype=RecursiveReadOnlyMode)
 
-	// Path within the container at which the volume should be mounted.  Must
-	// not contain ':'.
+	// Path within the container at which the volume should be mounted.
 	mountPath: string @go(MountPath) @protobuf(3,bytes,opt)
 
 	// Path within the volume from which the container's volume should be mounted.
@@ -2694,7 +2862,35 @@ import (
 	// SubPathExpr and SubPath are mutually exclusive.
 	// +optional
 	subPathExpr?: string @go(SubPathExpr) @protobuf(6,bytes,opt)
+
+	// bindMountOptions is the list of additional bind mount options to apply when
+	// mounting this volume into the container. Allowed values are noexec,
+	// nodev, and nosuid. These are Linux mount options and have no effect on
+	// Windows nodes.
+	// This field is not supported with image volumes.
+	// This is an alpha field and requires enabling the VolumeBindMountOptions feature gate.
+	// +featureGate=VolumeBindMountOptions
+	// +optional
+	// +listType=set
+	bindMountOptions?: [...string] @go(BindMountOptions,[]string) @protobuf(8,bytes,rep)
 }
+
+// BindMountOption defines the supported bind mount options.
+#BindMountOption: string // #enumBindMountOption
+
+#enumBindMountOption:
+	#BindMountOptionNoExec |
+	#BindMountOptionNoDev |
+	#BindMountOptionNoSUID
+
+// BindMountOptionNoExec prevents execution of binaries on the mounted volume.
+#BindMountOptionNoExec: #BindMountOption & "noexec"
+
+// BindMountOptionNoDev ignores device special files on the mounted volume.
+#BindMountOptionNoDev: #BindMountOption & "nodev"
+
+// BindMountOptionNoSUID ignores set-user-identifier or set-group-identifier bits on the mounted volume.
+#BindMountOptionNoSUID: #BindMountOption & "nosuid"
 
 // MountPropagationMode describes mount propagation.
 // +enum
@@ -2865,7 +3061,8 @@ import (
 #ConfigMapKeySelector: {
 	#LocalObjectReference
 
-	// The key to select.
+	// The key to select from the ConfigMap's Data field.
+	// Keys in the BinaryData field are not currently propagated to container env vars.
 	key: string @go(Key) @protobuf(2,bytes,opt)
 
 	// Specify whether the ConfigMap or its key must be defined
@@ -2907,6 +3104,7 @@ import (
 //
 // The contents of the target ConfigMap's Data field will represent the
 // key-value pairs as environment variables.
+// Keys in the BinaryData field are not currently propagated to container env vars.
 #ConfigMapEnvSource: {
 	#LocalObjectReference
 
@@ -2938,6 +3136,22 @@ import (
 	value: string @go(Value) @protobuf(2,bytes,opt)
 }
 
+// HTTPProtocol selects the wire protocol for the HTTP probe,
+// independently of the URI scheme.
+// +enum
+#HTTPProtocol: string // #enumHTTPProtocol
+
+#enumHTTPProtocol:
+	#HTTPProtocolHTTP1 |
+	#HTTPProtocolHTTP2
+
+// HTTPProtocolHTTP1 uses HTTP/1.1 (the existing default).
+#HTTPProtocolHTTP1: #HTTPProtocol & "HTTP1"
+
+// HTTPProtocolHTTP2 uses HTTP/2.
+// Currently, only cleartext with prior knowledge (h2c) is supported, and must be used with scheme HTTP.
+#HTTPProtocolHTTP2: #HTTPProtocol & "HTTP2"
+
 // HTTPGetAction describes an action based on HTTP Get requests.
 #HTTPGetAction: {
 	// Path to access on the HTTP server.
@@ -2963,6 +3177,12 @@ import (
 	// +optional
 	// +listType=atomic
 	httpHeaders?: [...#HTTPHeader] @go(HTTPHeaders,[]HTTPHeader) @protobuf(5,bytes,rep)
+
+	// Protocol selects the wire protocol for the probe connection.
+	// Nil defaults to HTTP/1.1.
+	// +optional
+	// +featureGate=H2CContainerProbe
+	protocol?: #HTTPProtocol @go(Protocol,*HTTPProtocol) @protobuf(6,bytes,opt,casttype=HTTPProtocol)
 }
 
 // URIScheme identifies the scheme used for connection to a host for Get actions
@@ -3003,7 +3223,31 @@ import (
 	// +optional
 	// +default=""
 	service?: string @go(Service,*string) @protobuf(2,bytes,opt)
+
+	// mode specifies the connection mode for the gRPC health probe.
+	// Set to "TLS" to use TLS without certificate verification.
+	// Set to "Plaintext" to use a plaintext (insecure) connection explicitly.
+	// If not specified, the probe uses a plaintext (insecure) connection.
+	// +featureGate=GRPCContainerProbeTLS
+	// +optional
+	mode?: #GRPCProbeMode @go(Mode,*GRPCProbeMode) @protobuf(3,bytes,opt,casttype=GRPCProbeMode)
 }
+
+// GRPCProbeMode describes the connection mode for a gRPC probe.
+// +enum
+#GRPCProbeMode: string // #enumGRPCProbeMode
+
+#enumGRPCProbeMode:
+	#GRPCProbeModePlaintext |
+	#GRPCProbeModeTLS
+
+// GRPCProbeModePlaintext indicates that the probe should use a plaintext
+// (insecure) gRPC connection.
+#GRPCProbeModePlaintext: #GRPCProbeMode & "Plaintext"
+
+// GRPCProbeModeTLS indicates that the probe should connect using TLS
+// without certificate verification.
+#GRPCProbeModeTLS: #GRPCProbeMode & "TLS"
 
 // ExecAction describes a "run in container" action.
 #ExecAction: {
@@ -3842,8 +4086,13 @@ import (
 // ResourceStatus represents the status of a single resource allocated to a Pod.
 #ResourceStatus: {
 	// Name of the resource. Must be unique within the pod and in case of non-DRA resource, match one of the resources from the pod spec.
-	// For DRA resources, the value must be "claim:<claim_name>/<request>".
-	// When this status is reported about a container, the "claim_name" and "request" must match one of the claims of this container.
+	// For DRA resources, the value must be "claim:<claim_name>/<request>" when
+	// container.resources.claims[*].request is set or "claim:<claim_name>" when
+	// container.resources.claims[*].request is empty.
+	// For DRA-backed extended resources, "claim:<claim_name>/<request>" is used
+	// when the claim name and request name are recorded in pod.status.extendedResourceClaimStatus.
+	// When this status is reported about a container, the "claim_name" and "request"
+	// must match one of the claims of this container.
 	// +required
 	name: #ResourceName @go(Name) @protobuf(1,bytes,opt)
 
@@ -4567,6 +4816,8 @@ import (
 	// Key is the taint key that the toleration applies to. Empty means match all taint keys.
 	// If the key is empty, operator must be Exists; this combination means to match all values and all keys.
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:format=k8s-label-key
 	key?: string @go(Key) @protobuf(1,bytes,opt)
 
 	// Operator represents a key's relationship to the value.
@@ -4714,7 +4965,6 @@ import (
 
 	// DeprecatedServiceAccount is a deprecated alias for ServiceAccountName.
 	// Deprecated: Use serviceAccountName instead.
-	// +k8s:conversion-gen=false
 	// +optional
 	serviceAccount?: string @go(DeprecatedServiceAccount) @protobuf(9,bytes,opt)
 
@@ -4735,19 +4985,16 @@ import (
 	// When `hostNetwork` is true, specified `hostPort` fields in port definitions must match `containerPort`,
 	// and unspecified `hostPort` fields in port definitions are defaulted to match `containerPort`.
 	// Default to false.
-	// +k8s:conversion-gen=false
 	// +optional
 	hostNetwork?: bool @go(HostNetwork) @protobuf(11,varint,opt)
 
 	// Use the host's pid namespace.
 	// Optional: Default to false.
-	// +k8s:conversion-gen=false
 	// +optional
 	hostPID?: bool @go(HostPID) @protobuf(12,varint,opt)
 
 	// Use the host's ipc namespace.
 	// Optional: Default to false.
-	// +k8s:conversion-gen=false
 	// +optional
 	hostIPC?: bool @go(HostIPC) @protobuf(13,varint,opt)
 
@@ -4756,7 +5003,6 @@ import (
 	// in the same pod, and the first process in each container will not be assigned PID 1.
 	// HostPID and ShareProcessNamespace cannot both be set.
 	// Optional: Default to false.
-	// +k8s:conversion-gen=false
 	// +optional
 	shareProcessNamespace?: bool @go(ShareProcessNamespace,*bool) @protobuf(27,varint,opt)
 
@@ -4797,6 +5043,7 @@ import (
 	// If specified, the pod's tolerations.
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.37")=+k8s:optional
 	tolerations?: [...#Toleration] @go(Tolerations,[]Toleration) @protobuf(22,bytes,opt)
 
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod's hosts
@@ -4855,6 +5102,8 @@ import (
 
 	// PreemptionPolicy is the Policy for preempting pods with lower priority.
 	// One of Never, PreemptLowerPriority.
+	// When Priority Admission Controller is enabled, it prevents users from setting
+	// this field. The admission controller populates this field from PriorityClassName.
 	// Defaults to PreemptLowerPriority if unset.
 	// +optional
 	preemptionPolicy?: #PreemptionPolicy @go(PreemptionPolicy,*PreemptionPolicy) @protobuf(31,bytes,opt)
@@ -4931,7 +5180,6 @@ import (
 	// When set to false, a new userns is created for the pod. Setting false is useful for
 	// mitigating container breakout vulnerabilities even allowing users to run their
 	// containers as root without actually having root privileges on the host.
-	// +k8s:conversion-gen=false
 	// +optional
 	hostUsers?: bool @go(HostUsers,*bool) @protobuf(37,bytes,opt)
 
@@ -4990,7 +5238,6 @@ import (
 	// - `hostNetwork` must be set to false.
 	//
 	// This field must be a valid DNS subdomain as defined in RFC 1123 and contain at most 64 characters.
-	// Requires the HostnameOverride feature gate to be enabled.
 	//
 	// +featureGate=HostnameOverride
 	// +optional
@@ -5012,6 +5259,34 @@ import (
 	// +featureGate=GenericWorkload
 	// +optional
 	schedulingGroup?: #PodSchedulingGroup @go(SchedulingGroup,*PodSchedulingGroup) @protobuf(43,bytes,opt)
+
+	// evictionResponders reference responders that react to Evictions based on EvictionRequests.
+	// Responders should observe and communicate through the Eviction Resource API to help with
+	// the graceful termination of a pod. The responders are selected sequentially, according to
+	// their specified priority.
+	//
+	// Responders should periodically report on an eviction progress by updating the
+	// .status.responders[].heartbeatTime field of the Eviction object. If this field is not updated
+	// within the heartbeat deadline defined by the Eviction API (currently 20 minutes), the eviction
+	// is passed over to the next responder with a lower priority. If there is no other responder,
+	// the last default imperative-eviction.k8s.io/evictor responder with a priority of 100 will
+	// evict the pod using the imperative Eviction API (pods/<name>/eviction subresource).
+	//
+	// The maximum length of the responders list is 10.
+	// Responders are not supported when the pod is part of a PodGroup (.spec.schedulingGroup is set).
+	// This field can only be set on creation and is immutable afterwards.
+	// +featureGate=EvictionRequestAPI
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=name
+	// +k8s:maxItems=10
+	// +k8s:alpha(since: "1.37")=+k8s:dependentForbidden("schedulingGroup")
+	evictionResponders?: [...#EvictionResponder] @go(EvictionResponders,[]EvictionResponder) @protobuf(44,bytes,rep)
 }
 
 // PodResourceClaim references exactly one ResourceClaim, either directly
@@ -5510,11 +5785,8 @@ import (
 	// Eligible volumes are in-tree FibreChannel and iSCSI volumes, and all CSI volumes
 	// whose CSI driver announces SELinux support by setting spec.seLinuxMount: true in their
 	// CSIDriver instance. Other volumes are always re-labelled recursively.
-	// "MountOption" value is allowed only when SELinuxMount feature gate is enabled.
 	//
-	// If not specified and SELinuxMount feature gate is enabled, "MountOption" is used.
-	// If not specified and SELinuxMount feature gate is disabled, "MountOption" is used for ReadWriteOncePod volumes
-	// and "Recursive" for all other volumes.
+	// If not specified, "MountOption" is used.
 	//
 	// This field affects only Pods that have SELinux label set, either in PodSecurityContext or in SecurityContext of all containers.
 	//
@@ -5877,6 +6149,43 @@ import (
 	targetContainerName?: string @go(TargetContainerName) @protobuf(2,bytes,opt)
 }
 
+// EvictionResponder allows you to specify the responder reacting to an Eviction.
+// Responders should observe and communicate through the Eviction Resource API to help with
+// the graceful eviction of a target (e.g. termination of a pod).
+// +structType=atomic
+#EvictionResponder: {
+	// name allows you to identify the responder responding to the Eviction.
+	//
+	// It must be a valid domain-prefixed key (such as "acme.io/foo").
+	// Domain names *.k8s.io and *.kubernetes.io are reserved.
+	// This field must be unique for each responder.
+	// This field is required.
+	// +required
+	// +k8s:required
+	// +k8s:format=k8s-prefixed-label-key
+	// +k8s:customValidation
+	name: string @go(Name) @protobuf(1,bytes,opt)
+
+	// priority for this responder. Higher priorities are selected first by the evictionrequest-controller.
+	// If there are responders with the same priority, the responder whose domain name comes first in the
+	// alphabetical higher domain order, will be picked. This means that the top domain labels are compared
+	// alphabetically first, followed by the lower domain labels. The key is compared last.
+	//
+	// The responder that is the managing controller of the pod should set the value of
+	// this field to 10000 to allow both for preemption or fallback registration by other
+	// responders.
+	//
+	// The minimum value is 0 and the maximum value is 100000.
+	// The interval 0-999 is reserved for responders with *.k8s.io suffix.
+	// This field is required.
+	// +required
+	// +k8s:required
+	// +k8s:minimum=0
+	// +k8s:maximum=100000
+	// +k8s:customValidation
+	priority: int32 @go(Priority,*int32) @protobuf(2,varint,opt)
+}
+
 // PodStatus represents information about the status of a pod. Status may trail the actual
 // state of a system, especially if the node that hosts the pod cannot contact the control
 // plane.
@@ -6059,30 +6368,33 @@ import (
 	// Examples include "cpu", "memory", "ephemeral-storage", and hugepages.
 	// +featureGate=DRANodeAllocatableResources
 	// +optional
-	// +listType=atomic
+	// +patchStrategy=merge
+	// +patchMergeKey=resourceClaimName
+	// +listType=map
+	// +listMapKey=resourceClaimName
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=resourceClaimName
 	nodeAllocatableResourceClaimStatuses?: [...#NodeAllocatableResourceClaimStatus] @go(NodeAllocatableResourceClaimStatuses,[]NodeAllocatableResourceClaimStatus) @protobuf(21,bytes,rep)
-}
 
-// PodStatusResult is a wrapper for PodStatus returned by kubelet that can be encode/decoded
-#PodStatusResult: {
-	metav1.#TypeMeta
-
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// volumeHealth contains node-reported health for each volume the pod is using.
+	// Populated by the kubelet on the pod's node.
+	// +featureGate=CSIVolumeHealth
 	// +optional
-	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
-
-	// Most recently observed status of the pod.
-	// This data may not be up to date.
-	// Populated by the system.
-	// Read-only.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	// +optional
-	status?: #PodStatus @go(Status) @protobuf(2,bytes,opt)
+	// +listType=map
+	// +listMapKey=name
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=name
+	volumeHealth?: [...#PodVolumeHealth] @go(VolumeHealth,[]PodVolumeHealth) @protobuf(22,bytes,rep)
 }
 
 // Pod is a collection of containers that can run on a host. This resource is created
 // by clients and scheduled onto hosts.
+// +k8s:supportsSubresource="/status"
+// +k8s:supportsSubresource="/ephemeralcontainers"
+// +k8s:supportsSubresource="/resize"
+// +k8s:supportsSubresource="/eviction"
 #Pod: {
 	metav1.#TypeMeta
 
@@ -6124,6 +6436,7 @@ import (
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// Specification of the desired behavior of the pod.
@@ -6167,18 +6480,18 @@ import (
 	// Defaults to 1.
 	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller#what-is-a-replicationcontroller
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	// +default=1
-	// +k8s:alpha(since: "1.36")=+k8s:minimum=0
+	// +k8s:beta(since: "1.37")=+k8s:minimum=0
 	replicas?: int32 @go(Replicas,*int32) @protobuf(1,varint,opt)
 
 	// Minimum number of seconds for which a newly created pod should be ready
 	// without any of its container crashing, for it to be considered available.
 	// Defaults to 0 (pod will be considered available as soon as it is ready)
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	// +default=0
-	// +k8s:alpha(since: "1.36")=+k8s:minimum=0
+	// +k8s:beta(since: "1.37")=+k8s:minimum=0
 	minReadySeconds?: int32 @go(MinReadySeconds) @protobuf(4,varint,opt)
 
 	// Selector is a label query over pods that should match the Replicas count.
@@ -6195,6 +6508,7 @@ import (
 	// The only allowed template.spec.restartPolicy value is "Always".
 	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller#pod-template
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
 	template?: #PodTemplateSpec @go(Template,*PodTemplateSpec) @protobuf(3,bytes,opt)
 }
 
@@ -6269,8 +6583,8 @@ import (
 	// be the same as the Pod(s) that the replication controller manages.
 	// Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:subfield(name)=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:subfield(name)=+k8s:format=k8s-long-name
+	// +k8s:beta(since: "1.37")=+k8s:subfield(name)=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:subfield(name)=+k8s:format=k8s-long-name
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// Spec defines the specification of the desired behavior of the replication controller.
@@ -6456,6 +6770,7 @@ import (
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=type
+	// +k8s:alpha(since: "1.37")=+k8s:eachVal=+k8s:opaqueType
 	conditions?: [...metav1.#Condition] @go(Conditions,[]metav1.Condition) @protobuf(2,bytes,rep)
 }
 
@@ -6859,6 +7174,8 @@ import (
 // Service is a named abstraction of software service (for example, mysql) consisting of local port
 // (for example 3306) that the proxy listens on, and the selector that determines which pods
 // will answer requests sent through the proxy.
+// +k8s:supportsSubresource="/status"
+// +k8s:supportsSubresource="/proxy"
 #Service: {
 	metav1.#TypeMeta
 
@@ -7115,6 +7432,9 @@ import (
 
 	// ID of the node assigned by the cloud provider in the format: <ProviderName>://<ProviderSpecificNodeID>
 	// +optional
+	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:alpha(since: "1.36")=+k8s:update=NoModify
+	// +k8s:alpha(since: "1.36")=+k8s:update=NoUnset
 	providerID?: string @go(ProviderID) @protobuf(3,bytes,opt)
 
 	// Unschedulable controls node schedulability of new pods. By default, node is schedulable.
@@ -7135,6 +7455,29 @@ import (
 	// see: https://issues.k8s.io/61966
 	// +optional
 	externalID?: string @go(DoNotUseExternalID) @protobuf(2,bytes,opt)
+
+	// PodPreemptionPolicy controls the node-level preemption behaviors for pods on this node.
+	// This is an alpha field and requires enabling the InPlacePodVerticalScalingSchedulerPreemption feature gate.
+	// +featureGate=InPlacePodVerticalScalingSchedulerPreemption
+	// +optional
+	// +k8s:optional
+	// +k8s:ifDisabled(InPlacePodVerticalScalingSchedulerPreemption)=+k8s:forbidden
+	podPreemptionPolicy?: #NodePodPreemptionPolicy @go(PodPreemptionPolicy,*NodePodPreemptionPolicy) @protobuf(8,bytes,opt)
+}
+
+// NodePodPreemptionPolicy defines the node-level policies governing preemption for pods on this node.
+#NodePodPreemptionPolicy: {
+	// DisableResizePreemption lists the owners (e.g., autoscalers, operators, administrators)
+	// that have requested to disable scheduler and Kubelet preemption for in-place pod resize on this node.
+	// If this list is non-empty, resize-induced preemption is disabled on this node.
+	// This is an alpha field and requires enabling the InPlacePodVerticalScalingSchedulerPreemption feature gate.
+	// +listType=set
+	// +k8s:listType=set
+	// +optional
+	// +k8s:maxItems=20
+	// +k8s:optional
+	// +k8s:eachVal=+k8s:format=k8s-label-key
+	disableResizePreemption?: [...string] @go(DisableResizePreemption,[]string) @protobuf(1,bytes,rep)
 }
 
 // NodeConfigSource specifies a source of node configuration. Exactly one subfield (excluding metadata) must be non-nil.
@@ -7253,6 +7596,11 @@ import (
 
 	// Swap Info reported by the node.
 	swap?: #NodeSwapStatus @go(Swap,*NodeSwapStatus) @protobuf(11,bytes,opt)
+
+	// Whether the node is running in a user namespace.
+	// +featureGate=KubeletInUserNamespace
+	// +optional
+	runningInUserNamespace?: bool @go(RunningInUserNamespace,*bool) @protobuf(12,varint,opt)
 }
 
 // NodeSwapStatus represents swap memory information.
@@ -7486,7 +7834,12 @@ import (
 	#NodeMemoryPressure |
 	#NodeDiskPressure |
 	#NodePIDPressure |
-	#NodeNetworkUnavailable
+	#NodeNetworkUnavailable |
+	#NodeGracefulNodeShutdownInProgress |
+	#NodeDrainInProgress |
+	#NodeDrained |
+	#NodeMaintenancePlanned |
+	#NodeMaintenanceInProgress
 
 // NodeReady means kubelet is healthy and ready to accept pods.
 #NodeReady: #NodeConditionType & "Ready"
@@ -7502,6 +7855,42 @@ import (
 
 // NodeNetworkUnavailable means that network for the node is not correctly configured.
 #NodeNetworkUnavailable: #NodeConditionType & "NetworkUnavailable"
+
+// NodeGracefulNodeShutdownInProgress reports whether Graceful Node Shutdown is determined to be in progress on this Node.
+//
+// The admin is responsible for setting and clearing this condition.
+#NodeGracefulNodeShutdownInProgress: #NodeConditionType & "GracefulNodeShutdownInProgress"
+
+// NodeDrainInProgress reports that this Node is actively being drained,
+// according to the admin's definition of drain.
+// Commonly, this involves removing some amount of Pods, volumes, and networks.
+//
+// The admin is responsible for setting and clearing this condition.
+#NodeDrainInProgress: #NodeConditionType & "DrainInProgress"
+
+// NodeDrained reports that this Node has reached the drain criteria selected by the admin.
+//
+// The admin is responsible for setting and clearing this condition.
+#NodeDrained: #NodeConditionType & "Drained"
+
+// NodeMaintenancePlanned reports that this Node is expected to undergo a change in the future.
+// If this change impacts Node users, the admin should drain the Node first.
+//
+// Admins can use the Node maintenance condition for cases like hardware or software rollout,
+// remediation, decommissioning, or debugging.
+//
+// The admin is responsible for setting and clearing this condition.
+#NodeMaintenancePlanned: #NodeConditionType & "MaintenancePlanned"
+
+// NodeMaintenanceInProgress reports that this Node is actively undergoing maintenance.
+//
+// The admin decides whether the change will impact Node users and require a Node drain.
+// For example, it is recommended to drain a Node before a Kubernetes upgrade.
+// In contrast, a kernel live patch may not require a Node drain, but it can still be useful
+// to communicate that maintenance is in progress.
+//
+// The admin is responsible for setting and clearing this condition.
+#NodeMaintenanceInProgress: #NodeConditionType & "MaintenanceInProgress"
 
 // NodeCondition contains condition information for a node.
 #NodeCondition: {
@@ -7636,6 +8025,8 @@ import (
 
 // Node is a worker node in Kubernetes.
 // Each node will have a unique identifier in the cache (i.e. in etcd).
+// +k8s:supportsSubresource="/status"
+// +k8s:supportsSubresource="/proxy"
 #Node: {
 	metav1.#TypeMeta
 
@@ -7767,6 +8158,8 @@ import (
 
 // Namespace provides a scope for Names.
 // Use of multiple namespaces is optional.
+// +k8s:supportsSubresource="/status"
+// +k8s:supportsSubresource="/finalize"
 #Namespace: {
 	metav1.#TypeMeta
 
@@ -7807,6 +8200,7 @@ import (
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// The target object that you want to bind to the standard object.
@@ -8507,6 +8901,7 @@ import (
 }
 
 // ResourceQuota sets aggregate quota restrictions enforced per namespace
+// +k8s:supportsSubresource="/status"
 #ResourceQuota: {
 	metav1.#TypeMeta
 
@@ -8575,6 +8970,8 @@ import (
 	// Used to facilitate programmatic handling of secret data.
 	// More info: https://kubernetes.io/docs/concepts/configuration/secret/#secret-types
 	// +optional
+	// +k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:immutable
 	type?: #SecretType @go(Type) @protobuf(3,bytes,opt,casttype=SecretType)
 }
 
@@ -8727,6 +9124,8 @@ import (
 	// the Data field, this is enforced during validation process.
 	// Using this field will require 1.10+ apiserver and
 	// kubelet.
+	// Note: BinaryData keys are not currently propagated to container env vars
+	// via ConfigMapKeyRef or ConfigMapRef env sources; only Data keys are used.
 	// +optional
 	binaryData?: {[string]: bytes} @go(BinaryData,map[string][]byte) @protobuf(3,bytes,rep)
 }
@@ -8780,6 +9179,7 @@ import (
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// List of component conditions observed
@@ -8823,6 +9223,13 @@ import (
 	// mode, like fsGroup, and the result can be other mode bits set.
 	// +optional
 	defaultMode?: int32 @go(DefaultMode,*int32) @protobuf(2,varint,opt)
+
+	// defaultUser is Optional: The owner UID of the created files by default.
+	// The defaultUser field is only used as a fallback when the item-level user field is unset.
+	// (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+	// +featureGate=AtomicWriteVolumeUserFields
+	// +optional
+	defaultUser?: int64 @go(DefaultUser,*int64) @protobuf(3,varint,opt)
 }
 
 #DownwardAPIVolumeSourceDefaultMode: int32 & 0o644
@@ -8849,6 +9256,13 @@ import (
 	// mode, like fsGroup, and the result can be other mode bits set.
 	// +optional
 	mode?: int32 @go(Mode,*int32) @protobuf(4,varint,opt)
+
+	// user is Optional: The owner UID of the created file.
+	// If specified, the item-level user field takes precedence over defaultUser.
+	// (Alpha) This field requires the AtomicWriteVolumeUserFields feature gate to be enabled.
+	// +featureGate=AtomicWriteVolumeUserFields
+	// +optional
+	user?: int64 @go(User,*int64) @protobuf(5,varint,opt)
 }
 
 // Represents downward API info for projecting into a projected volume.
@@ -9025,6 +9439,7 @@ import (
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// Range is string that identifies the range represented by 'data'.
@@ -9163,14 +9578,80 @@ import (
 #NodeAllocatableResourceClaimStatus: {
 	// ResourceClaimName is the resource claim referenced by the pod that resulted in this node allocatable resource allocation.
 	// +required
+	// +k8s:required
 	resourceClaimName: string @go(ResourceClaimName) @protobuf(1,bytes,opt)
 
 	// Containers lists the names of all containers in this pod that reference the claim.
 	// +optional
 	// +listType=set
+	// +k8s:optional
+	// +k8s:listType=set
 	containers?: [...string] @go(Containers,[]string) @protobuf(2,bytes,rep)
 
-	// Resources is a map of the node-allocatable resource name to the aggregate quantity allocated to the claim.
+	// Mapping contains allocations through devices mapped in the device spec's `nodeAllocatableResources[...].mapping` field.
+	// This is used by kubelet for pod level and container-level cgroup enforcement.
+	// +optional
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	// +listType=map
+	// +listMapKey=name
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=name
+	mapping?: [...#NodeAllocatableMappedResources] @go(Mapping,[]NodeAllocatableMappedResources) @protobuf(4,bytes,rep)
+
+	// Overhead contains allocations through devices mapped in the device spec's `nodeAllocatableResources[...].overhead` field.
+	// This is used by kubelet for pod level and container-level cgroup enforcement.
+	// +optional
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	// +listType=map
+	// +listMapKey=name
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=name
+	overhead?: [...#NodeAllocatableOverheadResources] @go(Overhead,[]NodeAllocatableOverheadResources) @protobuf(5,bytes,rep)
+}
+
+// NodeAllocatableMappedResources describes mapped node allocatable resource allocations.
+#NodeAllocatableMappedResources: {
+	// Name is the name of the resource (e.g., cpu, memory).
 	// +required
-	resources: {[string]: resource.#Quantity} @go(Resources,map[ResourceName]resource.Quantity) @protobuf(3,bytes,rep)
+	// +k8s:required
+	name: #ResourceName @go(Name) @protobuf(1,bytes,opt,casttype=ResourceName)
+
+	// Quantity is the total node allocatable resource capacity allocated for the claim.
+	// This claim's allocated devices is shared by all the containers referencing the claim.
+	// Kubelet adds this value to both requests and limits at the pod-level cgroup, and to limits at the container-level cgroup for each container referencing the claim.
+	// +required
+	// +k8s:required
+	quantity: resource.#Quantity @go(Quantity,*resource.Quantity) @protobuf(2,bytes,opt)
+}
+
+// NodeAllocatableOverheadResources describes auxiliary overhead resource allocations.
+#NodeAllocatableOverheadResources: {
+	// Name is the name of the resource (e.g., cpu, memory).
+	// +required
+	// +k8s:required
+	name: #ResourceName @go(Name) @protobuf(1,bytes,opt,casttype=ResourceName)
+
+	// PerPod is the flat overhead quantity allocated per pod.
+	// Adding to each container limit allows individual containers to utilize the overhead, while the parent pod-level cgroup limit caps the total usage at the pod boundary where the overhead is accounted for exactly once.
+	// At least one of PerPod or PerContainer must be specified. Specifying neither is an invalid configuration.
+	// +optional
+	// +k8s:optional
+	perPod?: resource.#Quantity @go(PerPod,*resource.Quantity) @protobuf(2,bytes,opt)
+
+	// PerContainer is the variable overhead quantity applied for each container referencing the claim.
+	// The container references are recorded in `nodeAllocatableResourceClaimStatuses.containers`.
+	// The total overhead quantity allocated for the claim is computed as:
+	// Quantity = PerPod + (PerContainer * NumReferences)
+	// Kubelet accounts for this overhead in cgroups:
+	// - Pod-level cgroup (requests and limits): Kubelet adds PerPod + (PerContainer * NumReferences).
+	// - Container-level cgroup (limits only): Kubelet adds PerPod + PerContainer for each referencing container.
+	// This allows any single container to access the pod-level overhead, while the parent cgroup caps the total usage to account for PerPod exactly once.
+	// At least one of PerPod or PerContainer must be specified. Specifying neither is an invalid configuration.
+	// +optional
+	// +k8s:optional
+	perContainer?: resource.#Quantity @go(PerContainer,*resource.Quantity) @protobuf(3,bytes,opt)
 }
