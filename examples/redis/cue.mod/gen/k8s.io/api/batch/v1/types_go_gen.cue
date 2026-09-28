@@ -7,6 +7,7 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
+	schedulingv1alpha3 "k8s.io/api/scheduling/v1alpha3"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -53,6 +54,7 @@ _#labelPrefix: "batch.kubernetes.io/"
 #JobControllerName: "kubernetes.io/job-controller"
 
 // Job represents the configuration of a single job.
+// +k8s:supportsSubresource="/status"
 #Job: {
 	metav1.#TypeMeta
 
@@ -367,6 +369,8 @@ _#labelPrefix: "batch.kubernetes.io/"
 	// It can be null or up to completions. It is required and must be
 	// less than or equal to 10^4 when is completions greater than 10^5.
 	// +optional
+	// +k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:dependentRequired("backoffLimitPerIndex")
 	maxFailedIndexes?: int32 @go(MaxFailedIndexes,*int32) @protobuf(13,varint,opt)
 
 	// A label query over pods that should match the pod count.
@@ -462,6 +466,79 @@ _#labelPrefix: "batch.kubernetes.io/"
 	// This field is immutable.
 	// +optional
 	managedBy?: string @go(ManagedBy,*string) @protobuf(15,bytes,opt)
+
+	// scheduling defines the Workload-aware Scheduling configuration for this Job.
+	// When set, it specifies the scheduling policy (basic or gang), topology
+	// constraints, disruption mode, and shared resource claims.
+	// When omitted, the Job defaults to the basic scheduling policy, which behaves
+	// as standard pod-by-pod scheduling.
+	// This field is alpha-level and requires the WorkloadWithJob feature gate.
+	// This field is immutable, including whether it is set at all, only
+	// policy.gang.minCount may be changed after creation.
+	//
+	// +featureGate=WorkloadWithJob
+	// +optional
+	// +k8s:ifDisabled(WorkloadWithJob)=+k8s:forbidden
+	// +k8s:optional
+	// +k8s:update=NoSet
+	// +k8s:update=NoUnset
+	scheduling?: #JobSchedulingConfiguration @go(Scheduling,*JobSchedulingConfiguration) @protobuf(17,bytes,opt)
+}
+
+// JobSchedulingConfiguration composes the reusable workload-aware
+// scheduling building blocks.
+#JobSchedulingConfiguration: {
+	// SchedulingPolicy defines the scheduling policy for this Job.
+	// Exactly one of Basic or Gang must be set.
+	// This field is immutable after creation: the policy may not be added or
+	// removed. The policy variant (basic/gang) is frozen by hand-written
+	// validation; only schedulingPolicy.gang.minCount may be changed.
+	//
+	// +optional
+	// +k8s:optional
+	// +k8s:update=NoSet
+	// +k8s:update=NoUnset
+	schedulingPolicy?: schedulingv1alpha3.#WorkloadPodGroupSchedulingPolicy @go(SchedulingPolicy,*schedulingv1alpha3.WorkloadPodGroupSchedulingPolicy) @protobuf(1,bytes,opt)
+
+	// SchedulingConstraints defines scheduling constraints (e.g. topology)
+	// for the Job's pods.
+	// This field is immutable after creation.
+	//
+	// +optional
+	// +k8s:optional
+	// +k8s:immutable
+	schedulingConstraints?: schedulingv1alpha3.#WorkloadPodGroupSchedulingConstraints @go(SchedulingConstraints,*schedulingv1alpha3.WorkloadPodGroupSchedulingConstraints) @protobuf(2,bytes,opt)
+
+	// DisruptionMode defines the mode in which the Job's pods can be disrupted.
+	// One of Single, All.
+	// This field is immutable after creation: it may not be added or removed,
+	// and the selected mode may not be changed.
+	//
+	// +optional
+	// +k8s:optional
+	// +k8s:immutable
+	disruptionMode?: schedulingv1alpha3.#WorkloadPodGroupDisruptionMode @go(DisruptionMode,*schedulingv1alpha3.WorkloadPodGroupDisruptionMode) @protobuf(3,bytes,opt)
+
+	// ResourceClaims defines which ResourceClaims may be shared among Pods in
+	// the Job. Pods consume the devices allocated to a PodGroup's claim by
+	// defining a claim in its own Spec.ResourceClaims that matches the
+	// PodGroup's claim exactly. The claim must have the same name and refer to
+	// the same ResourceClaim or ResourceClaimTemplate.
+	// At most 4 claims may be set, matching the limit on the resulting PodGroup.
+	// This list is immutable after creation: entries may neither be added,
+	// removed, nor modified.
+	//
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=name
+	// +k8s:maxItems=4
+	// +k8s:immutable
+	resourceClaims?: [...schedulingv1alpha3.#WorkloadPodGroupResourceClaim] @go(ResourceClaims,[]schedulingv1alpha3.WorkloadPodGroupResourceClaim) @protobuf(4,bytes,rep)
 }
 
 // JobStatus represents the current state of a Job.
@@ -524,9 +601,6 @@ _#labelPrefix: "batch.kubernetes.io/"
 
 	// The number of pods which are terminating (in phase Pending or Running
 	// and have a deletionTimestamp).
-	//
-	// This field is beta-level. The job controller populates the field when
-	// the feature gate JobPodReplacementPolicy is enabled (enabled by default).
 	// +optional
 	terminating?: int32 @go(Terminating,*int32) @protobuf(11,varint,opt)
 
@@ -627,11 +701,9 @@ _#labelPrefix: "batch.kubernetes.io/"
 #JobReasonDeadlineExceeded: "DeadlineExceeded"
 
 // JobReasonMaxFailedIndexesExceeded indicates that an indexed of a job failed
-// This const is used in beta-level feature: https://kep.k8s.io/3850.
 #JobReasonMaxFailedIndexesExceeded: "MaxFailedIndexesExceeded"
 
 // JobReasonFailedIndexes means Job has failed indexes.
-// This const is used in beta-level feature: https://kep.k8s.io/3850.
 #JobReasonFailedIndexes: "FailedIndexes"
 
 // JobReasonSuccessPolicy reason indicates a SuccessCriteriaMet condition is added due to
@@ -672,6 +744,7 @@ _#labelPrefix: "batch.kubernetes.io/"
 	// Standard object's metadata of the jobs created from this template.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// Specification of the desired behavior of the job.
@@ -681,6 +754,7 @@ _#labelPrefix: "batch.kubernetes.io/"
 }
 
 // CronJob represents the configuration of a single cron job.
+// +k8s:supportsSubresource="/status"
 #CronJob: {
 	metav1.#TypeMeta
 
@@ -717,7 +791,7 @@ _#labelPrefix: "batch.kubernetes.io/"
 #CronJobSpec: {
 	// The schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:required
 	schedule: string @go(Schedule) @protobuf(1,bytes,opt)
 
 	// The time zone name for the given schedule, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.

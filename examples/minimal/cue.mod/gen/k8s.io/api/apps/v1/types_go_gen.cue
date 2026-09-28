@@ -25,6 +25,8 @@ import (
 //
 // The StatefulSet guarantees that a given network identity will always
 // map to the same storage identity.
+// +k8s:supportsSubresource="/scale"
+// +k8s:supportsSubresource="/status"
 #StatefulSet: {
 	metav1.#TypeMeta
 
@@ -34,8 +36,8 @@ import (
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// Spec defines the desired identities of pods in this set.
-	// +optional
-	spec?: #StatefulSetSpec @go(Spec) @protobuf(2,bytes,opt)
+	// +required
+	spec: #StatefulSetSpec @go(Spec) @protobuf(2,bytes,opt)
 
 	// Status is the current status of Pods in this StatefulSet. This data
 	// may be out of date by some window of time.
@@ -83,7 +85,8 @@ import (
 
 #enumStatefulSetUpdateStrategyType:
 	#RollingUpdateStatefulSetStrategyType |
-	#OnDeleteStatefulSetStrategyType
+	#OnDeleteStatefulSetStrategyType |
+	#RecreateStatefulSetStrategyType
 
 // RollingUpdateStatefulSetStrategyType indicates that update will be
 // applied to all Pods in the StatefulSet with respect to the StatefulSet
@@ -92,12 +95,23 @@ import (
 // by the StatefulSet's updateRevision.
 #RollingUpdateStatefulSetStrategyType: #StatefulSetUpdateStrategyType & "RollingUpdate"
 
-// OnDeleteStatefulSetStrategyType triggers the legacy behavior. Version
-// tracking and ordered rolling restarts are disabled. Pods are recreated
-// from the StatefulSetSpec when they are manually deleted. When a scale
-// operation is performed with this strategy,specification version indicated
-// by the StatefulSet's currentRevision.
+// OnDeleteStatefulSetStrategyType disables ordered rolling restarts. Version
+// tracking is done on a best-effort basis - the controller will try to
+// eventually converge StatefulSet's currentRevision with updateRevision.
+// Pods are recreated from the StatefulSetSpec when they are manually deleted.
+// When a scale operation is performed with this strategy, new Pods will be
+// created from the specification version indicated by the StatefulSet's updateRevision.
 #OnDeleteStatefulSetStrategyType: #StatefulSetUpdateStrategyType & "OnDelete"
+
+// RecreateStatefulSetStrategyType indicates that all existing pods will be
+// deleted and fully terminated before any new-revision pods are created.
+// This ensures that old and new revision Pods never run at the same time.
+// This is an alpha type and requires enabling StatefulSetRecreateStrategy feature gate.
+// Switching to the Recreate strategy is allowed when the feature gate is enabled,
+// and switching away from it to a different update strategy is also allowed.
+//
+// +featureGate=StatefulSetRecreateStrategy
+#RecreateStatefulSetStrategyType: #StatefulSetUpdateStrategyType & "Recreate"
 
 // RollingUpdateStatefulSetStrategy is used to communicate parameter for RollingUpdateStatefulSetStrategyType.
 #RollingUpdateStatefulSetStrategy: {
@@ -149,6 +163,7 @@ import (
 	// VolumeClaimTemplates when the StatefulSet is deleted. The default policy
 	// of `Retain` causes PVCs to not be affected by StatefulSet deletion. The
 	// `Delete` policy causes those PVCs to be deleted.
+	// +optional
 	whenDeleted?: #PersistentVolumeClaimRetentionPolicyType @go(WhenDeleted) @protobuf(1,bytes,opt,casttype=PersistentVolumeClaimRetentionPolicyType)
 
 	// WhenScaled specifies what happens to PVCs created from StatefulSet
@@ -156,6 +171,7 @@ import (
 	// policy of `Retain` causes PVCs to not be affected by a scaledown. The
 	// `Delete` policy causes the associated PVCs for any excess pods above
 	// the replica count to be deleted.
+	// +optional
 	whenScaled?: #PersistentVolumeClaimRetentionPolicyType @go(WhenScaled) @protobuf(2,bytes,opt,casttype=PersistentVolumeClaimRetentionPolicyType)
 }
 
@@ -187,7 +203,10 @@ import (
 	// selector is a label query over pods that should match the replica count.
 	// It must match the pod template's labels.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors
-	selector?: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes,opt)
+	// +required
+	// +k8s:alpha(since: "1.37")=+k8s:required
+	// +k8s:alpha(since: "1.37")=+k8s:immutable
+	selector: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes,opt)
 
 	// template is the object that describes the pod that will be created if
 	// insufficient replicas are detected. Each pod stamped out by the StatefulSet
@@ -196,6 +215,7 @@ import (
 	// <statefulsetname>-<podindex>. For example, a pod in a StatefulSet named
 	// "web" with index number "3" would be named "web-3".
 	// The only allowed template.spec.restartPolicy value is "Always".
+	// +required
 	template: v1.#PodTemplateSpec @go(Template) @protobuf(3,bytes,opt)
 
 	// volumeClaimTemplates is a list of claims that pods are allowed to reference.
@@ -206,6 +226,9 @@ import (
 	// any volumes in the template, with the same name.
 	// TODO: Define the behavior if a claim already exists with the same name.
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:immutable
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:eachVal=+k8s:opaqueType
 	// +listType=atomic
 	volumeClaimTemplates?: [...v1.#PersistentVolumeClaim] @go(VolumeClaimTemplates,[]v1.PersistentVolumeClaim) @protobuf(4,bytes,rep)
 
@@ -215,6 +238,8 @@ import (
 	// pattern: pod-specific-string.serviceName.default.svc.cluster.local
 	// where "pod-specific-string" is managed by the StatefulSet controller.
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:immutable
+	// +k8s:alpha(since: "1.37")=+k8s:optional
 	serviceName?: string @go(ServiceName) @protobuf(5,bytes,opt)
 
 	// podManagementPolicy controls how pods are created during initial scale up,
@@ -226,17 +251,21 @@ import (
 	// to match the desired scale without waiting, and on scale down will delete
 	// all pods at once.
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:immutable
+	// +k8s:alpha(since: "1.37")=+k8s:optional
 	podManagementPolicy?: #PodManagementPolicyType @go(PodManagementPolicy) @protobuf(6,bytes,opt,casttype=PodManagementPolicyType)
 
 	// updateStrategy indicates the StatefulSetUpdateStrategy that will be
 	// employed to update Pods in the StatefulSet when a revision is made to
 	// Template.
+	// +optional
 	updateStrategy?: #StatefulSetUpdateStrategy @go(UpdateStrategy) @protobuf(7,bytes,opt)
 
 	// revisionHistoryLimit is the maximum number of revisions that will
 	// be maintained in the StatefulSet's revision history. The revision history
 	// consists of all revisions not represented by a currently applied
 	// StatefulSetSpec version. The default value is 10.
+	// +optional
 	revisionHistoryLimit?: int32 @go(RevisionHistoryLimit,*int32) @protobuf(8,varint,opt)
 
 	// Minimum number of seconds for which a newly created pod should be ready
@@ -309,15 +338,24 @@ import (
 	availableReplicas?: int32 @go(AvailableReplicas) @protobuf(11,varint,opt)
 }
 
-#StatefulSetConditionType: string
+#StatefulSetConditionType: string // #enumStatefulSetConditionType
+
+#enumStatefulSetConditionType:
+	#StatefulSetProgressing
+
+// StatefulSetProgressing means the StatefulSet is progressing through an update.
+// This condition is an alpha type and requires enabling StatefulSetRecreateStrategy feature gate.
+#StatefulSetProgressing: #StatefulSetConditionType & "Progressing"
 
 // StatefulSetCondition describes the state of a statefulset at a certain point.
 #StatefulSetCondition: {
 	// Type of statefulset condition.
-	type: #StatefulSetConditionType @go(Type) @protobuf(1,bytes,opt,casttype=StatefulSetConditionType)
+	// +optional
+	type?: #StatefulSetConditionType @go(Type) @protobuf(1,bytes,opt,casttype=StatefulSetConditionType)
 
 	// Status of the condition, one of True, False, Unknown.
-	status: v1.#ConditionStatus @go(Status) @protobuf(2,bytes,opt,casttype=k8s.io/api/core/v1.ConditionStatus)
+	// +optional
+	status?: v1.#ConditionStatus @go(Status) @protobuf(2,bytes,opt,casttype=k8s.io/api/core/v1.ConditionStatus)
 
 	// Last time the condition transitioned from one status to another.
 	// +optional
@@ -346,6 +384,8 @@ import (
 }
 
 // Deployment enables declarative updates for Pods and ReplicaSets.
+// +k8s:supportsSubresource="/scale"
+// +k8s:supportsSubresource="/status"
 #Deployment: {
 	metav1.#TypeMeta
 
@@ -355,8 +395,8 @@ import (
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// Specification of the desired behavior of the Deployment.
-	// +optional
-	spec?: #DeploymentSpec @go(Spec) @protobuf(2,bytes,opt)
+	// +required
+	spec: #DeploymentSpec @go(Spec) @protobuf(2,bytes,opt)
 
 	// Most recently observed status of the Deployment.
 	// +optional
@@ -373,10 +413,12 @@ import (
 	// Label selector for pods. Existing ReplicaSets whose pods are
 	// selected by this will be the ones affected by this deployment.
 	// It must match the pod template's labels.
-	selector?: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes,opt)
+	// +required
+	selector: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes,opt)
 
 	// Template describes the pods that will be created.
 	// The only allowed template.spec.restartPolicy value is "Always".
+	// +required
 	template: v1.#PodTemplateSpec @go(Template) @protobuf(3,bytes,opt)
 
 	// The deployment strategy to use to replace existing pods with new ones.
@@ -405,6 +447,7 @@ import (
 	// process failed deployments and a condition with a ProgressDeadlineExceeded
 	// reason will be surfaced in the deployment status. Note that progress will
 	// not be estimated during the time a deployment is paused. Defaults to 600s.
+	// +optional
 	progressDeadlineSeconds?: int32 @go(ProgressDeadlineSeconds,*int32) @protobuf(9,varint,opt)
 }
 
@@ -544,21 +587,27 @@ import (
 // DeploymentCondition describes the state of a deployment at a certain point.
 #DeploymentCondition: {
 	// Type of deployment condition.
-	type: #DeploymentConditionType @go(Type) @protobuf(1,bytes,opt,casttype=DeploymentConditionType)
+	// +optional
+	type?: #DeploymentConditionType @go(Type) @protobuf(1,bytes,opt,casttype=DeploymentConditionType)
 
 	// Status of the condition, one of True, False, Unknown.
-	status: v1.#ConditionStatus @go(Status) @protobuf(2,bytes,opt,casttype=k8s.io/api/core/v1.ConditionStatus)
+	// +optional
+	status?: v1.#ConditionStatus @go(Status) @protobuf(2,bytes,opt,casttype=k8s.io/api/core/v1.ConditionStatus)
 
 	// The last time this condition was updated.
+	// +optional
 	lastUpdateTime?: metav1.#Time @go(LastUpdateTime) @protobuf(6,bytes,opt)
 
 	// Last time the condition transitioned from one status to another.
+	// +optional
 	lastTransitionTime?: metav1.#Time @go(LastTransitionTime) @protobuf(7,bytes,opt)
 
 	// The reason for the condition's last transition.
+	// +optional
 	reason?: string @go(Reason) @protobuf(4,bytes,opt)
 
 	// A human readable message indicating details about the transition.
+	// +optional
 	message?: string @go(Message) @protobuf(5,bytes,opt)
 }
 
@@ -649,7 +698,8 @@ import (
 	// Must match in order to be controlled.
 	// It must match the pod template's labels.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors
-	selector?: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(1,bytes,opt)
+	// +required
+	selector: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(1,bytes,opt)
 
 	// An object that describes the pod that will be created.
 	// The DaemonSet will create exactly one copy of this pod on every node
@@ -657,6 +707,7 @@ import (
 	// selector is specified).
 	// The only allowed template.spec.restartPolicy value is "Always".
 	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller#pod-template
+	// +required
 	template: v1.#PodTemplateSpec @go(Template) @protobuf(2,bytes,opt)
 
 	// An update strategy to replace existing DaemonSet pods with new pods.
@@ -738,10 +789,12 @@ import (
 // DaemonSetCondition describes the state of a DaemonSet at a certain point.
 #DaemonSetCondition: {
 	// Type of DaemonSet condition.
-	type: #DaemonSetConditionType @go(Type) @protobuf(1,bytes,opt,casttype=DaemonSetConditionType)
+	// +optional
+	type?: #DaemonSetConditionType @go(Type) @protobuf(1,bytes,opt,casttype=DaemonSetConditionType)
 
 	// Status of the condition, one of True, False, Unknown.
-	status: v1.#ConditionStatus @go(Status) @protobuf(2,bytes,opt,casttype=k8s.io/api/core/v1.ConditionStatus)
+	// +optional
+	status?: v1.#ConditionStatus @go(Status) @protobuf(2,bytes,opt,casttype=k8s.io/api/core/v1.ConditionStatus)
 
 	// Last time the condition transitioned from one status to another.
 	// +optional
@@ -757,6 +810,7 @@ import (
 }
 
 // DaemonSet represents the configuration of a daemon set.
+// +k8s:supportsSubresource="/status"
 #DaemonSet: {
 	metav1.#TypeMeta
 
@@ -767,8 +821,8 @@ import (
 
 	// The desired behavior of this daemon set.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	// +optional
-	spec?: #DaemonSetSpec @go(Spec) @protobuf(2,bytes,opt)
+	// +required
+	spec: #DaemonSetSpec @go(Spec) @protobuf(2,bytes,opt)
 
 	// The current status of this daemon set. This data may be
 	// out of date by some window of time.
@@ -798,6 +852,8 @@ import (
 }
 
 // ReplicaSet ensures that a specified number of pod replicas are running at any given time.
+// +k8s:supportsSubresource="/scale"
+// +k8s:supportsSubresource="/status"
 #ReplicaSet: {
 	metav1.#TypeMeta
 
@@ -810,8 +866,8 @@ import (
 
 	// Spec defines the specification of the desired behavior of the ReplicaSet.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	// +optional
-	spec?: #ReplicaSetSpec @go(Spec) @protobuf(2,bytes,opt)
+	// +required
+	spec: #ReplicaSetSpec @go(Spec) @protobuf(2,bytes,opt)
 
 	// Status is the most recently observed status of the ReplicaSet.
 	// This data may be out of date by some window of time.
@@ -855,7 +911,8 @@ import (
 	// Label keys and values that must match in order to be controlled by this replica set.
 	// It must match the pod template's labels.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors
-	selector?: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes,opt)
+	// +required
+	selector: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes,opt)
 
 	// Template is the object that describes the pod that will be created if
 	// insufficient replicas are detected.
@@ -915,10 +972,12 @@ import (
 // ReplicaSetCondition describes the state of a replica set at a certain point.
 #ReplicaSetCondition: {
 	// Type of replica set condition.
-	type: #ReplicaSetConditionType @go(Type) @protobuf(1,bytes,opt,casttype=ReplicaSetConditionType)
+	// +optional
+	type?: #ReplicaSetConditionType @go(Type) @protobuf(1,bytes,opt,casttype=ReplicaSetConditionType)
 
 	// Status of the condition, one of True, False, Unknown.
-	status: v1.#ConditionStatus @go(Status) @protobuf(2,bytes,opt,casttype=k8s.io/api/core/v1.ConditionStatus)
+	// +optional
+	status?: v1.#ConditionStatus @go(Status) @protobuf(2,bytes,opt,casttype=k8s.io/api/core/v1.ConditionStatus)
 
 	// The last time the condition transitioned from one status to another.
 	// +optional
@@ -951,10 +1010,12 @@ import (
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// Data is the serialized representation of the state.
-	data?: runtime.#RawExtension @go(Data) @protobuf(2,bytes,opt)
+	// +required
+	data: runtime.#RawExtension @go(Data) @protobuf(2,bytes,opt)
 
 	// Revision indicates the revision of the state represented by Data.
-	revision: int64 @go(Revision) @protobuf(3,varint,opt)
+	// +optional
+	revision?: int64 @go(Revision) @protobuf(3,varint,opt)
 }
 
 // ControllerRevisionList is a resource containing a list of ControllerRevision objects.

@@ -8,7 +8,7 @@ package runtime
 // like this:
 //
 //	type MyAwesomeAPIObject struct {
-//	     runtime.TypeMeta    `json:",inline"`
+//	     runtime.TypeMeta    `json:""`
 //	     ... // other fields
 //	}
 //
@@ -43,7 +43,7 @@ package runtime
 // // Internal package:
 //
 //	type MyAPIObject struct {
-//		runtime.TypeMeta `json:",inline"`
+//		runtime.TypeMeta `json:""`
 //		MyPlugin runtime.Object `json:"myPlugin"`
 //	}
 //
@@ -54,7 +54,7 @@ package runtime
 // // External package:
 //
 //	type MyAPIObject struct {
-//		runtime.TypeMeta `json:",inline"`
+//		runtime.TypeMeta `json:""`
 //		MyPlugin runtime.RawExtension `json:"myPlugin"`
 //	}
 //

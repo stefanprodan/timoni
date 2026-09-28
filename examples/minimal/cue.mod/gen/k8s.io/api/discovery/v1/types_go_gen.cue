@@ -33,15 +33,15 @@ import (
 	// slices of addressType "IPv4" and "IPv6". No semantics are defined for
 	// the "FQDN" type.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
-	// +k8s:alpha(since: "1.36")=+k8s:immutable
+	// +k8s:beta(since: "1.37")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:immutable
 	addressType: #AddressType @go(AddressType) @protobuf(4,bytes,rep)
 
 	// endpoints is a list of unique endpoints in this slice. Each slice may
 	// include a maximum of 1000 endpoints.
 	// +optional
 	// +listType=atomic
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	endpoints?: [...#Endpoint] @go(Endpoints,[]Endpoint) @protobuf(2,bytes,rep)
 
 	// ports specifies the list of network ports exposed by each endpoint in
@@ -57,7 +57,7 @@ import (
 
 // AddressType represents the type of address referred to by an endpoint.
 // +enum
-// +k8s:alpha(since: "1.36")=+k8s:enum
+// +k8s:beta(since: "1.37")=+k8s:enum
 #AddressType: string // #enumAddressType
 
 #enumAddressType:
@@ -84,8 +84,8 @@ import (
 	// additional addresses beyond the first, and kube-proxy does not look at them.
 	// +listType=set
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
-	// +k8s:alpha(since: "1.36")=+k8s:maxItems=100
+	// +k8s:beta(since: "1.37")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:maxItems=100
 	addresses: [...string] @go(Addresses,[]string) @protobuf(1,bytes,rep)
 
 	// conditions contains information about the current status of the endpoint.

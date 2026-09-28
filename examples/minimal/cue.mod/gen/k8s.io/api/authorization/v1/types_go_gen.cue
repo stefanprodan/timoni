@@ -7,12 +7,14 @@ package v1
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // SubjectAccessReview checks whether or not a user or group can perform an action.
+// +k8s:supportsSubresource="/status"
 #SubjectAccessReview: {
 	metav1.#TypeMeta
 
 	// metadata is the standard list metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// spec holds information about the request being evaluated
@@ -26,12 +28,14 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // SelfSubjectAccessReview checks whether or the current user can perform an action.  Not filling in a
 // spec.namespace means "in all namespaces".  Self is a special case, because users should always be able
 // to check whether they can perform an action
+// +k8s:supportsSubresource="/status"
 #SelfSubjectAccessReview: {
 	metav1.#TypeMeta
 
 	// metadata is the standard list metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// spec holds information about the request being evaluated.  user and groups must be empty
@@ -45,12 +49,14 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // LocalSubjectAccessReview checks whether or not a user or group can perform an action in a given namespace.
 // Having a namespace scoped resource makes it much easier to grant namespace scoped policy that includes permissions
 // checking.
+// +k8s:supportsSubresource="/status"
 #LocalSubjectAccessReview: {
 	metav1.#TypeMeta
 
 	// metadata is the standard list metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// spec holds information about the request being evaluated.  spec.namespace must be equal to the namespace
@@ -174,10 +180,14 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 #SubjectAccessReviewSpec: {
 	// resourceAttributes describes information for a resource access request
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:unionMember
 	resourceAttributes?: #ResourceAttributes @go(ResourceAttributes,*ResourceAttributes) @protobuf(1,bytes,opt)
 
 	// nonResourceAttributes describes information for a non-resource access request
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:unionMember
 	nonResourceAttributes?: #NonResourceAttributes @go(NonResourceAttributes,*NonResourceAttributes) @protobuf(2,bytes,opt)
 
 	// user is the user you're testing for.
@@ -210,10 +220,14 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 #SelfSubjectAccessReviewSpec: {
 	// resourceAttributes describes information for a resource access request
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:unionMember
 	resourceAttributes?: #ResourceAttributes @go(ResourceAttributes,*ResourceAttributes) @protobuf(1,bytes,opt)
 
 	// nonResourceAttributes describes information for a non-resource access request
 	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	// +k8s:alpha(since: "1.37")=+k8s:unionMember
 	nonResourceAttributes?: #NonResourceAttributes @go(NonResourceAttributes,*NonResourceAttributes) @protobuf(2,bytes,opt)
 }
 
@@ -246,12 +260,14 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // or to quickly let an end user reason about their permissions. It should NOT Be used by external systems to
 // drive authorization decisions as this raises confused deputy, cache lifetime/revocation, and correctness concerns.
 // SubjectAccessReview, and LocalAccessReview are the correct way to defer authorization decisions to the API server.
+// +k8s:supportsSubresource="/status"
 #SelfSubjectRulesReview: {
 	metav1.#TypeMeta
 
 	// metadata is the standard list metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// spec holds information about the request being evaluated.

@@ -7,6 +7,7 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // CertificateSigningRequest objects provide a mechanism to obtain x509 certificates
@@ -156,12 +157,12 @@ import (
 	// +listType=map
 	// +listMapKey=type
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:listType=map
-	// +k8s:alpha(since: "1.36")=+k8s:listMapKey=type
-	// +k8s:alpha(since: "1.36")=+k8s:customUnique
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:item(type: "Approved")=+k8s:zeroOrOneOfMember
-	// +k8s:alpha(since: "1.36")=+k8s:item(type: "Denied")=+k8s:zeroOrOneOfMember
+	// +k8s:beta(since: "1.37")=+k8s:listType=map
+	// +k8s:beta(since: "1.37")=+k8s:listMapKey=type
+	// +k8s:beta(since: "1.37")=+k8s:customUnique
+	// +k8s:beta(since: "1.37")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:item(type: "Approved")=+k8s:zeroOrOneOfMember
+	// +k8s:beta(since: "1.37")=+k8s:item(type: "Denied")=+k8s:zeroOrOneOfMember
 	conditions?: [...#CertificateSigningRequestCondition] @go(Conditions,[]CertificateSigningRequestCondition) @protobuf(1,bytes,rep)
 
 	// certificate is populated with an issued certificate by the signer after an Approved condition is present.
@@ -322,3 +323,310 @@ import (
 #UsageOCSPSigning:       #KeyUsage & "ocsp signing"
 #UsageMicrosoftSGC:      #KeyUsage & "microsoft sgc"
 #UsageNetscapeSGC:       #KeyUsage & "netscape sgc"
+
+// ClusterTrustBundle is a cluster-scoped container for X.509 trust anchors
+// (root certificates).
+//
+// ClusterTrustBundle objects are considered to be readable by any authenticated
+// user in the cluster, because they can be mounted by pods using the
+// `clusterTrustBundle` projection.  All service accounts have read access to
+// ClusterTrustBundles by default.  Users who only have namespace-level access
+// to a cluster can read ClusterTrustBundles by impersonating a serviceaccount
+// that they have access to.
+//
+// It can be optionally associated with a particular signer, in which case it
+// contains one valid set of trust anchors for that signer. Signers may have
+// multiple associated ClusterTrustBundles; each is an independent set of trust
+// anchors for that signer. Admission control is used to enforce that only users
+// with permissions on the signer can create or modify the corresponding bundle.
+#ClusterTrustBundle: {
+	metav1.#TypeMeta
+
+	// metadata contains the object metadata.
+	// +optional
+	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
+
+	// spec contains the signer (if any) and trust anchors.
+	spec: #ClusterTrustBundleSpec @go(Spec) @protobuf(2,bytes,opt)
+}
+
+// ClusterTrustBundleSpec contains the signer and trust anchors.
+#ClusterTrustBundleSpec: {
+	// signerName indicates the associated signer, if any.
+	//
+	// In order to create or update a ClusterTrustBundle that sets signerName,
+	// you must have the following cluster-scoped permission:
+	// group=certificates.k8s.io resource=signers resourceName=<the signer name>
+	// verb=attest.
+	//
+	// If signerName is not empty, then the ClusterTrustBundle object must be
+	// named with the signer name as a prefix (translating slashes to colons).
+	// For example, for the signer name `example.com/foo`, valid
+	// ClusterTrustBundle object names include `example.com:foo:abc` and
+	// `example.com:foo:v1`.
+	//
+	// If signerName is empty, then the ClusterTrustBundle object's name must
+	// not have such a prefix.
+	//
+	// List/watch requests for ClusterTrustBundles can filter on this field
+	// using a `spec.signerName=NAME` field selector.
+	//
+	// +optional
+	// +k8s:alpha(since:"1.37")=+k8s:optional
+	// +k8s:alpha(since:"1.37")=+k8s:immutable
+	signerName?: string @go(SignerName) @protobuf(1,bytes,opt)
+
+	// trustBundle contains the individual X.509 trust anchors for this
+	// bundle, as PEM bundle of PEM-wrapped, DER-formatted X.509 certificates.
+	//
+	// The data must consist only of PEM certificate blocks that parse as valid
+	// X.509 certificates.  Each certificate must include a basic constraints
+	// extension with the CA bit set.  The API server will reject objects that
+	// contain duplicate certificates, or that use PEM block headers.
+	//
+	// Users of ClusterTrustBundles, including Kubelet, are free to reorder and
+	// deduplicate certificate blocks in this file according to their own logic,
+	// as well as to drop PEM block headers and inter-block data.
+	trustBundle: string @go(TrustBundle) @protobuf(2,bytes,opt)
+}
+
+// ClusterTrustBundleList is a collection of ClusterTrustBundle objects
+#ClusterTrustBundleList: {
+	metav1.#TypeMeta
+
+	// metadata contains the list metadata.
+	//
+	// +optional
+	metadata?: metav1.#ListMeta @go(ListMeta) @protobuf(1,bytes,opt)
+
+	// items is a collection of ClusterTrustBundle objects
+	items: [...#ClusterTrustBundle] @go(Items,[]ClusterTrustBundle) @protobuf(2,bytes,rep)
+}
+
+// PodCertificateRequest encodes a pod requesting a certificate from a given
+// signer.
+//
+// Kubelets use this API to implement podCertificate projected volumes
+// +k8s:supportsSubresource="/status"
+#PodCertificateRequest: {
+	metav1.#TypeMeta
+
+	// metadata contains the object metadata.
+	//
+	// +optional
+	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
+
+	// spec contains the details about the certificate being requested.
+	// +required
+	spec: #PodCertificateRequestSpec @go(Spec) @protobuf(2,bytes,opt)
+
+	// status contains the issued certificate, and a standard set of conditions.
+	// +optional
+	status?: #PodCertificateRequestStatus @go(Status) @protobuf(3,bytes,opt)
+}
+
+// PodCertificateRequestSpec describes the certificate request.  All fields are
+// immutable after creation.
+#PodCertificateRequestSpec: {
+	// signerName indicates the requested signer.
+	//
+	// All signer names beginning with `kubernetes.io` are reserved for use by
+	// the Kubernetes project.  There is currently one well-known signer
+	// documented by the Kubernetes project,
+	// `kubernetes.io/kube-apiserver-client-pod`, which will issue client
+	// certificates understood by kube-apiserver.  It is currently
+	// unimplemented.
+	//
+	// +required
+	signerName: string @go(SignerName) @protobuf(1,bytes,opt)
+
+	// podName is the name of the pod into which the certificate will be mounted.
+	//
+	// +required
+	podName: string @go(PodName) @protobuf(2,bytes,opt)
+
+	// podUID is the UID of the pod into which the certificate will be mounted.
+	//
+	// +required
+	podUID: types.#UID @go(PodUID) @protobuf(3,bytes,opt)
+
+	// serviceAccountName is the name of the service account the pod is running as.
+	//
+	// +required
+	serviceAccountName: string @go(ServiceAccountName) @protobuf(4,bytes,opt)
+
+	// serviceAccountUID is the UID of the service account the pod is running as.
+	//
+	// +required
+	serviceAccountUID: types.#UID @go(ServiceAccountUID) @protobuf(5,bytes,opt)
+
+	// nodeName is the name of the node the pod is assigned to.
+	//
+	// +required
+	nodeName: types.#NodeName @go(NodeName) @protobuf(6,bytes,opt)
+
+	// nodeUID is the UID of the node the pod is assigned to.
+	//
+	// +required
+	nodeUID: types.#UID @go(NodeUID) @protobuf(7,bytes,opt)
+
+	// maxExpirationSeconds is the maximum lifetime permitted for the
+	// certificate.
+	//
+	// If omitted, kube-apiserver will set it to 86400(24 hours). kube-apiserver
+	// will reject values shorter than 3600 (1 hour).  The maximum allowable
+	// value is 7862400 (91 days).
+	//
+	// The signer implementation is then free to issue a certificate with any
+	// lifetime *shorter* than MaxExpirationSeconds, but no shorter than 3600
+	// seconds (1 hour).  This constraint is enforced by kube-apiserver.
+	// `kubernetes.io` signers will never issue certificates with a lifetime
+	// longer than 24 hours.
+	//
+	// +optional
+	// +default=86400
+	maxExpirationSeconds?: int32 @go(MaxExpirationSeconds,*int32) @protobuf(8,varint,opt)
+
+	// A PKCS#10 certificate signing request (DER-serialized) generated by
+	// Kubelet using the subject private key.
+	//
+	// Most signer implementations will ignore the contents of the CSR except to
+	// extract the subject public key. The API server automatically verifies the
+	// CSR signature during admission, so the signer does not need to repeat the
+	// verification.  CSRs generated by kubelet are completely empty.
+	//
+	// The subject public key must be one of RSA3072, RSA4096, ECDSAP256,
+	// ECDSAP384, ECDSAP521, or ED25519. Note that this list may be expanded in
+	// the future.
+	//
+	// Signer implementations do not need to support all key types supported by
+	// kube-apiserver and kubelet.  If a signer does not support the key type
+	// used for a given PodCertificateRequest, it must deny the request by
+	// setting a status.conditions entry with a type of "Denied" and a reason of
+	// "UnsupportedKeyType". It may also suggest a key type that it does support
+	// in the message field.
+	//
+	// +required
+	stubPKCS10Request: bytes @go(StubPKCS10Request,[]byte) @protobuf(12,bytes,opt)
+
+	// unverifiedUserAnnotations allow pod authors to pass additional information to
+	// the signer implementation.  Kubernetes does not restrict or validate this
+	// metadata in any way.
+	//
+	// Entries are subject to the same validation as object metadata annotations,
+	// with the addition that all keys must be domain-prefixed. No restrictions
+	// are placed on values, except an overall size limitation on the entire field.
+	//
+	// Signers should document the keys and values they support.  Signers should
+	// deny requests that contain keys they do not recognize.
+	//
+	// +optional
+	unverifiedUserAnnotations?: {[string]: string} @go(UnverifiedUserAnnotations,map[string]string) @protobuf(11,bytes,opt)
+}
+
+// PodCertificateRequestStatus describes the status of the request, and holds
+// the certificate data if the request is issued.
+#PodCertificateRequestStatus: {
+	// conditions applied to the request.
+	//
+	// The types "Issued", "Denied", and "Failed" have special handling.  At
+	// most one of these conditions may be present, and they must have status
+	// "True".
+	//
+	// If the request is denied with `Reason=UnsupportedKeyType`, the signer may
+	// suggest a key type that will work in the message field.
+	//
+	// +patchMergeKey=type
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	// +k8s:alpha(since: "1.37")=+k8s:listType=map
+	// +k8s:alpha(since: "1.37")=+k8s:listMapKey=type
+	// +k8s:alpha(since: "1.37")=+k8s:optional
+	conditions?: [...metav1.#Condition] @go(Conditions,[]metav1.Condition) @protobuf(1,bytes,rep)
+
+	// certificateChain is populated with an issued certificate by the signer.
+	// This field is set via the /status subresource. Once populated, this field
+	// is immutable.
+	//
+	// If the certificate signing request is denied, a condition of type
+	// "Denied" is added and this field remains empty. If the signer cannot
+	// issue the certificate, a condition of type "Failed" is added and this
+	// field remains empty.
+	//
+	// Validation requirements:
+	//  1. certificateChain must consist of one or more PEM-formatted certificates.
+	//  2. Each entry must be a valid PEM-wrapped, DER-encoded ASN.1 Certificate as
+	//     described in section 4 of RFC5280.
+	//
+	// If more than one block is present, and the definition of the requested
+	// spec.signerName does not indicate otherwise, the first block is the
+	// issued certificate, and subsequent blocks should be treated as
+	// intermediate certificates and presented in TLS handshakes.  When
+	// projecting the chain into a pod volume, kubelet will drop any data
+	// in-between the PEM blocks, as well as any PEM block headers.
+	//
+	// +optional
+	certificateChain?: string @go(CertificateChain) @protobuf(2,bytes,opt)
+
+	// notBefore is the time at which the certificate becomes valid.  The value
+	// must be the same as the notBefore value in the leaf certificate in
+	// certificateChain.  This field is set via the /status subresource.  Once
+	// populated, it is immutable. The signer must set this field at the same
+	// time it sets certificateChain.
+	//
+	// +optional
+	notBefore?: metav1.#Time @go(NotBefore,*metav1.Time) @protobuf(4,bytes,opt)
+
+	// beginRefreshAt is the time at which the kubelet should begin trying to
+	// refresh the certificate.  This field is set via the /status subresource,
+	// and must be set at the same time as certificateChain.  Once populated,
+	// this field is immutable.
+	//
+	// This field is only a hint.  Kubelet may start refreshing before or after
+	// this time if necessary.
+	//
+	// +optional
+	beginRefreshAt?: metav1.#Time @go(BeginRefreshAt,*metav1.Time) @protobuf(5,bytes,opt)
+
+	// notAfter is the time at which the certificate expires.  The value must be
+	// the same as the notAfter value in the leaf certificate in
+	// certificateChain.  This field is set via the /status subresource.  Once
+	// populated, it is immutable.  The signer must set this field at the same
+	// time it sets certificateChain.
+	//
+	// +optional
+	notAfter?: metav1.#Time @go(NotAfter,*metav1.Time) @protobuf(6,bytes,opt)
+}
+
+// Denied indicates the request was denied by the signer.
+#PodCertificateRequestConditionTypeDenied: "Denied"
+
+// Failed indicates the signer failed to issue the certificate.
+#PodCertificateRequestConditionTypeFailed: "Failed"
+
+// Issued indicates the certificate has been issued.
+#PodCertificateRequestConditionTypeIssued: "Issued"
+
+// UnsupportedKeyType should be set on "Denied" conditions when the signer
+// doesn't support the key type of publicKey.
+#PodCertificateRequestConditionUnsupportedKeyType: "UnsupportedKeyType"
+
+// InvalidUnverifiedUserAnnotations should be set on "Denied" conditions when the signer
+// does not recognize one of the keys passed in userConfig, or if the signer
+// otherwise considers the userConfig of the request to be invalid.
+#PodCertificateRequestConditionInvalidUserConfig: "InvalidUnverifiedUserAnnotations"
+
+// PodCertificateRequestList is a collection of PodCertificateRequest objects
+#PodCertificateRequestList: {
+	metav1.#TypeMeta
+
+	// metadata contains the list metadata.
+	//
+	// +optional
+	metadata?: metav1.#ListMeta @go(ListMeta) @protobuf(1,bytes,opt)
+
+	// items is a collection of PodCertificateRequest objects
+	items: [...#PodCertificateRequest] @go(Items,[]PodCertificateRequest) @protobuf(2,bytes,rep)
+}

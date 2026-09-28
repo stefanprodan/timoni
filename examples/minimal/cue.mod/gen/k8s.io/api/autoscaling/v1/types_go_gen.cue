@@ -14,9 +14,11 @@ import (
 // +structType=atomic
 #CrossVersionObjectReference: {
 	// kind is the kind of the referent; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// +k8s:alpha(since: "1.37")=+k8s:required
 	kind: string @go(Kind) @protobuf(1,bytes,opt)
 
 	// name is the name of the referent; More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+	// +k8s:alpha(since: "1.37")=+k8s:required
 	name: string @go(Name) @protobuf(2,bytes,opt)
 
 	// apiVersion is the API version of the referent
@@ -26,7 +28,7 @@ import (
 
 // specification of a horizontal pod autoscaler.
 #HorizontalPodAutoscalerSpec: {
-	// reference to scaled resource; horizontal pod autoscaler will learn the current resource consumption
+	// scaleTargetRef is the reference to scaled resource; horizontal pod autoscaler will learn the current resource consumption
 	// and will set the desired number of pods by using its Scale subresource.
 	scaleTargetRef: #CrossVersionObjectReference @go(ScaleTargetRef) @protobuf(1,bytes,opt)
 
@@ -36,15 +38,15 @@ import (
 	// metric is configured.  Scaling is active as long as at least one metric value is
 	// available.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:ifEnabled(HPAScaleToZero)=+k8s:minimum=0
-	// +k8s:alpha(since: "1.36")=+k8s:ifDisabled(HPAScaleToZero)=+k8s:minimum=1
+	// +k8s:beta(since: "1.37")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:ifEnabled(HPAScaleToZero)=+k8s:minimum=0
+	// +k8s:beta(since: "1.37")=+k8s:ifDisabled(HPAScaleToZero)=+k8s:minimum=1
 	minReplicas?: int32 @go(MinReplicas,*int32) @protobuf(2,varint,opt)
 
 	// maxReplicas is the upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
-	// +k8s:alpha(since: "1.36")=+k8s:minimum=1
+	// +k8s:beta(since: "1.37")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:minimum=1
 	maxReplicas: int32 @go(MaxReplicas) @protobuf(3,varint,opt)
 
 	// targetCPUUtilizationPercentage is the target average CPU utilization (represented as a percentage of requested CPU) over all the pods;
@@ -77,10 +79,11 @@ import (
 }
 
 // configuration of a horizontal pod autoscaler.
+// +k8s:supportsSubresource="/status"
 #HorizontalPodAutoscaler: {
 	metav1.#TypeMeta
 
-	// Standard object metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// metadata is the standard object metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
@@ -109,8 +112,9 @@ import (
 #Scale: {
 	metav1.#TypeMeta
 
-	// Standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
+	// metadata is the standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
 	// +optional
+	// +k8s:opaqueType
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// spec defines the behavior of the scale. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status.
@@ -126,9 +130,9 @@ import (
 #ScaleSpec: {
 	// replicas is the desired number of instances for the scaled object.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	// +default=0
-	// +k8s:alpha(since: "1.36")=+k8s:minimum=0
+	// +k8s:beta(since: "1.37")=+k8s:minimum=0
 	replicas?: int32 @go(Replicas) @protobuf(1,varint,opt)
 }
 
@@ -435,6 +439,12 @@ import (
 	// the transition
 	// +optional
 	message?: string @go(Message) @protobuf(5,bytes,opt)
+
+	// observedGeneration represents the .metadata.generation that the condition was set based upon.
+	// For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+	// with respect to the current state of the instance.
+	// +optional
+	observedGeneration?: int64 @go(ObservedGeneration,*int64) @protobuf(6,varint,opt)
 }
 
 // ObjectMetricStatus indicates the current value of a metric describing a

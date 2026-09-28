@@ -14,7 +14,7 @@ import (
 #NetworkPolicy: {
 	metav1.#TypeMeta
 
-	// Standard object's metadata.
+	// metadata is the standard object metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
@@ -59,7 +59,7 @@ import (
 	// solely to ensure that the pods it selects are isolated by default)
 	// +optional
 	// +listType=atomic
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	ingress?: [...#NetworkPolicyIngressRule] @go(Ingress,[]NetworkPolicyIngressRule) @protobuf(2,bytes,rep)
 
 	// egress is a list of egress rules to be applied to the selected pods. Outgoing traffic
@@ -71,7 +71,7 @@ import (
 	// This field is beta-level in 1.8
 	// +optional
 	// +listType=atomic
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	egress?: [...#NetworkPolicyEgressRule] @go(Egress,[]NetworkPolicyEgressRule) @protobuf(3,bytes,rep)
 
 	// policyTypes is a list of rule types that the NetworkPolicy relates to.
@@ -108,7 +108,7 @@ import (
 	// allows traffic only if the traffic matches at least one item in the from list.
 	// +optional
 	// +listType=atomic
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	from?: [...#NetworkPolicyPeer] @go(From,[]NetworkPolicyPeer) @protobuf(2,bytes,rep)
 }
 
@@ -132,7 +132,7 @@ import (
 	// allows traffic only if the traffic matches at least one item in the to list.
 	// +optional
 	// +listType=atomic
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	to?: [...#NetworkPolicyPeer] @go(To,[]NetworkPolicyPeer) @protobuf(2,bytes,rep)
 }
 
@@ -165,7 +165,7 @@ import (
 	// cidr is a string representing the IPBlock
 	// Valid examples are "192.168.1.0/24" or "2001:db8::/64"
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:required
 	cidr: string @go(CIDR) @protobuf(1,bytes)
 
 	// except is a slice of CIDRs that should not be included within an IPBlock
@@ -200,7 +200,7 @@ import (
 	// ipBlock defines policy on a particular IPBlock. If this field is set then
 	// neither of the other fields can be.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	ipBlock?: #IPBlock @go(IPBlock,*IPBlock) @protobuf(3,bytes,rep)
 }
 
@@ -221,10 +221,11 @@ import (
 // endpoints defined by a backend. An Ingress can be configured to give services
 // externally-reachable urls, load balance traffic, terminate SSL, offer name
 // based virtual hosting etc.
+// +k8s:supportsSubresource="/status"
 #Ingress: {
 	metav1.#TypeMeta
 
-	// Standard object's metadata.
+	// metadata is the standard object metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
@@ -402,6 +403,7 @@ import (
 // mixing different types of rules in a single Ingress is disallowed, so exactly
 // one of the following must be set.
 #IngressRuleValue: {
+	// http is a HTTP IngressRuleValue, which contains a list of http selectors
 	// +optional
 	http?: #HTTPIngressRuleValue @go(HTTP,*HTTPIngressRuleValue) @protobuf(1,bytes,opt)
 }
@@ -530,7 +532,7 @@ import (
 #IngressClass: {
 	metav1.#TypeMeta
 
-	// Standard object's metadata.
+	// metadata is the standard object metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
@@ -555,7 +557,7 @@ import (
 	// configuration for the controller. This is optional if the controller does
 	// not require extra parameters.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:beta(since: "1.37")=+k8s:optional
 	parameters?: #IngressClassParametersReference @go(Parameters,*IngressClassParametersReference) @protobuf(2,bytes,opt)
 }
 
@@ -578,12 +580,12 @@ import (
 
 	// kind is the type of resource being referenced.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:required
 	kind: string @go(Kind) @protobuf(2,bytes,opt)
 
 	// name is the name of resource being referenced.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:required
 	name: string @go(Name) @protobuf(3,bytes,opt)
 
 	// scope represents if this refers to a cluster or namespace scoped resource.
@@ -620,7 +622,7 @@ import (
 #IPAddress: {
 	metav1.#TypeMeta
 
-	// Standard object's metadata.
+	// metadata is the standard object metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
@@ -633,32 +635,32 @@ import (
 
 // IPAddressSpec describe the attributes in an IP Address.
 #IPAddressSpec: {
-	// ParentRef references the resource that an IPAddress is attached to.
+	// parentRef references the resource that an IPAddress is attached to.
 	// An IPAddress must reference a parent object.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
-	// +k8s:alpha(since: "1.36")=+k8s:immutable
+	// +k8s:beta(since: "1.37")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:immutable
 	parentRef: #ParentReference @go(ParentRef,*ParentReference) @protobuf(1,bytes,opt)
 }
 
 // ParentReference describes a reference to a parent object.
 #ParentReference: {
-	// Group is the group of the object being referenced.
+	// group is the group of the object being referenced.
 	// +optional
 	group?: string @go(Group) @protobuf(1,bytes,opt)
 
-	// Resource is the resource of the object being referenced.
+	// resource is the resource of the object being referenced.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:required
 	resource: string @go(Resource) @protobuf(2,bytes,opt)
 
-	// Namespace is the namespace of the object being referenced.
+	// namespace is the namespace of the object being referenced.
 	// +optional
 	namespace?: string @go(Namespace) @protobuf(3,bytes,opt)
 
-	// Name is the name of the object being referenced.
+	// name is the name of the object being referenced.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:beta(since: "1.37")=+k8s:required
 	name: string @go(Name) @protobuf(4,bytes,opt)
 }
 
@@ -677,10 +679,11 @@ import (
 
 // ServiceCIDR defines a range of IP addresses using CIDR format (e.g. 192.168.0.0/24 or 2001:db2::/64).
 // This range is used to allocate ClusterIPs to Service objects.
+// +k8s:supportsSubresource="/status"
 #ServiceCIDR: {
 	metav1.#TypeMeta
 
-	// Standard object's metadata.
+	// metadata is the standard object metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
@@ -698,7 +701,7 @@ import (
 
 // ServiceCIDRSpec define the CIDRs the user wants to use for allocating ClusterIPs for Services.
 #ServiceCIDRSpec: {
-	// CIDRs defines the IP blocks in CIDR notation (e.g. "192.168.0.0/24" or "2001:db8::/64")
+	// cidrs defines the IP blocks in CIDR notation (e.g. "192.168.0.0/24" or "2001:db8::/64")
 	// from which to assign service cluster IPs. Max of two CIDRs is allowed, one of each IP family.
 	// This field is immutable.
 	// +optional
@@ -723,6 +726,7 @@ import (
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=type
+	// +k8s:alpha(since: "1.37")=+k8s:eachVal=+k8s:opaqueType
 	conditions?: [...metav1.#Condition] @go(Conditions,[]metav1.Condition) @protobuf(1,bytes,rep)
 }
 
