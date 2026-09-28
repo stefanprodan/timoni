@@ -1,0 +1,235 @@
+---
+title: "Bundle Update Automation"
+sidebarTitle: "Bundle updates"
+description: "Update the module versions and digests referenced in bundles according to declared update policies."
+---
+
+The `timoni bundle update` command keeps the module references of a bundle
+up to date. It lists the versions published in the module repositories,
+selects the version matching the update policy declared on each reference,
+and rewrites the `version` and `digest` fields in the bundle CUE files.
+
+## Example
+
+The update policy is declared with the `@timoni(update:...)` attribute
+on the `module.version` field of an instance:
+
+```cue
+bundle: {
+	apiVersion: "v1alpha1"
+	name:       "podinfo"
+	instances: {
+		redis: {
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/modules/redis"
+				version: "8.9.0" @timoni(update:semver:8.x)
+			}
+			namespace: "podinfo"
+			values: maxmemory: 256
+		}
+		podinfo: {
+			module: {
+				url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+				version: "6.13.0" @timoni(update:semver:6.x)
+				digest:  "sha256:37312e975dc9bc6c1f4ebccc90f55caf2d35ce15f1b0f59794348924fa0193e9"
+			}
+			namespace: "podinfo"
+			values: caching: {
+				enabled:  true
+				redisURL: "tcp://redis:6379"
+			}
+		}
+	}
+}
+```
+
+Running the update command rewrites the references in place:
+
+```console
+$ timoni bundle update -f bundle.cue
+redis: oci://ghcr.io/stefanprodan/modules/redis 8.9.0 -> 8.10.1
+podinfo: oci://ghcr.io/stefanprodan/modules/podinfo 6.13.0@sha256:37312e97... -> 6.14.1@sha256:ddf8be19...
+INF updated bundle.cue
+```
+
+The files are formatted with `timoni fmt` when written, and comments and
+attributes are preserved. When all the references are up to date, the
+command prints `all module references are up to date` and leaves the
+files untouched.
+
+To print the available updates without modifying the files,
+use the `--dry-run` flag.
+
+## Update policies
+
+The `@timoni(update:...)` attribute accepts one of the following policies:
+
+| Policy | Behaviour |
+|--------|-----------|
+| `@timoni(update:semver:<constraint>)` | Selects the newest published version matching the semver constraint. |
+| `@timoni(update:digest)` | Keeps the version and refreshes the digest to the one currently tagged with that version. |
+| `@timoni(update:none)` | Excludes the module reference from updates. |
+
+The semver constraint accepts wildcards, ranges and the tilde and caret
+operators, for example `8.x`, `6.14.x`, `>=1.0.0 <2.0.0`, `~1.2`,
+`^1.2.3`, or `*` for the newest version.
+
+The version is never downgraded. When no published version matching the
+constraint is newer than the current one, the version is kept and only a
+pinned digest is refreshed. When no published version matches the
+constraint at all, the command fails.
+
+Pre-release versions, for example `1.21.1-4`, are selected only when the
+current version is itself a pre-release, and the constraint is matched
+against the version without the pre-release suffix. A reference set to a
+release version never moves to a pre-release.
+
+## Update level
+
+Module references without an update attribute are left untouched by
+default. The `--level` flag applies an update policy to them:
+
+| Level | Behaviour |
+|-------|-----------|
+| `none` | Leaves the references untouched (default). |
+| `patch` | Updates to the newest patch version of the current minor version. |
+| `minor` | Updates to the newest minor version of the current major version. |
+| `major` | Updates to the newest version. |
+
+```shell
+timoni bundle update -f bundle.cue --level minor
+```
+
+The `patch` and `minor` levels require the current version to be a semantic
+version. References set to `latest` or to another tag are skipped, unless
+the level is `major`, which selects the newest version regardless of the
+current one.
+
+## Digest pinning
+
+When an instance pins the module `digest` next to the `version`, the digest
+is updated together with the version, and refreshed when the tag is
+overwritten while the version stays the same.
+
+An instance that pins the `digest` without setting the `version` follows
+the `latest` tag. Its digest is refreshed with the `@timoni(update:digest)`
+attribute declared on the `digest` field, or with any `--level` other than
+`none`:
+
+```cue
+instances: podinfo: {
+	module: {
+		url:    "oci://ghcr.io/stefanprodan/modules/podinfo"
+		digest: "sha256:ddf8be195f69ad767b40d5c3fec3a8a85482bf6bf469d949a462cb4fd27df580" @timoni(update:digest)
+	}
+}
+```
+
+## Shared versions
+
+A version defined once and referenced by several instances is updated in
+one place, and all the instances referencing it are reported together.
+The update attribute is declared on the shared field:
+
+```cue
+_versions: {
+	podinfo: "6.13.0" @timoni(update:semver:6.x)
+}
+
+bundle: {
+	apiVersion: "v1alpha1"
+	name:       "podinfo"
+	instances: {
+		frontend: {
+			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+			module: version: _versions.podinfo
+			namespace: "frontend"
+			values: {}
+		}
+		backend: {
+			module: url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+			module: version: _versions.podinfo
+			namespace: "backend"
+			values: {}
+		}
+	}
+}
+```
+
+Instances sharing a version must reference the same module repository and
+declare the same update policy, otherwise the command fails.
+
+## Skipped references
+
+The command updates only the module references defined by string literals
+in CUE files, and reports the instances it skips along with the reason:
+
+- the module URL is not an OCI URL, e.g. a `file://` local module
+- the module URL, version, or digest is set from a runtime value
+- the version is not a string literal, e.g. an interpolation or an expression
+- the version is defined in a YAML or JSON file, or in a file outside the CUE module
+- the version is defined in multiple places
+- the update policy is `none`, or the `--level` cannot apply to the current version
+
+## Validation
+
+After the update, validate the bundle definition
+with `timoni bundle vet`, then build the instances with `timoni bundle build`
+to validate the values against the new module versions:
+
+```shell
+timoni bundle update -f bundle.cue
+timoni bundle vet -f bundle.cue
+timoni bundle build -f bundle.cue
+```
+
+## Continuous updates with GitHub Actions
+
+To open a pull request with the updates on a schedule, run the update
+command in CI and commit the modified files, with the updated module
+references listed in the commit message and in the pull request body:
+
+```yaml
+name: bundle-update
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: stefanprodan/timoni/actions/setup@v0.35.0
+      - name: Update module references
+        id: update
+        run: |
+          timoni bundle update -f bundle.cue | tee "$RUNNER_TEMP/changes"
+          {
+            echo 'changes<<EOF'
+            cat "$RUNNER_TEMP/changes"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+      - name: Validate the bundle definition
+        run: timoni bundle vet -f bundle.cue
+      - name: Build the instances with the new module versions
+        run: timoni bundle build -f bundle.cue --mask-secrets
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bundle-update
+          title: "Update module versions"
+          commit-message: |
+            Update module versions
+
+            ${{ steps.update.outputs.changes }}
+          body: ${{ steps.update.outputs.changes }}
+```
+
+When the module repositories require authentication, pass the registry
+credentials with the `--creds` flag or log in with `docker login` before
+running the command.

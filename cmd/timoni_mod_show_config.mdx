@@ -1,0 +1,71 @@
+---
+title: "timoni mod show config"
+description: "Output the #Config schema of a module"
+mode: "wide"
+---
+
+## Synopsis
+
+The config command prints the module's #Config schema as CUE, with the
+field documentation, default values and constraints, marking optional fields
+with ? and required fields with !. The module can be a local directory or
+an OCI artifact.
+
+With `--output`, the schema is written as a Markdown table to the given file.
+If the file is Markdown, the table replaces the first table found under
+the Configuration section, or is appended to the end of the file.
+
+```
+timoni mod show config [MODULE PATH | MODULE URL] [flags]
+```
+
+## Examples
+
+```sh
+  # print the config schema of a module in the current directory
+  timoni mod show config
+
+  # print the config schema of a module published to a container registry
+  timoni mod show config oci://docker.io/org/app -v 1.0.0
+
+  # write the config table to the module README
+  timoni mod show config --output ./README.md
+
+```
+
+## Options
+
+```
+      --creds creds       The credentials for the container registry in the format '<username>[:<password>]'.
+  -h, --help              help for config
+  -o, --output string     The file to output the config Markdown to, defaults to stdout
+  -v, --version version   The version of the module e.g. '1.0.0' or '1.0.0-rc.1'.
+```
+
+## Options inherited from parent commands
+
+```
+      --cache-dir string                    Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to "$HOME/.timoni/cache")
+      --kube-as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --kube-as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --kube-as-uid string                  UID to impersonate for the operation.
+      --kube-certificate-authority string   Path to a cert file for the certificate authority.
+      --kube-client-certificate string      Path to a client certificate file for TLS.
+      --kube-client-key string              Path to a client key file for TLS.
+      --kube-context string                 The name of the kubeconfig context to use.
+      --kube-insecure-skip-tls-verify       if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.
+      --kube-server string                  The address and port of the Kubernetes API server.
+      --kube-tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used.
+      --kube-token string                   Bearer token for authentication to the API server.
+      --kubeconfig string                   Path to the kubeconfig file.
+      --log-color                           Adds colorized output to the logs. (defaults to false when no tty)
+      --log-pretty                          Adds timestamps to the logs. (default true)
+  -n, --namespace string                    The the namespace scope for the operation. (default "default")
+      --registry-insecure                   If true, allows connecting to a container registry without TLS or with a self-signed certificate.
+      --timeout duration                    The length of time to wait before giving up on the current operation. (default 5m0s)
+```
+
+## See also
+
+* [timoni mod show](/cmd/timoni_mod_show)	 - Commands for showing module information
+

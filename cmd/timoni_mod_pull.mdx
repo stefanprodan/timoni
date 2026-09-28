@@ -1,0 +1,93 @@
+---
+title: "timoni mod pull"
+description: "Pull a module version from a container registry"
+mode: "wide"
+---
+
+## Synopsis
+
+The pull command downloads the module from a container registry and
+extract its contents the specified directory.
+
+```
+timoni mod pull MODULE_URL [flags]
+```
+
+## Examples
+
+```sh
+  # Pull the latest stable version of a module
+  echo $DOCKER_TOKEN | timoni registry login docker.io -u timoni --password-stdin
+  timoni mod pull oci://docker.io/org/app-module \
+	--output ./path/to/module
+
+  # Pull a specific module version from GitHub Container Registry
+  timoni mod pull oci://ghcr.io/org/modules/app --version 1.0.0 \
+	--output=./modules/app \
+	--creds timoni:$GITHUB_TOKEN
+
+  # Verify the Cosign signature and pull (the cosign binary must be present in PATH)
+  timoni mod pull oci://docker.io/org/app-module \
+	--output=./modules/app \
+	--verify=cosign \
+	--cosign-key=/path/to/cosign.pub
+
+  # Verify the Cosign keyless signature and pull (the cosign binary must be present in PATH)
+  timoni artifact pull oci://ghcr.io/org/modules/app \
+	--output=./modules/app \
+	--verify=cosign \
+	--certificate-identity-regexp="^https://github.com/org/.*$" \
+	--certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+
+```
+
+## Options
+
+```
+      --certificate-identity string             The identity expected in a valid Fulcio certificate for verifying the Cosign signature.
+                                                Valid values include email address, DNS names, IP addresses, and URIs.
+                                                Either --certificate-identity or --certificate-identity-regexp must be set for keyless flows.
+      --certificate-identity-regexp string      A regular expression alternative to --certificate-identity for verifying the Cosign signature.
+                                                Accepts the Go regular expression syntax described at https://golang.org/s/re2syntax.
+                                                Either --certificate-identity or --certificate-identity-regexp must be set for keyless flows.
+      --certificate-oidc-issuer string          The OIDC issuer expected in a valid Fulcio certificate for verifying the Cosign signature,
+                                                e.g. https://token.actions.githubusercontent.com or https://oauth2.sigstore.dev/auth.
+                                                Either --certificate-oidc-issuer or --certificate-oidc-issuer-regexp must be set for keyless flows.
+      --certificate-oidc-issuer-regexp string   A regular expression alternative to --certificate-oidc-issuer for verifying the Cosign signature.
+                                                Accepts the Go regular expression syntax described at https://golang.org/s/re2syntax.
+                                                Either --certificate-oidc-issuer or --certificate-oidc-issuer-regexp must be set for keyless flows.
+      --cosign-key string                       The Cosign public key for verifying the module.
+      --creds creds                             The credentials for the container registry in the format '<username>[:<password>]'.
+  -h, --help                                    help for pull
+  -o, --output string                           The directory path where the module content should be extracted.
+      --verify string                           Verifies the signed module with the specified provvider.
+  -v, --version version                         The version of the module e.g. '1.0.0' or '1.0.0-rc.1'.
+```
+
+## Options inherited from parent commands
+
+```
+      --cache-dir string                    Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to "$HOME/.timoni/cache")
+      --kube-as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --kube-as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --kube-as-uid string                  UID to impersonate for the operation.
+      --kube-certificate-authority string   Path to a cert file for the certificate authority.
+      --kube-client-certificate string      Path to a client certificate file for TLS.
+      --kube-client-key string              Path to a client key file for TLS.
+      --kube-context string                 The name of the kubeconfig context to use.
+      --kube-insecure-skip-tls-verify       if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.
+      --kube-server string                  The address and port of the Kubernetes API server.
+      --kube-tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used.
+      --kube-token string                   Bearer token for authentication to the API server.
+      --kubeconfig string                   Path to the kubeconfig file.
+      --log-color                           Adds colorized output to the logs. (defaults to false when no tty)
+      --log-pretty                          Adds timestamps to the logs. (default true)
+  -n, --namespace string                    The the namespace scope for the operation. (default "default")
+      --registry-insecure                   If true, allows connecting to a container registry without TLS or with a self-signed certificate.
+      --timeout duration                    The length of time to wait before giving up on the current operation. (default 5m0s)
+```
+
+## See also
+
+* [timoni mod](/cmd/timoni_mod)	 - Commands for managing modules
+

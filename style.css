@@ -1,0 +1,249 @@
+/* The landing page belongs to no navigation tab: hide the tabs row there and keep only the navbar. */
+body:has(#timoni-home) #navbar div:has(> .nav-tabs) {
+  display: none;
+}
+
+/* Widen the main content column: raise the page container cap and trim the left gutter. */
+#body-content,
+#navbar > div.mx-auto {
+  max-width: 100rem !important;
+}
+
+@media (min-width: 1024px) {
+  #content-container {
+    max-width: none !important;
+    padding-left: 3rem !important;
+  }
+}
+
+/* Page descriptions are kept for SEO, search and the MCP server, but not rendered as a subtitle. */
+#header > .text-lg.prose {
+  display: none;
+}
+
+/* Landing page: full-bleed sections, gradient panels and the multi-cluster diagram. */
+body:has(#timoni-home) #body-content {
+  max-width: none !important;
+}
+
+.tm-gradient {
+  background: linear-gradient(135deg, #7e56c2 0%, #6500b0 60%, #2b1a4a 100%);
+}
+
+.tm-on-gradient {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.tm-outline-light {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.tm-outline-light:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tm-band {
+  background: #faf8fd;
+  border-top: 1px solid #ebe6f4;
+  border-bottom: 1px solid #ebe6f4;
+}
+
+html.dark .tm-band {
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.tm-check {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.1rem;
+  border-radius: 9999px;
+  background: rgba(126, 86, 194, 0.12);
+  color: #7e56c2;
+}
+
+.tm-check svg {
+  width: 0.65rem !important;
+  height: 0.65rem !important;
+}
+
+html.dark .tm-check {
+  background: rgba(169, 139, 224, 0.18);
+  color: #a98be0;
+}
+
+.tm-diagram-frame {
+  padding: 1.25rem;
+  border: 1px solid #ebe6f4;
+  border-radius: 1rem;
+  background: #fff;
+}
+
+html.dark .tm-diagram-frame {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Landing page footer, custom mode pages do not render the site footer. */
+.tm-footer {
+  border-top: 1px solid #ebe6f4;
+}
+
+html.dark .tm-footer {
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.tm-footer ul a {
+  color: #4b5563;
+}
+
+html.dark .tm-footer ul a {
+  color: #9ca3af;
+}
+
+.tm-footer ul a:hover {
+  color: #7e56c2;
+}
+
+html.dark .tm-footer ul a:hover {
+  color: #a98be0;
+}
+
+.tm-footer-bottom {
+  border-top: 1px solid #ebe6f4;
+}
+
+html.dark .tm-footer-bottom {
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.tm-footer-socials {
+  display: inline-flex;
+  gap: 1rem;
+}
+
+.tm-footer-socials a {
+  color: #6b7280;
+}
+
+.tm-footer-socials a:hover {
+  color: #7e56c2;
+}
+
+.tm-footer-socials svg {
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+}
+
+/* Navbar links: round icon-only buttons matching the theme toggle, labels kept for screen readers. */
+#navbar .navbar-link > a {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(31, 41, 55, 0.04);
+}
+
+html.dark #navbar .navbar-link > a {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#navbar .navbar-link > a > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+#navbar .navbar-link > a > svg {
+  width: 1rem;
+  height: 1rem;
+  background-color: #4b5563;
+}
+
+#navbar .navbar-link > a:hover > svg {
+  background-color: #1f2937;
+}
+
+html.dark #navbar .navbar-link > a > svg {
+  background-color: #d1d5db;
+}
+
+html.dark #navbar .navbar-link > a:hover > svg {
+  background-color: #f3f4f6;
+}
+
+/* 404 page: widen the container so the link cards sit side by side, and left-align the card content. */
+.not-found-container {
+  max-width: 44rem !important;
+  padding-top: 8rem !important;
+}
+
+.not-found-description .card-group {
+  width: 100%;
+  text-align: left;
+}
+
+.not-found-description .card-group .card {
+  text-align: left;
+}
+
+/* Navbar logo: match the height of the round navbar buttons. */
+#navbar img.nav-logo {
+  height: 30px;
+}
+
+/* Brand icons on the landing page cards: paint the local SVGs with the primary color, like the built-in icons.
+   The src is matched by substring, the hosted site serves the icons from an absolute CDN URL. */
+[data-component-part="card-icon"] img[src*="/images/icons/"] {
+  object-fit: none;
+  object-position: -9999px -9999px;
+  background-color: rgb(var(--primary));
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+html.dark [data-component-part="card-icon"] img[src*="/images/icons/"] {
+  background-color: rgb(var(--primary-light));
+}
+
+[data-component-part="card-icon"] img[src*="/images/icons/kubernetes.svg"] {
+  mask-image: url("/images/icons/kubernetes.svg");
+}
+
+[data-component-part="card-icon"] img[src*="/images/icons/helm.svg"] {
+  mask-image: url("/images/icons/helm.svg");
+}
+
+[data-component-part="card-icon"] img[src*="/images/icons/cue.svg"] {
+  mask-image: url("/images/icons/cue.svg");
+}
+
+[data-component-part="card-icon"] img[src*="/images/icons/flux.svg"] {
+  mask-image: url("/images/icons/flux.svg");
+}
+
+/* Hero logo: paint the single-color SVG to match the theme, black on light and white on dark. */
+img.tm-hero-logo {
+  object-fit: none;
+  object-position: -9999px -9999px;
+  background-color: #111827;
+  mask-image: url("/images/logo_icons.svg");
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+html.dark img.tm-hero-logo {
+  background-color: #fff;
+}

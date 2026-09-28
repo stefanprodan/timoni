@@ -1,0 +1,89 @@
+---
+title: "timoni artifact push"
+description: "Push a directory contents to a container registry"
+mode: "wide"
+---
+
+## Synopsis
+
+The push command packages a directory contents as an OCI artifact and pushes
+it to the container registry. If the directory contains a timoni.ignore file,
+the ignore rules will be used to exclude files from the artifact.
+
+```
+timoni artifact push REPOSITORY_URL [flags]
+```
+
+## Examples
+
+```sh
+  # Push the current dir contents to Docker Hub using the credentials from '~/.docker/config.json'
+  echo $DOCKER_PAT | docker login --username timoni --password-stdin
+  timoni artifact push oci://docker.io/org/app -t latest -f .
+
+ # Push a dir contents to GitHub Container Registry using a GitHub token
+  timoni artifact push oci://ghcr.io/org/schemas/app -f ./path/to/bundles \
+	--creds=timoni:$GITHUB_TOKEN \
+	--tag="$(git rev-parse --short HEAD)" \
+	--tag=latest \
+	--annotation="org.opencontainers.image.source=$(git config --get remote.origin.url)" \
+	--annotation="org.opencontainers.image.revision=$(git rev-parse HEAD)' \
+	--content-type="timoni.sh/bundles"
+
+  # Push a dir contents including the targets of the symbolic links it contains
+  timoni artifact push oci://docker.io/org/app -t latest -f ./path/to/dir \
+	--resolve-symlinks
+
+  # Push and sign with Cosign (the cosign binary must be present in PATH)
+  echo $GITHUB_TOKEN | timoni registry login ghcr.io -u timoni --password-stdin
+  export COSIGN_PASSWORD=password
+  timoni artifact push oci://ghcr.io/org/schemas/app \
+	-f=/path/to/schemas \
+	--tag=1.0.0 \
+	--sign=cosign \
+	--cosign-key=/path/to/cosign.key
+
+```
+
+## Options
+
+```
+  -a, --annotation stringArray   Annotation in the format '<key>=<value>'.
+      --content-type string      The content type of this artifact. (default "generic")
+      --cosign-key string        The Cosign private key for signing the module.
+      --creds creds              The credentials for the container registry in the format '<username>[:<password>]'.
+  -f, --filepath string          Path to local file or directory. (default ".")
+  -h, --help                     help for push
+  -o, --output string            The format in which the artifact digest should be printed, can be 'yaml' or 'json'.
+      --resolve-symlinks         Resolve symbolic links and package their targets as regular files and directories.
+      --sign string              Signs the module with the specified provider.
+  -t, --tag stringArray          Tag of the artifact.
+```
+
+## Options inherited from parent commands
+
+```
+      --cache-dir string                    Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to "$HOME/.timoni/cache")
+      --kube-as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --kube-as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --kube-as-uid string                  UID to impersonate for the operation.
+      --kube-certificate-authority string   Path to a cert file for the certificate authority.
+      --kube-client-certificate string      Path to a client certificate file for TLS.
+      --kube-client-key string              Path to a client key file for TLS.
+      --kube-context string                 The name of the kubeconfig context to use.
+      --kube-insecure-skip-tls-verify       if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.
+      --kube-server string                  The address and port of the Kubernetes API server.
+      --kube-tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used.
+      --kube-token string                   Bearer token for authentication to the API server.
+      --kubeconfig string                   Path to the kubeconfig file.
+      --log-color                           Adds colorized output to the logs. (defaults to false when no tty)
+      --log-pretty                          Adds timestamps to the logs. (default true)
+  -n, --namespace string                    The the namespace scope for the operation. (default "default")
+      --registry-insecure                   If true, allows connecting to a container registry without TLS or with a self-signed certificate.
+      --timeout duration                    The length of time to wait before giving up on the current operation. (default 5m0s)
+```
+
+## See also
+
+* [timoni artifact](/cmd/timoni_artifact)	 - Commands for managing Open Container Initiative (OCI) artifacts
+

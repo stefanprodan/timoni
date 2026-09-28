@@ -1,0 +1,67 @@
+---
+title: "GitHub Actions"
+description: "Install and run Timoni in GitHub workflows."
+---
+
+The Timoni GitHub Action installs the Timoni CLI on GitHub-hosted Linux, macOS and Windows runners,
+so that workflows can build, test, push and apply modules and bundles.
+
+## Usage
+
+Add the following steps to your GitHub workflow:
+
+```yaml
+steps:
+  - name: Setup Timoni
+    uses: stefanprodan/timoni/actions/setup@v0.35.0
+  - name: Run Timoni
+    run: timoni version
+```
+
+The action installs the Timoni release matching the ref used to reference the action.
+Pinning the action to a release tag, or to the commit SHA of a release tag, installs that release.
+Referencing the action by branch, e.g. `@main`, installs the latest stable release.
+
+## Verification
+
+The action downloads the release archive from GitHub releases, checks its SHA256 sum
+against the release checksums file, and verifies the build provenance attestation
+published by the Timoni release workflow using `gh attestation verify`.
+
+Verification requires the `gh` CLI and Timoni v0.30.0 or newer.
+On runners without `gh` or network access to GitHub and Sigstore, set the `verify` input to `false`.
+
+To verify a release archive outside of GitHub Actions, see the
+SLSA provenance section of the [installation guide](/install).
+
+## Inputs
+
+| Name | Description | Default |
+|------|-------------|---------|
+| `version` | The Timoni version to install, e.g. `0.35.0` or `latest`. Overrides the version derived from the action ref. | Derived from the action ref |
+| `verify` | Verify the build provenance attestation of the downloaded archive. | `true` |
+| `token` | The GitHub token used to query the releases API and the attestations API. | `github.token` |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| `version` | The installed Timoni version. |
+
+Example of using the output:
+
+```yaml
+steps:
+  - name: Setup Timoni
+    id: timoni
+    uses: stefanprodan/timoni/actions/setup@v0.35.0
+  - name: Print the installed version
+    run: echo "Timoni ${{ steps.timoni.outputs.version }}"
+```
+
+## Examples
+
+- [Module distribution with GitHub Actions](/cue/module/github-actions):
+  vet, push and sign module versions from GitHub workflows.
+- [Bundle updates](/bundle-update#continuous-updates-with-github-actions):
+  open pull requests with the module version updates on a schedule.

@@ -1,0 +1,82 @@
+---
+title: "timoni bundle update"
+description: "Update the module versions referenced in a bundle"
+mode: "wide"
+---
+
+## Synopsis
+
+The bundle update command lists the versions published for the modules
+referenced in a bundle and rewrites the module version and digest fields
+in the bundle CUE files according to the update policy declared on each
+field with a `@timoni(update:...)` attribute. The fields are rewritten
+in the files passed with `-f` and in the package files of the CUE module
+that they import:
+
+  @timoni(update:semver:&lt;constraint&gt;)  select the newest version matching the semver constraint
+  @timoni(update:digest)               keep the version and refresh the digest
+  @timoni(update:none)                 exclude the module reference from updates
+
+References without an attribute follow the `--level` flag.
+
+
+```
+timoni bundle update [flags]
+```
+
+## Examples
+
+```sh
+  # Update the module references according to the policies declared in the bundle
+  timoni bundle update -f bundle.cue
+
+  # Update the references without a policy to the newest minor version
+  timoni bundle update -f bundle.cue --level minor
+
+  # Print the available updates without modifying the files
+  timoni bundle update -f bundle.cue --dry-run
+
+```
+
+## Options
+
+```
+      --creds creds    The credentials for the container registry in the format '<username>[:<password>]'.
+      --dry-run        Print the available updates without modifying the files.
+  -f, --file strings   The local path to bundle.cue files.
+  -h, --help           help for update
+      --level string   The update level for the module references without an update attribute, one of: none, patch, minor, major. (default "none")
+```
+
+## Options inherited from parent commands
+
+```
+      --cache-dir string                    Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to "$HOME/.timoni/cache")
+      --kube-as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --kube-as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --kube-as-uid string                  UID to impersonate for the operation.
+      --kube-certificate-authority string   Path to a cert file for the certificate authority.
+      --kube-client-certificate string      Path to a client certificate file for TLS.
+      --kube-client-key string              Path to a client key file for TLS.
+      --kube-context string                 The name of the kubeconfig context to use.
+      --kube-insecure-skip-tls-verify       if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.
+      --kube-server string                  The address and port of the Kubernetes API server.
+      --kube-tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used.
+      --kube-token string                   Bearer token for authentication to the API server.
+      --kubeconfig string                   Path to the kubeconfig file.
+      --log-color                           Adds colorized output to the logs. (defaults to false when no tty)
+      --log-pretty                          Adds timestamps to the logs. (default true)
+  -n, --namespace string                    The the namespace scope for the operation. (default "default")
+      --registry-insecure                   If true, allows connecting to a container registry without TLS or with a self-signed certificate.
+  -r, --runtime strings                     The local path to runtime.cue files.
+      --runtime-cluster string              Filter runtime cluster by name. (default "*")
+      --runtime-from-env                    Inject runtime values from the environment.
+      --runtime-group string                Filter runtime clusters by group. (default "*")
+      --timeout duration                    The length of time to wait before giving up on the current operation. (default 5m0s)
+      --workdir string                      The local path to the CUE module root (the directory containing cue.mod), used to resolve imports in the bundle and runtime definitions. Defaults to the current directory.
+```
+
+## See also
+
+* [timoni bundle](/cmd/timoni_bundle)	 - Commands for managing bundles
+

@@ -1,0 +1,82 @@
+---
+title: "timoni mod build"
+description: "Build a module OCI artifact on the local filesystem"
+mode: "wide"
+---
+
+## Synopsis
+
+The build command packages the module as an OCI artifact and writes it to
+the local filesystem as an OCI archive or an OCI image layout, without
+pushing it to a container registry.
+
+The container images declared in the module's `images.cue` file are recorded
+in the `sh.timoni.images` annotation as a comma-separated sorted list of
+image references.
+
+The resulting archive can be pushed to a container registry as-is
+with 'timoni mod push', which extracts the version from the archive manifest.
+
+```
+timoni mod build MODULE [flags]
+```
+
+## Examples
+
+```sh
+  # Build a module to an OCI archive
+  timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar
+
+  # Build a module to an OCI image layout directory
+  timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0 --format oci-layout
+
+  # Build a module with custom OCI annotations
+  timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar \
+	--annotation='org.opencontainers.image.licenses=Apache-2.0' \
+	--annotation='org.opencontainers.image.description=A timoni.sh module for my app.'
+
+  # Build a module with a fixed creation date for reproducible artifacts
+  SOURCE_DATE_EPOCH=1704067200 timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar
+
+  # Push a pre-built archive to a container registry
+  timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar
+  timoni mod push ./app-module-1.0.0.oci.tar oci://docker.io/org/app-module
+```
+
+## Options
+
+```
+  -a, --annotation stringArray   Set custom OCI annotations in the format '<key>=<value>'.
+      --format string            Output format, either 'oci-archive' or 'oci-layout'. (default "oci-archive")
+  -h, --help                     help for build
+  -o, --output string            Path to the OCI archive or OCI image layout.
+  -v, --version string           Module version e.g. '1.0.0'; overrides the 'org.opencontainers.image.version' annotation.
+```
+
+## Options inherited from parent commands
+
+```
+      --cache-dir string                    Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to "$HOME/.timoni/cache")
+      --kube-as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --kube-as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --kube-as-uid string                  UID to impersonate for the operation.
+      --kube-certificate-authority string   Path to a cert file for the certificate authority.
+      --kube-client-certificate string      Path to a client certificate file for TLS.
+      --kube-client-key string              Path to a client key file for TLS.
+      --kube-context string                 The name of the kubeconfig context to use.
+      --kube-insecure-skip-tls-verify       if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.
+      --kube-server string                  The address and port of the Kubernetes API server.
+      --kube-tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used.
+      --kube-token string                   Bearer token for authentication to the API server.
+      --kubeconfig string                   Path to the kubeconfig file.
+      --log-color                           Adds colorized output to the logs. (defaults to false when no tty)
+      --log-pretty                          Adds timestamps to the logs. (default true)
+  -n, --namespace string                    The the namespace scope for the operation. (default "default")
+      --registry-insecure                   If true, allows connecting to a container registry without TLS or with a self-signed certificate.
+      --timeout duration                    The length of time to wait before giving up on the current operation. (default 5m0s)
+```
+
+## See also
+
+* [timoni mod](/cmd/timoni_mod)	 - Commands for managing modules
+
