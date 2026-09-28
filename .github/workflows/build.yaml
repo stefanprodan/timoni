@@ -20,7 +20,7 @@ jobs:
         with:
           go-version: 1.27.x
       - name: Setup CUE
-        uses: cue-lang/setup-cue@a93fa358375740cd8b0078f76355512b9208acb1 # v1.0.1
+        uses: cue-lang/setup-cue@b0e30e540a2dae47304ebf16586a5b2db023b61c # v2.0.0
         with:
           version: v0.15.4
       - name: Run tests
