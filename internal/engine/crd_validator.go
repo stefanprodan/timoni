@@ -192,7 +192,7 @@ func (v *CRDValidator) Validate(ctx context.Context, object *unstructured.Unstru
 	defaulting.Default(obj, s.structural)
 
 	schemaErrs := apiextvalidation.ValidateCustomResource(nil, obj, s.validator)
-	schemaErrs = append(schemaErrs, schemaobjectmeta.Validate(nil, obj, s.structural, false)...)
+	schemaErrs = append(schemaErrs, schemaobjectmeta.Validate(ctx, nil, obj, s.structural, false)...)
 	schemaErrs = append(schemaErrs, listtype.ValidateListSetsAndMaps(nil, s.structural, obj)...)
 	msgs = append(msgs, formatFieldErrors(schemaErrs, false)...)
 
