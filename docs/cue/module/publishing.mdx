@@ -162,11 +162,19 @@ debug_values.cue
 
 When packaging a module, Timoni skips symbolic links by default.
 To include the link targets in the artifact as regular files and
-directories, run `timoni mod push` with the `--resolve-symlinks` flag:
+directories, run `timoni mod push` or `timoni mod build` with the
+`--resolve-symlinks` flag:
 
 ```shell
 timoni mod push ./path/to/module oci://docker.io/org/app-module \
   --version=1.0.0 \
+  --resolve-symlinks
+```
+
+The same flag applies when building the module artifact locally:
+
+```shell
+timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar \
   --resolve-symlinks
 ```
 
@@ -186,7 +194,7 @@ When building a module from a local path, `timoni build`, `timoni apply`
 and `timoni mod vet` read the module files in place from the source
 directory, following symbolic links the same way as the operating system.
 Note that a module which relies on symlinked files builds locally but
-is published incomplete unless pushed with `--resolve-symlinks`.
+is published incomplete unless pushed or built with `--resolve-symlinks`.
 </Tip>
 
 ## Listing module versions
