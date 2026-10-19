@@ -30,14 +30,14 @@ jobs:
           go-version: 1.27.x
           cache: false
       - name: Setup Syft
-        uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
       - name: Version info
         id: ver
         run: |
           echo "SEMVER=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
       - name: Run GoReleaser
         id: run-goreleaser
-        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
           version: latest
           args: release
@@ -141,7 +141,7 @@ jobs:
       # The goreleaser job already attested the archives, so it only links
       # that provenance. See https://packslip.dev.
       - name: Publish packslip
-        uses: jdx/packslip@87479dfc6443253dff69601cace5fc6ea07e6df5 # v1.4.0
+        uses: jdx/packslip@0e9bde4ea49070555a79cac1f040f1dafe60acd6 # v1.8.0
         with:
           download: timoni_*_darwin_*.tar.gz timoni_*_linux_*.tar.gz timoni_*_windows_*.zip
           bin: timoni
