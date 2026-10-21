@@ -38,12 +38,13 @@ var buildArtifactCmd = &cobra.Command{
 
 // buildArtifactFlags contains local artifact build inputs.
 type buildArtifactFlags struct {
-	path        string
-	output      string
-	format      string
-	tags        []string
-	annotations []string
-	contentType string
+	path            string
+	output          string
+	format          string
+	tags            []string
+	annotations     []string
+	contentType     string
+	resolveSymlinks bool
 }
 
 var buildArtifactArgs buildArtifactFlags
@@ -61,6 +62,8 @@ func init() {
 		"Annotation in the format '<key>=<value>'.")
 	buildArtifactCmd.Flags().StringVar(&buildArtifactArgs.contentType, "content-type", "generic",
 		"The content type of this artifact.")
+	buildArtifactCmd.Flags().BoolVar(&buildArtifactArgs.resolveSymlinks, "resolve-symlinks", false,
+		"Resolve symbolic links and package their targets as regular files and directories.")
 	artifactCmd.AddCommand(buildArtifactCmd)
 }
 
@@ -94,7 +97,31 @@ func buildArtifactCmdRun(cmd *cobra.Command, _ []string) (err error) {
 	}
 	oci.AppendGitMetadata(cmd.Context(), buildArtifactArgs.path, annotations)
 
-	build, err := oci.BuildArtifactImage(buildArtifactArgs.path, ignorePaths, buildArtifactArgs.contentType, annotations)
+	// When symlink resolution is enabled, stage the directory in a temp dir
+	// so that the artifact contains the symlink targets as regular files
+	// and directories, since the archiver skips symbolic links.
+	contentPath := buildArtifactArgs.path
+	if buildArtifactArgs.resolveSymlinks {
+		if info.IsDir() {
+			tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+			if err != nil {
+				return err
+			}
+			defer os.RemoveAll(tmpDir)
+
+			contentPath = filepath.Join(tmpDir, "artifact")
+			if err := engine.CopyDir(buildArtifactArgs.path, contentPath, true); err != nil {
+				return err
+			}
+		} else {
+			contentPath, err = filepath.EvalSymlinks(contentPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	build, err := oci.BuildArtifactImage(contentPath, ignorePaths, buildArtifactArgs.contentType, annotations)
 	if err != nil {
 		return err
 	}

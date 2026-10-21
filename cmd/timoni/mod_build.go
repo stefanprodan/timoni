@@ -49,6 +49,10 @@ with 'timoni mod push', which extracts the version from the archive manifest.`,
   # Build a module to an OCI image layout directory
   timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0 --format oci-layout
 
+  # Build a module that shares files with other modules using symbolic links
+  timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar \
+	--resolve-symlinks
+
   # Build a module with custom OCI annotations
   timoni mod build ./path/to/module -v 1.0.0 -o ./app-module-1.0.0.oci.tar \
 	--annotation='org.opencontainers.image.licenses=Apache-2.0' \
@@ -66,10 +70,11 @@ with 'timoni mod push', which extracts the version from the archive manifest.`,
 
 // buildModFlags contains local module build inputs.
 type buildModFlags struct {
-	version     string
-	output      string
-	format      string
-	annotations []string
+	version         string
+	output          string
+	format          string
+	annotations     []string
+	resolveSymlinks bool
 }
 
 var buildModArgs buildModFlags
@@ -83,6 +88,8 @@ func init() {
 		"Output format, either 'oci-archive' or 'oci-layout'.")
 	buildModCmd.Flags().StringArrayVarP(&buildModArgs.annotations, "annotation", "a", nil,
 		"Set custom OCI annotations in the format '<key>=<value>'.")
+	buildModCmd.Flags().BoolVar(&buildModArgs.resolveSymlinks, "resolve-symlinks", false,
+		"Resolve symbolic links and package their targets as regular files and directories.")
 	modCmd.AddCommand(buildModCmd)
 }
 
@@ -118,7 +125,23 @@ func buildModCmdRun(cmd *cobra.Command, args []string) (err error) {
 		return fmt.Errorf("reading %s failed: %w", apiv1.IgnoreFile, err)
 	}
 
-	build, err := oci.BuildModuleImage(module, ignorePaths, annotations)
+	// When symlink resolution is enabled, stage the module in a temp dir
+	// so that the artifact contains the symlink targets as regular files.
+	moduleDir := module
+	if buildModArgs.resolveSymlinks {
+		tmpDir, err := os.MkdirTemp("", apiv1.FieldManager)
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(tmpDir)
+
+		moduleDir = filepath.Join(tmpDir, "module")
+		if err := engine.CopyDir(module, moduleDir, true); err != nil {
+			return err
+		}
+	}
+
+	build, err := oci.BuildModuleImage(moduleDir, ignorePaths, annotations)
 	if err != nil {
 		return err
 	}
