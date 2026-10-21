@@ -1,0 +1,45 @@
+---
+title: "timoni artifact"
+description: "Commands for managing Open Container Initiative (OCI) artifacts"
+mode: "wide"
+---
+
+## Options
+
+```
+  -h, --help   help for artifact
+```
+
+## Options inherited from parent commands
+
+```
+      --cache-dir string                    Artifacts cache dir, can be disable with 'TIMONI_CACHING=false' env var. (defaults to "$HOME/.timoni/cache")
+      --kube-as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --kube-as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --kube-as-uid string                  UID to impersonate for the operation.
+      --kube-certificate-authority string   Path to a cert file for the certificate authority.
+      --kube-client-certificate string      Path to a client certificate file for TLS.
+      --kube-client-key string              Path to a client key file for TLS.
+      --kube-context string                 The name of the kubeconfig context to use.
+      --kube-insecure-skip-tls-verify       if true, the Kubernetes API server's certificate will not be checked for validity. This will make your HTTPS connections insecure.
+      --kube-server string                  The address and port of the Kubernetes API server.
+      --kube-tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used.
+      --kube-token string                   Bearer token for authentication to the API server.
+      --kubeconfig string                   Path to the kubeconfig file.
+      --log-color                           Adds colorized output to the logs. (defaults to false when no tty)
+      --log-pretty                          Adds timestamps to the logs. (default true)
+  -n, --namespace string                    The the namespace scope for the operation. (default "default")
+      --registry-insecure                   If true, allows connecting to a container registry without TLS or with a self-signed certificate.
+      --timeout duration                    The length of time to wait before giving up on the current operation. (default 5m0s)
+```
+
+## See also
+
+* [timoni](/cmd/timoni)	 - A package manager for Kubernetes powered by CUE.
+* [timoni artifact build](/cmd/timoni_artifact_build)	 - Build an OCI artifact on the local filesystem
+* [timoni artifact digest](/cmd/timoni_artifact_digest)	 - Resolve the digest of an artifact
+* [timoni artifact list](/cmd/timoni_artifact_list)	 - List the tags of an artifact
+* [timoni artifact pull](/cmd/timoni_artifact_pull)	 - Pull an artifact from a container registry
+* [timoni artifact push](/cmd/timoni_artifact_push)	 - Push a directory contents to a container registry
+* [timoni artifact tag](/cmd/timoni_artifact_tag)	 - Tag an OCI artifact in the upstream registry
+
