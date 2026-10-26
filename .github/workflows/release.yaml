@@ -78,7 +78,7 @@ jobs:
       - name: Setup Timoni
         uses: ./actions/setup
       - name: Login to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -142,7 +142,7 @@ jobs:
       # The goreleaser job already attested the archives, so it only links
       # that provenance. See https://packslip.dev.
       - name: Publish packslip
-        uses: jdx/packslip@0e9bde4ea49070555a79cac1f040f1dafe60acd6 # v1.8.0
+        uses: jdx/packslip@ddcddd9c8c33977d2d08d5db91caec579da59aab # v1.11.0
         with:
           download: timoni_*_darwin_*.tar.gz timoni_*_linux_*.tar.gz timoni_*_windows_*.zip
           bin: timoni
