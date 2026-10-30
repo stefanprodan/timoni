@@ -17,64 +17,34 @@ limitations under the License.
 package oci
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"io"
 	"math/rand"
-	"net/http"
 	"os"
 	"testing"
-	"time"
 
-	"github.com/distribution/distribution/v3/configuration"
-	"github.com/distribution/distribution/v3/registry"
-	_ "github.com/distribution/distribution/v3/registry/auth/htpasswd"
-	_ "github.com/distribution/distribution/v3/registry/storage/driver/inmemory"
-	"github.com/phayes/freeport"
-	"github.com/sirupsen/logrus"
+	"github.com/stefanprodan/timoni/internal/testutils"
 )
 
 var dockerRegistry string
 
 func TestMain(m *testing.M) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	err := setupRegistryServer(ctx)
-	if err != nil {
-		panic(fmt.Sprintf("failed to start docker registry: %s", err))
-	}
-
-	code := m.Run()
-	os.Exit(code)
+	os.Exit(runTests(m))
 }
 
-func setupRegistryServer(ctx context.Context) error {
-	config := &configuration.Configuration{}
-	config.Log.AccessLog.Disabled = true
-	config.Log.Level = "error"
-	port, err := freeport.GetFreePort()
+// runTests sets up the OCI registry, runs the tests and tears the registry
+// down. It returns the exit code of the test run.
+func runTests(m *testing.M) int {
+	restoreDockerConfig, err := testutils.IsolateDockerConfig()
 	if err != nil {
-		return fmt.Errorf("failed to get free port: %s", err)
+		panic(fmt.Sprintf("failed to isolate docker config: %s", err))
 	}
-	logrus.SetOutput(io.Discard)
-	dockerRegistry = fmt.Sprintf("localhost:%d", port)
-	config.HTTP.Addr = fmt.Sprintf("127.0.0.1:%d", port)
-	config.HTTP.DrainTimeout = time.Duration(10) * time.Second
-	config.Storage = map[string]configuration.Parameters{"inmemory": map[string]any{}}
-	dockerRegistry, err := registry.NewRegistry(ctx, config)
-	if err != nil {
-		return fmt.Errorf("failed to create docker registry: %w", err)
-	}
+	defer restoreDockerConfig()
 
-	go func() {
-		if err := dockerRegistry.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
-		}
-	}()
+	var stopRegistry func()
+	dockerRegistry, stopRegistry = testutils.NewTestRegistry()
+	defer stopRegistry()
 
-	return nil
+	return m.Run()
 }
 
 func rnd(prefix string) string {
