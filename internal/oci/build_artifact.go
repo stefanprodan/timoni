@@ -38,6 +38,8 @@ https://github.com/fluxcd/pkg/blob/4f69e7842ce20a6432a412a03a0cf7ff5d8b87f5/oci/
 
 // BuildArtifact creates the destination file and packages
 // the given content (excluding symlinks) using tar+gzip compression.
+// File ownership and timestamps are cleared, and permissions are set to
+// 0755 for directories and owner-executable files and 0644 for other files.
 func BuildArtifact(dstFile, contentPath string, ignorePaths []string) error {
 	absDir, err := filepath.Abs(contentPath)
 	if err != nil {
@@ -107,6 +109,7 @@ func BuildArtifact(dstFile, contentPath string, ignorePaths []string) error {
 		header.ModTime = time.Time{}
 		header.AccessTime = time.Time{}
 		header.ChangeTime = time.Time{}
+		header.Mode = normalizeMode(fi.Mode())
 
 		if err := tw.WriteHeader(header); err != nil {
 			return err
@@ -131,6 +134,15 @@ func BuildArtifact(dstFile, contentPath string, ignorePaths []string) error {
 	}
 
 	return nil
+}
+
+// normalizeMode returns the tar header mode for a directory or regular file:
+// 0755 for directories and owner-executable files, 0644 otherwise.
+func normalizeMode(mode os.FileMode) int64 {
+	if mode.IsDir() || mode&0o100 != 0 {
+		return 0o755
+	}
+	return 0o644
 }
 
 // copyArtifactFile copies a regular file into dst and closes it.
