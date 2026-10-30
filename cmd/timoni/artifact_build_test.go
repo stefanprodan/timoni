@@ -23,6 +23,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/crane"
 	. "github.com/onsi/gomega"
 )
 
@@ -92,4 +93,40 @@ func Test_BuildArtifactSymlinks(t *testing.T) {
 	files = layoutFiles(g, output, "generic")
 	g.Expect(files).To(HaveKeyWithValue("main.cue", "main"))
 	g.Expect(files).To(HaveKeyWithValue("extra.cue", "extra"))
+}
+
+func Test_BuildArtifactReproducesPulledDigest(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix permission bits are not supported on Windows")
+	}
+	g := NewWithT(t)
+	t.Setenv("SOURCE_DATE_EPOCH", "0")
+
+	src := filepath.Join(t.TempDir(), "src")
+	g.Expect(os.MkdirAll(filepath.Join(src, "sub"), 0o755)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(src, "main.cue"), []byte("package main"), 0o644)).To(Succeed())
+	g.Expect(os.WriteFile(filepath.Join(src, "sub", "run.sh"), []byte("#!/bin/sh"), 0o755)).To(Succeed())
+
+	aURL := fmt.Sprintf("%s/%s", dockerRegistry, rnd("artifact"))
+	_, err := executeCommand(fmt.Sprintf("artifact push oci://%s -f %s -t 1.0.0", aURL, src))
+	g.Expect(err).ToNot(HaveOccurred())
+	pushed, err := crane.Digest(aURL + ":1.0.0")
+	g.Expect(err).ToNot(HaveOccurred())
+
+	pulled := filepath.Join(t.TempDir(), "pulled")
+	_, err = executeCommand(fmt.Sprintf("artifact pull oci://%s:1.0.0 -o %s", aURL, pulled))
+	g.Expect(err).ToNot(HaveOccurred())
+
+	// Apply the modes a umask of 0027 produces.
+	g.Expect(os.Chmod(filepath.Join(pulled, "main.cue"), 0o640)).To(Succeed())
+	g.Expect(os.Chmod(filepath.Join(pulled, "sub", "run.sh"), 0o750)).To(Succeed())
+	g.Expect(os.Chmod(filepath.Join(pulled, "sub"), 0o750)).To(Succeed())
+	g.Expect(os.Chmod(pulled, 0o750)).To(Succeed())
+
+	result, err := executeCommand(fmt.Sprintf(
+		"artifact build -f %s -o %s -t 1.0.0",
+		pulled, filepath.Join(t.TempDir(), "rebuilt.tar"),
+	))
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(result).To(ContainSubstring("digest: " + pushed))
 }

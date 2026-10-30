@@ -163,6 +163,8 @@ The OCI artifacts produced by Timoni have the following media types:
 
 To enable reproducible builds, Timoni sets the artifact's last modified date,
 the source URL and source revision annotations from the Git metadata.
+File ownership and timestamps are cleared, and permissions are set to `0755`
+for directories and owner-executable files and `0644` for other files.
 
 Commands for managing the authentication to container registries:
 
