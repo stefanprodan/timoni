@@ -19,31 +19,23 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"math/rand"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/distribution/distribution/v3/configuration"
-	"github.com/distribution/distribution/v3/registry"
-	_ "github.com/distribution/distribution/v3/registry/auth/htpasswd"
-	_ "github.com/distribution/distribution/v3/registry/storage/driver/inmemory"
 	"github.com/go-logr/zerologr"
 	"github.com/mattn/go-shellwords"
 	. "github.com/onsi/gomega"
-	"github.com/phayes/freeport"
 	"github.com/rs/zerolog"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/stefanprodan/timoni/internal/engine"
+	"github.com/stefanprodan/timoni/internal/testutils"
 	"k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	runtimeLog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -67,16 +59,32 @@ func TestRootCommandPreservesContextCancellation(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	ctx := ctrl.SetupSignalHandler()
-	err := setupRegistryServer(ctx)
+	os.Exit(runTests(m))
+}
+
+// runTests sets up the OCI registry and the Kubernetes test environment, runs
+// the tests and tears everything down, also when setup panics. It returns the
+// exit code of the test run.
+func runTests(m *testing.M) int {
+	restoreDockerConfig, err := testutils.IsolateDockerConfig()
 	if err != nil {
-		panic(fmt.Sprintf("failed to start docker registry: %s", err))
+		panic(fmt.Sprintf("failed to isolate docker config: %s", err))
 	}
+	defer restoreDockerConfig()
+
+	var stopRegistry func()
+	dockerRegistry, stopRegistry = testutils.NewTestRegistry()
+	defer stopRegistry()
 
 	testEnv := &envtest.Environment{}
 	if _, err := testEnv.Start(); err != nil {
 		panic(err)
 	}
+	defer func() {
+		if err := testEnv.Stop(); err != nil {
+			panic(err)
+		}
+	}()
 
 	user, err := testEnv.ControlPlane.AddUser(envtest.User{
 		Name:   "envtest-admin",
@@ -110,11 +118,7 @@ func TestMain(m *testing.M) {
 	kubeconfigArgs.KubeConfig = &tmpFilename
 	rootArgs.cacheDir = tmpDir
 
-	code := m.Run()
-	if err := testEnv.Stop(); err != nil {
-		panic(err)
-	}
-	os.Exit(code)
+	return m.Run()
 }
 
 func executeCommand(cmd string) (string, error) {
@@ -230,33 +234,4 @@ func rnd(prefix string) string {
 		b[i] = runes[rand.Intn(len(runes))]
 	}
 	return prefix + "-" + string(b)
-}
-
-func setupRegistryServer(ctx context.Context) error {
-	// Registry config
-	config := &configuration.Configuration{}
-	config.Log.AccessLog.Disabled = true
-	config.Log.Level = "error"
-	port, err := freeport.GetFreePort()
-	if err != nil {
-		return fmt.Errorf("failed to get free port: %s", err)
-	}
-	logrus.SetOutput(io.Discard)
-	dockerRegistry = fmt.Sprintf("localhost:%d", port)
-	config.HTTP.Addr = fmt.Sprintf("127.0.0.1:%d", port)
-	config.HTTP.DrainTimeout = time.Duration(10) * time.Second
-	config.Storage = map[string]configuration.Parameters{"inmemory": map[string]any{}}
-	dockerRegistry, err := registry.NewRegistry(ctx, config)
-	if err != nil {
-		return fmt.Errorf("failed to create docker registry: %w", err)
-	}
-
-	// Start Docker registry
-	go func() {
-		if err := dockerRegistry.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
-		}
-	}()
-
-	return nil
 }
