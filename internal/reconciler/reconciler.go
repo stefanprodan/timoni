@@ -27,8 +27,10 @@ import (
 	"github.com/fluxcd/pkg/ssa"
 	ssautil "github.com/fluxcd/pkg/ssa/utils"
 	"github.com/go-logr/logr"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	apiv1 "github.com/stefanprodan/timoni/api/v1alpha1"
@@ -320,10 +322,43 @@ func (r *Reconciler) doWaitForTermination(_ context.Context, _ logr.Logger, cs *
 
 func (r *Reconciler) ApplyAllSets(ctx context.Context, log logr.Logger, withChangeSet withChangeSetFunc) error {
 	multiSet := len(r.sets) > 1
+	var hookObjects []*unstructured.Unstructured
+
+	flushDeleteAfterHooks := func() error {
+		if len(hookObjects) == 0 {
+			return nil
+		}
+		log.Info(fmt.Sprintf("deleting %d delete-after-hooks resource(s)", len(hookObjects)))
+		deleteOpts := runtime.DeleteOptions(r.Name(), r.Namespace())
+		cs, err := r.resourceManager.DeleteAll(ctx, hookObjects, deleteOpts)
+		if err != nil {
+			return fmt.Errorf("deleting delete-after-hooks resources failed: %w", err)
+		}
+		if err := r.WaitForTermination(ctx, log, cs, nil); err != nil {
+			return err
+		}
+		r.instanceManager.RemoveObjects(hookObjects)
+		hookObjects = nil
+		return nil
+	}
+
 	for s := range r.sets {
 		set := r.sets[s]
+
+		// A normal set ends the consecutive delete-after-hooks group: delete
+		// those objects as a batch before applying the next desired state.
+		if !resourceSetHasDeleteAfterHooks(set) {
+			if err := flushDeleteAfterHooks(); err != nil {
+				return err
+			}
+		}
+
 		if multiSet {
 			log.Info(fmt.Sprintf("applying %s", set.Name))
+		}
+
+		if err := r.deleteRecreateObjects(ctx, log, set); err != nil {
+			return err
 		}
 
 		cs, err := r.ApplyAllStaged(ctx, set)
@@ -336,8 +371,59 @@ func (r *Reconciler) ApplyAllSets(ctx context.Context, log logr.Logger, withChan
 				return err
 			}
 		}
+
+		for _, obj := range set.Objects {
+			if ssautil.AnyInMetadata(obj, map[string]string{
+				apiv1.DeleteAfterHooksAction: apiv1.EnabledValue,
+			}) {
+				hookObjects = append(hookObjects, obj)
+			}
+		}
 	}
 	return nil
+}
+
+// deleteRecreateObjects deletes cluster objects annotated with recreate so the
+// subsequent apply creates them from scratch, even when the spec is unchanged.
+func (r *Reconciler) deleteRecreateObjects(ctx context.Context, log logr.Logger, set engine.ResourceSet) error {
+	var toDelete []*unstructured.Unstructured
+	for _, obj := range set.Objects {
+		if !ssautil.AnyInMetadata(obj, map[string]string{
+			apiv1.RecreateAction: apiv1.EnabledValue,
+		}) {
+			continue
+		}
+		existing := obj.DeepCopy()
+		if err := r.resourceManager.Client().Get(ctx, client.ObjectKeyFromObject(existing), existing); err != nil {
+			if apierrors.IsNotFound(err) {
+				continue
+			}
+			return fmt.Errorf("looking up recreate resource %s failed: %w", ssautil.FmtUnstructured(obj), err)
+		}
+		toDelete = append(toDelete, existing)
+	}
+	if len(toDelete) == 0 {
+		return nil
+	}
+
+	log.Info(fmt.Sprintf("recreating %d resource(s)", len(toDelete)))
+	deleteOpts := runtime.DeleteOptions(r.Name(), r.Namespace())
+	cs, err := r.resourceManager.DeleteAll(ctx, toDelete, deleteOpts)
+	if err != nil {
+		return fmt.Errorf("deleting recreate resources failed: %w", err)
+	}
+	return r.WaitForTermination(ctx, log, cs, nil)
+}
+
+func resourceSetHasDeleteAfterHooks(set engine.ResourceSet) bool {
+	for _, obj := range set.Objects {
+		if ssautil.AnyInMetadata(obj, map[string]string{
+			apiv1.DeleteAfterHooksAction: apiv1.EnabledValue,
+		}) {
+			return true
+		}
+	}
+	return false
 }
 
 // ApplyAllStaged transfers the ownership of the set's existing objects
@@ -377,7 +463,16 @@ func (r *Reconciler) PostApplyUpdateInventory(ctx context.Context, builder *engi
 }
 
 func (r *Reconciler) UpdateStoredInstance(ctx context.Context) error {
-	return r.storageManager.Apply(ctx, &r.instanceManager.Instance, true)
+	opts := runtime.DefaultApplyStorageOptions()
+	if r.skipPreviousRevision {
+		opts.RecordPrevious = false
+	}
+	return r.storageManager.ApplyWithOptions(ctx, &r.instanceManager.Instance, true, opts)
+}
+
+// SetSkipPreviousRevision controls whether finalize records a previous revision.
+func (r *Reconciler) SetSkipPreviousRevision(skip bool) {
+	r.skipPreviousRevision = skip
 }
 
 func (r *Reconciler) UpdateImages(builder *engine.ModuleBuilder, buildResult cue.Value) {
