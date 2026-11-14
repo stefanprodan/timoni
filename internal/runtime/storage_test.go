@@ -218,3 +218,51 @@ func TestSavePendingKeepsSecretLabels(t *testing.T) {
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(got.Labels).To(HaveKeyWithValue(apiv1.BundleNameLabelKey, "my-bundle"))
 }
+
+func TestPreviousRevisionLifecycle(t *testing.T) {
+	g := NewWithT(t)
+	sm := newTestStorageManager()
+	ctx := context.Background()
+
+	first := &apiv1.Instance{}
+	first.Name = "my-instance"
+	first.Namespace = "default"
+	first.Module = apiv1.ModuleReference{Repository: "oci://example.com/app", Version: "1.0.0", Digest: "sha256:aaa"}
+	first.Values = "{ replicas: 1 }"
+	first.Inventory = &apiv1.ResourceInventory{Entries: []apiv1.ResourceRef{{ID: "default_v1__ConfigMap", Version: "v1"}}}
+	g.Expect(sm.Apply(ctx, first, false)).ToNot(HaveOccurred())
+
+	prev, err := sm.GetPrevious(ctx, "my-instance", "default")
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(prev).To(BeNil())
+
+	second := &apiv1.Instance{}
+	second.Name = "my-instance"
+	second.Namespace = "default"
+	second.Module = apiv1.ModuleReference{Repository: "oci://example.com/app", Version: "2.0.0", Digest: "sha256:bbb"}
+	second.Values = "{ replicas: 2 }"
+	second.Inventory = &apiv1.ResourceInventory{Entries: []apiv1.ResourceRef{{ID: "default_v2__ConfigMap", Version: "v1"}}}
+	g.Expect(sm.Apply(ctx, second, false)).ToNot(HaveOccurred())
+
+	prev, err = sm.GetPrevious(ctx, "my-instance", "default")
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(prev).ToNot(BeNil())
+	g.Expect(prev.Module.Digest).To(Equal("sha256:aaa"))
+	g.Expect(prev.Values).To(Equal("{ replicas: 1 }"))
+
+	// Pending must not wipe the previous slot.
+	pending := &apiv1.Instance{}
+	pending.Name = "my-instance"
+	pending.Namespace = "default"
+	pending.Inventory = &apiv1.ResourceInventory{Entries: []apiv1.ResourceRef{{ID: "default_v3__ConfigMap", Version: "v1"}}}
+	g.Expect(sm.SavePending(ctx, pending)).ToNot(HaveOccurred())
+	prev, err = sm.GetPrevious(ctx, "my-instance", "default")
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(prev.Module.Digest).To(Equal("sha256:aaa"))
+
+	// Rollback finalize clears previous.
+	g.Expect(sm.ApplyWithOptions(ctx, first, false, ApplyStorageOptions{RecordPrevious: false})).ToNot(HaveOccurred())
+	prev, err = sm.GetPrevious(ctx, "my-instance", "default")
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(prev).To(BeNil())
+}

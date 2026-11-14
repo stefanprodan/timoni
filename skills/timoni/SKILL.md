@@ -6,7 +6,7 @@ metadata:
   author: Stefan Prodan
   homepage: https://timoni.sh
   source: https://github.com/stefanprodan/timoni
-  version: "0.3.0"
+  version: "0.4.0"
 ---
 
 # Timoni
@@ -272,12 +272,19 @@ Per-object behavior is set with annotations in the module templates:
 | Annotation | Effect |
 |------------|--------|
 | `action.timoni.sh/force: "enabled"` | Recreate the object when its immutable fields change (`--force` does this for all objects) |
+| `action.timoni.sh/recreate: "enabled"` | Delete then recreate on every apply, even if the spec is unchanged |
+| `action.timoni.sh/delete-after-hooks: "enabled"` | Keep until a consecutive hooks group succeeds, then delete as a batch before the next normal set |
 | `action.timoni.sh/one-off: "enabled"` | Apply only if the object does not exist |
 | `action.timoni.sh/prune: "disabled"` | Never garbage-collect the object, also survives `delete` |
 | `action.timoni.sh/wait: "disabled"` | Skip readiness waiting for the object |
 
 `timoni delete` and `bundle delete` remove the inventory objects (except
 `prune: disabled` ones) and wait for finalizers; namespaces are left in place.
+
+`timoni rollback INSTANCE` restores the single previous revision (module URL,
+version, digest and values) stored in the instance Secret. A second consecutive
+rollback fails until another successful apply records a new previous revision.
+Timoni does not run down-migrations.
 
 ## Module authoring
 

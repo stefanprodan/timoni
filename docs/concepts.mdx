@@ -63,6 +63,7 @@ Commands for working with module instances:
 - `timoni list -n <namespace>`
 - `timoni inspect [module|values|resources] <name> -n <namespace>`
 - `timoni status <name> -n <namespace>`
+- `timoni rollback <name> -n <namespace>`
 
 The `install` and `upgrade` commands are aliases of `timoni apply`.
 To apply the Kubernetes resources belonging to a module instance,
@@ -80,6 +81,12 @@ On upgrade, Timoni records the new revision as pending in the instance
 storage before touching the cluster, and marks it as applied only after
 the reconciliation has succeeded. If an upgrade is interrupted, the next
 run resumes from the recorded state, and `timoni delete` cleans up both revisions.
+
+Successful applies also keep one previous revision (module URL, version,
+digest and values) in the same storage Secret. `timoni rollback` re-applies
+that previous revision; a second consecutive rollback is rejected until
+another apply records a new previous revision. Timoni does not run
+down-migrations.
 
 After an installation or upgrade, Timoni waits for the
 applied resources to be fully reconciled by checking the ready status

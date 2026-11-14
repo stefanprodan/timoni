@@ -349,7 +349,7 @@ func fetchBundleInstanceModule(ctx context.Context, instance *apiv1.BundleInstan
 // modified; the instance schema and values are injected as in-memory
 // overlays. The validator carries schemas registered by earlier instances.
 func applyBundleInstance(ctx context.Context, instance *apiv1.BundleInstance, kubeVersion string, rootDir string, modDir string, crdValidator *engine.CRDValidator, diffOutput io.Writer) error {
-	log := loggerBundleInstance(ctx, instance.Bundle, instance.Cluster, instance.Name, true)
+	log := loggerBundleInstance(ctx, instance.Bundle, instance.Cluster, instance.Name)
 
 	builder := engine.NewModuleBuilder(
 		nil,

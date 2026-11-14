@@ -55,6 +55,7 @@ func TestCommandsRejectExtraArgs(t *testing.T) {
 		{name: "mod vendor k8s", cmd: vendorK8sCmd, args: []string{"module", "extra"}},
 		{name: "mod vet", cmd: vetModCmd, args: []string{"module", "extra"}},
 		{name: "status", cmd: statusCmd, args: []string{"instance", "extra"}},
+		{name: "rollback", cmd: rollbackCmd, args: []string{"instance", "extra"}},
 		{name: "version", cmd: versionCmd, args: []string{"extra"}},
 	}
 

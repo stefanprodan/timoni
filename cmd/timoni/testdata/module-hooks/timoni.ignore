@@ -1,0 +1,7 @@
+# Add files here to exclude from the module OCI artifact.
+# Docs: https://timoni.sh/module-distribution/#ignore
+timoni.ignore
+docs/
+README.md
+LICENSE
+.git/
