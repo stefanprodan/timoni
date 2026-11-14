@@ -75,7 +75,7 @@ func runRollbackCmd(cmd *cobra.Command, args []string) error {
 	}
 	rollbackArgs.name = args[0]
 
-	log := loggerInstance(cmd.Context(), rollbackArgs.name, true)
+	log := loggerInstance(cmd.Context(), rollbackArgs.name)
 
 	rm, err := runtime.NewResourceManager(kubeconfigArgs)
 	if err != nil {

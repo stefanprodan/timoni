@@ -221,7 +221,7 @@ func runBundleVetCmd(cmd *cobra.Command, args []string) error {
 				if i.Namespace == "" {
 					return fmt.Errorf("instance %s does not have a namespace", i.Name)
 				}
-				log := loggerBundleInstance(logr.NewContext(cmd.Context(), log), bundle.Name, cluster.Name, i.Name, true)
+				log := loggerBundleInstance(logr.NewContext(cmd.Context(), log), bundle.Name, cluster.Name, i.Name)
 				log.Info("instance is valid")
 			}
 		}

@@ -153,7 +153,7 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 	applyArgs.name = args[0]
 	applyArgs.module = args[1]
 
-	log := loggerInstance(cmd.Context(), applyArgs.name, true)
+	log := loggerInstance(cmd.Context(), applyArgs.name)
 
 	version := applyArgs.version.String()
 	digest := applyArgs.digest.String()
