@@ -121,6 +121,10 @@ type applyFlags struct {
 
 var applyArgs applyFlags
 
+// applyFromRollback is set by the rollback command so finalize does not
+// record the rolled-away revision as previous (no consecutive rollback).
+var applyFromRollback bool
+
 func init() {
 	applyCmd.Flags().VarP(&applyArgs.version, applyArgs.version.Type(), applyArgs.version.Shorthand(), applyArgs.version.Description())
 	applyCmd.Flags().VarP(&applyArgs.pkg, applyArgs.pkg.Type(), applyArgs.pkg.Shorthand(), applyArgs.pkg.Description())
@@ -268,6 +272,10 @@ func runApplyCmd(cmd *cobra.Command, args []string) error {
 		},
 		rootArgs.timeout,
 	)
+	if applyFromRollback {
+		r.SetSkipPreviousRevision(true)
+		applyFromRollback = false
+	}
 	if err := r.Init(ctx, builder, buildResult, instance, kubeconfigArgs); err != nil {
 		return annotateInstanceOwnershipConflictErr(err)
 	}

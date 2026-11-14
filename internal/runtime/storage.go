@@ -40,10 +40,24 @@ var (
 	storagePrefix     = fmt.Sprintf("%s.", apiv1.FieldManager)
 	storageDataKey    = strings.ToLower(apiv1.InstanceKind)
 	pendingDataKey    = "pending"
+	previousDataKey   = "previous"
 	nameLabelKey      = "app.kubernetes.io/name"
 	componentLabelKey = "app.kubernetes.io/component"
 	createdByLabelKey = "app.kubernetes.io/created-by"
 )
+
+// ApplyStorageOptions controls how Apply updates the storage Secret.
+type ApplyStorageOptions struct {
+	// RecordPrevious copies the current instance record into the previous
+	// slot before overwriting it. Disable for rollback finalization so a
+	// second consecutive rollback has nothing to restore.
+	RecordPrevious bool
+}
+
+// DefaultApplyStorageOptions records one previous revision on apply.
+func DefaultApplyStorageOptions() ApplyStorageOptions {
+	return ApplyStorageOptions{RecordPrevious: true}
+}
 
 // StorageManager manages the inventory in-cluster storage.
 type StorageManager struct {
@@ -57,8 +71,14 @@ func NewStorageManager(resManager *ssa.ResourceManager) *StorageManager {
 	}
 }
 
-// Apply creates or updates the storage object for the given instance.
+// Apply creates or updates the storage object for the given instance,
+// recording one previous revision when an instance already exists.
 func (s *StorageManager) Apply(ctx context.Context, instance *apiv1.Instance, createNamespace bool) error {
+	return s.ApplyWithOptions(ctx, instance, createNamespace, DefaultApplyStorageOptions())
+}
+
+// ApplyWithOptions creates or updates the storage object for the given instance.
+func (s *StorageManager) ApplyWithOptions(ctx context.Context, instance *apiv1.Instance, createNamespace bool, storageOpts ApplyStorageOptions) error {
 	instance.LastTransitionTime = time.Now().UTC().Format(time.RFC3339)
 	instanceData, err := json.Marshal(instance)
 	if err != nil {
@@ -74,6 +94,18 @@ func (s *StorageManager) Apply(ctx context.Context, instance *apiv1.Instance, cr
 	secret := s.newSecret(instance.Name, instance.Namespace)
 	secret.Data = map[string][]byte{
 		storageDataKey: instanceData,
+	}
+
+	existing := &corev1.Secret{}
+	err = s.resManager.Client().Get(ctx, client.ObjectKeyFromObject(secret), existing)
+	if err == nil {
+		if storageOpts.RecordPrevious {
+			if prev, ok := existing.Data[storageDataKey]; ok {
+				secret.Data[previousDataKey] = prev
+			}
+		}
+	} else if !apierrors.IsNotFound(err) {
+		return err
 	}
 
 	maps.Copy(secret.Labels, instance.Labels)
@@ -97,6 +129,29 @@ func (s *StorageManager) Apply(ctx context.Context, instance *apiv1.Instance, cr
 	}
 
 	return nil
+}
+
+// GetPrevious returns the one stored previous revision, or nil when none exists.
+func (s *StorageManager) GetPrevious(ctx context.Context, name, namespace string) (*apiv1.Instance, error) {
+	secret := s.newSecret(name, namespace)
+	if err := s.resManager.Client().Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	data, ok := secret.Data[previousDataKey]
+	if !ok {
+		return nil, nil
+	}
+
+	instance, err := s.decodeInstance(data, secret.ObjectMeta)
+	if err != nil {
+		return nil, fmt.Errorf("invalid previous revision found in Secret/%s/%s: %w",
+			secret.GetNamespace(), secret.GetName(), err)
+	}
+	return instance, nil
 }
 
 // Get retrieves the instance from the storage.
@@ -225,6 +280,9 @@ func (s *StorageManager) SavePending(ctx context.Context, instance *apiv1.Instan
 	secret.Data = map[string][]byte{
 		storageDataKey: storedData,
 		pendingDataKey: pendingData,
+	}
+	if prev, ok := existing.Data[previousDataKey]; ok {
+		secret.Data[previousDataKey] = prev
 	}
 
 	opts := []client.PatchOption{

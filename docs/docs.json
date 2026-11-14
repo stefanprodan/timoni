@@ -126,7 +126,8 @@
               "cmd/timoni_inspect_module",
               "cmd/timoni_inspect_values",
               "cmd/timoni_inspect_resources",
-              "cmd/timoni_status"
+              "cmd/timoni_status",
+              "cmd/timoni_rollback"
             ]
           },
           {
