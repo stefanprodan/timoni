@@ -483,6 +483,91 @@ func TestConvertCRD(t *testing.T) {
 	}]
 }`,
 		},
+		{
+			name: "map-untyped-xk-preserve",
+			spec: `type: "object"
+			properties: {
+				labels: {
+					type: "object"
+					additionalProperties: "x-kubernetes-preserve-unknown-fields": true
+				}
+			}
+			`,
+			expect: `{
+	labels?: {
+		[string]: _
+	}
+}`,
+		},
+		{
+			name: "map-int-or-string",
+			spec: `type: "object"
+			properties: {
+				ports: {
+					type: "object"
+					additionalProperties: "x-kubernetes-int-or-string": true
+				}
+			}
+			`,
+			expect: `{
+	ports?: {
+		[string]: _
+	}
+}`,
+		},
+		{
+			name: "map-addlprops-true",
+			spec: `type: "object"
+			properties: {
+				extra: {
+					type: "object"
+					additionalProperties: true
+				}
+			}
+			`,
+			expect: `{
+	extra?: {
+		...
+	}
+}`,
+		},
+		{
+			name: "map-of-maps-xk-preserve",
+			spec: `type: "object"
+			properties: {
+				groups: {
+					type: "object"
+					additionalProperties: {
+						type: "object"
+						additionalProperties: "x-kubernetes-preserve-unknown-fields": true
+					}
+				}
+			}
+			`,
+			expect: `{
+	groups?: {
+		[string]: {
+			[string]: _
+		}
+	}
+}`,
+		},
+		{
+			name: "map-typed",
+			spec: `type: "object"
+			properties: {
+				env: {
+					type: "object"
+					additionalProperties: type: "string"
+				}
+			}
+			`,
+			expect: `{
+	env?: {
+		[string]: string
+	}
+}`,
+		},
 	}
 
 	for _, item := range table {
