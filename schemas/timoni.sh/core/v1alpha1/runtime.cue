@@ -8,8 +8,8 @@ import "strings"
 // RuntimeValue defines the schema for a Timoni runtime value
 // fetched from the in-cluster Kubernetes resources.
 #RuntimeValue: {
-	query: string
-	for: {[string & =~"^(([A-Za-z0-9][-A-Za-z0-9_]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)]: string}
+	query:    string
+	for:      {[string & =~"^(([A-Za-z0-9][-A-Za-z0-9_]*)?[A-Za-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)]: string}
 	optional: *false | bool
 }
 

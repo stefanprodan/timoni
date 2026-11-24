@@ -17,6 +17,6 @@ import "strings"
 			digest?: string
 		})
 		namespace: string & =~"^(([a-z0-9][-a-z0-9_.]*)?[a-z0-9])?$" & strings.MaxRunes(63) & strings.MinRunes(1)
-		values: {...}
+		values:    {...}
 	}
 }

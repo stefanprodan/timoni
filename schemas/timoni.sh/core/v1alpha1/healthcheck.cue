@@ -65,7 +65,7 @@ package v1alpha1
 		metadata: {generation?: int, ...}
 		status?: {
 			observedGeneration?: int
-			conditions?: [...{type?: string, status?: string, observedGeneration?: int, ...}]
+			conditions?:         [...{type?: string, status?: string, observedGeneration?: int, ...}]
 			...
 		}
 		...

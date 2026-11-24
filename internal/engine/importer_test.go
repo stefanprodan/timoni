@@ -162,9 +162,7 @@ func TestConvertCRD(t *testing.T) {
 			}
 			required: ["foo"]
 			`,
-			expect: `{
-	foo!: string
-}`,
+			expect: `{foo!: string}`,
 		},
 		{
 			name: "root-addlprops-false",
@@ -176,9 +174,7 @@ func TestConvertCRD(t *testing.T) {
 			}
 			required: ["foo"]
 			additionalProperties: false`,
-			expect: `close({
-	foo!: string
-})`,
+			expect: `close({foo!: string})`,
 		},
 		{
 			name: "root-xk-preserve",
@@ -230,9 +226,7 @@ func TestConvertCRD(t *testing.T) {
 	nest!: {
 		innerField?: string
 		nestnest?: {
-			nestnestnest?: {
-				innermost?: string
-			}
+			nestnestnest?: innermost?: string
 			...
 		}
 	}
@@ -257,9 +251,7 @@ func TestConvertCRD(t *testing.T) {
 			`,
 			expect: `{
 	foo!: string
-	nest!: {
-		innerField?: string
-	}
+	nest!: innerField?: string
 }`,
 		},
 		{
@@ -280,10 +272,8 @@ func TestConvertCRD(t *testing.T) {
 			required: ["foo", "nest"]
 			additionalProperties: false`,
 			expect: `close({
-	foo!: string
-	nest!: close({
-		innerField?: string
-	})
+	foo!:  string
+	nest!: close({innerField?: string})
 })`,
 		},
 		{
@@ -305,9 +295,7 @@ func TestConvertCRD(t *testing.T) {
 			`,
 			expect: `{
 	foo!: string
-	nest!: {
-		innerField?: string
-	}
+	nest!: innerField?: string
 	...
 }`,
 		},
@@ -342,18 +330,10 @@ func TestConvertCRD(t *testing.T) {
 			}
 			`,
 			expect: `{
-	resources?: {
-		claims?: [...{
-			name!: string
-		}]
-	}
-	spec?: {
-		template?: {
-			// Preserve unknown fields.
-			values?: {
-				...
-			}
-		}
+	resources?: claims?: [...{name!: string}]
+	spec?: template?: {
+		// Preserve unknown fields.
+		values?: {...}
 	}
 }`,
 		},
@@ -376,12 +356,10 @@ func TestConvertCRD(t *testing.T) {
 			}
 			`,
 			expect: `{
-	resources?: {
-		claims?: [...{
-			name!: string
-			...
-		}]
-	}
+	resources?: claims?: [...{
+		name!: string
+		...
+	}]
 }`,
 		},
 		{
@@ -402,13 +380,7 @@ func TestConvertCRD(t *testing.T) {
 				}
 			}
 			`,
-			expect: `{
-	resources?: {
-		claims?: [...{
-			name!: string
-		}]
-	}
-}`,
+			expect: `{resources?: claims?: [...{name!: string}]}`,
 		},
 		{
 			name: "map-value-xk-preserve",
@@ -426,11 +398,9 @@ func TestConvertCRD(t *testing.T) {
 			}
 			`,
 			expect: `{
-	policies?: {
-		[string]: {
-			module!: string
-			...
-		}
+	policies?: [string]: {
+		module!: string
+		...
 	}
 }`,
 		},
@@ -454,13 +424,9 @@ func TestConvertCRD(t *testing.T) {
 			}
 			`,
 			expect: `{
-	flags?: {
-		[string]: {
-			state?: string
-			variants?: {
-				...
-			}
-		}
+	flags?: [string]: {
+		state?:    string
+		variants?: {...}
 	}
 }`,
 		},
@@ -477,11 +443,7 @@ func TestConvertCRD(t *testing.T) {
 				}
 			}
 			`,
-			expect: `{
-	inputs?: [...{
-		[string]: _
-	}]
-}`,
+			expect: `{inputs?: [...{...}]}`,
 		},
 		{
 			name: "map-untyped-xk-preserve",
@@ -493,11 +455,7 @@ func TestConvertCRD(t *testing.T) {
 				}
 			}
 			`,
-			expect: `{
-	labels?: {
-		[string]: _
-	}
-}`,
+			expect: `{labels?: {...}}`,
 		},
 		{
 			name: "map-int-or-string",
@@ -509,11 +467,7 @@ func TestConvertCRD(t *testing.T) {
 				}
 			}
 			`,
-			expect: `{
-	ports?: {
-		[string]: _
-	}
-}`,
+			expect: `{ports?: {...}}`,
 		},
 		{
 			name: "map-addlprops-true",
@@ -525,11 +479,7 @@ func TestConvertCRD(t *testing.T) {
 				}
 			}
 			`,
-			expect: `{
-	extra?: {
-		...
-	}
-}`,
+			expect: `{extra?: {...}}`,
 		},
 		{
 			name: "map-of-maps-xk-preserve",
@@ -544,13 +494,7 @@ func TestConvertCRD(t *testing.T) {
 				}
 			}
 			`,
-			expect: `{
-	groups?: {
-		[string]: {
-			[string]: _
-		}
-	}
-}`,
+			expect: `{groups?: [string]: {...}}`,
 		},
 		{
 			name: "map-typed",
@@ -562,11 +506,7 @@ func TestConvertCRD(t *testing.T) {
 				}
 			}
 			`,
-			expect: `{
-	env?: {
-		[string]: string
-	}
-}`,
+			expect: `{env?: [string]: string}`,
 		},
 	}
 

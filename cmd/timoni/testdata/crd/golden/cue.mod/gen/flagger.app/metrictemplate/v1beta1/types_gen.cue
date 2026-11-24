@@ -20,18 +20,10 @@ import "strings"
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	kind: "MetricTemplate"
 	metadata!: {
-		name!: strings.MaxRunes(253) & strings.MinRunes(1) & {
-			string
-		}
-		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {
-			string
-		}
-		labels?: {
-			[string]: string
-		}
-		annotations?: {
-			[string]: string
-		}
+		name!:      strings.MaxRunes(253) & strings.MinRunes(1) & {string}
+		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {string}
+		labels?: [string]:      string
+		annotations?: [string]: string
 	}
 
 	// MetricTemplateSpec defines the desired state of a MetricTemplate.
@@ -56,7 +48,15 @@ import "strings"
 		}
 
 		// Type of this provider
-		type!: "prometheus" | "influxdb" | "datadog" | "stackdriver" | "cloudwatch" | "newrelic" | "graphite" | "dynatrace" | "keptn"
+		type!: "prometheus" |
+			"influxdb" |
+			"datadog" |
+			"stackdriver" |
+			"cloudwatch" |
+			"newrelic" |
+			"graphite" |
+			"dynatrace" |
+			"keptn"
 	}
 
 	// Query of this metric template
@@ -67,79 +67,65 @@ import "strings"
 _crd: {
 	apiVersion: "apiextensions.k8s.io/v1"
 	kind:       "CustomResourceDefinition"
-	metadata: {
-		name: "metrictemplates.flagger.app"
-	}
+	metadata: name: "metrictemplates.flagger.app"
 	spec: {
 		group: "flagger.app"
 		names: {
 			categories: ["all"]
-			kind:     "MetricTemplate"
-			listKind: "MetricTemplateList"
-			plural:   "metrictemplates"
-			singular: "metrictemplate"
+			kind:       "MetricTemplate"
+			listKind:   "MetricTemplateList"
+			plural:     "metrictemplates"
+			singular:   "metrictemplate"
 		}
 		scope: "Namespaced"
 		versions: [{
 			name:    "v1beta1"
 			served:  true
 			storage: true
-			schema: {
-				openAPIV3Schema: {
-					properties: {
-						apiVersion: {
-							type: "string"
-						}
-						kind: {
-							type: "string"
-						}
-						metadata: {
-							type: "object"
-						}
-						spec: {
-							properties: {
-								provider: {
-									properties: {
-										address: {
-											type: "string"
-										}
-										insecureSkipVerify: {
-											type: "boolean"
-										}
-										region: {
-											type: "string"
-										}
-										secretRef: {
-											properties: {
-												name: {
-													type: "string"
-												}
-											}
-											required: ["name"]
-											type: "object"
-										}
-										type: {
-											enum: ["prometheus", "influxdb", "datadog", "stackdriver", "cloudwatch", "newrelic", "graphite", "dynatrace", "keptn"]
-											type: "string"
-										}
+			schema: openAPIV3Schema: {
+				properties: {
+					apiVersion: type: "string"
+					kind: type:       "string"
+					metadata: type:   "object"
+					spec: {
+						properties: {
+							provider: {
+								properties: {
+									address: type:            "string"
+									insecureSkipVerify: type: "boolean"
+									region: type:             "string"
+									secretRef: {
+										properties: name: type: "string"
+										required: ["name"]
+										type:     "object"
 									}
-									required: ["type"]
-									type: "object"
+									type: {
+										enum: [
+											"prometheus",
+											"influxdb",
+											"datadog",
+											"stackdriver",
+											"cloudwatch",
+											"newrelic",
+											"graphite",
+											"dynatrace",
+											"keptn",
+										]
+										type: "string"
+									}
 								}
-								query: {
-									type: "string"
-								}
+								required: ["type"]
+								type:     "object"
 							}
-							required: ["provider", "query"]
-							type: "object"
+							query: type: "string"
 						}
+						required: ["provider", "query"]
+						type:     "object"
 					}
-					type: "object"
 				}
+				type: "object"
 			}
-			subresources: {
-				status: {}
-			}
+			subresources: status: {}
 		}]
 	}
 }

@@ -60,10 +60,10 @@ import (
 		allowPrivilegeEscalation: *false | true
 		privileged:               *false | true
 		capabilities:
-		{
-			drop: *["ALL"] | [...string]
-			add: *["CHOWN", "NET_BIND_SERVICE", "SETGID", "SETUID"] | [...string]
-		}
+			{
+				drop: *["ALL"] | [...string]
+				add:  *["CHOWN", "NET_BIND_SERVICE", "SETGID", "SETUID"] | [...string]
+			}
 	}
 
 	// The service allows setting the Kubernetes Service annotations and port.
@@ -75,10 +75,10 @@ import (
 	}
 
 	// Pod optional settings.
-	podAnnotations?: {[string]: string}
-	podSecurityContext?: corev1.#PodSecurityContext
-	imagePullSecrets?: [...timoniv1.#ObjectReference]
-	tolerations?: [...corev1.#Toleration]
+	podAnnotations?:            {[string]: string}
+	podSecurityContext?:        corev1.#PodSecurityContext
+	imagePullSecrets?:          [...timoniv1.#ObjectReference]
+	tolerations?:               [...corev1.#Toleration]
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
 	// Pods are scheduled on Linux nodes by default.
@@ -109,9 +109,9 @@ import (
 	config: #Config
 
 	objects: {
-		sa: #ServiceAccount & {#config: config}
+		sa:  #ServiceAccount & {#config: config}
 		svc: #Service & {#config: config}
-		cm: #ConfigMap & {#config: config}
+		cm:  #ConfigMap & {#config: config}
 
 		deploy: #Deployment & {
 			#config: config

@@ -44,7 +44,7 @@ import (
 	// The image allows setting the container image repository,
 	// tag, digest and pull policy.
 	// The default image repository, tag and digest are set in `images.cue`.
-	image!: timoniv1.#Image
+	image!:            timoniv1.#Image
 	imagePullSecrets?: [...corev1.LocalObjectReference]
 
 	// Resource requirements
@@ -94,8 +94,8 @@ import (
 	}
 
 	// Pod optional settings (common to all deployments)
-	podAnnotations?: {[string]: string}
-	tolerations?: [...corev1.#Toleration]
+	podAnnotations?:            {[string]: string}
+	tolerations?:               [...corev1.#Toleration]
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
 	// Service

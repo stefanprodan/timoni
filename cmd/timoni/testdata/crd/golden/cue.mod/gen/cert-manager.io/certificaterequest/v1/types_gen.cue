@@ -25,18 +25,10 @@ import "strings"
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	kind: "CertificateRequest"
 	metadata!: {
-		name!: strings.MaxRunes(253) & strings.MinRunes(1) & {
-			string
-		}
-		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {
-			string
-		}
-		labels?: {
-			[string]: string
-		}
-		annotations?: {
-			[string]: string
-		}
+		name!:      strings.MaxRunes(253) & strings.MinRunes(1) & {string}
+		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {string}
+		labels?: [string]:      string
+		annotations?: [string]: string
 	}
 
 	// Specification of the desired state of the CertificateRequest resource.
@@ -55,9 +47,7 @@ import "strings"
 	// Extra contains extra attributes of the user that created the
 	// CertificateRequest. Populated by the cert-manager webhook on creation and
 	// immutable.
-	extra?: {
-		[string]: [...string]
-	}
+	extra?: [string]: [...string]
 
 	// Groups contains group membership of the user that created the
 	// CertificateRequest. Populated by the cert-manager webhook on creation and
@@ -105,7 +95,31 @@ import "strings"
 	// extension, these extensions must have the same values as specified here
 	// without any additional values.
 	// If unset, defaults to `digital signature` and `key encipherment`.
-	usages?: [..."signing" | "digital signature" | "content commitment" | "key encipherment" | "key agreement" | "data encipherment" | "cert sign" | "crl sign" | "encipher only" | "decipher only" | "any" | "server auth" | "client auth" | "code signing" | "email protection" | "s/mime" | "ipsec end system" | "ipsec tunnel" | "ipsec user" | "timestamping" | "ocsp signing" | "microsoft sgc" | "netscape sgc"]
+	usages?: [
+		..."signing" |
+			"digital signature" |
+			"content commitment" |
+			"key encipherment" |
+			"key agreement" |
+			"data encipherment" |
+			"cert sign" |
+			"crl sign" |
+			"encipher only" |
+			"decipher only" |
+			"any" |
+			"server auth" |
+			"client auth" |
+			"code signing" |
+			"email protection" |
+			"s/mime" |
+			"ipsec end system" |
+			"ipsec tunnel" |
+			"ipsec user" |
+			"timestamping" |
+			"ocsp signing" |
+			"microsoft sgc" |
+			"netscape sgc",
+	]
 
 	// Username contains the name of the user that created the CertificateRequest.
 	// Populated by the cert-manager webhook on creation and immutable.
@@ -116,148 +130,136 @@ import "strings"
 _crd: {
 	apiVersion: "apiextensions.k8s.io/v1"
 	kind:       "CustomResourceDefinition"
-	metadata: {
-		name: "certificaterequests.cert-manager.io"
-	}
+	metadata: name: "certificaterequests.cert-manager.io"
 	spec: {
 		group: "cert-manager.io"
 		names: {
 			categories: ["cert-manager"]
-			kind:     "CertificateRequest"
-			listKind: "CertificateRequestList"
-			plural:   "certificaterequests"
+			kind:       "CertificateRequest"
+			listKind:   "CertificateRequestList"
+			plural:     "certificaterequests"
 			shortNames: ["cr", "crs"]
-			singular: "certificaterequest"
+			singular:   "certificaterequest"
 		}
 		scope: "Namespaced"
 		versions: [{
 			name:    "v1"
 			served:  true
 			storage: true
-			schema: {
-				openAPIV3Schema: {
-					properties: {
-						apiVersion: {
-							type: "string"
-						}
-						kind: {
-							type: "string"
-						}
-						metadata: {
-							type: "object"
-						}
-						spec: {
-							properties: {
-								duration: {
-									type: "string"
-								}
-								extra: {
-									additionalProperties: {
-										items: {
-											type: "string"
-										}
-										type: "array"
-									}
-									type: "object"
-								}
-								groups: {
-									items: {
-										type: "string"
-									}
-									type:                     "array"
-									"x-kubernetes-list-type": "atomic"
-								}
-								isCA: {
-									type: "boolean"
-								}
-								issuerRef: {
-									properties: {
-										group: {
-											type: "string"
-										}
-										kind: {
-											type: "string"
-										}
-										name: {
-											type: "string"
-										}
-									}
-									required: ["name"]
-									type: "object"
-								}
-								request: {
-									format: "byte"
-									type:   "string"
-								}
-								uid: {
-									type: "string"
-								}
-								usages: {
-									items: {
-										enum: ["signing", "digital signature", "content commitment", "key encipherment", "key agreement", "data encipherment", "cert sign", "crl sign", "encipher only", "decipher only", "any", "server auth", "client auth", "code signing", "email protection", "s/mime", "ipsec end system", "ipsec tunnel", "ipsec user", "timestamping", "ocsp signing", "microsoft sgc", "netscape sgc"]
-										type: "string"
-									}
+			schema: openAPIV3Schema: {
+				properties: {
+					apiVersion: type: "string"
+					kind: type:       "string"
+					metadata: type:   "object"
+					spec: {
+						properties: {
+							duration: type: "string"
+							extra: {
+								additionalProperties: {
+									items: type: "string"
 									type: "array"
 								}
-								username: {
+								type: "object"
+							}
+							groups: {
+								items: type: "string"
+								type:                     "array"
+								"x-kubernetes-list-type": "atomic"
+							}
+							isCA: type: "boolean"
+							issuerRef: {
+								properties: {
+									group: type: "string"
+									kind: type:  "string"
+									name: type:  "string"
+								}
+								required: ["name"]
+								type:     "object"
+							}
+							request: {
+								format: "byte"
+								type:   "string"
+							}
+							uid: type: "string"
+							usages: {
+								items: {
+									enum: [
+										"signing",
+										"digital signature",
+										"content commitment",
+										"key encipherment",
+										"key agreement",
+										"data encipherment",
+										"cert sign",
+										"crl sign",
+										"encipher only",
+										"decipher only",
+										"any",
+										"server auth",
+										"client auth",
+										"code signing",
+										"email protection",
+										"s/mime",
+										"ipsec end system",
+										"ipsec tunnel",
+										"ipsec user",
+										"timestamping",
+										"ocsp signing",
+										"microsoft sgc",
+										"netscape sgc",
+									]
 									type: "string"
 								}
+								type: "array"
 							}
-							required: ["issuerRef", "request"]
-							type: "object"
+							username: type: "string"
 						}
-						status: {
-							properties: {
-								ca: {
-									format: "byte"
-									type:   "string"
-								}
-								certificate: {
-									format: "byte"
-									type:   "string"
-								}
-								conditions: {
-									items: {
-										properties: {
-											lastTransitionTime: {
-												format: "date-time"
-												type:   "string"
-											}
-											message: {
-												type: "string"
-											}
-											reason: {
-												type: "string"
-											}
-											status: {
-												enum: ["True", "False", "Unknown"]
-												type: "string"
-											}
-											type: {
-												type: "string"
-											}
-										}
-										required: ["status", "type"]
-										type: "object"
-									}
-									type: "array"
-									"x-kubernetes-list-map-keys": ["type"]
-									"x-kubernetes-list-type": "map"
-								}
-								failureTime: {
-									format: "date-time"
-									type:   "string"
-								}
-							}
-							type: "object"
-						}
+						required: ["issuerRef", "request"]
+						type:     "object"
 					}
-					type: "object"
+					status: {
+						properties: {
+							ca: {
+								format: "byte"
+								type:   "string"
+							}
+							certificate: {
+								format: "byte"
+								type:   "string"
+							}
+							conditions: {
+								items: {
+									properties: {
+										lastTransitionTime: {
+											format: "date-time"
+											type:   "string"
+										}
+										message: type: "string"
+										reason: type:  "string"
+										status: {
+											enum: ["True", "False", "Unknown"]
+											type: "string"
+										}
+										type: type: "string"
+									}
+									required: ["status", "type"]
+									type:     "object"
+								}
+								type:                         "array"
+								"x-kubernetes-list-map-keys": ["type"]
+								"x-kubernetes-list-type":     "map"
+							}
+							failureTime: {
+								format: "date-time"
+								type:   "string"
+							}
+						}
+						type: "object"
+					}
 				}
+				type: "object"
 			}
-			subresources: {
-				status: {}
-			}
+			subresources: status: {}
 		}]
 	}
 }

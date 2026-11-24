@@ -20,18 +20,10 @@ import "strings"
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	kind: "Challenge"
 	metadata!: {
-		name!: strings.MaxRunes(253) & strings.MinRunes(1) & {
-			string
-		}
-		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {
-			string
-		}
-		labels?: {
-			[string]: string
-		}
-		annotations?: {
-			[string]: string
-		}
+		name!:      strings.MaxRunes(253) & strings.MinRunes(1) & {string}
+		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {string}
+		labels?: [string]:      string
+		annotations?: [string]: string
 	}
 	spec!: #ChallengeSpec
 }
@@ -357,9 +349,7 @@ import "strings"
 			gatewayHTTPRoute?: {
 				// Custom labels that will be applied to HTTPRoutes created by cert-manager
 				// while solving HTTP-01 challenges.
-				labels?: {
-					[string]: string
-				}
+				labels?: [string]: string
 
 				// When solving an HTTP-01 challenge, cert-manager creates an HTTPRoute.
 				// cert-manager needs to know which parentRefs should be used when creating the
@@ -380,9 +370,7 @@ import "strings"
 					// * Gateway (Gateway conformance profile) * Service (Mesh conformance profile,
 					// experimental, ClusterIP Services only)
 					// Support for other resources is Implementation-Specific.
-					kind?: strings.MaxRunes(63) & strings.MinRunes(1) & {
-						=~"^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$"
-					}
+					kind?: strings.MaxRunes(63) & strings.MinRunes(1) & {=~"^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$"}
 
 					// Name is the name of the referent.
 					// Support: Core
@@ -404,9 +392,7 @@ import "strings"
 					// destination of the connections are a Service targeted as a ParentRef of the
 					// Route.
 					// Support: Core
-					namespace?: strings.MaxRunes(63) & strings.MinRunes(1) & {
-						=~"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
-					}
+					namespace?: strings.MaxRunes(63) & strings.MinRunes(1) & {=~"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"}
 
 					// Port is the network port this Route targets. It can be interpreted
 					// differently based on the type of parent resource.
@@ -486,14 +472,10 @@ import "strings"
 					// values.
 					metadata?: {
 						// Annotations that should be added to the created ACME HTTP01 solver ingress.
-						annotations?: {
-							[string]: string
-						}
+						annotations?: [string]: string
 
 						// Labels that should be added to the created ACME HTTP01 solver ingress.
-						labels?: {
-							[string]: string
-						}
+						labels?: [string]: string
 					}
 				}
 
@@ -513,14 +495,10 @@ import "strings"
 					// values.
 					metadata?: {
 						// Annotations that should be added to the create ACME HTTP01 solver pods.
-						annotations?: {
-							[string]: string
-						}
+						annotations?: [string]: string
 
 						// Labels that should be added to the created ACME HTTP01 solver pods.
-						labels?: {
-							[string]: string
-						}
+						labels?: [string]: string
 					}
 
 					// PodSpec defines overrides for the HTTP01 challenge solver pod. Check
@@ -657,9 +635,7 @@ import "strings"
 											// matchLabels map is equivalent to an element of matchExpressions, whose key
 											// field is "key", the operator is "In", and the values array contains only
 											// "value". The requirements are ANDed.
-											matchLabels?: {
-												[string]: string
-											}
+											matchLabels?: [string]: string
 										}
 
 										// A label query over the set of namespaces that the term applies to. The term
@@ -688,9 +664,7 @@ import "strings"
 											// matchLabels map is equivalent to an element of matchExpressions, whose key
 											// field is "key", the operator is "In", and the values array contains only
 											// "value". The requirements are ANDed.
-											matchLabels?: {
-												[string]: string
-											}
+											matchLabels?: [string]: string
 										}
 
 										// namespaces specifies a static list of namespace names that the term applies
@@ -741,9 +715,7 @@ import "strings"
 										// matchLabels map is equivalent to an element of matchExpressions, whose key
 										// field is "key", the operator is "In", and the values array contains only
 										// "value". The requirements are ANDed.
-										matchLabels?: {
-											[string]: string
-										}
+										matchLabels?: [string]: string
 									}
 
 									// A label query over the set of namespaces that the term applies to. The term
@@ -772,9 +744,7 @@ import "strings"
 										// matchLabels map is equivalent to an element of matchExpressions, whose key
 										// field is "key", the operator is "In", and the values array contains only
 										// "value". The requirements are ANDed.
-										matchLabels?: {
-											[string]: string
-										}
+										matchLabels?: [string]: string
 									}
 
 									// namespaces specifies a static list of namespace names that the term applies
@@ -829,9 +799,7 @@ import "strings"
 											// matchLabels map is equivalent to an element of matchExpressions, whose key
 											// field is "key", the operator is "In", and the values array contains only
 											// "value". The requirements are ANDed.
-											matchLabels?: {
-												[string]: string
-											}
+											matchLabels?: [string]: string
 										}
 
 										// A label query over the set of namespaces that the term applies to. The term
@@ -860,9 +828,7 @@ import "strings"
 											// matchLabels map is equivalent to an element of matchExpressions, whose key
 											// field is "key", the operator is "In", and the values array contains only
 											// "value". The requirements are ANDed.
-											matchLabels?: {
-												[string]: string
-											}
+											matchLabels?: [string]: string
 										}
 
 										// namespaces specifies a static list of namespace names that the term applies
@@ -913,9 +879,7 @@ import "strings"
 										// matchLabels map is equivalent to an element of matchExpressions, whose key
 										// field is "key", the operator is "In", and the values array contains only
 										// "value". The requirements are ANDed.
-										matchLabels?: {
-											[string]: string
-										}
+										matchLabels?: [string]: string
 									}
 
 									// A label query over the set of namespaces that the term applies to. The term
@@ -944,9 +908,7 @@ import "strings"
 										// matchLabels map is equivalent to an element of matchExpressions, whose key
 										// field is "key", the operator is "In", and the values array contains only
 										// "value". The requirements are ANDed.
-										matchLabels?: {
-											[string]: string
-										}
+										matchLabels?: [string]: string
 									}
 
 									// namespaces specifies a static list of namespace names that the term applies
@@ -977,9 +939,7 @@ import "strings"
 						// Selector which must match a node's labels for the pod to be scheduled on
 						// that node. More info:
 						// https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-						nodeSelector?: {
-							[string]: string
-						}
+						nodeSelector?: [string]: string
 
 						// If specified, the pod's priorityClassName.
 						priorityClassName?: string
@@ -1047,9 +1007,7 @@ import "strings"
 
 			// A label selector that is used to refine the set of certificate's that this
 			// challenge solver will apply to.
-			matchLabels?: {
-				[string]: string
-			}
+			matchLabels?: [string]: string
 		}
 	}
 
@@ -1072,1086 +1030,1020 @@ import "strings"
 _crd: {
 	apiVersion: "apiextensions.k8s.io/v1"
 	kind:       "CustomResourceDefinition"
-	metadata: {
-		name: "challenges.acme.cert-manager.io"
-	}
+	metadata: name: "challenges.acme.cert-manager.io"
 	spec: {
 		group: "acme.cert-manager.io"
 		names: {
 			categories: ["cert-manager", "cert-manager-acme"]
-			kind:     "Challenge"
-			listKind: "ChallengeList"
-			plural:   "challenges"
-			singular: "challenge"
+			kind:       "Challenge"
+			listKind:   "ChallengeList"
+			plural:     "challenges"
+			singular:   "challenge"
 		}
 		scope: "Namespaced"
 		versions: [{
 			name:    "v1"
 			served:  true
 			storage: true
-			schema: {
-				openAPIV3Schema: {
-					properties: {
-						apiVersion: {
-							type: "string"
-						}
-						kind: {
-							type: "string"
-						}
-						metadata: {
-							type: "object"
-						}
-						spec: {
-							properties: {
-								authorizationURL: {
-									type: "string"
+			schema: openAPIV3Schema: {
+				properties: {
+					apiVersion: type: "string"
+					kind: type:       "string"
+					metadata: type:   "object"
+					spec: {
+						properties: {
+							authorizationURL: type: "string"
+							dnsName: type:          "string"
+							issuerRef: {
+								properties: {
+									group: type: "string"
+									kind: type:  "string"
+									name: type:  "string"
 								}
-								dnsName: {
-									type: "string"
-								}
-								issuerRef: {
-									properties: {
-										group: {
-											type: "string"
-										}
-										kind: {
-											type: "string"
-										}
-										name: {
-											type: "string"
-										}
-									}
-									required: ["name"]
-									type: "object"
-								}
-								key: {
-									type: "string"
-								}
-								solver: {
-									properties: {
-										dns01: {
-											properties: {
-												acmeDNS: {
-													properties: {
-														accountSecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
+								required: ["name"]
+								type:     "object"
+							}
+							key: type: "string"
+							solver: {
+								properties: {
+									dns01: {
+										properties: {
+											acmeDNS: {
+												properties: {
+													accountSecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
 														}
-														host: {
-															type: "string"
-														}
+														required: ["name"]
+														type:     "object"
 													}
-													required: ["accountSecretRef", "host"]
-													type: "object"
+													host: type: "string"
 												}
-												akamai: {
-													properties: {
-														accessTokenSecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-														clientSecretSecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-														clientTokenSecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-														serviceConsumerDomain: {
-															type: "string"
-														}
-													}
-													required: ["accessTokenSecretRef", "clientSecretSecretRef", "clientTokenSecretRef", "serviceConsumerDomain"]
-													type: "object"
-												}
-												azureDNS: {
-													properties: {
-														clientID: {
-															type: "string"
-														}
-														clientSecretSecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-														environment: {
-															enum: ["AzurePublicCloud", "AzureChinaCloud", "AzureGermanCloud", "AzureUSGovernmentCloud"]
-															type: "string"
-														}
-														hostedZoneName: {
-															type: "string"
-														}
-														managedIdentity: {
-															properties: {
-																clientID: {
-																	type: "string"
-																}
-																resourceID: {
-																	type: "string"
-																}
-															}
-															type: "object"
-														}
-														resourceGroupName: {
-															type: "string"
-														}
-														subscriptionID: {
-															type: "string"
-														}
-														tenantID: {
-															type: "string"
-														}
-													}
-													required: ["resourceGroupName", "subscriptionID"]
-													type: "object"
-												}
-												cloudDNS: {
-													properties: {
-														hostedZoneName: {
-															type: "string"
-														}
-														project: {
-															type: "string"
-														}
-														serviceAccountSecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-													}
-													required: ["project"]
-													type: "object"
-												}
-												cloudflare: {
-													properties: {
-														apiKeySecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-														apiTokenSecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-														email: {
-															type: "string"
-														}
-													}
-													type: "object"
-												}
-												cnameStrategy: {
-													enum: ["None", "Follow"]
-													type: "string"
-												}
-												digitalocean: {
-													properties: {
-														tokenSecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-													}
-													required: ["tokenSecretRef"]
-													type: "object"
-												}
-												rfc2136: {
-													properties: {
-														nameserver: {
-															type: "string"
-														}
-														tsigAlgorithm: {
-															type: "string"
-														}
-														tsigKeyName: {
-															type: "string"
-														}
-														tsigSecretSecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-													}
-													required: ["nameserver"]
-													type: "object"
-												}
-												route53: {
-													properties: {
-														accessKeyID: {
-															type: "string"
-														}
-														accessKeyIDSecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-														hostedZoneID: {
-															type: "string"
-														}
-														region: {
-															type: "string"
-														}
-														role: {
-															type: "string"
-														}
-														secretAccessKeySecretRef: {
-															properties: {
-																key: {
-																	type: "string"
-																}
-																name: {
-																	type: "string"
-																}
-															}
-															required: ["name"]
-															type: "object"
-														}
-													}
-													required: ["region"]
-													type: "object"
-												}
-												webhook: {
-													properties: {
-														config: {
-															"x-kubernetes-preserve-unknown-fields": true
-														}
-														groupName: {
-															type: "string"
-														}
-														solverName: {
-															type: "string"
-														}
-													}
-													required: ["groupName", "solverName"]
-													type: "object"
-												}
+												required: ["accountSecretRef", "host"]
+												type:     "object"
 											}
-											type: "object"
-										}
-										http01: {
-											properties: {
-												gatewayHTTPRoute: {
+											akamai: {
+												properties: {
+													accessTokenSecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
+														}
+														required: ["name"]
+														type:     "object"
+													}
+													clientSecretSecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
+														}
+														required: ["name"]
+														type:     "object"
+													}
+													clientTokenSecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
+														}
+														required: ["name"]
+														type:     "object"
+													}
+													serviceConsumerDomain: type: "string"
+												}
+												required: [
+													"accessTokenSecretRef",
+													"clientSecretSecretRef",
+													"clientTokenSecretRef",
+													"serviceConsumerDomain",
+												]
+												type: "object"
+											}
+											azureDNS: {
+												properties: {
+													clientID: type: "string"
+													clientSecretSecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
+														}
+														required: ["name"]
+														type:     "object"
+													}
+													environment: {
+														enum: [
+															"AzurePublicCloud",
+															"AzureChinaCloud",
+															"AzureGermanCloud",
+															"AzureUSGovernmentCloud",
+														]
+														type: "string"
+													}
+													hostedZoneName: type: "string"
+													managedIdentity: {
+														properties: {
+															clientID: type:   "string"
+															resourceID: type: "string"
+														}
+														type: "object"
+													}
+													resourceGroupName: type: "string"
+													subscriptionID: type:    "string"
+													tenantID: type:          "string"
+												}
+												required: ["resourceGroupName", "subscriptionID"]
+												type:     "object"
+											}
+											cloudDNS: {
+												properties: {
+													hostedZoneName: type: "string"
+													project: type:        "string"
+													serviceAccountSecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
+														}
+														required: ["name"]
+														type:     "object"
+													}
+												}
+												required: ["project"]
+												type:     "object"
+											}
+											cloudflare: {
+												properties: {
+													apiKeySecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
+														}
+														required: ["name"]
+														type:     "object"
+													}
+													apiTokenSecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
+														}
+														required: ["name"]
+														type:     "object"
+													}
+													email: type: "string"
+												}
+												type: "object"
+											}
+											cnameStrategy: {
+												enum: ["None", "Follow"]
+												type: "string"
+											}
+											digitalocean: {
+												properties: tokenSecretRef: {
 													properties: {
-														labels: {
-															additionalProperties: {
-																type: "string"
+														key: type:  "string"
+														name: type: "string"
+													}
+													required: ["name"]
+													type:     "object"
+												}
+												required: ["tokenSecretRef"]
+												type:     "object"
+											}
+											rfc2136: {
+												properties: {
+													nameserver: type:    "string"
+													tsigAlgorithm: type: "string"
+													tsigKeyName: type:   "string"
+													tsigSecretSecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
+														}
+														required: ["name"]
+														type:     "object"
+													}
+												}
+												required: ["nameserver"]
+												type:     "object"
+											}
+											route53: {
+												properties: {
+													accessKeyID: type: "string"
+													accessKeyIDSecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
+														}
+														required: ["name"]
+														type:     "object"
+													}
+													hostedZoneID: type: "string"
+													region: type:       "string"
+													role: type:         "string"
+													secretAccessKeySecretRef: {
+														properties: {
+															key: type:  "string"
+															name: type: "string"
+														}
+														required: ["name"]
+														type:     "object"
+													}
+												}
+												required: ["region"]
+												type:     "object"
+											}
+											webhook: {
+												properties: {
+													config: "x-kubernetes-preserve-unknown-fields": true
+													groupName: type:                                "string"
+													solverName: type:                               "string"
+												}
+												required: ["groupName", "solverName"]
+												type:     "object"
+											}
+										}
+										type: "object"
+									}
+									http01: {
+										properties: {
+											gatewayHTTPRoute: {
+												properties: {
+													labels: {
+														additionalProperties: type: "string"
+														type: "object"
+													}
+													parentRefs: {
+														items: {
+															properties: {
+																group: {
+																	default:   "gateway.networking.k8s.io"
+																	maxLength: 253
+																	pattern:
+																		"^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+																	type: "string"
+																}
+																kind: {
+																	default:   "Gateway"
+																	maxLength: 63
+																	minLength: 1
+																	pattern:   "^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$"
+																	type:      "string"
+																}
+																name: {
+																	maxLength: 253
+																	minLength: 1
+																	type:      "string"
+																}
+																namespace: {
+																	maxLength: 63
+																	minLength: 1
+																	pattern:   "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+																	type:      "string"
+																}
+																port: {
+																	format:  "int32"
+																	maximum: 65535
+																	minimum: 1
+																	type:    "integer"
+																}
+																sectionName: {
+																	maxLength: 253
+																	minLength: 1
+																	pattern:
+																		"^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+																	type: "string"
+																}
+															}
+															required: ["name"]
+															type:     "object"
+														}
+														type: "array"
+													}
+													serviceType: type: "string"
+												}
+												type: "object"
+											}
+											ingress: {
+												properties: {
+													class: type:            "string"
+													ingressClassName: type: "string"
+													ingressTemplate: {
+														properties: metadata: {
+															properties: {
+																annotations: {
+																	additionalProperties: type: "string"
+																	type: "object"
+																}
+																labels: {
+																	additionalProperties: type: "string"
+																	type: "object"
+																}
 															}
 															type: "object"
 														}
-														parentRefs: {
-															items: {
+														type: "object"
+													}
+													name: type: "string"
+													podTemplate: {
+														properties: {
+															metadata: {
 																properties: {
-																	group: {
-																		default:   "gateway.networking.k8s.io"
-																		maxLength: 253
-																		pattern:   "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
-																		type:      "string"
+																	annotations: {
+																		additionalProperties: type: "string"
+																		type: "object"
 																	}
-																	kind: {
-																		default:   "Gateway"
-																		maxLength: 63
-																		minLength: 1
-																		pattern:   "^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$"
-																		type:      "string"
-																	}
-																	name: {
-																		maxLength: 253
-																		minLength: 1
-																		type:      "string"
-																	}
-																	namespace: {
-																		maxLength: 63
-																		minLength: 1
-																		pattern:   "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
-																		type:      "string"
-																	}
-																	port: {
-																		format:  "int32"
-																		maximum: 65535
-																		minimum: 1
-																		type:    "integer"
-																	}
-																	sectionName: {
-																		maxLength: 253
-																		minLength: 1
-																		pattern:   "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
-																		type:      "string"
+																	labels: {
+																		additionalProperties: type: "string"
+																		type: "object"
 																	}
 																}
-																required: ["name"]
 																type: "object"
 															}
-															type: "array"
-														}
-														serviceType: {
-															type: "string"
-														}
-													}
-													type: "object"
-												}
-												ingress: {
-													properties: {
-														class: {
-															type: "string"
-														}
-														ingressClassName: {
-															type: "string"
-														}
-														ingressTemplate: {
-															properties: {
-																metadata: {
-																	properties: {
-																		annotations: {
-																			additionalProperties: {
-																				type: "string"
-																			}
-																			type: "object"
-																		}
-																		labels: {
-																			additionalProperties: {
-																				type: "string"
-																			}
-																			type: "object"
-																		}
-																	}
-																	type: "object"
-																}
-															}
-															type: "object"
-														}
-														name: {
-															type: "string"
-														}
-														podTemplate: {
-															properties: {
-																metadata: {
-																	properties: {
-																		annotations: {
-																			additionalProperties: {
-																				type: "string"
-																			}
-																			type: "object"
-																		}
-																		labels: {
-																			additionalProperties: {
-																				type: "string"
-																			}
-																			type: "object"
-																		}
-																	}
-																	type: "object"
-																}
-																spec: {
-																	properties: {
-																		affinity: {
-																			properties: {
-																				nodeAffinity: {
-																					properties: {
-																						preferredDuringSchedulingIgnoredDuringExecution: {
-																							items: {
-																								properties: {
-																									preference: {
-																										properties: {
-																											matchExpressions: {
-																												items: {
-																													properties: {
-																														key: {
-																															type: "string"
-																														}
-																														operator: {
-																															type: "string"
-																														}
-																														values: {
-																															items: {
-																																type: "string"
-																															}
-																															type: "array"
-																														}
-																													}
-																													required: ["key", "operator"]
-																													type: "object"
-																												}
-																												type: "array"
-																											}
-																											matchFields: {
-																												items: {
-																													properties: {
-																														key: {
-																															type: "string"
-																														}
-																														operator: {
-																															type: "string"
-																														}
-																														values: {
-																															items: {
-																																type: "string"
-																															}
-																															type: "array"
-																														}
-																													}
-																													required: ["key", "operator"]
-																													type: "object"
-																												}
-																												type: "array"
-																											}
-																										}
-																										type:                    "object"
-																										"x-kubernetes-map-type": "atomic"
-																									}
-																									weight: {
-																										format: "int32"
-																										type:   "integer"
-																									}
-																								}
-																								required: ["preference", "weight"]
-																								type: "object"
-																							}
-																							type: "array"
-																						}
-																						requiredDuringSchedulingIgnoredDuringExecution: {
+															spec: {
+																properties: {
+																	affinity: {
+																		properties: {
+																			nodeAffinity: {
+																				properties: {
+																					preferredDuringSchedulingIgnoredDuringExecution: {
+																						items: {
 																							properties: {
-																								nodeSelectorTerms: {
-																									items: {
-																										properties: {
-																											matchExpressions: {
-																												items: {
-																													properties: {
-																														key: {
-																															type: "string"
-																														}
-																														operator: {
-																															type: "string"
-																														}
-																														values: {
-																															items: {
-																																type: "string"
-																															}
-																															type: "array"
-																														}
+																								preference: {
+																									properties: {
+																										matchExpressions: {
+																											items: {
+																												properties: {
+																													key:
+																														type:
+																															"string"
+																													operator:
+																														type:
+																															"string"
+																													values: {
+																														items:
+																															type:
+																																"string"
+																														type:
+																															"array"
 																													}
-																													required: ["key", "operator"]
-																													type: "object"
 																												}
-																												type: "array"
+																												required: [
+																													"key",
+																													"operator",
+																												]
+																												type:
+																													"object"
 																											}
-																											matchFields: {
-																												items: {
-																													properties: {
-																														key: {
-																															type: "string"
-																														}
-																														operator: {
-																															type: "string"
-																														}
-																														values: {
-																															items: {
-																																type: "string"
-																															}
-																															type: "array"
-																														}
-																													}
-																													required: ["key", "operator"]
-																													type: "object"
-																												}
-																												type: "array"
-																											}
+																											type:
+																												"array"
 																										}
-																										type:                    "object"
-																										"x-kubernetes-map-type": "atomic"
+																										matchFields: {
+																											items: {
+																												properties: {
+																													key:
+																														type:
+																															"string"
+																													operator:
+																														type:
+																															"string"
+																													values: {
+																														items:
+																															type:
+																																"string"
+																														type:
+																															"array"
+																													}
+																												}
+																												required: [
+																													"key",
+																													"operator",
+																												]
+																												type:
+																													"object"
+																											}
+																											type:
+																												"array"
+																										}
 																									}
-																									type: "array"
+																									type: "object"
+																									"x-kubernetes-map-type":
+																										"atomic"
+																								}
+																								weight: {
+																									format: "int32"
+																									type:   "integer"
 																								}
 																							}
-																							required: ["nodeSelectorTerms"]
-																							type:                    "object"
-																							"x-kubernetes-map-type": "atomic"
+																							required: [
+																								"preference",
+																								"weight",
+																							]
+																							type: "object"
 																						}
+																						type: "array"
 																					}
-																					type: "object"
-																				}
-																				podAffinity: {
-																					properties: {
-																						preferredDuringSchedulingIgnoredDuringExecution: {
+																					requiredDuringSchedulingIgnoredDuringExecution: {
+																						properties: nodeSelectorTerms: {
 																							items: {
 																								properties: {
-																									podAffinityTerm: {
-																										properties: {
-																											labelSelector: {
-																												properties: {
-																													matchExpressions: {
-																														items: {
-																															properties: {
-																																key: {
-																																	type: "string"
-																																}
-																																operator: {
-																																	type: "string"
-																																}
-																																values: {
-																																	items: {
-																																		type: "string"
-																																	}
-																																	type: "array"
-																																}
-																															}
-																															required: ["key", "operator"]
-																															type: "object"
-																														}
-																														type: "array"
-																													}
-																													matchLabels: {
-																														additionalProperties: {
-																															type: "string"
-																														}
-																														type: "object"
-																													}
-																												}
-																												type:                    "object"
-																												"x-kubernetes-map-type": "atomic"
-																											}
-																											namespaceSelector: {
-																												properties: {
-																													matchExpressions: {
-																														items: {
-																															properties: {
-																																key: {
-																																	type: "string"
-																																}
-																																operator: {
-																																	type: "string"
-																																}
-																																values: {
-																																	items: {
-																																		type: "string"
-																																	}
-																																	type: "array"
-																																}
-																															}
-																															required: ["key", "operator"]
-																															type: "object"
-																														}
-																														type: "array"
-																													}
-																													matchLabels: {
-																														additionalProperties: {
-																															type: "string"
-																														}
-																														type: "object"
-																													}
-																												}
-																												type:                    "object"
-																												"x-kubernetes-map-type": "atomic"
-																											}
-																											namespaces: {
-																												items: {
-																													type: "string"
-																												}
-																												type: "array"
-																											}
-																											topologyKey: {
-																												type: "string"
-																											}
-																										}
-																										required: ["topologyKey"]
-																										type: "object"
-																									}
-																									weight: {
-																										format: "int32"
-																										type:   "integer"
-																									}
-																								}
-																								required: ["podAffinityTerm", "weight"]
-																								type: "object"
-																							}
-																							type: "array"
-																						}
-																						requiredDuringSchedulingIgnoredDuringExecution: {
-																							items: {
-																								properties: {
-																									labelSelector: {
-																										properties: {
-																											matchExpressions: {
-																												items: {
-																													properties: {
-																														key: {
-																															type: "string"
-																														}
-																														operator: {
-																															type: "string"
-																														}
-																														values: {
-																															items: {
-																																type: "string"
-																															}
-																															type: "array"
-																														}
-																													}
-																													required: ["key", "operator"]
-																													type: "object"
-																												}
-																												type: "array"
-																											}
-																											matchLabels: {
-																												additionalProperties: {
-																													type: "string"
-																												}
-																												type: "object"
-																											}
-																										}
-																										type:                    "object"
-																										"x-kubernetes-map-type": "atomic"
-																									}
-																									namespaceSelector: {
-																										properties: {
-																											matchExpressions: {
-																												items: {
-																													properties: {
-																														key: {
-																															type: "string"
-																														}
-																														operator: {
-																															type: "string"
-																														}
-																														values: {
-																															items: {
-																																type: "string"
-																															}
-																															type: "array"
-																														}
-																													}
-																													required: ["key", "operator"]
-																													type: "object"
-																												}
-																												type: "array"
-																											}
-																											matchLabels: {
-																												additionalProperties: {
-																													type: "string"
-																												}
-																												type: "object"
-																											}
-																										}
-																										type:                    "object"
-																										"x-kubernetes-map-type": "atomic"
-																									}
-																									namespaces: {
+																									matchExpressions: {
 																										items: {
-																											type: "string"
+																											properties: {
+																												key:
+																													type:
+																														"string"
+																												operator:
+																													type:
+																														"string"
+																												values: {
+																													items:
+																														type:
+																															"string"
+																													type:
+																														"array"
+																												}
+																											}
+																											required: [
+																												"key",
+																												"operator",
+																											]
+																											type:
+																												"object"
 																										}
 																										type: "array"
 																									}
-																									topologyKey: {
-																										type: "string"
-																									}
-																								}
-																								required: ["topologyKey"]
-																								type: "object"
-																							}
-																							type: "array"
-																						}
-																					}
-																					type: "object"
-																				}
-																				podAntiAffinity: {
-																					properties: {
-																						preferredDuringSchedulingIgnoredDuringExecution: {
-																							items: {
-																								properties: {
-																									podAffinityTerm: {
-																										properties: {
-																											labelSelector: {
-																												properties: {
-																													matchExpressions: {
-																														items: {
-																															properties: {
-																																key: {
-																																	type: "string"
-																																}
-																																operator: {
-																																	type: "string"
-																																}
-																																values: {
-																																	items: {
-																																		type: "string"
-																																	}
-																																	type: "array"
-																																}
-																															}
-																															required: ["key", "operator"]
-																															type: "object"
-																														}
-																														type: "array"
-																													}
-																													matchLabels: {
-																														additionalProperties: {
-																															type: "string"
-																														}
-																														type: "object"
-																													}
-																												}
-																												type:                    "object"
-																												"x-kubernetes-map-type": "atomic"
-																											}
-																											namespaceSelector: {
-																												properties: {
-																													matchExpressions: {
-																														items: {
-																															properties: {
-																																key: {
-																																	type: "string"
-																																}
-																																operator: {
-																																	type: "string"
-																																}
-																																values: {
-																																	items: {
-																																		type: "string"
-																																	}
-																																	type: "array"
-																																}
-																															}
-																															required: ["key", "operator"]
-																															type: "object"
-																														}
-																														type: "array"
-																													}
-																													matchLabels: {
-																														additionalProperties: {
-																															type: "string"
-																														}
-																														type: "object"
-																													}
-																												}
-																												type:                    "object"
-																												"x-kubernetes-map-type": "atomic"
-																											}
-																											namespaces: {
-																												items: {
-																													type: "string"
-																												}
-																												type: "array"
-																											}
-																											topologyKey: {
-																												type: "string"
-																											}
-																										}
-																										required: ["topologyKey"]
-																										type: "object"
-																									}
-																									weight: {
-																										format: "int32"
-																										type:   "integer"
-																									}
-																								}
-																								required: ["podAffinityTerm", "weight"]
-																								type: "object"
-																							}
-																							type: "array"
-																						}
-																						requiredDuringSchedulingIgnoredDuringExecution: {
-																							items: {
-																								properties: {
-																									labelSelector: {
-																										properties: {
-																											matchExpressions: {
-																												items: {
-																													properties: {
-																														key: {
-																															type: "string"
-																														}
-																														operator: {
-																															type: "string"
-																														}
-																														values: {
-																															items: {
-																																type: "string"
-																															}
-																															type: "array"
-																														}
-																													}
-																													required: ["key", "operator"]
-																													type: "object"
-																												}
-																												type: "array"
-																											}
-																											matchLabels: {
-																												additionalProperties: {
-																													type: "string"
-																												}
-																												type: "object"
-																											}
-																										}
-																										type:                    "object"
-																										"x-kubernetes-map-type": "atomic"
-																									}
-																									namespaceSelector: {
-																										properties: {
-																											matchExpressions: {
-																												items: {
-																													properties: {
-																														key: {
-																															type: "string"
-																														}
-																														operator: {
-																															type: "string"
-																														}
-																														values: {
-																															items: {
-																																type: "string"
-																															}
-																															type: "array"
-																														}
-																													}
-																													required: ["key", "operator"]
-																													type: "object"
-																												}
-																												type: "array"
-																											}
-																											matchLabels: {
-																												additionalProperties: {
-																													type: "string"
-																												}
-																												type: "object"
-																											}
-																										}
-																										type:                    "object"
-																										"x-kubernetes-map-type": "atomic"
-																									}
-																									namespaces: {
+																									matchFields: {
 																										items: {
-																											type: "string"
+																											properties: {
+																												key:
+																													type:
+																														"string"
+																												operator:
+																													type:
+																														"string"
+																												values: {
+																													items:
+																														type:
+																															"string"
+																													type:
+																														"array"
+																												}
+																											}
+																											required: [
+																												"key",
+																												"operator",
+																											]
+																											type:
+																												"object"
 																										}
 																										type: "array"
 																									}
-																									topologyKey: {
-																										type: "string"
-																									}
 																								}
-																								required: ["topologyKey"]
 																								type: "object"
+																								"x-kubernetes-map-type":
+																									"atomic"
 																							}
 																							type: "array"
 																						}
-																					}
-																					type: "object"
-																				}
-																			}
-																			type: "object"
-																		}
-																		imagePullSecrets: {
-																			items: {
-																				properties: {
-																					name: {
-																						type: "string"
-																					}
-																				}
-																				type:                    "object"
-																				"x-kubernetes-map-type": "atomic"
-																			}
-																			type: "array"
-																		}
-																		nodeSelector: {
-																			additionalProperties: {
-																				type: "string"
-																			}
-																			type: "object"
-																		}
-																		priorityClassName: {
-																			type: "string"
-																		}
-																		serviceAccountName: {
-																			type: "string"
-																		}
-																		tolerations: {
-																			items: {
-																				properties: {
-																					effect: {
-																						type: "string"
-																					}
-																					key: {
-																						type: "string"
-																					}
-																					operator: {
-																						type: "string"
-																					}
-																					tolerationSeconds: {
-																						format: "int64"
-																						type:   "integer"
-																					}
-																					value: {
-																						type: "string"
+																						required: ["nodeSelectorTerms"]
+																						type:     "object"
+																						"x-kubernetes-map-type":
+																							"atomic"
 																					}
 																				}
 																				type: "object"
 																			}
-																			type: "array"
+																			podAffinity: {
+																				properties: {
+																					preferredDuringSchedulingIgnoredDuringExecution: {
+																						items: {
+																							properties: {
+																								podAffinityTerm: {
+																									properties: {
+																										labelSelector: {
+																											properties: {
+																												matchExpressions: {
+																													items: {
+																														properties: {
+																															key:
+																																type:
+																																	"string"
+																															operator:
+																																type:
+																																	"string"
+																															values: {
+																																items:
+																																	type:
+																																		"string"
+																																type:
+																																	"array"
+																															}
+																														}
+																														required: [
+																															"key",
+																															"operator",
+																														]
+																														type:
+																															"object"
+																													}
+																													type:
+																														"array"
+																												}
+																												matchLabels: {
+																													additionalProperties:
+																														type:
+																															"string"
+																													type:
+																														"object"
+																												}
+																											}
+																											type:
+																												"object"
+																											"x-kubernetes-map-type":
+																												"atomic"
+																										}
+																										namespaceSelector: {
+																											properties: {
+																												matchExpressions: {
+																													items: {
+																														properties: {
+																															key:
+																																type:
+																																	"string"
+																															operator:
+																																type:
+																																	"string"
+																															values: {
+																																items:
+																																	type:
+																																		"string"
+																																type:
+																																	"array"
+																															}
+																														}
+																														required: [
+																															"key",
+																															"operator",
+																														]
+																														type:
+																															"object"
+																													}
+																													type:
+																														"array"
+																												}
+																												matchLabels: {
+																													additionalProperties:
+																														type:
+																															"string"
+																													type:
+																														"object"
+																												}
+																											}
+																											type:
+																												"object"
+																											"x-kubernetes-map-type":
+																												"atomic"
+																										}
+																										namespaces: {
+																											items:
+																												type:
+																													"string"
+																											type:
+																												"array"
+																										}
+																										topologyKey:
+																											type:
+																												"string"
+																									}
+																									required: [
+																										"topologyKey",
+																									]
+																									type: "object"
+																								}
+																								weight: {
+																									format: "int32"
+																									type:   "integer"
+																								}
+																							}
+																							required: [
+																								"podAffinityTerm",
+																								"weight",
+																							]
+																							type: "object"
+																						}
+																						type: "array"
+																					}
+																					requiredDuringSchedulingIgnoredDuringExecution: {
+																						items: {
+																							properties: {
+																								labelSelector: {
+																									properties: {
+																										matchExpressions: {
+																											items: {
+																												properties: {
+																													key:
+																														type:
+																															"string"
+																													operator:
+																														type:
+																															"string"
+																													values: {
+																														items:
+																															type:
+																																"string"
+																														type:
+																															"array"
+																													}
+																												}
+																												required: [
+																													"key",
+																													"operator",
+																												]
+																												type:
+																													"object"
+																											}
+																											type:
+																												"array"
+																										}
+																										matchLabels: {
+																											additionalProperties:
+																												type:
+																													"string"
+																											type:
+																												"object"
+																										}
+																									}
+																									type: "object"
+																									"x-kubernetes-map-type":
+																										"atomic"
+																								}
+																								namespaceSelector: {
+																									properties: {
+																										matchExpressions: {
+																											items: {
+																												properties: {
+																													key:
+																														type:
+																															"string"
+																													operator:
+																														type:
+																															"string"
+																													values: {
+																														items:
+																															type:
+																																"string"
+																														type:
+																															"array"
+																													}
+																												}
+																												required: [
+																													"key",
+																													"operator",
+																												]
+																												type:
+																													"object"
+																											}
+																											type:
+																												"array"
+																										}
+																										matchLabels: {
+																											additionalProperties:
+																												type:
+																													"string"
+																											type:
+																												"object"
+																										}
+																									}
+																									type: "object"
+																									"x-kubernetes-map-type":
+																										"atomic"
+																								}
+																								namespaces: {
+																									items: type: "string"
+																									type: "array"
+																								}
+																								topologyKey: type: "string"
+																							}
+																							required: ["topologyKey"]
+																							type:     "object"
+																						}
+																						type: "array"
+																					}
+																				}
+																				type: "object"
+																			}
+																			podAntiAffinity: {
+																				properties: {
+																					preferredDuringSchedulingIgnoredDuringExecution: {
+																						items: {
+																							properties: {
+																								podAffinityTerm: {
+																									properties: {
+																										labelSelector: {
+																											properties: {
+																												matchExpressions: {
+																													items: {
+																														properties: {
+																															key:
+																																type:
+																																	"string"
+																															operator:
+																																type:
+																																	"string"
+																															values: {
+																																items:
+																																	type:
+																																		"string"
+																																type:
+																																	"array"
+																															}
+																														}
+																														required: [
+																															"key",
+																															"operator",
+																														]
+																														type:
+																															"object"
+																													}
+																													type:
+																														"array"
+																												}
+																												matchLabels: {
+																													additionalProperties:
+																														type:
+																															"string"
+																													type:
+																														"object"
+																												}
+																											}
+																											type:
+																												"object"
+																											"x-kubernetes-map-type":
+																												"atomic"
+																										}
+																										namespaceSelector: {
+																											properties: {
+																												matchExpressions: {
+																													items: {
+																														properties: {
+																															key:
+																																type:
+																																	"string"
+																															operator:
+																																type:
+																																	"string"
+																															values: {
+																																items:
+																																	type:
+																																		"string"
+																																type:
+																																	"array"
+																															}
+																														}
+																														required: [
+																															"key",
+																															"operator",
+																														]
+																														type:
+																															"object"
+																													}
+																													type:
+																														"array"
+																												}
+																												matchLabels: {
+																													additionalProperties:
+																														type:
+																															"string"
+																													type:
+																														"object"
+																												}
+																											}
+																											type:
+																												"object"
+																											"x-kubernetes-map-type":
+																												"atomic"
+																										}
+																										namespaces: {
+																											items:
+																												type:
+																													"string"
+																											type:
+																												"array"
+																										}
+																										topologyKey:
+																											type:
+																												"string"
+																									}
+																									required: [
+																										"topologyKey",
+																									]
+																									type: "object"
+																								}
+																								weight: {
+																									format: "int32"
+																									type:   "integer"
+																								}
+																							}
+																							required: [
+																								"podAffinityTerm",
+																								"weight",
+																							]
+																							type: "object"
+																						}
+																						type: "array"
+																					}
+																					requiredDuringSchedulingIgnoredDuringExecution: {
+																						items: {
+																							properties: {
+																								labelSelector: {
+																									properties: {
+																										matchExpressions: {
+																											items: {
+																												properties: {
+																													key:
+																														type:
+																															"string"
+																													operator:
+																														type:
+																															"string"
+																													values: {
+																														items:
+																															type:
+																																"string"
+																														type:
+																															"array"
+																													}
+																												}
+																												required: [
+																													"key",
+																													"operator",
+																												]
+																												type:
+																													"object"
+																											}
+																											type:
+																												"array"
+																										}
+																										matchLabels: {
+																											additionalProperties:
+																												type:
+																													"string"
+																											type:
+																												"object"
+																										}
+																									}
+																									type: "object"
+																									"x-kubernetes-map-type":
+																										"atomic"
+																								}
+																								namespaceSelector: {
+																									properties: {
+																										matchExpressions: {
+																											items: {
+																												properties: {
+																													key:
+																														type:
+																															"string"
+																													operator:
+																														type:
+																															"string"
+																													values: {
+																														items:
+																															type:
+																																"string"
+																														type:
+																															"array"
+																													}
+																												}
+																												required: [
+																													"key",
+																													"operator",
+																												]
+																												type:
+																													"object"
+																											}
+																											type:
+																												"array"
+																										}
+																										matchLabels: {
+																											additionalProperties:
+																												type:
+																													"string"
+																											type:
+																												"object"
+																										}
+																									}
+																									type: "object"
+																									"x-kubernetes-map-type":
+																										"atomic"
+																								}
+																								namespaces: {
+																									items: type: "string"
+																									type: "array"
+																								}
+																								topologyKey: type: "string"
+																							}
+																							required: ["topologyKey"]
+																							type:     "object"
+																						}
+																						type: "array"
+																					}
+																				}
+																				type: "object"
+																			}
 																		}
+																		type: "object"
 																	}
-																	type: "object"
+																	imagePullSecrets: {
+																		items: {
+																			properties: name: type: "string"
+																			type:                    "object"
+																			"x-kubernetes-map-type": "atomic"
+																		}
+																		type: "array"
+																	}
+																	nodeSelector: {
+																		additionalProperties: type: "string"
+																		type: "object"
+																	}
+																	priorityClassName: type:  "string"
+																	serviceAccountName: type: "string"
+																	tolerations: {
+																		items: {
+																			properties: {
+																				effect: type:   "string"
+																				key: type:      "string"
+																				operator: type: "string"
+																				tolerationSeconds: {
+																					format: "int64"
+																					type:   "integer"
+																				}
+																				value: type: "string"
+																			}
+																			type: "object"
+																		}
+																		type: "array"
+																	}
 																}
+																type: "object"
 															}
-															type: "object"
 														}
-														serviceType: {
-															type: "string"
-														}
+														type: "object"
 													}
-													type: "object"
+													serviceType: type: "string"
 												}
+												type: "object"
 											}
-											type: "object"
 										}
-										selector: {
-											properties: {
-												dnsNames: {
-													items: {
-														type: "string"
-													}
-													type: "array"
-												}
-												dnsZones: {
-													items: {
-														type: "string"
-													}
-													type: "array"
-												}
-												matchLabels: {
-													additionalProperties: {
-														type: "string"
-													}
-													type: "object"
-												}
-											}
-											type: "object"
-										}
+										type: "object"
 									}
-									type: "object"
+									selector: {
+										properties: {
+											dnsNames: {
+												items: type: "string"
+												type: "array"
+											}
+											dnsZones: {
+												items: type: "string"
+												type: "array"
+											}
+											matchLabels: {
+												additionalProperties: type: "string"
+												type: "object"
+											}
+										}
+										type: "object"
+									}
 								}
-								token: {
-									type: "string"
-								}
-								type: {
-									enum: ["HTTP-01", "DNS-01"]
-									type: "string"
-								}
-								url: {
-									type: "string"
-								}
-								wildcard: {
-									type: "boolean"
-								}
+								type: "object"
 							}
-							required: ["authorizationURL", "dnsName", "issuerRef", "key", "solver", "token", "type", "url"]
-							type: "object"
-						}
-						status: {
-							properties: {
-								presented: {
-									type: "boolean"
-								}
-								processing: {
-									type: "boolean"
-								}
-								reason: {
-									type: "string"
-								}
-								state: {
-									enum: ["valid", "ready", "pending", "processing", "invalid", "expired", "errored"]
-									type: "string"
-								}
+							token: type: "string"
+							type: {
+								enum: ["HTTP-01", "DNS-01"]
+								type: "string"
 							}
-							type: "object"
+							url: type:      "string"
+							wildcard: type: "boolean"
 						}
+						required: ["authorizationURL", "dnsName", "issuerRef", "key", "solver", "token", "type", "url"]
+						type:     "object"
 					}
-					required: ["metadata", "spec"]
-					type: "object"
+					status: {
+						properties: {
+							presented: type:  "boolean"
+							processing: type: "boolean"
+							reason: type:     "string"
+							state: {
+								enum: ["valid", "ready", "pending", "processing", "invalid", "expired", "errored"]
+								type: "string"
+							}
+						}
+						type: "object"
+					}
 				}
+				required: ["metadata", "spec"]
+				type:     "object"
 			}
-			subresources: {
-				status: {}
-			}
+			subresources: status: {}
 		}]
 	}
 }

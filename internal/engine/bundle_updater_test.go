@@ -323,7 +323,7 @@ bundle: instances: "shared-c": module: digest: "sha256:6.1.0"
 	out, err = updater.Format(files[indexOf(files, "other.cue")])
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(string(out)).To(ContainSubstring(`version: "2.0.0" @timoni(update:semver:*)`))
-	g.Expect(string(out)).To(ContainSubstring(`digest: "sha256:6.2.0"`))
+	g.Expect(string(out)).To(MatchRegexp(`digest:\s+"sha256:6\.2\.0"`))
 
 	// The updated bundle evaluates to the new references.
 	v := updater.Value().LookupPath(cuePath(`bundle.instances."shared-b".module`))
@@ -777,8 +777,8 @@ _cluster: {
 bundle: {
 	apiVersion: "v1alpha1"
 	name:       "apps"
-	instances: (apps & {#cluster: _cluster}).instances
-	instances: shared.instances
+	instances:  (apps & {#cluster: _cluster}).instances
+	instances:  shared.instances
 }
 `)
 	original, err := os.ReadFile(entry)

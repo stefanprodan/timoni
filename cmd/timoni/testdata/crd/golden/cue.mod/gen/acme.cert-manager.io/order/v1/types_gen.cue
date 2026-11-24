@@ -20,18 +20,10 @@ import "strings"
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	kind: "Order"
 	metadata!: {
-		name!: strings.MaxRunes(253) & strings.MinRunes(1) & {
-			string
-		}
-		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {
-			string
-		}
-		labels?: {
-			[string]: string
-		}
-		annotations?: {
-			[string]: string
-		}
+		name!:      strings.MaxRunes(253) & strings.MinRunes(1) & {string}
+		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {string}
+		labels?: [string]:      string
+		annotations?: [string]: string
 	}
 	spec!: #OrderSpec
 }
@@ -79,152 +71,116 @@ import "strings"
 _crd: {
 	apiVersion: "apiextensions.k8s.io/v1"
 	kind:       "CustomResourceDefinition"
-	metadata: {
-		name: "orders.acme.cert-manager.io"
-	}
+	metadata: name: "orders.acme.cert-manager.io"
 	spec: {
 		group: "acme.cert-manager.io"
 		names: {
 			categories: ["cert-manager", "cert-manager-acme"]
-			kind:     "Order"
-			listKind: "OrderList"
-			plural:   "orders"
-			singular: "order"
+			kind:       "Order"
+			listKind:   "OrderList"
+			plural:     "orders"
+			singular:   "order"
 		}
 		scope: "Namespaced"
 		versions: [{
 			name:    "v1"
 			served:  true
 			storage: true
-			schema: {
-				openAPIV3Schema: {
-					properties: {
-						apiVersion: {
-							type: "string"
-						}
-						kind: {
-							type: "string"
-						}
-						metadata: {
-							type: "object"
-						}
-						spec: {
-							properties: {
-								commonName: {
-									type: "string"
-								}
-								dnsNames: {
-									items: {
-										type: "string"
-									}
-									type: "array"
-								}
-								duration: {
-									type: "string"
-								}
-								ipAddresses: {
-									items: {
-										type: "string"
-									}
-									type: "array"
-								}
-								issuerRef: {
-									properties: {
-										group: {
-											type: "string"
-										}
-										kind: {
-											type: "string"
-										}
-										name: {
-											type: "string"
-										}
-									}
-									required: ["name"]
-									type: "object"
-								}
-								request: {
-									format: "byte"
-									type:   "string"
-								}
+			schema: openAPIV3Schema: {
+				properties: {
+					apiVersion: type: "string"
+					kind: type:       "string"
+					metadata: type:   "object"
+					spec: {
+						properties: {
+							commonName: type: "string"
+							dnsNames: {
+								items: type: "string"
+								type: "array"
 							}
-							required: ["issuerRef", "request"]
-							type: "object"
-						}
-						status: {
-							properties: {
-								authorizations: {
-									items: {
-										properties: {
-											challenges: {
-												items: {
-													properties: {
-														token: {
-															type: "string"
-														}
-														type: {
-															type: "string"
-														}
-														url: {
-															type: "string"
-														}
-													}
-													required: ["token", "type", "url"]
-													type: "object"
-												}
-												type: "array"
-											}
-											identifier: {
-												type: "string"
-											}
-											initialState: {
-												enum: ["valid", "ready", "pending", "processing", "invalid", "expired", "errored"]
-												type: "string"
-											}
-											url: {
-												type: "string"
-											}
-											wildcard: {
-												type: "boolean"
-											}
-										}
-										required: ["url"]
-										type: "object"
-									}
-									type: "array"
-								}
-								certificate: {
-									format: "byte"
-									type:   "string"
-								}
-								failureTime: {
-									format: "date-time"
-									type:   "string"
-								}
-								finalizeURL: {
-									type: "string"
-								}
-								reason: {
-									type: "string"
-								}
-								state: {
-									enum: ["valid", "ready", "pending", "processing", "invalid", "expired", "errored"]
-									type: "string"
-								}
-								url: {
-									type: "string"
-								}
+							duration: type: "string"
+							ipAddresses: {
+								items: type: "string"
+								type: "array"
 							}
-							type: "object"
+							issuerRef: {
+								properties: {
+									group: type: "string"
+									kind: type:  "string"
+									name: type:  "string"
+								}
+								required: ["name"]
+								type:     "object"
+							}
+							request: {
+								format: "byte"
+								type:   "string"
+							}
 						}
+						required: ["issuerRef", "request"]
+						type:     "object"
 					}
-					required: ["metadata", "spec"]
-					type: "object"
+					status: {
+						properties: {
+							authorizations: {
+								items: {
+									properties: {
+										challenges: {
+											items: {
+												properties: {
+													token: type: "string"
+													type: type:  "string"
+													url: type:   "string"
+												}
+												required: ["token", "type", "url"]
+												type:     "object"
+											}
+											type: "array"
+										}
+										identifier: type: "string"
+										initialState: {
+											enum: [
+												"valid",
+												"ready",
+												"pending",
+												"processing",
+												"invalid",
+												"expired",
+												"errored",
+											]
+											type: "string"
+										}
+										url: type:      "string"
+										wildcard: type: "boolean"
+									}
+									required: ["url"]
+									type:     "object"
+								}
+								type: "array"
+							}
+							certificate: {
+								format: "byte"
+								type:   "string"
+							}
+							failureTime: {
+								format: "date-time"
+								type:   "string"
+							}
+							finalizeURL: type: "string"
+							reason: type:      "string"
+							state: {
+								enum: ["valid", "ready", "pending", "processing", "invalid", "expired", "errored"]
+								type: "string"
+							}
+							url: type: "string"
+						}
+						type: "object"
+					}
 				}
+				required: ["metadata", "spec"]
+				type:     "object"
 			}
-			subresources: {
-				status: {}
-			}
+			subresources: status: {}
 		}]
 	}
 }

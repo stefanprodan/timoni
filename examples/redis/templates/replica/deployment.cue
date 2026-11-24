@@ -94,7 +94,7 @@ import (
 				]
 				volumes: [
 					{
-						name: "data"
+						name:     "data"
 						emptyDir: {}
 					},
 					{
