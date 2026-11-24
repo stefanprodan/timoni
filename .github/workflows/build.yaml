@@ -23,7 +23,7 @@ jobs:
       - name: Setup CUE
         uses: cue-lang/setup-cue@b0e30e540a2dae47304ebf16586a5b2db023b61c # v2.0.0
         with:
-          version: v0.15.4
+          version: v0.18.0
       - name: Run tests
         run: make test
       - name: Run linter
