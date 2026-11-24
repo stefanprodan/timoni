@@ -101,11 +101,12 @@ func runBundleBuildCmd(cmd *cobra.Command, _ []string) error {
 	var stdinFile string
 	for i, file := range files {
 		if file == "-" {
-			stdinFile, err := saveReaderToFile(cmd.InOrStdin())
+			tmpFile, err := saveReaderToFile(cmd.InOrStdin())
 			if err != nil {
 				return err
 			}
-			files[i] = stdinFile
+			stdinFile = tmpFile
+			files[i] = tmpFile
 			break
 		}
 	}

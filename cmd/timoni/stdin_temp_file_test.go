@@ -19,6 +19,7 @@ package main
 import (
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"testing/iotest"
 
@@ -36,4 +37,26 @@ func TestSaveReaderToFileRemovesPartialFile(t *testing.T) {
 	entries, err := os.ReadDir(tempDir)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(entries).To(BeEmpty())
+}
+
+func TestStdinTempFileRemovedAfterCommand(t *testing.T) {
+	for _, cmd := range []string{
+		"bundle apply -f -",
+		"bundle build -f -",
+		"bundle vet -f -",
+		"runtime build -f -",
+	} {
+		t.Run(cmd, func(t *testing.T) {
+			g := NewWithT(t)
+			tempDir := t.TempDir()
+			t.Setenv("TMPDIR", tempDir)
+
+			_, err := executeCommandWithIn(cmd, strings.NewReader("invalid: {"))
+			g.Expect(err).To(HaveOccurred())
+
+			entries, err := os.ReadDir(tempDir)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(entries).To(BeEmpty())
+		})
+	}
 }
