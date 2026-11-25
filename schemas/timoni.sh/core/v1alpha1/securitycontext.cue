@@ -51,9 +51,9 @@ package v1alpha1
 	runAsNonRoot: *true | bool
 	seccompProfile: type: *"RuntimeDefault" | string
 	if #Preset == #SecurityContextPresetHardened if #User != _|_ {
-		runAsUser: *#User | int
+		runAsUser:  *#User | int
 		runAsGroup: *[if #Group != _|_ {#Group}, #User][0] | int
-		fsGroup: *[if #FSGroup != _|_ {#FSGroup}, #User][0] | int
+		fsGroup:    *[if #FSGroup != _|_ {#FSGroup}, #User][0] | int
 	}
 	...
 }

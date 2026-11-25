@@ -445,25 +445,19 @@ bundle:
 	bundleComputed := `bundle: {
 	apiVersion: "v1alpha1"
 	name:       "podinfo"
-	instances: {
-		podinfo: {
-			module: {
-				url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-				version: "latest"
+	instances: podinfo: {
+		module: {
+			url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+			version: "latest"
+		}
+		namespace: "podinfo"
+		values: {
+			autoscaling: enabled: true
+			caching: {
+				enabled:  true
+				redisURL: "tcp://:password@test.host:6379"
 			}
-			namespace: "podinfo"
-			values: {
-				autoscaling: {
-					enabled: true
-				}
-				caching: {
-					enabled:  true
-					redisURL: "tcp://:password@test.host:6379"
-				}
-				monitoring: {
-					enabled: true
-				}
-			}
+			monitoring: enabled: true
 		}
 	}
 }
@@ -550,40 +544,32 @@ runtime: {
 	bundleComputed := `"staging": bundle: {
 	apiVersion: "v1alpha1"
 	name:       "fleet-test"
-	instances: {
-		frontend: {
-			module: {
-				url:     "oci://ghcr.io/stefanprodan/timoni/minimal"
-				version: "latest"
-			}
-			namespace: "fleet-test"
-			values: {
-				message: "Hello from cluster staging"
-				test: {
-					enabled: true
-				}
-				replicas: 2
-			}
+	instances: frontend: {
+		module: {
+			url:     "oci://ghcr.io/stefanprodan/timoni/minimal"
+			version: "latest"
+		}
+		namespace: "fleet-test"
+		values: {
+			message: "Hello from cluster staging"
+			test: enabled: true
+			replicas: 2
 		}
 	}
 }
 "production": bundle: {
 	apiVersion: "v1alpha1"
 	name:       "fleet-test"
-	instances: {
-		frontend: {
-			module: {
-				url:     "oci://ghcr.io/stefanprodan/timoni/minimal"
-				version: "latest"
-			}
-			namespace: "fleet-test"
-			values: {
-				message: "Hello from cluster production"
-				test: {
-					enabled: true
-				}
-				replicas: 3
-			}
+	instances: frontend: {
+		module: {
+			url:     "oci://ghcr.io/stefanprodan/timoni/minimal"
+			version: "latest"
+		}
+		namespace: "fleet-test"
+		values: {
+			message: "Hello from cluster production"
+			test: enabled: true
+			replicas: 3
 		}
 	}
 }
@@ -638,19 +624,13 @@ bundle: {
 	bundleComputed := `bundle: {
 	apiVersion: "v1alpha1"
 	name:       "podinfo"
-	instances: {
-		podinfo: {
-			module: {
-				url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
-				version: "6.7.0"
-			}
-			namespace: "podinfo"
-			values: {
-				image: {
-					digest: "sha256:abc123"
-				}
-			}
+	instances: podinfo: {
+		module: {
+			url:     "oci://ghcr.io/stefanprodan/modules/podinfo"
+			version: "6.7.0"
 		}
+		namespace: "podinfo"
+		values: image: digest: "sha256:abc123"
 	}
 }
 `

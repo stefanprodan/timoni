@@ -139,7 +139,7 @@ bundle: {
 			namespace,
 		))
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(frontendVals).To(MatchRegexp(`server: \{\s*enabled: false`))
+		g.Expect(frontendVals).To(ContainSubstring(`server: enabled: false`))
 		g.Expect(frontendVals).To(ContainSubstring(`team: "test"`))
 		g.Expect(frontendVals).ToNot(ContainSubstring("client:"))
 
@@ -148,7 +148,7 @@ bundle: {
 			namespace,
 		))
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(backendVals).To(MatchRegexp(`client: \{\s*enabled: false`))
+		g.Expect(backendVals).To(ContainSubstring(`client: enabled: false`))
 		g.Expect(backendVals).To(ContainSubstring(`team: "test"`))
 		g.Expect(backendVals).ToNot(ContainSubstring("server:"))
 	})

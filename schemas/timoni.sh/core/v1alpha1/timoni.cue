@@ -7,8 +7,8 @@ package v1alpha1
 // instance configuration and the Kubernetes resources to apply.
 #Timoni: {
 	apiVersion: string & =~"^v1alpha1$"
-	instance: {...}
-	apply: [string]: [...]
+	instance:   {...}
+	apply: [string]:         [...]
 	healthChecks?: [string]: #HealthCheck
 	kubeMinorVersion?: int
 }

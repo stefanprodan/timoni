@@ -556,7 +556,8 @@ func pruneSchemaDocs(expr ast.Expr, propertyMap bool) {
 }
 
 // preserveUnknownFieldsPaths walks the OpenAPI schema rooted at prefix and
-// returns the paths of all fields marked with 'x-kubernetes-preserve-unknown-fields: true'.
+// returns the paths of all fields marked with 'x-kubernetes-preserve-unknown-fields: true',
+// plus the path of every map declared with additionalProperties.
 func preserveUnknownFieldsPaths(prefix []cue.Selector, root *openapi3.Schema) ([]cue.Path, error) {
 	preserve := make([]cue.Path, 0)
 	var walkfn func(p []cue.Selector, sch *openapi3.Schema) error
@@ -577,6 +578,13 @@ func preserveUnknownFieldsPaths(prefix []cue.Selector, root *openapi3.Schema) ([
 			if err := walkfn(nextPath, sch.Items.Value); err != nil {
 				return err
 			}
+		}
+		// A map accepts any key, so the struct extracted for it keeps its
+		// ellipsis: an untyped map is extracted as {...} rather than as a
+		// [string]: _ pattern, and a typed map stays constrained by its pattern.
+		if sch.AdditionalProperties.Schema != nil ||
+			(sch.AdditionalProperties.Has != nil && *sch.AdditionalProperties.Has) {
+			preserve = append(preserve, cue.MakePath(p...))
 		}
 		if sch.AdditionalProperties.Schema != nil {
 			nextPath := append(p[:len(p):len(p)], cue.AnyString)

@@ -110,7 +110,7 @@ import (
 	config: #Config
 
 	objects: {
-		deploy: #Deployment & {#config: config}
+		deploy:  #Deployment & {#config: config}
 		service: #Service & {#config: config}
 	}
 }

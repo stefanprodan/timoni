@@ -77,7 +77,7 @@ import (
 				securityContext: #config.pod.securityContext
 				volumes: [
 					{
-						name: "tmp"
+						name:     "tmp"
 						emptyDir: {}
 					},
 				]

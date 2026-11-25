@@ -23,18 +23,10 @@ import "strings"
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	kind: "Certificate"
 	metadata!: {
-		name!: strings.MaxRunes(253) & strings.MinRunes(1) & {
-			string
-		}
-		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {
-			string
-		}
-		labels?: {
-			[string]: string
-		}
-		annotations?: {
-			[string]: string
-		}
+		name!:      strings.MaxRunes(253) & strings.MinRunes(1) & {string}
+		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {string}
+		labels?: [string]:      string
+		annotations?: [string]: string
 	}
 
 	// Specification of the desired state of the Certificate resource.
@@ -245,14 +237,10 @@ import "strings"
 	// cert-manager sets on the Certificate's Secret.
 	secretTemplate?: {
 		// Annotations is a key value map to be copied to the target Kubernetes Secret.
-		annotations?: {
-			[string]: string
-		}
+		annotations?: [string]: string
 
 		// Labels is a key value map to be copied to the target Kubernetes Secret.
-		labels?: {
-			[string]: string
-		}
+		labels?: [string]: string
 	}
 
 	// Requested set of X509 certificate subject attributes. More info:
@@ -293,336 +281,296 @@ import "strings"
 	// `encodeUsagesInRequest` is unset or set to `true`, the usages will
 	// additionally be encoded in the `request` field which contains the CSR blob.
 	// If unset, defaults to `digital signature` and `key encipherment`.
-	usages?: [..."signing" | "digital signature" | "content commitment" | "key encipherment" | "key agreement" | "data encipherment" | "cert sign" | "crl sign" | "encipher only" | "decipher only" | "any" | "server auth" | "client auth" | "code signing" | "email protection" | "s/mime" | "ipsec end system" | "ipsec tunnel" | "ipsec user" | "timestamping" | "ocsp signing" | "microsoft sgc" | "netscape sgc"]
+	usages?: [
+		..."signing" |
+			"digital signature" |
+			"content commitment" |
+			"key encipherment" |
+			"key agreement" |
+			"data encipherment" |
+			"cert sign" |
+			"crl sign" |
+			"encipher only" |
+			"decipher only" |
+			"any" |
+			"server auth" |
+			"client auth" |
+			"code signing" |
+			"email protection" |
+			"s/mime" |
+			"ipsec end system" |
+			"ipsec tunnel" |
+			"ipsec user" |
+			"timestamping" |
+			"ocsp signing" |
+			"microsoft sgc" |
+			"netscape sgc",
+	]
 }
 
 // Original CRD used by 'timoni mod vet' for validation.
 _crd: {
 	apiVersion: "apiextensions.k8s.io/v1"
 	kind:       "CustomResourceDefinition"
-	metadata: {
-		name: "certificates.cert-manager.io"
-	}
+	metadata: name: "certificates.cert-manager.io"
 	spec: {
 		group: "cert-manager.io"
 		names: {
 			categories: ["cert-manager"]
-			kind:     "Certificate"
-			listKind: "CertificateList"
-			plural:   "certificates"
+			kind:       "Certificate"
+			listKind:   "CertificateList"
+			plural:     "certificates"
 			shortNames: ["cert", "certs"]
-			singular: "certificate"
+			singular:   "certificate"
 		}
 		scope: "Namespaced"
 		versions: [{
 			name:    "v1"
 			served:  true
 			storage: true
-			schema: {
-				openAPIV3Schema: {
-					properties: {
-						apiVersion: {
-							type: "string"
-						}
-						kind: {
-							type: "string"
-						}
-						metadata: {
-							type: "object"
-						}
-						spec: {
-							properties: {
-								additionalOutputFormats: {
-									items: {
+			schema: openAPIV3Schema: {
+				properties: {
+					apiVersion: type: "string"
+					kind: type:       "string"
+					metadata: type:   "object"
+					spec: {
+						properties: {
+							additionalOutputFormats: {
+								items: {
+									properties: type: {
+										enum: ["DER", "CombinedPEM"]
+										type: "string"
+									}
+									required: ["type"]
+									type:     "object"
+								}
+								type: "array"
+							}
+							commonName: type: "string"
+							dnsNames: {
+								items: type: "string"
+								type: "array"
+							}
+							duration: type: "string"
+							emailAddresses: {
+								items: type: "string"
+								type: "array"
+							}
+							encodeUsagesInRequest: type: "boolean"
+							ipAddresses: {
+								items: type: "string"
+								type: "array"
+							}
+							isCA: type: "boolean"
+							issuerRef: {
+								properties: {
+									group: type: "string"
+									kind: type:  "string"
+									name: type:  "string"
+								}
+								required: ["name"]
+								type:     "object"
+							}
+							keystores: {
+								properties: {
+									jks: {
 										properties: {
-											type: {
-												enum: ["DER", "CombinedPEM"]
-												type: "string"
+											create: type: "boolean"
+											passwordSecretRef: {
+												properties: {
+													key: type:  "string"
+													name: type: "string"
+												}
+												required: ["name"]
+												type:     "object"
 											}
 										}
-										required: ["type"]
+										required: ["create", "passwordSecretRef"]
+										type:     "object"
+									}
+									pkcs12: {
+										properties: {
+											create: type: "boolean"
+											passwordSecretRef: {
+												properties: {
+													key: type:  "string"
+													name: type: "string"
+												}
+												required: ["name"]
+												type:     "object"
+											}
+										}
+										required: ["create", "passwordSecretRef"]
+										type:     "object"
+									}
+								}
+								type: "object"
+							}
+							literalSubject: type: "string"
+							privateKey: {
+								properties: {
+									algorithm: {
+										enum: ["RSA", "ECDSA", "Ed25519"]
+										type: "string"
+									}
+									encoding: {
+										enum: ["PKCS1", "PKCS8"]
+										type: "string"
+									}
+									rotationPolicy: {
+										enum: ["Never", "Always"]
+										type: "string"
+									}
+									size: type: "integer"
+								}
+								type: "object"
+							}
+							renewBefore: type: "string"
+							revisionHistoryLimit: {
+								format: "int32"
+								type:   "integer"
+							}
+							secretName: type: "string"
+							secretTemplate: {
+								properties: {
+									annotations: {
+										additionalProperties: type: "string"
 										type: "object"
 									}
-									type: "array"
-								}
-								commonName: {
-									type: "string"
-								}
-								dnsNames: {
-									items: {
-										type: "string"
-									}
-									type: "array"
-								}
-								duration: {
-									type: "string"
-								}
-								emailAddresses: {
-									items: {
-										type: "string"
-									}
-									type: "array"
-								}
-								encodeUsagesInRequest: {
-									type: "boolean"
-								}
-								ipAddresses: {
-									items: {
-										type: "string"
-									}
-									type: "array"
-								}
-								isCA: {
-									type: "boolean"
-								}
-								issuerRef: {
-									properties: {
-										group: {
-											type: "string"
-										}
-										kind: {
-											type: "string"
-										}
-										name: {
-											type: "string"
-										}
-									}
-									required: ["name"]
-									type: "object"
-								}
-								keystores: {
-									properties: {
-										jks: {
-											properties: {
-												create: {
-													type: "boolean"
-												}
-												passwordSecretRef: {
-													properties: {
-														key: {
-															type: "string"
-														}
-														name: {
-															type: "string"
-														}
-													}
-													required: ["name"]
-													type: "object"
-												}
-											}
-											required: ["create", "passwordSecretRef"]
-											type: "object"
-										}
-										pkcs12: {
-											properties: {
-												create: {
-													type: "boolean"
-												}
-												passwordSecretRef: {
-													properties: {
-														key: {
-															type: "string"
-														}
-														name: {
-															type: "string"
-														}
-													}
-													required: ["name"]
-													type: "object"
-												}
-											}
-											required: ["create", "passwordSecretRef"]
-											type: "object"
-										}
-									}
-									type: "object"
-								}
-								literalSubject: {
-									type: "string"
-								}
-								privateKey: {
-									properties: {
-										algorithm: {
-											enum: ["RSA", "ECDSA", "Ed25519"]
-											type: "string"
-										}
-										encoding: {
-											enum: ["PKCS1", "PKCS8"]
-											type: "string"
-										}
-										rotationPolicy: {
-											enum: ["Never", "Always"]
-											type: "string"
-										}
-										size: {
-											type: "integer"
-										}
-									}
-									type: "object"
-								}
-								renewBefore: {
-									type: "string"
-								}
-								revisionHistoryLimit: {
-									format: "int32"
-									type:   "integer"
-								}
-								secretName: {
-									type: "string"
-								}
-								secretTemplate: {
-									properties: {
-										annotations: {
-											additionalProperties: {
-												type: "string"
-											}
-											type: "object"
-										}
-										labels: {
-											additionalProperties: {
-												type: "string"
-											}
-											type: "object"
-										}
-									}
-									type: "object"
-								}
-								subject: {
-									properties: {
-										countries: {
-											items: {
-												type: "string"
-											}
-											type: "array"
-										}
-										localities: {
-											items: {
-												type: "string"
-											}
-											type: "array"
-										}
-										organizationalUnits: {
-											items: {
-												type: "string"
-											}
-											type: "array"
-										}
-										organizations: {
-											items: {
-												type: "string"
-											}
-											type: "array"
-										}
-										postalCodes: {
-											items: {
-												type: "string"
-											}
-											type: "array"
-										}
-										provinces: {
-											items: {
-												type: "string"
-											}
-											type: "array"
-										}
-										serialNumber: {
-											type: "string"
-										}
-										streetAddresses: {
-											items: {
-												type: "string"
-											}
-											type: "array"
-										}
-									}
-									type: "object"
-								}
-								uris: {
-									items: {
-										type: "string"
-									}
-									type: "array"
-								}
-								usages: {
-									items: {
-										enum: ["signing", "digital signature", "content commitment", "key encipherment", "key agreement", "data encipherment", "cert sign", "crl sign", "encipher only", "decipher only", "any", "server auth", "client auth", "code signing", "email protection", "s/mime", "ipsec end system", "ipsec tunnel", "ipsec user", "timestamping", "ocsp signing", "microsoft sgc", "netscape sgc"]
-										type: "string"
-									}
-									type: "array"
-								}
-							}
-							required: ["issuerRef", "secretName"]
-							type: "object"
-						}
-						status: {
-							properties: {
-								conditions: {
-									items: {
-										properties: {
-											lastTransitionTime: {
-												format: "date-time"
-												type:   "string"
-											}
-											message: {
-												type: "string"
-											}
-											observedGeneration: {
-												format: "int64"
-												type:   "integer"
-											}
-											reason: {
-												type: "string"
-											}
-											status: {
-												enum: ["True", "False", "Unknown"]
-												type: "string"
-											}
-											type: {
-												type: "string"
-											}
-										}
-										required: ["status", "type"]
+									labels: {
+										additionalProperties: type: "string"
 										type: "object"
 									}
-									type: "array"
-									"x-kubernetes-list-map-keys": ["type"]
-									"x-kubernetes-list-type": "map"
 								}
-								failedIssuanceAttempts: {
-									type: "integer"
+								type: "object"
+							}
+							subject: {
+								properties: {
+									countries: {
+										items: type: "string"
+										type: "array"
+									}
+									localities: {
+										items: type: "string"
+										type: "array"
+									}
+									organizationalUnits: {
+										items: type: "string"
+										type: "array"
+									}
+									organizations: {
+										items: type: "string"
+										type: "array"
+									}
+									postalCodes: {
+										items: type: "string"
+										type: "array"
+									}
+									provinces: {
+										items: type: "string"
+										type: "array"
+									}
+									serialNumber: type: "string"
+									streetAddresses: {
+										items: type: "string"
+										type: "array"
+									}
 								}
-								lastFailureTime: {
-									format: "date-time"
-									type:   "string"
-								}
-								nextPrivateKeySecretName: {
+								type: "object"
+							}
+							uris: {
+								items: type: "string"
+								type: "array"
+							}
+							usages: {
+								items: {
+									enum: [
+										"signing",
+										"digital signature",
+										"content commitment",
+										"key encipherment",
+										"key agreement",
+										"data encipherment",
+										"cert sign",
+										"crl sign",
+										"encipher only",
+										"decipher only",
+										"any",
+										"server auth",
+										"client auth",
+										"code signing",
+										"email protection",
+										"s/mime",
+										"ipsec end system",
+										"ipsec tunnel",
+										"ipsec user",
+										"timestamping",
+										"ocsp signing",
+										"microsoft sgc",
+										"netscape sgc",
+									]
 									type: "string"
 								}
-								notAfter: {
-									format: "date-time"
-									type:   "string"
-								}
-								notBefore: {
-									format: "date-time"
-									type:   "string"
-								}
-								renewalTime: {
-									format: "date-time"
-									type:   "string"
-								}
-								revision: {
-									type: "integer"
-								}
+								type: "array"
 							}
-							type: "object"
 						}
+						required: ["issuerRef", "secretName"]
+						type:     "object"
 					}
-					type: "object"
+					status: {
+						properties: {
+							conditions: {
+								items: {
+									properties: {
+										lastTransitionTime: {
+											format: "date-time"
+											type:   "string"
+										}
+										message: type: "string"
+										observedGeneration: {
+											format: "int64"
+											type:   "integer"
+										}
+										reason: type: "string"
+										status: {
+											enum: ["True", "False", "Unknown"]
+											type: "string"
+										}
+										type: type: "string"
+									}
+									required: ["status", "type"]
+									type:     "object"
+								}
+								type:                         "array"
+								"x-kubernetes-list-map-keys": ["type"]
+								"x-kubernetes-list-type":     "map"
+							}
+							failedIssuanceAttempts: type: "integer"
+							lastFailureTime: {
+								format: "date-time"
+								type:   "string"
+							}
+							nextPrivateKeySecretName: type: "string"
+							notAfter: {
+								format: "date-time"
+								type:   "string"
+							}
+							notBefore: {
+								format: "date-time"
+								type:   "string"
+							}
+							renewalTime: {
+								format: "date-time"
+								type:   "string"
+							}
+							revision: type: "integer"
+						}
+						type: "object"
+					}
 				}
+				type: "object"
 			}
-			subresources: {
-				status: {}
-			}
+			subresources: status: {}
 		}]
 	}
 }

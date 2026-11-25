@@ -20,18 +20,10 @@ import "strings"
 	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	kind: "AlertProvider"
 	metadata!: {
-		name!: strings.MaxRunes(253) & strings.MinRunes(1) & {
-			string
-		}
-		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {
-			string
-		}
-		labels?: {
-			[string]: string
-		}
-		annotations?: {
-			[string]: string
-		}
+		name!:      strings.MaxRunes(253) & strings.MinRunes(1) & {string}
+		namespace!: strings.MaxRunes(63) & strings.MinRunes(1) & {string}
+		labels?: [string]:      string
+		annotations?: [string]: string
 	}
 
 	// AlertProviderSpec defines the desired state of a AlertProvider.
@@ -70,77 +62,49 @@ import "strings"
 _crd: {
 	apiVersion: "apiextensions.k8s.io/v1"
 	kind:       "CustomResourceDefinition"
-	metadata: {
-		name: "alertproviders.flagger.app"
-	}
+	metadata: name: "alertproviders.flagger.app"
 	spec: {
 		group: "flagger.app"
 		names: {
 			categories: ["all"]
-			kind:     "AlertProvider"
-			listKind: "AlertProviderList"
-			plural:   "alertproviders"
-			singular: "alertprovider"
+			kind:       "AlertProvider"
+			listKind:   "AlertProviderList"
+			plural:     "alertproviders"
+			singular:   "alertprovider"
 		}
 		scope: "Namespaced"
 		versions: [{
 			name:    "v1beta1"
 			served:  true
 			storage: true
-			schema: {
-				openAPIV3Schema: {
-					properties: {
-						apiVersion: {
-							type: "string"
-						}
-						kind: {
-							type: "string"
-						}
-						metadata: {
-							type: "object"
-						}
-						spec: {
-							oneOf: [{
-								required: ["type", "address"]
-							}, {
-								required: ["type", "secretRef"]
-							}]
-							properties: {
-								address: {
-									type: "string"
-								}
-								channel: {
-									type: "string"
-								}
-								proxy: {
-									type: "string"
-								}
-								secretRef: {
-									properties: {
-										name: {
-											type: "string"
-										}
-									}
-									required: ["name"]
-									type: "object"
-								}
-								type: {
-									enum: ["slack", "msteams", "discord", "rocket", "gchat"]
-									type: "string"
-								}
-								username: {
-									type: "string"
-								}
+			schema: openAPIV3Schema: {
+				properties: {
+					apiVersion: type: "string"
+					kind: type:       "string"
+					metadata: type:   "object"
+					spec: {
+						oneOf: [{required: ["type", "address"]}, {required: ["type", "secretRef"]}]
+						properties: {
+							address: type: "string"
+							channel: type: "string"
+							proxy: type:   "string"
+							secretRef: {
+								properties: name: type: "string"
+								required: ["name"]
+								type:     "object"
 							}
-							type: "object"
+							type: {
+								enum: ["slack", "msteams", "discord", "rocket", "gchat"]
+								type: "string"
+							}
+							username: type: "string"
 						}
+						type: "object"
 					}
-					type: "object"
 				}
+				type: "object"
 			}
-			subresources: {
-				status: {}
-			}
+			subresources: status: {}
 		}]
 	}
 }

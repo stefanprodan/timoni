@@ -67,7 +67,7 @@ With --dry-run=false the thing runs.`,
 	g.Expect(out).To(ContainSubstring("With `--dry-run=false` the thing runs."))
 	g.Expect(out).To(ContainSubstring("  tool run <name> --set key={value}\n"))
 	g.Expect(out).To(ContainSubstring("\n## Examples\n\n```sh\n"))
-	g.Expect(out).To(ContainSubstring("--set string   Set a <key>=<value> pair."))
+	g.Expect(out).To(MatchRegexp(`--set string[ \t]+Set a <key>=<value> pair\.`))
 	g.Expect(out).To(ContainSubstring("\n## See also\n"))
 	g.Expect(out).To(ContainSubstring("* [tool](/cmd/tool)"))
 
