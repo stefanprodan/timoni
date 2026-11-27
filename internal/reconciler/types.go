@@ -73,6 +73,10 @@ type Reconciler struct {
 
 	// predecessorInventory is the inventory stored before the current run.
 	predecessorInventory *apiv1.ResourceInventory
+
+	// skipPreviousRevision disables storing the current instance as the
+	// previous revision on finalize (used by rollback).
+	skipPreviousRevision bool
 }
 
 type InteractiveReconciler struct {

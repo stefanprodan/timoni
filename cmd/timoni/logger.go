@@ -40,28 +40,19 @@ func loggerBundle(ctx context.Context, bundle, cluster string) logr.Logger {
 	}
 }
 
-func loggerInstance(ctx context.Context, instance string, prettify bool) logr.Logger {
-	if !prettify {
-		return LoggerFrom(ctx, "instance", instance)
-	}
+func loggerInstance(ctx context.Context, instance string) logr.Logger {
 	return LoggerFrom(ctx, "caller", logger.ColorizeInstance(instance))
 }
 
-func loggerBundleInstance(ctx context.Context, bundle, cluster, instance string, prettify bool) logr.Logger {
+func loggerBundleInstance(ctx context.Context, bundle, cluster, instance string) logr.Logger {
 	switch cluster {
 	case apiv1.RuntimeDefaultName:
-		if !prettify {
-			return LoggerFrom(ctx, "bundle", bundle, "instance", instance)
-		}
 		return LoggerFrom(ctx, "caller",
 			fmt.Sprintf("%s %s %s",
 				logger.ColorizeBundle(bundle),
 				color.CyanString(">"),
 				logger.ColorizeInstance(instance)))
 	default:
-		if !prettify {
-			return LoggerFrom(ctx, "bundle", bundle, "cluster", cluster, "instance", instance)
-		}
 		return LoggerFrom(ctx, "caller",
 			fmt.Sprintf("%s %s %s %s %s",
 				logger.ColorizeBundle(bundle),
@@ -69,21 +60,14 @@ func loggerBundleInstance(ctx context.Context, bundle, cluster, instance string,
 				logger.ColorizeCluster(cluster),
 				color.CyanString(">"),
 				logger.ColorizeInstance(instance)))
-
 	}
 }
 
-func loggerRuntime(ctx context.Context, runtime, cluster string, prettify bool) logr.Logger {
+func loggerRuntime(ctx context.Context, runtime, cluster string) logr.Logger {
 	switch cluster {
 	case apiv1.RuntimeDefaultName:
-		if !prettify {
-			return LoggerFrom(ctx, "runtime", runtime)
-		}
 		return LoggerFrom(ctx, "caller", logger.ColorizeRuntime(runtime))
 	default:
-		if !prettify {
-			return LoggerFrom(ctx, "runtime", runtime, "cluster", cluster)
-		}
 		return LoggerFrom(ctx, "caller",
 			fmt.Sprintf("%s %s %s", logger.ColorizeRuntime(runtime),
 				color.CyanString(">"), logger.ColorizeCluster(cluster)))

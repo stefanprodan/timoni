@@ -77,6 +77,27 @@ func (m *InstanceManager) AddObjects(objects []*unstructured.Unstructured) error
 	return nil
 }
 
+// RemoveObjects drops the given objects from the instance inventory.
+// Unknown objects are ignored. Used after delete-after-hooks resources are
+// removed by the reconciler so they leave the desired state.
+func (m *InstanceManager) RemoveObjects(objects []*unstructured.Unstructured) {
+	if m.Instance.Inventory == nil || len(objects) == 0 {
+		return
+	}
+	drop := make(map[string]struct{}, len(objects))
+	for _, om := range objects {
+		drop[object.UnstructuredToObjMetadata(om).String()] = struct{}{}
+	}
+	kept := make([]apiv1.ResourceRef, 0, len(m.Instance.Inventory.Entries))
+	for _, entry := range m.Instance.Inventory.Entries {
+		if _, ok := drop[entry.ID]; ok {
+			continue
+		}
+		kept = append(kept, entry)
+	}
+	m.Instance.Inventory.Entries = kept
+}
+
 // VersionOf returns the API version of the given object if found in this instance.
 func (m *InstanceManager) VersionOf(objMetadata object.ObjMetadata) string {
 	if inv := m.Instance.Inventory; inv != nil {

@@ -373,6 +373,70 @@ func TestInteractiveApplyUpgradeRecordsPending(t *testing.T) {
 	g.Expect(stored2.Inventory).To(Equal(r.instanceManager.Instance.Inventory))
 }
 
+func TestRemoveObjectsDropsInventoryEntries(t *testing.T) {
+	g := NewWithT(t)
+	r := newTestReconciler(newTestStorageManager())
+	g.Expect(r.instanceManager.AddObjects([]*unstructured.Unstructured{
+		cm("dsn"), cm("migrate"), cm("app"),
+	})).ToNot(HaveOccurred())
+
+	r.instanceManager.RemoveObjects([]*unstructured.Unstructured{cm("dsn"), cm("migrate")})
+	ids := make([]string, 0, len(r.instanceManager.Instance.Inventory.Entries))
+	for _, e := range r.instanceManager.Instance.Inventory.Entries {
+		ids = append(ids, e.ID)
+	}
+	g.Expect(ids).To(Equal([]string{"default_app__ConfigMap"}))
+}
+
+func TestResourceSetHasDeleteAfterHooks(t *testing.T) {
+	g := NewWithT(t)
+	hook := cm("dsn")
+	hook.SetAnnotations(map[string]string{apiv1.DeleteAfterHooksAction: apiv1.EnabledValue})
+	plain := cm("app")
+
+	g.Expect(resourceSetHasDeleteAfterHooks(engine.ResourceSet{Objects: []*unstructured.Unstructured{hook}})).To(BeTrue())
+	g.Expect(resourceSetHasDeleteAfterHooks(engine.ResourceSet{Objects: []*unstructured.Unstructured{plain}})).To(BeFalse())
+}
+
+func TestApplyAllSetsSkipsFlushWhenHooksWaitFails(t *testing.T) {
+	g := NewWithT(t)
+	storage := newTestStorageManager()
+	r := newTestReconciler(storage)
+	r.opts.Wait = true
+
+	hook := cm("migrate")
+	hook.SetAnnotations(map[string]string{
+		apiv1.RecreateAction:         apiv1.EnabledValue,
+		apiv1.DeleteAfterHooksAction: apiv1.EnabledValue,
+	})
+	app := cm("app")
+	r.sets = []engine.ResourceSet{
+		{Name: "hooks", Objects: []*unstructured.Unstructured{hook}},
+		{Name: "app", Objects: []*unstructured.Unstructured{app}},
+	}
+	g.Expect(r.instanceManager.AddObjects([]*unstructured.Unstructured{hook, app})).ToNot(HaveOccurred())
+
+	applied := []string{}
+	r.resourceManager = ssa.NewResourceManager(
+		fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
+		nil,
+		ssa.Owner{Field: apiv1.FieldManager, Group: "instance.timoni.sh"},
+	)
+
+	waitErr := errors.New("hooks not ready")
+	err := r.ApplyAllSets(context.Background(), logr.Discard(), func(_ context.Context, _ logr.Logger, _ *ssa.ChangeSet, rs *engine.ResourceSet) error {
+		applied = append(applied, rs.Name)
+		if rs.Name == "hooks" {
+			return &ReadinessError{Err: waitErr}
+		}
+		return nil
+	})
+	g.Expect(err).To(MatchError(waitErr))
+	g.Expect(applied).To(Equal([]string{"hooks"}))
+	// Failed hooks remain in desired inventory so prune will not remove them.
+	g.Expect(r.instanceManager.Instance.Inventory.Entries).To(HaveLen(2))
+}
+
 func TestApplyUpgradeReadinessAndPruneFailureReportsBoth(t *testing.T) {
 	g := NewWithT(t)
 	storage := newTestStorageManager()

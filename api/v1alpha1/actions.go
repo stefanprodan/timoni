@@ -30,6 +30,17 @@ var (
 	// ForceAction is the annotation that defines if a Kubernetes resource should be recreated.
 	ForceAction = fmt.Sprintf("action.%s/force", GroupVersion.Group)
 
+	// RecreateAction is the annotation (action.timoni.sh/recreate: enabled) that
+	// deletes a Kubernetes resource before apply so it is always recreated,
+	// even when its spec is unchanged (e.g. migration Jobs on every upgrade).
+	RecreateAction = fmt.Sprintf("action.%s/recreate", GroupVersion.Group)
+
+	// DeleteAfterHooksAction is the annotation
+	// (action.timoni.sh/delete-after-hooks: enabled) that keeps a resource
+	// until a consecutive group of such resources becomes ready, then deletes
+	// them as a batch before the next normal apply set (e.g. Job + DSN ConfigMap).
+	DeleteAfterHooksAction = fmt.Sprintf("action.%s/delete-after-hooks", GroupVersion.Group)
+
 	// IfNotPresentAction is the annotation that defines if a Kubernetes resource
 	// should be applied only if it doesn't exist on the cluster.
 	IfNotPresentAction = fmt.Sprintf("action.%s/one-off", GroupVersion.Group)

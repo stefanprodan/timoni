@@ -9,12 +9,14 @@ with the `action.timoni.sh` annotations.
 
 ## Annotations
 
-| CUE                              | Generated YAML                      |
-|----------------------------------|-------------------------------------|
-| `timoniv1.Action.Force`          | `action.timoni.sh/force: enabled`   |
-| `timoniv1.Action.OneOff`         | `action.timoni.sh/one-off: enabled` |
-| `timoniv1.Action.Keep`           | `action.timoni.sh/prune: disabled`  |
-| `timoniv1.Action.DisableWaiting` | `action.timoni.sh/wait: disabled`   |
+| CUE                              | Generated YAML                                 |
+|----------------------------------|------------------------------------------------|
+| `timoniv1.Action.Force`          | `action.timoni.sh/force: enabled`              |
+| `timoniv1.Action.Recreate`       | `action.timoni.sh/recreate: enabled`           |
+| `timoniv1.Action.DeleteAfterHooks` | `action.timoni.sh/delete-after-hooks: enabled` |
+| `timoniv1.Action.OneOff`         | `action.timoni.sh/one-off: enabled`            |
+| `timoniv1.Action.Keep`           | `action.timoni.sh/prune: disabled`             |
+| `timoniv1.Action.DisableWaiting` | `action.timoni.sh/wait: disabled`              |
 
 ### Force Apply
 
@@ -44,6 +46,47 @@ import (
 }
 
 ```
+
+### Recreate on Every Apply
+
+To delete and recreate a resource on every apply — even when its spec is
+unchanged — annotate it with `action.timoni.sh/recreate: "enabled"`.
+Use this for migration Jobs that must re-run `migrate up` on every upgrade.
+
+Example:
+
+```cue
+package templates
+
+import (
+	batchv1 "k8s.io/api/batch/v1"
+	timoniv1 "timoni.sh/core/v1alpha1"
+)
+
+#MigrateJob: batchv1.#Job & {
+	#config:    #Config
+	apiVersion: "batch/v1"
+	kind:       "Job"
+	metadata: timoniv1.#MetaComponent & {
+		#Meta:      #config.metadata
+		#Component: "migrate"
+	}
+	metadata: annotations: timoniv1.Action.Recreate & timoniv1.Action.DeleteAfterHooks
+	spec: {...}
+}
+```
+
+### Delete After Hooks
+
+Resources annotated with `action.timoni.sh/delete-after-hooks: "enabled"`
+are not pruned when they become ready. Timoni keeps them until a consecutive
+group of such apply sets all succeed, then deletes them as a batch before the
+next normal set (for example a Deployment). A failed hook stays until the next
+apply, which deletes it via `recreate` before creating a new one.
+
+Typical pairing: migration Job + DSN ConfigMap both carry `Recreate` and
+`DeleteAfterHooks`; ServiceAccounts/Roles needed by the Job use only
+`Recreate`; a post-Job after the app set uses only `Recreate`.
 
 ### One-Off Apply
 

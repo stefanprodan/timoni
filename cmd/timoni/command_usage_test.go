@@ -44,6 +44,7 @@ func TestRequiredOperandsAreNotOptionalInUsage(t *testing.T) {
 		{pullModCmd, "pull MODULE_URL"},
 		{pushModCmd, "push MODULE_PATH MODULE_URL"},
 		{statusCmd, "status INSTANCE_NAME"},
+		{rollbackCmd, "rollback INSTANCE_NAME"},
 	}
 
 	for _, tt := range tests {

@@ -10,6 +10,17 @@ Action: {
 	Force: {
 		"action.timoni.sh/force": ActionStatus.Enabled
 	}
+	// Recreate annotation for deleting and recreating resources on every apply,
+	// even when the resource spec is unchanged (e.g. migration Jobs).
+	Recreate: {
+		"action.timoni.sh/recreate": ActionStatus.Enabled
+	}
+	// DeleteAfterHooks annotation for deleting resources as a batch after a
+	// consecutive group of such resources become ready and before the next
+	// normal apply set runs (e.g. migration Job + DSN ConfigMap).
+	DeleteAfterHooks: {
+		"action.timoni.sh/delete-after-hooks": ActionStatus.Enabled
+	}
 	// One-off annotation for appling resources only if they don't exist on the cluster.
 	Oneoff: {
 		"action.timoni.sh/one-off": ActionStatus.Enabled
